@@ -61,10 +61,7 @@ else {
 </form>
 
 <?php
-function cleanString() {
-
-  global $randomString;
-  global $digitsint;
+function cleanString($randomString, $digitsint) {
   $randomString = utf8_encode($randomString);
   $randomString = trim($randomString);
   echo "<h4><b>Your $digitsint character string: </b>";
@@ -101,7 +98,7 @@ function cleanString() {
       for ($i = 0; $i < $digitsint; $i++) {
           $randomString .= $characters[rand(0, $charactersLength - 1)];
       }
-  cleanString();
+  cleanString($randomString, $digitsint);
 
 $md5RS = md5($randomString);
 $sha1RS = sha1($randomString);
@@ -120,6 +117,29 @@ echo "<br><b>SHA1:</b> $sha1RS<br>
 
 
 <!-------------------------------------------------------------------------------->
+
+<h1>Number Generator</h1>
+<div class="panel panel-primary">
+    <div class="panel panel-body">
+        <form action="index.php" method="POST">
+            Generate a number between
+            <?php
+            if (isset($_POST['numgenfrom']) && isset($_POST['numgento'])) {
+                echo "<input type='number' name='numgenfrom' class='form-control' value='".$_POST['numgenfrom']."'> and <input type='number' name='numgento' class='form-control' value='".$_POST['numgento']."'>";
+            } else {
+                echo "<input type='number' name='numgenfrom' class='form-control' value='1'> and <input type='number' name='numgento' class='form-control' value='100'>";
+            }
+            ?>
+            <input type="submit" value="Generate" class="btn btn-success">
+        </form>
+        <?php
+        if (isset($_POST['numgenfrom']) && isset($_POST['numgento'])) {
+            $gen = mt_rand($_POST['numgenfrom'], $_POST['numgento']);
+            echo "Your number is $gen";
+        }
+        ?>
+    </div>
+</div>
 
 <h1>MD5 Hasher</h1>
 <div class="panel panel-primary">
