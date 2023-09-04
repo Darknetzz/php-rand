@@ -1,15 +1,18 @@
 <?php header('Content-Type: text/html; charset=utf-8'); ?>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
 
 <!-- Latest compiled and minified CSS -->
-<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+<!-- <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous"> -->
 
 <!-- Optional theme -->
-<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+<!-- <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous"> -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-4bw+/aepP/YC94hEpVNVgiZdgIC5+VKNBQNGCHeKRQN+PtmoHDEXuppvnDJzQIu9" crossorigin="anonymous">
 
 <!-- Latest compiled and minified JavaScript -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
-<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+<!-- <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script> -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js" integrity="sha384-HwwvtgBNo3bZJJLYd8oVXjrBZt8cqVSpeBNS5n7C8IVInixGAoxmnlMuBnhbgrkm" crossorigin="anonymous"></script>
 
 <style>
 body {
@@ -17,17 +20,34 @@ body {
   background-color:#111;
   color:#FFF;
 }
-.panel {
+/* .panel {
   background-color:#202020;
   color:#FFF;
-}
-.form-control {
+} */
+
+select, select:active,
+input, input:active, input:focus,
+.card, .jumbotron, 
+.form-control, .form-control:active, .form-control:focus,
+.form-select, .form-select:active, .form-select:focus {
   background-color:#303030;
   color:#FFF;
 }
-.jumbotron {
+
+.description {
+  color: #888;
+}
+
+li.active {
   background-color:#303030;
-  color:#FFF;
+}
+
+footer {
+  color:grey;
+  text-align:center;
+  position:absolute;
+  left:50%;
+  bottom:5px;
 }
 </style>
 
@@ -36,23 +56,23 @@ body {
 <?php include_once("navbar.php"); ?>
 <br>
 <div class="container">
-<div id="dashboard" class="content" hidden>
-<div class="jumbotron">
-  <h1>Welcome to RAND!</h1>
-  <p>This page includes a bunch of tools. Choose a tool above to get started.</p>
+<div id="dashboard" class="content" style="display:none;">
+<div class="card">
+  <h1 class="card-header">Welcome to RAND!</h1>
+  <p class="card-body">This page includes a bunch of tools. Choose a tool above to get started.</p>
 </div>
 </div>
-<div id="rsgen" class="content" hidden>
-    <h1>Random string generator</h1>
-  <div class="panel panel-primary">
-  <div class="panel panel-body">
+<div id="rsgen" class="content" style="display:none;">
+<div class="card">
+<h1 class="card-header">Random String Generator</h1>
+<div class="card card-body">
 <form class="form" action="gen.php" method="POST" id="stringgen">
 <input type="hidden" name="containnumbers" value="0">
 <input type="hidden" name="containletters" value="0">
 <input type="hidden" name="containuletters" value="0">
 <input type="hidden" name="containsymbols" value="0">
 <input type="hidden" name="customizecharset" value="0">
-<select name="digits" class="form-control">
+<select name="digits" class="form-select">
 <?php
 $start = 1;
 $maxdigits = 100;
@@ -124,10 +144,10 @@ echo $customizecharset;
 </div>
 
 <!-------------------------------------------------------------------------------->
-<div id="cnumgen" class="content" hidden>
-<h1>Number Generator</h1>
-<div class="panel panel-primary">
-    <div class="panel panel-body">
+<div id="cnumgen" class="content" style="display:none;">
+<div class="card card-primary">
+<h1 class="card-header">Number Generator</h1>
+    <div class="card card-body">
         <form class="form" action="gen.php" method="POST" id="numgen">
             Generate a number between
             <?php
@@ -139,7 +159,7 @@ echo $customizecharset;
             ?>
             <input type="hidden" name="seed" value="0">
             <label><input type="checkbox" id="cnumgenseedtoggle" name="seed" value="1"> Seed</label><br>
-            <div class="cnumgenseed" hidden>
+            <div class="cnumgenseed" style="display:none;">
             with seed: 
             <input type="text" name="numgenseed" class="form-control" value="" placeholder="Optional">
             </div>
@@ -151,118 +171,54 @@ echo $customizecharset;
 </div>
 </div>
 
-<div id="md5" class="content" hidden>
-<h1>MD5 Hasher</h1>
-<div class="panel panel-primary">
-<div class="panel panel-body">
-<form class="form" action="gen.php" method="POST" id="md5hasher">
-  <?php
-  if (isset($_POST['md5'])) {
-  echo '<input type="text" name="md5" class="form-control" value="' . $_POST['md5'] . '">';
-  }
-  else {
-  echo '<input type="text" name="md5" class="form-control">';
-  }
-  ?>
-  <input type="submit" name="md5hash" value="Hash" class="btn btn-success">
+
+<div id="hash" class="content" style="display:none;">
+<div class="card card-primary">
+<h1 class="card-header">Hasher</h1>
+<div class="card card-body">
+<form class="form" action="gen.php" method="POST" id="hasher">
+  <input type="text" name="hash" class="form-control">
+  <input type="submit" name="hasher" value="Hash" class="btn btn-success">
 </form>
- <div id="md5hasherresponse"></div>
+  <div id="hasherresponse"></div>
 </div>
 </div>
 </div>
-<div id="sha" class="content" hidden>
-<h1>SHA1 Hasher</h1>
-<div class="panel panel-primary">
-<div class="panel panel-body">
-<form class="form" action="gen.php" method="POST" id="sha1hasher">
-  <?php
-  if (isset($_POST['sha1'])) {
-  echo '<input type="text" name="sha1" class="form-control" value="' . $_POST['sha1'] . '">';
-  }
-  else {
-  echo '<input type="text" name="sha1" class="form-control">';
-  }
-  ?>
-  <input type="submit" name="sha1hash" value="Hash" class="btn btn-success">
+
+
+<div id="base" class="content" style="display:none;">
+<div class="card card-primary">
+<h1 class="card-header">Base</h1>
+<div class="card card-body">
+<span class="description">Input any text or base encoded string below, and this tool will convert it to all other base formats.</span>
+<form class="form" action="gen.php" method="POST" id="base">
+  <input type="text" name="base" class="form-control">
+  <select name="from" class="form-select">
+    <option value="text" disabled selected>Please choose input type [default: text/base36]...</option>
+    <?php
+    for ($i = 2; $i <= 36; $i++) {
+      if ($i == 2) {
+        $name = "Base $i (binary)";
+      } else {
+        $name = "Base $i";
+      }
+      echo "<option value='$i'>$name</option>";
+    }
+    ?>
+  </select>
+  <input type="submit" value="Convert" class="btn btn-success">
 </form>
- <div id="sha1hasherresponse"></div>
-</div>
-</div>
-<h1>SHA256 Hasher</h1>
-<div class="panel panel-primary">
-<div class="panel panel-body">
-<form class="form" action="gen.php" method="POST" id="sha256hasher">
-  <?php
-  if (isset($_POST['sha256'])) {
-  echo '<input type="text" name="sha256" class="form-control" value="' . $_POST['sha256'] . '">';
-  }
-  else {
-  echo '<input type="text" name="sha256" class="form-control">';
-  }
-  ?>
-  <input type="submit" name="sha256hash" value="Hash" class="btn btn-success">
-</form>
- <div id="sha256hasherresponse"></div>
-</div>
-</div>
-<h1>SHA512 Hasher</h1>
-<div class="panel panel-primary">
-<div class="panel panel-body">
-<form class="form" action="gen.php" method="POST" id="sha512hasher">
-  <?php
-  if (isset($_POST['sha512'])) {
-  echo '<input type="text" name="sha512" class="form-control" value="' . $_POST['sha512'] . '">';
-  }
-  else {
-  echo '<input type="text" name="sha512" class="form-control">';
-  }
-  ?>
-  <input type="submit" name="sha512hash" value="Hash" class="btn btn-success">
-</form>
- <div id="sha512hasherresponse"></div>
+ <div id="baseresponse"></div>
 </div>
 </div>
 </div>
-<div id="base64" class="content" hidden>
-<h1>Base64 Encoder</h1>
-<div class="panel panel-primary">
-<div class="panel panel-body">
-<form class="form" action="gen.php" method="POST" id="base64encode">
-  <?php
-  if (isset($_POST['base64'])) {
-  echo '<input type="text" name="base64" class="form-control" value="' . $_POST['base64'] . '">';
-  }
-  else {
-  echo '<input type="text" name="base64" class="form-control">';
-  }
-  ?>
-  <input type="submit" name="base64encode" value="Encode" class="btn btn-success">
-</form>
- <div id="base64encoderesponse"></div>
-</div>
-</div>
-<h1>Base64 Decoder</h1>
-<div class="panel panel-primary">
-<div class="panel panel-body">
-<form class="form" action="gen.php" method="POST" id="base64decode">
-  <?php
-  if (isset($_POST['base64d'])) {
-  echo '<input type="text" name="base64d" class="form-control" value="' . $_POST['base64d'] . '">';
-  }
-  else {
-  echo '<input type="text" name="base64d" class="form-control">';
-  }
-  ?>
-  <input type="submit" name="base64encode" value="Decode" class="btn btn-success">
-</form>
- <div id="base64decoderesponse"></div>
-</div>
-</div>
-</div>
-<div id="hex" class="content" hidden>
-<h1>Bin2Hex</h1>
-<div class="panel panel-primary">
-<div class="panel panel-body">
+
+
+
+<div id="binhex" class="content" style="display:none;">
+<div class="card card-primary">
+<h1 class="card-header">Bin2Hex</h1>
+<div class="card card-body">
 <form class="form" action="gen.php" method="POST" id="bin2hex">
   <?php
   if (isset($_POST['bin2hex'])) {
@@ -277,9 +233,12 @@ echo $customizecharset;
  <div id="bin2hexresponse"></div>
 </div>
 </div>
-<h1>Hex2Bin</h1>
-<div class="panel panel-primary">
-<div class="panel panel-body">
+
+<br>
+
+<div class="card card-primary">
+<h1 class="card-header">Hex2Bin</h1>
+<div class="card card-body">
 <form class="form" action="gen.php" method="POST" id="hex2bin">
   <?php
   if (isset($_POST['hex2bin'])) {
@@ -296,10 +255,10 @@ echo $customizecharset;
 </div>
 </div>
 
-<div id="rot" class="content" hidden>
-<h1>ROT</h1>
-<div class="panel panel-primary">
-<div class="panel panel-body">
+<div id="rot" class="content" style="display:none;">
+<div class="card card-primary">
+<h1 class="card-header">ROT</h1>
+<div class="card card-body">
 <form class="form" action="gen.php" method="POST" id="rot">
   <?php
   if (isset($_POST['rot'])) {
@@ -322,10 +281,10 @@ echo $customizecharset;
 </div>
 </div>
 
-<div id="shuffler" class="content" hidden>
-<h1>Shuffler</h1>
-<div class="panel panel-primary">
-<div class="panel panel-body">
+<div id="shuffler" class="content" style="display:none;">
+<div class="card card-primary">
+<h1 class="card-header">Shuffler</h1>
+<div class="card card-body">
 <form class="form" action="gen.php" method="POST" id="shuffler">
   <?php
   if (isset($_POST['shuffler'])) {
@@ -343,16 +302,17 @@ echo $customizecharset;
 </div>
 </div>
 
-<div id="openssl" class="content" hidden>
+<div id="openssl" class="content" style="display:none;">
 <?php
   $ciphers = "";
   foreach (openssl_get_cipher_methods() as $thiscipher) {
     $ciphers .= "<option value='$thiscipher'>$thiscipher</option>";
   }
 ?>
-<h1>OpenSSL Encrypt</h1>
-<div class="panel panel-primary">
-<div class="panel panel-body">
+
+<div class="card card-primary">
+<h1 class="card-header">OpenSSL Encrypt</h1>
+<div class="card card-body">
 <form class="form" action="gen.php" method="POST" id="openssl">
   <?php
   if (isset($_POST['openssl'])) {
@@ -375,9 +335,12 @@ echo $customizecharset;
  <div id="opensslresponse"></div>
 </div>
 </div>
-<h1>OpenSSL Decrypt</h1>
-<div class="panel panel-primary">
-<div class="panel panel-body">
+
+<br>
+
+<div class="card card-primary">
+<h1 class="card-header">OpenSSL Decrypt</h1>
+<div class="card card-body">
 <form class="form" action="gen.php" method="POST" id="openssld">
   <?php
   if (isset($_POST['openssld'])) {
@@ -404,6 +367,10 @@ echo $customizecharset;
 <!----------------------------------------->
 </div> <!-- CONTAINER END -->
 <div id="error"></div>
+
+
+<footer>Made with ❤️ by <a href="https://github.com/darknetzz" target="_blank" style="color:grey;">darknetzz</a></footer>
+
 <script>
 $( document ).ready(function() {
     //function submitForm(formname, responseid) {
@@ -421,12 +388,15 @@ $( document ).ready(function() {
                data: form.serialize(), // serializes the form's elements.
                beforeSend: function()
                {
-                $("#"+responseid).html('<h3>Generating...</h3>'); // show loading
+                  $("#"+responseid).html('<h3>Generating...</h3>'); // show loading
                },
-               success: function(data)
+               error: function(data)
                {
-                   $("#"+responseid).html(data); // show response from the php script.
-                   // console.log("Response successfully received.);
+                  console.log(data);
+                  $("#"+responseid).html("<div class='alert alert-danger'>Error: "+data.statusText+"</div>");
+               },
+               success: function(data){
+                  $("#"+responseid).html(data); // show response from the php script.
                }
     });
     });
@@ -450,8 +420,8 @@ $( document ).ready(function() {
     var afterhash = hash.replace('#','');
     $(".content").hide();
     $(hash).fadeIn(1000);
-    $(".navlink").parent().prop("class", "");
-    $("#nav"+afterhash).parent().prop("class", "active");
+    $(".nav-link").parent().prop("class", "");
+    $("#nav"+afterhash).parent().prop("class", "nav-item active");
     console.log("Hash detected: "+hash+", setting nav"+afterhash+" parent as the active tab.");
     } else {
     // Hide everything, put first to avoid a split second of seeing everything | EDIT: Nevermind, putting hidden in html element works better, so the browser doesn't render it at all.
@@ -462,13 +432,23 @@ $( document ).ready(function() {
     }
 
     // Handle navbar
-    $(".navlink").click(function() {
-        $(".navlink").parent().prop("class", "");
-        $(this).parent().prop("class", "active");
+    $(".nav-link").click(function() {
+        var navLink = $(this);
+        var navItems = $(".nav-item");
+        var navItem = navLink.parent();
+
+        navItems.prop("class", "nav-item");
+        navItem.prop("class", "nav-item active");
+
+        // $(".nav-link").prop("class", "nav-link");
+        // $(this).prop("class", "nav-link active");
+
         var elementToShow = $(this).attr("href");
         $(".content").hide();
         $(elementToShow).fadeIn();
+
         if (elementToShow == undefined) {
+            console.log("unable to show "+elementToShow);
             $("#error").html("<br><div class='alert alert-danger'>Failed to show page ("+elementToShow+").</div>");
             $("#error").show();
         } else {

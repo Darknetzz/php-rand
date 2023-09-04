@@ -1,5 +1,6 @@
 <?php
 header('Content-Type: text/html; charset=utf-8');
+
 function cleanString($randomString, $digitsint) {
   $randomString = $randomString;
   $randomString = trim($randomString);
@@ -7,6 +8,7 @@ function cleanString($randomString, $digitsint) {
   print_r($randomString);
   echo "</h4>";
 }
+
 function str_rot($s, $n = 13) {
   static $letters = 'AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz';
   $n = (int)$n % 26;
@@ -16,6 +18,8 @@ function str_rot($s, $n = 13) {
   $rep = substr($letters, $n * 2) . substr($letters, 0, $n * 2);
   return strtr($s, $letters, $rep);
 }
+
+echo "<hr>";
 
     if(
     isset($_POST['containnumbers']) &&
@@ -69,29 +73,30 @@ echo "<br><b>SHA1:</b> $sha1RS<br>
 <b>MD5:</b> $md5RS<br>
 <b>Possible combinations:</b> $poscomb";
 }
-if (isset($_POST['base64'])) {
-  $base64 = base64_encode($_POST['base64']);
-  echo "<b>Your base64-encoded string would be:</b> $base64";
+
+
+
+if (isset($_POST['base'])) {
+  if (!isset($_POST['from']) || $_POST['from'] == "text") {
+    $from = 36;
+  } else {
+    $from = $_POST['from'];
+  }
+  echo "<b>Input (Base $from):</b> $_POST[base]<br><br>";
+  for ($i = 2; $i <= 36; $i++) {
+    echo "<b>Base$i:</b> ".base_convert($_POST['base'], $from, $i)."<br>";
+  }
+  echo "Base64 encode: ".base64_encode($_POST['base'])."<br>";
+  echo "Base64 decode: ".base64_decode($_POST['base'])."<br>";
 }
-if (isset($_POST['base64d'])) {
-  $base64d = base64_decode($_POST['base64d']);
-  echo "<b>Your base64-decoded string would be:</b> $base64d";
-}
-if (isset($_POST['sha512'])) {
-  $sha512 = hash('sha512', $_POST['sha512']);
-  echo "<b>Your hashed string would be:</b> $sha512";
-}
-if (isset($_POST['sha256'])) {
-  $sha256 = hash('sha256', $_POST['sha256']);
-  echo "<b>Your hashed string would be:</b> $sha256";
-}
-if (isset($_POST['sha1'])) {
-  $sha1 = sha1($_POST['sha1']);
-  echo "<b>Your hashed string would be:</b> $sha1";
-}
-if (isset($_POST['md5'])) {
-  $md5 = md5($_POST['md5']);
-  echo "<b>Your hashed string would be:</b> $md5";
+
+
+
+if (isset($_POST['hash'])) {
+  $types = ["SHA512", "SHA256", "SHA1", "MD5"];
+  foreach ($types as $type) {
+    echo "<b>$type:</b> ".hash($type, $_POST['hash'])."<br>";
+  }
 }
 if (isset($_POST['bin2hex'])) {
     $bin2hex = bin2hex($_POST['bin2hex']);
@@ -124,7 +129,7 @@ if (isset($_POST['numgenfrom']) && isset($_POST['numgento'])) {
         }
     }
   $gen = mt_rand($numgenfrom, $numgento);
-  echo "Your number is $gen<br>
+  echo "Your number is <h3>$gen</h3><br>
   Seed: $seed";
 }
 if (isset($_POST['rot'])) {
