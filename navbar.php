@@ -23,8 +23,8 @@
 
 <?php
 $modules = [
-  ["String Generator", "rsgen"]   , 
-  ["Number Generator", "cnumgen"] , 
+  ["String Tools", "rsgen"]   , 
+  ["Number Tools", "cnumgen"] , 
   ["Hash"            , "hash"]    , 
   ["Base"            , "base"]    , 
   ["Bin/Hex"         , "binhex"]  , 

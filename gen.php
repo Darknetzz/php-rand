@@ -74,7 +74,9 @@ echo "<br><b>SHA1:</b> $sha1RS<br>
 <b>Possible combinations:</b> $poscomb";
 }
 
-
+if (!empty($_POST['repeatstr']) && !empty($_POST['repeatamt'])) {
+  echo str_repeat($_POST['repeatstr'], $_POST['repeatamt']);
+}
 
 if (isset($_POST['base'])) {
   if (!isset($_POST['from']) || $_POST['from'] == "text") {

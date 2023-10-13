@@ -66,6 +66,7 @@ footer {
 <div class="card">
 <h1 class="card-header">Random String Generator</h1>
 <div class="card card-body">
+<div class="alert alert-secondary">This will generate a string with the charset defined.</div>
 <form class="form" action="gen.php" method="POST" id="stringgen">
 <input type="hidden" name="containnumbers" value="0">
 <input type="hidden" name="containletters" value="0">
@@ -140,6 +141,23 @@ echo $customizecharset;
 
 <div id="stringgenresponse"></div>
 </div>
+</div>
+
+<hr>
+
+<div class="card">
+  <h1 class="card-header">String Repeater</h1>
+  <div class="card-body">
+  <div class="alert alert-secondary">This will repeat the given string n number of times</div>
+  <form class="form" action="gen.php" method="POST" id="strrepeat">
+    String to repeat:
+    <input type="text" name="repeatstr" class="form-control">
+    How many times to repeat:
+    <input type="number" name="repeatamt" class="form-control">
+    <input type="submit" class="btn btn-success" value="Generate">
+  </form>
+  <div id="strrepeatresponse"></div>
+  </div>
 </div>
 </div>
 
