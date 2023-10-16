@@ -22,27 +22,42 @@
 </ul> -->
 
 <?php
-$modules = [
-  ["String Tools", "rsgen"]   , 
-  ["Number Tools", "cnumgen"] , 
-  ["Hash"            , "hash"]    , 
-  ["Base"            , "base"]    , 
-  ["Bin/Hex"         , "binhex"]  , 
-  ["ROT"             , "rot"]     , 
-  ["Shuffler"        , "shuffler"], 
-  ["OpenSSL"         , "openssl"] , 
-];
+// $modules = [
+//   ["String Tools", "rsgen"]   , 
+//   ["Number Tools", "cnumgen"] , 
+//   ["Hash"            , "hash"]    , 
+//   ["Base"            , "base"]    , 
+//   ["Encode"          , "encdec"],
+//   ["Bin/Hex"         , "binhex"]  , 
+//   ["ROT"             , "rot"]     , 
+//   ["Shuffler"        , "shuffler"], 
+//   ["OpenSSL"         , "openssl"] , 
+// ];
 
 $navItems = "";
-foreach ($modules as $module) {
-  $formalName = $module[0];
-  $shortName  = $module[1];
+
+foreach (glob("modules/*.php") as $module) {
+
+  $name = str_replace('!', '', basename($module, '.php'));
+  $formalname = ucwords(str_replace('_', ' ', $name));
+
   $navItems .= '
   <li class="nav-item">
-    <a class="nav-link" href="#'.$shortName.'" id="nav'.$shortName.'" cshow="'.$shortName.'">'.$formalName.'</a>
+    <a class="nav-link" href="#'.$name.'" id="nav'.$name.'" data-show="'.$name.'">'.$formalname.'</a>
   </li>
   ';
 }
+
+// $navItems = "";
+// foreach ($modules as $module) {
+//   $formalName = $module[0];
+//   $shortName  = $module[1];
+//   $navItems .= '
+//   <li class="nav-item">
+//     <a class="nav-link" href="#'.$shortName.'" id="nav'.$shortName.'">'.$formalName.'</a>
+//   </li>
+//   ';
+// }
 ?>
 
 <ul class="nav nav-tabs">
