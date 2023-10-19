@@ -199,4 +199,29 @@ if (in_array($cipher, openssl_get_cipher_methods()))
     <b>Initialization vector (Hex representation):</b> $iv";
 }
 }
+
+/* -------------------------------------------------------------------------- */
+/*                               Spin the wheel                               */
+/* -------------------------------------------------------------------------- */
+if (isset($_POST['wheelitem'])) {
+  foreach ($_POST['wheelitem'] as $wheelitem) {
+    if (!empty($wheelitem)) {
+      $valid = true;
+    }
+  }
+
+  if ($valid !== true) {
+    die("No items");
+  }
+  
+  $wheelitems = count($_POST['wheelitem']);
+  $roll = mt_rand(0, $wheelitems-1);
+  $item = $_POST['wheelitem'][$roll];
+  while (empty($item)) {
+    $item = $_POST['wheelitem'][mt_rand(0, $wheelitems-1)];
+  }
+  echo $item;
+
+}
+
 ?>
