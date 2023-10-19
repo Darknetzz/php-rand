@@ -23,7 +23,7 @@
 
 <script>
     $("#addtowheel").on("click", function(e) {
-        var inputCount = $("input").count();
+        var inputCount = $("input").length;
         var input = '<input type="text" name="item[]" placeholder="Input '+inputCount+'" class="form-control">';
         $("#spinwheel").append(input);
     });
