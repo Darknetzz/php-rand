@@ -83,6 +83,46 @@ echo $customizecharset;
 <hr>
 
 <div class="card">
+  <h1 class="card-header">Tools</h1>
+  <div class="card-body">
+
+  Replace, repeat, shuffle, crazycase, randomcase, titlecase, uppercase, lowercase, reverse, l33tspeakify?
+  un-l33tspeakify
+
+  <form class="form" action="gen.php" method="POST" id="strtools">
+  <textarea class="form-control"></textarea>
+  <input type="submit" class="btn btn-success" value="Generate">
+  </form>
+
+  <h4>Character</h4>
+  <label><input type="checkbox"> Reverse</label>
+  <label><input type="checkbox"> Replace</label>
+  <label><input type="checkbox"> Repeat</label>
+  <label><input type="checkbox"> Shuffle</label>
+  <label><input type="checkbox"> Slugify</label>
+  <h4>Case</h4>
+  <label><input type="checkbox"> Randomcase</label>
+  <label><input type="checkbox"> Lowercase</label>
+  <label><input type="checkbox"> Uppercase</label>
+  <label><input type="checkbox"> Titlecase</label>
+  <label><input type="checkbox"> Invertedcase</label>
+  <label><input type="checkbox"> Snakecase</label>
+  <label><input type="checkbox"> Kebabcase</label>
+  <h4>Misc</h4>
+  <label><input type="checkbox"> L33t5p34k</label>
+  <label><input type="checkbox"> Regex</label>
+
+
+  <div class="alert alert-warning"> 
+    buttons instead of checkboxes? or dropdown?
+</div>
+  <div id="strtoolsresponse"></div>
+  </div>
+</div>
+
+<hr>
+
+<div class="card">
   <h1 class="card-header">String Repeater</h1>
   <div class="card-body">
   <span class="description">This will repeat the given string n number of times</span>
