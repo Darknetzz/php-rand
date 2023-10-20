@@ -86,43 +86,51 @@ echo $customizecharset;
   <h1 class="card-header">Tools</h1>
   <div class="card-body">
 
-  Replace, repeat, shuffle, crazycase, randomcase, titlecase, uppercase, lowercase, reverse, l33tspeakify?
-  un-l33tspeakify
-
   <form class="form" action="gen.php" method="POST" id="strtools">
-  <textarea class="form-control"></textarea>
-  <input type="submit" class="btn btn-success" value="Generate">
+  <textarea class="form-control" name="string"></textarea>
+  <input type="submit" name="stringtools" class="btn btn-success" value="Generate">
+
+  <?php
+  $stringTools = [
+    "Character" => [
+      "Reverse",
+      "Replace",
+      "Repeat",
+      "Shuffle",
+      "Slugify",
+    ],
+    "Case" => [
+      "Randomcase",
+      "Lowercase",
+      "Uppercase",
+      "Titlecase",
+      "Invertedcase",
+      "Snakecase",
+      "Kebabcase",
+    ],
+    "Misc" => [
+      "L33t5p34k",
+      "Regex",
+    ],
+  ];
+
+  foreach ($stringTools as $cat => $tool) {
+    echo "<h4>$cat</h4>";
+    foreach ($tool as $t) {
+      $postvar = strtolower($t);
+      echo "<label><input type='checkbox' name='$postvar' value='1'> $t</label><br>";
+    }
+  }
+  ?>
   </form>
 
-  <h4>Character</h4>
-  <label><input type="checkbox"> Reverse</label>
-  <label><input type="checkbox"> Replace</label>
-  <label><input type="checkbox"> Repeat</label>
-  <label><input type="checkbox"> Shuffle</label>
-  <label><input type="checkbox"> Slugify</label>
-  <h4>Case</h4>
-  <label><input type="checkbox"> Randomcase</label>
-  <label><input type="checkbox"> Lowercase</label>
-  <label><input type="checkbox"> Uppercase</label>
-  <label><input type="checkbox"> Titlecase</label>
-  <label><input type="checkbox"> Invertedcase</label>
-  <label><input type="checkbox"> Snakecase</label>
-  <label><input type="checkbox"> Kebabcase</label>
-  <h4>Misc</h4>
-  <label><input type="checkbox"> L33t5p34k</label>
-  <label><input type="checkbox"> Regex</label>
-
-
-  <div class="alert alert-warning"> 
-    buttons instead of checkboxes? or dropdown?
-</div>
   <div id="strtoolsresponse"></div>
   </div>
 </div>
 
 <hr>
 
-<div class="card">
+<!-- <div class="card">
   <h1 class="card-header">String Repeater</h1>
   <div class="card-body">
   <span class="description">This will repeat the given string n number of times</span>
@@ -159,7 +167,7 @@ echo $customizecharset;
 </form>
  <div id="shufflerresponse"></div>
 </div>
-</div>
+</div> -->
 </div>
 
 <script>

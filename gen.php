@@ -224,4 +224,49 @@ if (isset($_POST['wheelitem'])) {
 
 }
 
+/* -------------------------------------------------------------------------- */
+/*                                String tools                                */
+/* -------------------------------------------------------------------------- */
+if (!empty($_POST['string'])) {
+  $string = $_POST['string'];
+
+  if ($_POST['reverse'] == 1) {
+    $string = strrev($string);
+  }
+
+  if ($_POST['shuffle'] == 1) {
+    $string = str_shuffle($string);
+  }
+
+  if ($_POST['l33t5p34k']) {
+    $translate = [
+      'A' => '4',
+      'E' => '3',
+      'O' => '0',
+      'T' => '7',
+      'L' => '1',
+      'S' => '5',
+      'B' => '6',
+    ];
+    $string = str_ireplace(array_keys($translate), array_values($translate), $string);
+    // $string = strtr($string, $translate);
+  }
+
+  if ($_POST['randomcase']) {
+    foreach (str_split($string) as $i => $char) {
+      $roll = mt_rand(0,100);
+      $string[$i] = strtolower($char);
+      if ($roll >= 50) {
+        $string[$i] = strtoupper($char);
+      }
+    }
+  }
+
+  echo $string;
+}
+
+echo "<hr>";
+
+print_r($_POST);
+
 ?>
