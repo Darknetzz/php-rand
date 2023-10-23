@@ -19,7 +19,7 @@ function str_rot($s, $n = 13) {
   return strtr($s, $letters, $rep);
 }
 
-echo "<hr>";
+// echo "<hr>";
 
     if(
     isset($_POST['containnumbers']) &&
@@ -229,16 +229,28 @@ if (isset($_POST['wheelitem'])) {
 /* -------------------------------------------------------------------------- */
 if (!empty($_POST['string'])) {
   $string = $_POST['string'];
+  $action = $_POST['action'];
 
-  if ($_POST['reverse'] == 1) {
+  /* -------------------------------------------------------------------------- */
+  /*                                   reverse                                  */
+  /* -------------------------------------------------------------------------- */
+  if ($action == "reverse") {
     $string = strrev($string);
   }
 
-  if ($_POST['shuffle'] == 1) {
+  
+
+  /* -------------------------------------------------------------------------- */
+  /*                                   shuffle                                  */
+  /* -------------------------------------------------------------------------- */
+  if ($action == "shuffle") {
     $string = str_shuffle($string);
   }
 
-  if ($_POST['l33t5p34k']) {
+  /* -------------------------------------------------------------------------- */
+  /*                                  leetspeak                                 */
+  /* -------------------------------------------------------------------------- */
+  if ($action == "l33tsp34k") {
     $translate = [
       'A' => '4',
       'E' => '3',
@@ -252,7 +264,10 @@ if (!empty($_POST['string'])) {
     // $string = strtr($string, $translate);
   }
 
-  if ($_POST['randomcase']) {
+  /* -------------------------------------------------------------------------- */
+  /*                                 randomcase                                 */
+  /* -------------------------------------------------------------------------- */
+  if ($action == "randomcase") {
     foreach (str_split($string) as $i => $char) {
       $roll = mt_rand(0,100);
       $string[$i] = strtolower($char);
@@ -265,8 +280,6 @@ if (!empty($_POST['string'])) {
   echo $string;
 }
 
-echo "<hr>";
-
-print_r($_POST);
+// echo "<hr>";
 
 ?>

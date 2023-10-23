@@ -100,22 +100,36 @@ $( document ).ready(function() {
         // var form = $("#"+formname);
         var url = form.attr('action');
         var responseid = form.prop('id')+'response';
+        var responseObj = $("#"+responseid);
+
+        var btnName = $(this).find("button[clicked=true]").prop("name");
+        var btnValue = $(this).find("button[clicked=true]").val();
+
+        var serializeForm = form.serialize()+"&"+btnName+"="+btnValue;
+
+        console.log("Form data: "+serializeForm);
         console.log("Generating through "+form.prop('id')+" to "+responseid);
         $.ajax({
                type: "POST",
                url: url,
-               data: form.serialize(), // serializes the form's elements.
+               data: serializeForm, // serializes the form's elements.
                beforeSend: function()
                {
-                  $("#"+responseid).html('<h3>Generating...</h3>'); // show loading
+                  responseObj.html('<h3>Generating...</h3>'); // show loading
                },
                error: function(data)
                {
                   console.log(data);
-                  $("#"+responseid).html("<div class='alert alert-danger'>Error: "+data.statusText+"</div>");
+                  responseObj.html("<div class='alert alert-danger'>Error: "+data.statusText+"</div>");
                },
                success: function(data){
-                  $("#"+responseid).html(data); // show response from the php script.
+                if (responseObj.not("div")) {
+                  console.log("responseObj is not a div - will use val instead of data.");
+                  responseObj.val(data);
+                } else {
+                  console.log("responseObj is a div, showing response as HTML");
+                  responseObj.html(data); // show response from the php script.
+                }
                }
     });
     });

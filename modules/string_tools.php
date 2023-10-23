@@ -87,8 +87,7 @@ echo $customizecharset;
   <div class="card-body">
 
   <form class="form" action="gen.php" method="POST" id="strtools">
-  <textarea class="form-control" name="string"></textarea>
-  <input type="submit" name="stringtools" class="btn btn-success" value="Generate">
+  <textarea class="form-control" id="strtoolsresponse" name="string"></textarea>
 
   <?php
   $stringTools = [
@@ -118,13 +117,13 @@ echo $customizecharset;
     echo "<h4>$cat</h4>";
     foreach ($tool as $t) {
       $postvar = strtolower($t);
-      echo "<label><input type='checkbox' name='$postvar' value='1'> $t</label><br>";
+      echo "<button type='submit' name='action' value='$postvar' class='btn btn-success'>$t</button> ";
     }
   }
   ?>
   </form>
 
-  <div id="strtoolsresponse"></div>
+  <!-- <div id="strtoolsresponse"></div> -->
   </div>
 </div>
 
