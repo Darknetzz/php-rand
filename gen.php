@@ -282,4 +282,6 @@ if (!empty($_POST['string'])) {
 
 // echo "<hr>";
 
+// print_r($_POST);
+
 ?>

@@ -115,10 +115,12 @@ echo $customizecharset;
 
   foreach ($stringTools as $cat => $tool) {
     echo "<h4>$cat</h4>";
+    echo "<div class='btn-group'>";
     foreach ($tool as $t) {
       $postvar = strtolower($t);
       echo "<button type='submit' name='action' value='$postvar' class='btn btn-success'>$t</button> ";
     }
+    echo "</div>";
   }
   ?>
   </form>

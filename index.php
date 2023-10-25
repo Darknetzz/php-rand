@@ -102,10 +102,19 @@ $( document ).ready(function() {
         var responseid = form.prop('id')+'response';
         var responseObj = $("#"+responseid);
 
-        var btnName = $(this).find("button[clicked=true]").prop("name");
-        var btnValue = $(this).find("button[clicked=true]").val();
+        var btnName = $("button[clicked=true]").prop("name");
+        var btnValue = $("button[clicked=true]").val();
 
         var serializeForm = form.serialize()+"&"+btnName+"="+btnValue;
+
+        function showData(obj, data) {
+          if (obj.is("div")) {
+            obj.html(data);
+          } else {
+            data = data.replace(/<(.|\n)*?>/g, '');
+            obj.val(data);
+          }
+        }
 
         console.log("Form data: "+serializeForm);
         console.log("Generating through "+form.prop('id')+" to "+responseid);
@@ -115,21 +124,22 @@ $( document ).ready(function() {
                data: serializeForm, // serializes the form's elements.
                beforeSend: function()
                {
-                  responseObj.html('<h3>Generating...</h3>'); // show loading
+                  showData(responseObj, 'Generating...'); // show loading
                },
                error: function(data)
                {
                   console.log(data);
-                  responseObj.html("<div class='alert alert-danger'>Error: "+data.statusText+"</div>");
+                  showData(responseObj, "<div class='alert alert-danger'>Error: "+data.statusText+"</div>");
                },
                success: function(data){
-                if (responseObj.not("div")) {
-                  console.log("responseObj is not a div - will use val instead of data.");
-                  responseObj.val(data);
-                } else {
-                  console.log("responseObj is a div, showing response as HTML");
-                  responseObj.html(data); // show response from the php script.
-                }
+                showData(responseObj, data);
+                //  if (responseObj.is("div")) {
+                //    responseObj.html(data); // show response from the php script.
+                //    console.log("responseObj is a div, showing response as HTML");
+                //   } else {
+                //     responseObj.val(data);
+                //     console.log("responseObj is not a div - will use val.");
+                // }
                }
     });
     });

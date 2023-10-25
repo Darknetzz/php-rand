@@ -14,8 +14,8 @@
     <hr>
     <button type="button" id="addtowheel" class="btn btn-success">+</button>
     <button type="button" id="removefromwheel" class="btn btn-danger">-</button>
-    <hr>
     <input type="submit" class="btn btn-success" value="Spin" name="spinwheel">
+    <hr>
     <div id="spinwheelresponse"></div>
     </form>
 
