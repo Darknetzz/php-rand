@@ -27,7 +27,7 @@ if (isset($_POST['action']) && $_POST['action'] == "stringgen") {
   $e        = (isset($_POST['e']) && $_POST['e'] == 1 ? "e": "");
   $c        = (isset($_POST['c']) && $_POST['c'] == 1 ? "c" : "");
   $charsets = $l.$u.$n.$s.$e.$c;
-  $length   = $_POST['digits'];
+  $length   = intval($_POST['digits']);
   // $randomString = genStr($charsets, $length);
   // cleanString($randomString, $length);
   $randomString     = genStr($charsets, $length, $_POST['cchars']);
@@ -38,7 +38,7 @@ if (isset($_POST['action']) && $_POST['action'] == "stringgen") {
   $sha1RS  = hash('sha1',   $randomString);
   $sha256  = hash('sha256', $randomString);
   $sha512  = hash('sha512', $randomString);
-  $poscomb = number_format($charactersLength**$digitsint)." ($charactersLength^$digitsint)";
+  $poscomb = number_format($charactersLength**$length)." ($charactersLength^$length)";
 
   echo formatOutput($randomString);
   echo "
@@ -277,7 +277,7 @@ echo "
 <a class='btn btn-warning mb-3' data-bs-toggle='collapse' data-bs-target='#debugCard' aria-expanded='false' aria-controls='debugCard'>Debug info</a>
 <div class='collapse' id='debugCard'>
   <div class='card border-warning'>
-    <h4 class='card-header text-info bg-warning'>
+    <h4 class='card-header text-bg-warning'>
       DEBUG INFO
     </h4>
     <div class='card-body'>

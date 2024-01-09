@@ -96,8 +96,6 @@ function genStr(string $charsets, int $length = Null, $cchars = Null) {
     $c        = (in_array('c', $charsets) && !empty($cchars) ? str_split($cchars)                                : []);
     $all      = array_merge($l, $u, $n, $s, $e, $c);
     $str      = '';
-    print_r($all);
-    print_r($cchars);
     if (empty($all)) {
       return "[empty]";
     }
