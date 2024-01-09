@@ -1,78 +1,65 @@
 <?php
 header('Content-Type: text/html; charset=utf-8');
 
-function cleanString($randomString, $digitsint) {
-  $randomString = $randomString;
-  $randomString = trim($randomString);
-  echo "<h4><b>Your $digitsint character string: </b>";
-  print_r($randomString);
-  echo "</h4>";
-}
-
-function str_rot($s, $n = 13) {
-  static $letters = 'AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz';
-  $n = (int)$n % 26;
-  if (!$n) return $s;
-  if ($n < 0) $n += 26;
-  if ($n == 13) return str_rot13($s);
-  $rep = substr($letters, $n * 2) . substr($letters, 0, $n * 2);
-  return strtr($s, $letters, $rep);
-}
+require_once("functions.php");
 
 // echo "<hr>";
-
-    if(
-    isset($_POST['containnumbers']) &&
-    isset($_POST['containletters']) &&
-    isset($_POST['containuletters']) &&
-    isset($_POST['containsymbols'])
-  ) {
-    $digits = $_POST['digits'];
-    $digitsint = intval($digits);
-    $characters = "";
-    $numbers = "0123456789";
-    $letters = "abcdefghijklmnopqrstuvwxyz";
-    $uletters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    $symbols = htmlspecialchars("!#¤%&\/()=?;:-_.,'\"*^<>{}[]@~+´`");
-    $symbols_expanded = htmlspecialchars("ƒ†‡™•");
-    $customcharset = $_POST['charset'];
-    if ($_POST['containnumbers'] == 1) {
-      $characters = $characters.$numbers;
-    }
-    if ($_POST['containletters'] == 1) {
-      $characters = $characters.$letters;
-    }
-    if ($_POST['containuletters'] == 1) {
-      $characters = $characters.$uletters;
-    }
-    if ($_POST['containsymbols'] == 1) {
-      $characters = $characters.$symbols;
-    }
-    if ($_POST['containesymbols'] == 1) {
-      $characters = $characters.$symbols_expanded;
-    }
-    if ($_POST['customizecharset'] == 1) {
-      $characters = $characters.$customcharset;
-    }
-      # $characters = utf8_encode($characters);
-      $charactersLength = strlen($characters);
-      $randomString = '';
-      for ($i = 0; $i < $digitsint; $i++) {
-          $randomString .= $characters[rand(0, $charactersLength - 1)];
-      }
-  cleanString($randomString, $digitsint);
-
-$md5RS = md5($randomString);
-$sha1RS = sha1($randomString);
-$sha256 = hash('sha256', $randomString);
-$sha512 = hash('sha512', $randomString);
-$poscomb = number_format($charactersLength**$digitsint)." ($charactersLength^$digitsint)";
-echo "<br><b>SHA1:</b> $sha1RS<br>
-<b>SHA256:</b> $sha256<br>
-<b>SHA512:</b> $sha512<br>
-<b>MD5:</b> $md5RS<br>
-<b>Possible combinations:</b> $poscomb";
+if (!isset($_POST['action'])) {
+  die("No action specified.");
 }
+
+
+/* ───────────────────────────────────────────────────────────────────── */
+/*                                 genstr                                */
+/* ───────────────────────────────────────────────────────────────────── */
+if (isset($_POST['action']) && $_POST['action'] == "stringgen") {
+  if (empty($_POST['digits'])) {
+    die("You must enter a number of characters.");
+  }
+  if (!ctype_digit($_POST['digits']) || $_POST['digits'] > 1000000 || $_POST['digits'] < 1) {
+    die("Invalid number of characters.");
+  }
+
+  $l        = (isset($_POST['l']) && $_POST['l'] == 1 ? "l": "");
+  $u        = (isset($_POST['u']) && $_POST['u'] == 1 ? "u": "");
+  $n        = (isset($_POST['n']) && $_POST['n'] == 1 ? "n": "");
+  $s        = (isset($_POST['s']) && $_POST['s'] == 1 ? "s": "");
+  $e        = (isset($_POST['e']) && $_POST['e'] == 1 ? "e": "");
+  $c        = (isset($_POST['c']) && $_POST['c'] == 1 ? "c" : "");
+  $charsets = $l.$u.$n.$s.$e.$c;
+  $length   = $_POST['digits'];
+  // $randomString = genStr($charsets, $length);
+  // cleanString($randomString, $length);
+  $randomString     = genStr($charsets, $length, $_POST['cchars']);
+  $charactersLength = strlen($charsets);
+
+  # Additional info in a collapsible
+  $md5RS   = md5($randomString);
+  $sha1RS  = hash('sha1',   $randomString);
+  $sha256  = hash('sha256', $randomString);
+  $sha512  = hash('sha512', $randomString);
+  $poscomb = number_format($charactersLength**$digitsint)." ($charactersLength^$digitsint)";
+
+  echo formatOutput($randomString);
+  echo "
+
+  <button class='btn btn-primary' type='button' data-bs-toggle='collapse' data-bs-target='#additionalInfo' aria-expanded='false' aria-controls='additionalInfo'>More info</button>
+
+  <div id='additionalInfo' class='collapse' style='margin:15px;'>
+    <div class='card border-info'>
+      <h4 class='card-header text-bg-info'>Additional info</h4>
+      <div class='card-body'>
+          <b>SHA1:</b> $sha1RS<br>
+          <b>SHA256:</b> $sha256<br>
+          <b>SHA512:</b> $sha512<br>
+          <b>MD5:</b> $md5RS<br>
+          <b>Possible combinations:</b> $poscomb
+      </div>
+    </div>
+  </div>
+  ";
+}
+/* ───────────────────────────────────────────────────────────────────── */
 
 if (!empty($_POST['repeatstr']) && !empty($_POST['repeatamt'])) {
   echo str_repeat($_POST['repeatstr'], $_POST['repeatamt']);
@@ -280,8 +267,23 @@ if (!empty($_POST['string'])) {
   echo $string;
 }
 
-// echo "<hr>";
+echo "<hr>";
 
-// print_r($_POST);
-
+/* ───────────────────────────────────────────────────────────────────── */
+/*                               Debug info                              */
+/* ───────────────────────────────────────────────────────────────────── */
+$postVars = trim(json_encode($_POST, JSON_PRETTY_PRINT));
+echo "
+<a class='btn btn-warning mb-3' data-bs-toggle='collapse' data-bs-target='#debugCard' aria-expanded='false' aria-controls='debugCard'>Debug info</a>
+<div class='collapse' id='debugCard'>
+  <div class='card border-warning'>
+    <h4 class='card-header text-info bg-warning'>
+      DEBUG INFO
+    </h4>
+    <div class='card-body'>
+        <pre>$postVars</pre>
+    </div>
+  </div>
+</div>
+";
 ?>

@@ -13,7 +13,7 @@
   ?>
   <input type="submit" name="bin2hex" value="Bin2Hex" class="btn btn-success">
 </form>
- <div id="bin2hexresponse"></div>
+ <div class="responseDiv" id="bin2hexresponse"></div>
 </div>
 </div>
 
@@ -33,7 +33,7 @@
   ?>
   <input type="submit" name="hex2bin" value="Hex2Bin" class="btn btn-success">
 </form>
- <div id="hex2binresponse"></div>
+ <div class="responseDiv" id="hex2binresponse"></div>
 </div>
 </div>
 </div>

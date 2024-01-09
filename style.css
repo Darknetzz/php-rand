@@ -1,0 +1,48 @@
+body {
+    background-color:#262626;
+    background-color:#111;
+    color:#FFF;
+  }
+  /* .panel {
+    background-color:#202020;
+    color:#FFF;
+  } */
+  
+  select, select:active,
+  input, input:active, input:focus,
+  .card, .jumbotron, 
+  .form-control, .form-control:active, .form-control:focus,
+  .form-select, .form-select:active, .form-select:focus {
+    background-color:#303030;
+    color:#FFF;
+  }
+  
+  .description {
+    color: #888;
+  }
+  
+  li.active {
+    background-color:#303030;
+  }
+  
+  footer {
+    color:grey;
+    background-color: rgb(0, 0, 0, 70%);
+    text-align:center;
+    position:fixed;
+    width:100%;
+    margin-top:100%;
+    bottom:0px;
+  }
+  
+  .container {
+    margin-bottom: 100px;
+  }
+  
+  .content {
+    display:none;
+  }
+
+  .output {
+    margin:15px;
+  }

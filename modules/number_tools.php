@@ -20,7 +20,7 @@
             <br>
             <input type="submit" value="Generate" class="btn btn-success">
         </form>
-    <div id="numgenresponse"></div>
+    <div class="responseDiv" id="numgenresponse"></div>
     </div>
 </div>
 </div>

@@ -11,7 +11,7 @@
 
   <input type="submit" name="encodesubmit" value="Decrypt" class="btn btn-success">
 </form>
- <div id="encodingresponse"></div>
+ <div class="responseDiv" id="encodingresponse"></div>
 </div>
 </div>
 </div>

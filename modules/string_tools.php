@@ -5,78 +5,45 @@
 <span class="description">This will generate a string with the charset defined.</span>
 <hr>
 <form class="form" action="gen.php" method="POST" id="stringgen">
-<input type="hidden" name="containnumbers" value="0">
-<input type="hidden" name="containletters" value="0">
-<input type="hidden" name="containuletters" value="0">
-<input type="hidden" name="containsymbols" value="0">
-<input type="hidden" name="customizecharset" value="0">
-<select name="digits" class="form-select">
-<?php
-$start = 1;
-$maxdigits = 100;
-while ($start <= $maxdigits) {
-$selected = ($start == 10) ? 'selected' : '';
-  if (isset($_POST['digits']) && $_POST['digits'] == $start) {
-  echo "<option value='$start' selected>$start</option>";
+  <input type="hidden" name="action" value="stringgen">
+  <input type="hidden" name="n" value="0">
+  <input type="hidden" name="l" value="0">
+  <input type="hidden" name="u" value="0">
+  <input type="hidden" name="s" value="0">
+  <input type="hidden" name="c" value="0">
+  <select name="digits" class="form-select">
+  <?php
+  $start = 1;
+  $maxdigits = 100;
+  while ($start <= $maxdigits) {
+  $selected = ($start == 10) ? 'selected' : '';
+    if (isset($_POST['digits']) && $_POST['digits'] == $start) {
+    echo "<option value='$start' selected>$start</option>";
+    }
+    else {
+    echo "<option value='$start' $selected>$start</option>";
+    }
+    $start++;
   }
-  else {
-  echo "<option value='$start' $selected>$start</option>";
-  }
-  $start++;
-}
-?>
-</select>
+  ?>
+  </select>
 <?php
-if (isset($_POST['containnumbers']) && $_POST['containnumbers'] == 1) {
-$numberscheckbox = '<label><input type="checkbox" name="containnumbers" value="1" checked> Contain numbers</label> <font color="grey">0-9</font><br>';
-} else {
-$numberscheckbox = '<label><input type="checkbox" name="containnumbers" value="1" checked> Contain numbers</label> <font color="grey">0-9</font><br>';
-}
-if (isset($_POST['containletters']) && $_POST['containletters'] == 1) {
-$letterscheckbox = '<label><input type="checkbox" name="containletters" value="1" checked> Contain lowercase letters</label> <font color="grey">a-z</font><br>';
-}
-else {
-$letterscheckbox = '<label><input type="checkbox" name="containletters" value="1" checked> Contain lowercase letters</label> <font color="grey">a-z</font><br>';
-}
-if (isset($_POST['containuletters']) && $_POST['containuletters'] == 1) {
-$uletterscheckbox = '<label><input type="checkbox" name="containuletters" value="1" checked> Contain uppercase letters</label> <font color="grey">A-Z</font><br>';
-}
-else {
-$uletterscheckbox = '<label><input type="checkbox" name="containuletters" value="1" checked> Contain uppercase letters</label> <font color="grey">A-Z</font><br>';
-}
-if (isset($_POST['containsymbols']) && $_POST['containsymbols'] == 1) {
-$symbolscheckbox = '<label><input type="checkbox" name="containsymbols" value="1" checked> Contain symbols</label> <font color="grey">!#¤%&\/()=?;:-_.,\'"*^<>{}[]@~+´`</font><br>';
-}
-else {
-$symbolscheckbox = '<label><input type="checkbox" name="containsymbols" value="1"> Contain symbols</label> <font color="grey">!#¤%&\/()=?;:-_.,\'"*^<>{}[]@~+´`</font><br>';
-}
-if (isset($_POST['containesymbols']) && $_POST['containesymbols'] == 1) {
-$symbolsecheckbox = '<label><input type="checkbox" name="containesymbols" value="1" checked> Contain extended symbols</label> <font color="grey">ƒ†‡™•)</font><br>';
-}
-else {
-$symbolsecheckbox = '<label><input type="checkbox" name="containesymbols" value="1"> Contain extended symbols</label> <font color="grey">ƒ†‡™•</font><br>';
-}
-if (isset($_POST['customizecharset']) && $_POST['customizecharset'] == 1) {
-$customizecharset = '<label><input type="checkbox" name="customizecharset" id="customizecharset" value="1" checked> Custom characters</label><br>
-<textarea class="form-control" name="charset" id="charset" style="display:none;"></textarea><br>';
-}
-else {
-$customizecharset = '<label><input type="checkbox" name="customizecharset" id="customizecharset" value="1"> Custom characters</label><br>
-<textarea class="form-control" name="charset" id="charset" style="display:none;"></textarea><br>';
-}
-echo $numberscheckbox;
-echo $letterscheckbox;
-echo $uletterscheckbox;
-echo $symbolscheckbox;
-echo $symbolsecheckbox;
-echo $customizecharset;
+echo '
+<label><input type="checkbox" name="n" value="1" checked> Contain numbers</label> <font color="grey">0-9</font><br>
+<label><input type="checkbox" name="l" value="1" checked> Contain lowercase letters</label> <font color="grey">a-z</font><br>
+<label><input type="checkbox" name="u" value="1" checked> Contain uppercase letters</label> <font color="grey">A-Z</font><br>
+<label><input type="checkbox" name="s" value="1"> Contain symbols</label> <font color="grey">!#¤%&\/()=?;:-_.,\'"*^<>{}[]@~+´`</font><br>
+<label><input type="checkbox" name="e" value="1"> Contain extended symbols</label> <font color="grey">ƒ†‡™•</font><br>
+<label><input type="checkbox" name="c" id="c" value="1"> Custom characters</label><br>
+<textarea class="form-control" name="cchars" id="cchars" style="display:none;"></textarea><br>
+';
 
 ?>
-</label><br>
+</label>
 <input type="submit" name="submit" class="btn btn-success" value="Generate">
 </form>
 
-<div id="stringgenresponse"></div>
+<div class="responseDiv" id="stringgenresponse"></div>
 </div>
 </div>
 
@@ -87,7 +54,7 @@ echo $customizecharset;
   <div class="card-body">
 
   <form class="form" action="gen.php" method="POST" id="strtools">
-  <textarea class="form-control" id="strtoolsresponse" name="string"></textarea>
+  <div class="class=output" id="strtoolsresponse" name="string"></div>
 
   <?php
   $stringTools = [
@@ -173,11 +140,11 @@ echo $customizecharset;
 
 <script>
       // Toggle charset
-      $("#customizecharset").change(function() {
+      $("#c").change(function() {
       if ($(this).is(":checked")) {
-        $("#charset").fadeIn();
+        $("#cchars").fadeIn();
       } else {
-        $("#charset").fadeOut();
+        $("#cchars").fadeOut();
       }
     });
 </script>

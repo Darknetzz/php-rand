@@ -19,7 +19,7 @@
   ?>
   <input type="submit" name="rot" value="Generate" class="btn btn-success">
 </form>
- <div id="rotresponse"></div>
+ <div class="responseDiv" id="rotresponse"></div>
 </div>
 </div>
 </div>

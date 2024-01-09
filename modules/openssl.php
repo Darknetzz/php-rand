@@ -33,7 +33,7 @@
   ?>
   <input type="submit" name="opensslsubmit" value="Encrypt" class="btn btn-success">
 </form>
- <div id="opensslresponse"></div>
+ <div class="responseDiv" id="opensslresponse"></div>
 </div>
 </div>
 
@@ -61,7 +61,7 @@
   ?>
   <input type="submit" name="openssldsubmit" value="Decrypt" class="btn btn-success">
 </form>
- <div id="openssldresponse"></div>
+ <div class="responseDiv" id="openssldresponse"></div>
 </div>
 </div>
 </div>

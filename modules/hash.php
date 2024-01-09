@@ -6,7 +6,7 @@
   <input type="text" name="hash" class="form-control">
   <input type="submit" name="hasher" value="Hash" class="btn btn-success">
 </form>
-  <div id="hasherresponse"></div>
+  <div class="responseDiv" id="hasherresponse"></div>
 </div>
 </div>
 </div>

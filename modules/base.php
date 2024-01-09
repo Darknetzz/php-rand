@@ -20,7 +20,7 @@
   </select>
   <input type="submit" value="Convert" class="btn btn-success">
 </form>
- <div id="baseresponse"></div>
+ <div class="responseDiv" id="baseresponse"></div>
 </div>
 </div>
 </div>
