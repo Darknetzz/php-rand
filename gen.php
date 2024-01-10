@@ -8,16 +8,18 @@ if (!isset($_POST['action'])) {
   die("No action specified.");
 }
 
+$action = $_POST['action'];
+
 
 /* ───────────────────────────────────────────────────────────────────── */
 /*                                 genstr                                */
 /* ───────────────────────────────────────────────────────────────────── */
-if (isset($_POST['action']) && $_POST['action'] == "stringgen") {
+if ($action == "stringgen") {
   if (empty($_POST['digits'])) {
-    die("You must enter a number of characters.");
+    die(alert("You must enter a string length.", "danger"));
   }
   if (!ctype_digit($_POST['digits']) || $_POST['digits'] > 1000000 || $_POST['digits'] < 1) {
-    die("Invalid number of characters.");
+    die(alert("Invalid number of characters.", "danger"));
   }
 
   $l        = (isset($_POST['l']) && $_POST['l'] == 1 ? "l": "");
@@ -40,14 +42,15 @@ if (isset($_POST['action']) && $_POST['action'] == "stringgen") {
   $sha512  = hash('sha512', $randomString);
   $poscomb = number_format($charactersLength**$length)." ($charactersLength^$length)";
 
+  echo "<hr>";
   echo formatOutput($randomString);
   echo "
 
-  <button class='btn btn-primary' type='button' data-bs-toggle='collapse' data-bs-target='#additionalInfo' aria-expanded='false' aria-controls='additionalInfo'>More info</button>
+  <button class='btn btn-info' type='button' data-bs-toggle='collapse' data-bs-target='#additionalInfo' aria-expanded='false' aria-controls='additionalInfo'>".icon('info-circle')."</button>
 
   <div id='additionalInfo' class='collapse' style='margin:15px;'>
     <div class='card border-info'>
-      <h4 class='card-header text-bg-info'>Additional info</h4>
+      <h4 class='card-header text-bg-info'>".icon('info-circle')." Info</h4>
       <div class='card-body'>
           <b>SHA1:</b> $sha1RS<br>
           <b>SHA256:</b> $sha256<br>
@@ -61,36 +64,59 @@ if (isset($_POST['action']) && $_POST['action'] == "stringgen") {
 }
 /* ───────────────────────────────────────────────────────────────────── */
 
-if (!empty($_POST['repeatstr']) && !empty($_POST['repeatamt'])) {
+
+/* ───────────────────────────────────────────────────────────────────── */
+/*                             Repeat string                             */
+/* ───────────────────────────────────────────────────────────────────── */
+if ($action == 'repeatstr') {
   echo str_repeat($_POST['repeatstr'], $_POST['repeatamt']);
 }
 
-if (isset($_POST['base'])) {
+/* ───────────────────────────────────────────────────────────────────── */
+/*                                  Base                                 */
+/* ───────────────────────────────────────────────────────────────────── */
+if ($action == 'base') {
   if (!isset($_POST['from']) || $_POST['from'] == "text") {
     $from = 36;
   } else {
     $from = $_POST['from'];
   }
-  echo "<b>Input (Base $from):</b> $_POST[base]<br><br>";
+
+  $allBasesAreBelongToUs = "";
+
+  $allBasesAreBelongToUs .= "<b>Input (Base $from):</b> $_POST[base]<br><br>";
+  $allBasesAreBelongToUs .= "Base64 encode: ".base64_encode($_POST['base'])."<br>";
+  $allBasesAreBelongToUs .= "Base64 decode: ".base64_decode($_POST['base'])."<br>";
+  $allBasesAreBelongToUs .= "<hr>";
   for ($i = 2; $i <= 36; $i++) {
-    echo "<b>Base$i:</b> ".base_convert($_POST['base'], $from, $i)."<br>";
+    $allBasesAreBelongToUs .= "<b>Base$i:</b> ".base_convert($_POST['base'], $from, $i)."<br>";
   }
-  echo "Base64 encode: ".base64_encode($_POST['base'])."<br>";
-  echo "Base64 decode: ".base64_decode($_POST['base'])."<br>";
+
+  echo formatOutput($allBasesAreBelongToUs);
 }
 
 
-
+/* ───────────────────────────────────────────────────────────────────── */
+/*                                  Hash                                 */
+/* ───────────────────────────────────────────────────────────────────── */
 if (isset($_POST['hash'])) {
   $types = ["SHA512", "SHA256", "SHA1", "MD5"];
   foreach ($types as $type) {
     echo "<b>$type:</b> ".hash($type, $_POST['hash'])."<br>";
   }
 }
+
+/* ───────────────────────────────────────────────────────────────────── */
+/*                                bin2hex                                */
+/* ───────────────────────────────────────────────────────────────────── */
 if (isset($_POST['bin2hex'])) {
     $bin2hex = bin2hex($_POST['bin2hex']);
     echo "<b>Your hex string would be:</b> $bin2hex";
 }
+
+/* ───────────────────────────────────────────────────────────────────── */
+/*                                hex2bin                                */
+/* ───────────────────────────────────────────────────────────────────── */
 if (isset($_POST['hex2bin'])) {
     if (ctype_xdigit($_POST['hex2bin']) && (strlen($_POST['hex2bin']) % 2) == 0) {
     $hex2bin = hex2bin($_POST['hex2bin']);
@@ -99,6 +125,10 @@ if (isset($_POST['hex2bin'])) {
     echo "<b>Input must only include hexadecimal and have an even length.</b>";
     }
 }
+
+/* ───────────────────────────────────────────────────────────────────── */
+/*                                 numgen                                */
+/* ───────────────────────────────────────────────────────────────────── */
 if (isset($_POST['numgenfrom']) && isset($_POST['numgento'])) {
     $numgenfrom = $_POST['numgenfrom'];
     $numgento = $_POST['numgento'];
@@ -121,6 +151,10 @@ if (isset($_POST['numgenfrom']) && isset($_POST['numgento'])) {
   echo "Your number is <h3>$gen</h3><br>
   Seed: $seed";
 }
+
+/* ───────────────────────────────────────────────────────────────────── */
+/*                                  ROT                                  */
+/* ───────────────────────────────────────────────────────────────────── */
 if (isset($_POST['rot'])) {
   if ($_POST['bruteforce'] == 1) {
     $alphabet = 26;
@@ -138,9 +172,17 @@ if (isset($_POST['rot'])) {
   }
   echo "<b>Your string would be: </b>".$strrot;
 }
+
+/* ───────────────────────────────────────────────────────────────────── */
+/*                                Shuffler                               */
+/* ───────────────────────────────────────────────────────────────────── */
 if (isset($_POST['shuffler'])) {
   echo "<b>Your string would be: </b>".str_shuffle(utf8_encode($_POST['shuffler']));
 }
+
+/* ───────────────────────────────────────────────────────────────────── */
+/*                                OpenSSL                                */
+/* ───────────────────────────────────────────────────────────────────── */
 if (isset($_POST['openssl'])) {
     //$key should have been previously generated in a cryptographically safe way, like openssl_random_pseudo_bytes
   $plaintext = $_POST['openssl'];
@@ -164,6 +206,10 @@ if (isset($_POST['openssl'])) {
       <b>Initialization vector (Hex representation):</b> ".bin2hex($iv);
   }
 }
+
+/* ───────────────────────────────────────────────────────────────────── */
+/*                            OpenSSL Decrypt                            */
+/* ───────────────────────────────────────────────────────────────────── */
 if (isset($_POST['openssld'])) {
   //$key should have been previously generated in a cryptographically safe way, like openssl_random_pseudo_bytes
 $plaintext = $_POST['openssld'];
@@ -190,7 +236,7 @@ if (in_array($cipher, openssl_get_cipher_methods()))
 /* -------------------------------------------------------------------------- */
 /*                               Spin the wheel                               */
 /* -------------------------------------------------------------------------- */
-if (isset($_POST['wheelitem'])) {
+if ($action == "spinwheel") {
   foreach ($_POST['wheelitem'] as $wheelitem) {
     if (!empty($wheelitem)) {
       $valid = true;
@@ -207,7 +253,7 @@ if (isset($_POST['wheelitem'])) {
   while (empty($item)) {
     $item = $_POST['wheelitem'][mt_rand(0, $wheelitems-1)];
   }
-  echo $item;
+  echo formatOutput($item);
 
 }
 
@@ -267,23 +313,21 @@ if (!empty($_POST['string'])) {
   echo $string;
 }
 
-echo "<hr>";
-
 /* ───────────────────────────────────────────────────────────────────── */
 /*                               Debug info                              */
 /* ───────────────────────────────────────────────────────────────────── */
 $postVars = trim(json_encode($_POST, JSON_PRETTY_PRINT));
 echo "
-<a class='btn btn-warning mb-3' data-bs-toggle='collapse' data-bs-target='#debugCard' aria-expanded='false' aria-controls='debugCard'>Debug info</a>
-<div class='collapse' id='debugCard'>
-  <div class='card border-warning'>
-    <h4 class='card-header text-bg-warning'>
-      DEBUG INFO
-    </h4>
-    <div class='card-body'>
-        <pre>$postVars</pre>
+  <a class='btn btn-warning' data-bs-toggle='collapse' data-bs-target='#debugCard' aria-expanded='false' aria-controls='debugCard'>".icon('bug-fill')."</a>
+  <div class='collapse' id='debugCard' style='margin:15px;'>
+    <div class='card border-warning'>
+      <h4 class='card-header text-bg-warning'>
+        ".icon('bug-fill')." Debug
+      </h4>
+      <div class='card-body'>
+          <pre>$postVars</pre>
+      </div>
     </div>
   </div>
-</div>
 ";
 ?>

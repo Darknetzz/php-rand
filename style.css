@@ -2,6 +2,7 @@ body {
     background-color:#262626;
     background-color:#111;
     color:#FFF;
+    height:100%;
   }
   /* .panel {
     background-color:#202020;
@@ -37,12 +38,13 @@ body {
   
   .container {
     margin-bottom: 100px;
+    padding-bottom: 100px;
   }
   
   .content {
     display:none;
   }
 
-  .output {
+  .output .card {
     margin:15px;
   }

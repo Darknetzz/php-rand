@@ -1,7 +1,29 @@
 <?php
 
-function icon($icon, $rem = 2, $color = null) {
-  return "<i class='bi bi-{$icon}' font-size: {$rem}rem; color: {$color};></i>";
+/**
+ * Icon
+ * 
+ */
+function icon($icon, $rem = 1, $color = Null) {
+  if ($color !== Null) {
+    $color = "color: {$color}";
+  }
+  if ($rem !== 1) {
+    $rem = "font-size: {$rem}rem";
+  }
+  return "<i class='bi bi-{$icon}' style='{$rem}; {$color};'></i>";
+}
+
+/**
+ * Alert
+ * 
+ */
+function alert($message, $type = 'success') {
+  return "
+  <div class='alert alert-{$type} alert-dismissible fade show' style='margin:15px;' role='alert'>
+  {$message}
+  <button type='button' class='btn-close' data-bs-dismiss='alert' aria-label='Close'></button>
+  ";
 }
 
 /**
@@ -53,11 +75,9 @@ function returnClean($randomString) {
 function formatOutput($response) {
   return "
   <div class='output'>
-    <h4 class='p-3 bg-success-subtle text-success-emphasis border border-primary-subtle rounded-3' style='margin:15px;'>
-      <b>Output:</b>
-      <hr>
+    <h5 class='p-3 bg-success-subtle text-success-emphasis border border-primary-subtle rounded-3' style='margin:15px;'>
       ".print_r($response, True)."
-    </h4>
+    </h5>
   </div>
   ";
 }

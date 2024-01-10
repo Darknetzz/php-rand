@@ -5,21 +5,33 @@
     </h1>
 
     <div class="card-body">
+        <form class="form" method="POST" action="gen.php" id="spinwheel">
+        <input type="hidden" name="action" value="spinwheel">
+        <div class="wheelitems">
+            <div class="form-floating mb-3 wheelitem">
+                <input type="text" name="wheelitem[]" class="form-control" name="item[]">
+                <label for="floatingInput">Item #1</label>
+            </div>
+            <div class="form-floating mb-3 wheelitem">
+                <input type="text" name="wheelitem[]" class="form-control" name="item[]">
+                <label for="floatingInput">Item #2</label>
+            </div>
+        </div>
+        
+        <div class="btn-group mb-3">
+            <button type="button" class="btn btn-success rounded-circle mb-3" id="addtowheel"><?= icon("plus-circle") ?></button>
+            &nbsp;&nbsp;&nbsp;&nbsp;
+            <button type="button" class="btn btn-danger rounded-circle mb-3" id="removefromwheel"><?= icon("dash-circle") ?></button>
+        </div>
 
-    <form class="form" method="POST" action="gen.php" id="spinwheel">
-    <div class="wheelitems">
-        <input type="text" class="form-control wheelitem" name="wheelitem[]" placeholder="Item 1">
-        <input type="text" class="form-control wheelitem" name="wheelitem[]" placeholder="Item 2">
-    </div>
-    <hr>
-    <button type="button" id="addtowheel" class="btn btn-success">+</button>
-    <button type="button" id="removefromwheel" class="btn btn-danger">-</button>
-    <input type="submit" class="btn btn-success" value="Spin" name="spinwheel">
-    <hr>
-    <div class="responseDiv" id="spinwheelresponse"></div>
-    </form>
+        <hr>
 
-
+        <div class="btn-group mb-3">
+            <button type="submit" class="btn btn-success mb-3" name="spinwheel"><span class="dice"></span> Spin</button>
+        </div>
+        
+        <div class="responseDiv" id="spinwheelresponse"></div>
+        </form>
     </div>
 </div>
 </div>
@@ -31,7 +43,12 @@
         var inputCount =($(".wheelitem").length);
         console.log("Adding: "+inputCount);
 
-        var input = '<input type="text" name="wheelitem[]" class="form-control wheelitem" name="item[]" placeholder="Item '+(inputCount+1)+'">';
+        var input = `
+        <div class="form-floating mb-3 wheelitem">
+            <input type="text" name="wheelitem[]" class="form-control" name="item[]">
+            <label for="floatingInput">Item #`+(inputCount+1)+`</label>
+        </div>
+        `;
         $(".wheelitems").append(input);
         inputCount += 1;
 

@@ -14,6 +14,7 @@
 <title>Rand</title>
 
 <body>
+<?php include_once("functions.php"); ?>
 <?php include_once("navbar.php"); ?>
 <br>
 <div class="container">
@@ -40,6 +41,15 @@ foreach (glob("modules/*.php") as $module) {
 
 <script>
 $( document ).ready(function() {
+
+
+  function randomizeDice() {
+    var dice = [1, 2, 3, 4, 5, 6];
+    var diceIcon = dice[Math.floor(Math.random()*dice.length)];
+    $(".dice").html('<i class="bi bi-dice-'+diceIcon+'"></i>');
+  }
+  randomizeDice();
+
     //function submitForm(formname, responseid) {
     $(".form").submit(function(e) {
         e.preventDefault(); // avoid to execute the actual submit of the form.
@@ -82,7 +92,8 @@ $( document ).ready(function() {
                success: function(data){
                 showData(responseObj, data);
                }
-    });
+      });
+      randomizeDice();
     });
 
     if (window.location.hash != '' && window.location.hash != undefined) {
