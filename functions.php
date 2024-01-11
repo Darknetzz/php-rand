@@ -73,10 +73,13 @@ function returnClean($randomString) {
  * @return void
  */
 function formatOutput($response) {
+  if (is_array($response)) {
+    $response = json_encode($response, JSON_PRETTY_PRINT);
+  }
   return "
   <div class='output'>
     <h5 class='p-3 bg-success-subtle text-success-emphasis border border-primary-subtle rounded-3' style='margin:15px;'>
-      ".print_r($response, True)."
+      ".$response."
     </h5>
   </div>
   ";

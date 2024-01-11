@@ -243,16 +243,50 @@ if ($action == "spinwheel") {
     die(alert("You must enter at least one item.", "danger"));
   }
 
+  if ($_POST['spinsamt'] > 100 || $_POST['spinsamt'] < 1) {
+    die(alert("You can't spin less than once or more than 100 times.", "danger"));
+  }
+
   $wheelItems = $_POST['wheelitem'];
   $countItems = count($wheelItems);
+
+  $moreSpins  = (isset($_POST['morespins']) ? True : False);
+  $spins      = ($moreSpins) ? $_POST['spinsamt'] : 1;
+
+  if ($countItems < 2) {
+    die(alert("You must enter at least two items.", "danger"));
+  }
+
+  if ($spins > $countItems && $_POST['unique'] == 1) {
+    die(alert("You can't spin more than the number of items in the wheel if you want unique results.", "danger"));
+  }
 
   foreach ($wheelItems as $i => $wheelItem) {
     $value          = trim($wheelItem);
   }
   
-  $dice = mt_rand(0, $countItems-1);
-  $item = (!empty($wheelItems[$roll]) ? $wheelItems[$roll] : "Item #".$dice+1);
-  echo formatOutput($item);
+  $excludes = [];
+  for ($i = 0; $i < $spins; $i++) {
+      $dice           = mt_rand(0, $countItems-1);
+
+      if (in_array($dice, $excludes)) {
+          $i--;
+          continue;
+      }
+
+      $item           = (!empty($wheelItems[$dice]) ? $wheelItems[$dice] : "Item #".$dice+1);
+      $items[]        = "<b>".$item."</b>";
+      $excludes[]     = $dice;
+  }
+
+  echo "Spins: $spins<br>";
+
+  if (count($items) < 1) {
+    echo $output = "No items";
+  }
+
+  $output = implode("<br>", $items);
+  echo formatOutput($output);
 
 }
 

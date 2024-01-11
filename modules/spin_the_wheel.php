@@ -1,7 +1,15 @@
 <div class="content" id="spin_the_wheel">
 <div class="card">
-    <h1 class="card-header">
-        Spin The Wheel
+    <h1 class="card-header d-flex justify-content-between">
+        <div>
+            Spin The Wheel
+        </div>
+
+        <div class="btn-group">
+            <button type="button" class="btn btn-success" id="addtowheel"><?= icon("plus-circle") ?></button>
+            <button type="button" class="btn btn-secondary" id="removefromwheel"><?= icon("dash-circle") ?></button>
+            <button type="button" class="btn btn-danger" id="clear"><?= icon("trash") ?></button>
+        </div>
     </h1>
 
     <div class="card-body">
@@ -17,21 +25,28 @@
                 <label for="floatingInput">Item #2</label>
             </div>
         </div>
-        
-        <div class="btn-group mb-3">
-            <button type="button" class="btn btn-success rounded-circle mb-3" id="addtowheel"><?= icon("plus-circle") ?></button>
-            <button type="button" class="btn btn-danger rounded-circle mb-3" id="removefromwheel"><?= icon("dash-circle") ?></button>
-            <button type="button" class="btn btn-danger rounded-circle mb-3" id="clear"><?= icon("trash") ?></button>
-        </div>
 
         <h4>Options</h4>
         <div class="form-group mb-3">
-            <label>
-                <input type="checkbox" class="form-input mb-3"> Spin more than once
-            </label>
-            <label>
-                <input type="checkbox" class="form-input mb-3"> Force unique
-            </label>
+
+            <div class="mb-1 form-check">
+                <label>
+                    <input type="hidden" name="morespins" value="0">
+                    <input id="morespins" name="morespins" value="1" type="checkbox" class="form-input mb-3"> Spin more than once
+                </label>
+            </div>
+
+            <div id="spinsopt" style="display:none;">
+                <label for="spinsamt">Number of spins</label>
+                <input id="spinsamt" name="spinsamt" type="number" class="form-control mb-3" placeholder="Number of spins" min="1" max="100" value="1">
+
+                <div class="mb-1 form-check">
+                    <label>
+                        <input type="hidden" name="unique" value="0">
+                        <input type="checkbox" name="unique" class="form-input mb-3"> Force unique
+                    </label>
+                </div>
+            </div>
         </div>
 
         <hr>
@@ -82,6 +97,14 @@
 
     $("#clear").on("click", function() {
         $(".wheelitem").remove();
+    });
+
+    $("#morespins").on("click", function() {
+        if ($(this).is(":checked")) {
+            $("#spinsopt").fadeIn();
+        } else {
+            $("#spinsopt").fadeOut();
+        }
     });
 
 </script>
