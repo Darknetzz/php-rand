@@ -239,59 +239,19 @@ if (in_array($cipher, openssl_get_cipher_methods()))
 /* -------------------------------------------------------------------------- */
 if ($action == "spinwheel") {
 
-  if (empty($_POST['wheelitem'])) {
-    die(alert("You must enter at least one item.", "danger"));
-  }
+  $wheelitem = (!empty($_POST['wheelitem']) ? $_POST['wheelitem'] : []);
+  $spinsamt = (!empty($_POST['spinsamt'])   ? intval($_POST['spinsamt']) : 1);
+  $unique    = (!empty($_POST['unique'])    ? intval($_POST['unique'])    : 0);
 
-  if ($_POST['spinsamt'] > 100 || $_POST['spinsamt'] < 1) {
-    die(alert("You can't spin less than once or more than 100 times.", "danger"));
-  }
+  $spin = spinWheel($wheelitem, $spinsamt, $unique);
 
-  $wheelItems = $_POST['wheelitem'];
-  $countItems = count($wheelItems);
-
-  $moreSpins  = (isset($_POST['morespins']) ? True : False);
-  $spins      = ($moreSpins) ? $_POST['spinsamt'] : 1;
-
-  if ($countItems < 2) {
-    die(alert("You must enter at least two items.", "danger"));
-  }
-
-  if ($spins > $countItems && $_POST['unique'] == 1) {
-    die(alert("You can't spin more than the number of items in the wheel if you want unique results.", "danger"));
-  }
-
-  foreach ($wheelItems as $i => $wheelItem) {
-    $value          = trim($wheelItem);
-  }
-  
-  $excludes = [];
-  for ($i = 0; $i < $spins; $i++) {
-      $dice           = mt_rand(0, $countItems-1);
-
-      if (in_array($dice, $excludes)) {
-          $i--;
-          continue;
-      }
-
-      $item           = (!empty($wheelItems[$dice]) ? $wheelItems[$dice] : "Item #".$dice+1);
-      $items[]        = "<b>".$item."</b>";
-      $excludes[]     = $dice;
-  }
-
-  if (count($items) < 1) {
-    echo $output = "No items";
-  }
-
-  $output = implode("<br>", $items);
-  echo formatOutput($output);
-
+  echo $spin;
 }
 
 /* -------------------------------------------------------------------------- */
 /*                                String tools                                */
 /* -------------------------------------------------------------------------- */
-if (!empty($_POST['string'])) {
+if ($action == "stringtools") {
   $string = $_POST['string'];
   $action = $_POST['action'];
 

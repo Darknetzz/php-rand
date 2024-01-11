@@ -4,13 +4,23 @@
             Spin The Wheel
     </h1>
 
-        <div class="d-flex justify-content-center mb-3">
-            <div class="btn-group btn-group-lg">
-                <button type="button" class="btn btn-success" id="addtowheel"><?= icon("plus-circle") ?></button>
-                <button type="button" class="btn btn-secondary" id="removefromwheel"><?= icon("dash-circle") ?></button>
+    <div class="card-body">
+
+        <div class="d-flex justify-content-between">
+            <div class="input-group mb-3">
+                    <button type="button" class="btn btn-outline-danger" id="removefromwheel"><?= icon("dash-circle") ?></button>
+                    <!-- <div class="form-floating"> -->
+                        <input type="number" id="itemsamt" class="form-control" placeholder="Number of items" min="1" max="100" value="2">
+                        <!-- <label for="floatingInput">Number of items</label> -->
+                    <!-- </div> -->
+                    <button type="button" class="btn btn-outline-success" id="addtowheel"><?= icon("plus-circle") ?></button>
+            </div>
+            <div>
                 <button type="button" class="btn btn-danger" id="clear"><?= icon("trash") ?></button>
             </div>
         </div>
+
+        <hr>
 
         <form class="form" method="POST" action="gen.php" id="spinwheel">
         <input type="hidden" name="action" value="spinwheel">
@@ -25,50 +35,61 @@
             </div>
         </div>
 
+        <!-- OPTIONS -->
         <div class="card boder border-secondary">
             <h4 class="card-header text-bg-secondary">Options</h4>
             <div class="card-body">
                 <div class="form-group mb-3">
 
                     <div class="mb-1 form-check">
-                        <label>
-                            <input type="hidden" name="morespins" value="0">
-                            <input id="morespins" name="morespins" value="1" type="checkbox" class="form-input mb-3"> Spin more than once
-                        </label>
+                        <input type="hidden" name="morespins" value="0">
+                        <input id="morespins" name="morespins" value="1" type="checkbox" class="form-input mb-3">
+                        <label for="morespins">Spin more than once</label>
                     </div>
 
-                    <div class="" id="spinsopt" style="display:none;">
-                        <label for="spinsamt">Number of spins</label>
-                        <input 
-                            id="spinsamt" name="spinsamt" type="number" class="form-control form-control mb-3"
-                            placeholder="Number of spins" min="1" max="100" value="1"
-                        >
+                    <div id="spinsopt" style="display:none;">
 
-                        <div class="mb-1 form-check">
-                            <label for="unique">Force unique</label>
+                            <div class="form-floating">
+                                <input 
+                                id="spinsamt" name="spinsamt" type="number" class="form-control mb-3"
+                                placeholder="Number of spins" min="1" max="100"
+                                >
+                                <label for="spinsamt">Number of spins</label>
+                            </div>
+
+                            <div class="form-check">
                                 <input type="hidden" name="unique" value="0">
-                                <input type="checkbox" id="unique" name="unique" class="form-input mb-3">
-                            </label>
-                        </div>
+                                <input type="checkbox" id="unique" name="unique" value="1" class="form-input mb-3">
+                                <label for="unique">Force unique</label>
+                            </div>
 
                     </div>
+
                 </div>
             </div>
         </div>
+        <!-- END OPTIONS -->
 
         <hr>
-        
+
         <div class="btn-group mb-3">
-            <button type="submit" class="btn btn-success mb-3" name="spinwheel"><span class="dice"></span> Spin</button>
+            <?= submitBtn() ?>
         </div>
 
         <div class="responseDiv" id="spinwheelresponse"></div>
         </form>
+
+
+        <hr>
     </div>
+</div>
 </div>
 
 <script>
 
+    /* ───────────────────────────────────────────────────────────────────── */
+    /*                               addtowheel                              */
+    /* ───────────────────────────────────────────────────────────────────── */
     $("#addtowheel").on("click", function(e) {
 
         var inputCount =($(".wheelitem").length);
@@ -83,9 +104,15 @@
         $(".wheelitems").append(input);
         inputCount += 1;
 
+        $("#itemsamt").val(inputCount);
+
         console.log("New count: "+inputCount);
     });
 
+
+    /* ───────────────────────────────────────────────────────────────────── */
+    /*                           remove from wheel                           */
+    /* ───────────────────────────────────────────────────────────────────── */
     $("#removefromwheel").on("click", function() {
 
         var inputCount = ($(".wheelitem").length);
@@ -98,18 +125,53 @@
             $("#spinwheelresponse").html("<div class='alert alert-danger'>Must have at least 2 items.</div>");
         }
 
+        $("#itemsamt").val(inputCount);
+
         console.log("New count: "+inputCount);
     });
 
+    /* ───────────────────────────────────────────────────────────────────── */
+    /*                                 clear                                 */
+    /* ───────────────────────────────────────────────────────────────────── */
     $("#clear").on("click", function() {
-        $(".wheelitem").remove();
+        $(".wheelitem:gt(1)").remove();
+
+        $("#itemsamt").val($(".wheelitem").length);
     });
 
+    /* ───────────────────────────────────────────────────────────────────── */
+    /*                               morespins                               */
+    /* ───────────────────────────────────────────────────────────────────── */
     $("#morespins").on("click", function() {
         if ($(this).is(":checked")) {
             $("#spinsopt").fadeIn();
         } else {
             $("#spinsopt").fadeOut();
+        }
+    });
+
+
+    /* ───────────────────────────────────────────────────────────────────── */
+    /*                                itemsamt                               */
+    /* ───────────────────────────────────────────────────────────────────── */
+    $("#itemsamt").on("change keyup", function() {
+        var itemsamt = $(this).val();
+        var inputCount = ($(".wheelitem").length);
+        console.log("Itemsamt: "+itemsamt);
+        console.log("Inputcount: "+inputCount);
+
+        if (itemsamt > inputCount) {
+            var diff = itemsamt - inputCount;
+            console.log("Diff: "+diff);
+            for (var i = 0; i < diff; i++) {
+                $("#addtowheel").trigger("click");
+            }
+        } else if (itemsamt < inputCount) {
+            var diff = inputCount - itemsamt;
+            console.log("Diff: "+diff);
+            for (var i = 0; i < diff; i++) {
+                $("#removefromwheel").trigger("click");
+            }
         }
     });
 

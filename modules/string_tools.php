@@ -41,8 +41,7 @@ echo '
     </div>
   </div>
 </div>
-<button name="submit" class="btn btn-success"><span class="dice"></span> Generate</button>
-';
+'.submitBtn();
 
 ?>
 </form>

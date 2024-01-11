@@ -127,4 +127,63 @@ function genStr(string $charsets, int $length = Null, $cchars = Null) {
     }
     return $str;
 }
+
+
+/* ───────────────────────────────────────────────────────────────────── */
+/*                               spinWheel                               */
+/* ───────────────────────────────────────────────────────────────────── */
+function spinWheel(?array $wheelItems = [], int $spins = 1, bool $unique = False) {
+
+  if (empty($wheelItems)) {
+    return alert("You must enter at least one item.", "danger");
+  }
+
+  if ($spins > 100 || $spins < 1) {
+    return alert("You can't spin less than once or more than 100 times.", "danger");
+  }
+
+  $countItems = count($wheelItems);
+  $moreSpins  = (isset($spins) && $spins > 1 ? True : False);
+  $spins      = ($moreSpins) ? $spins : 1;
+
+  if ($countItems < 2) {
+    return alert("You must enter at least two items.", "danger");
+  }
+
+  if (($spins > $countItems) && $unique !== False) {
+    return alert("You can't spin more than the number of items in the wheel if you want unique results.", "danger");
+  }
+  
+  $excludes = [];
+  for ($i = 0; $i < $spins; $i++) {
+      $dice = mt_rand(0, $countItems-1);
+
+      if ($unique !== False) {
+          while (in_array($dice, $excludes)) {
+              $dice = mt_rand(0, $countItems-1);
+          }
+      }
+
+      $item           = (!empty($wheelItems[$dice]) ? $wheelItems[$dice] : "Item #".$dice+1);
+      $items[]        = "<b>".$item."</b>";
+      $excludes[]     = $dice;
+  }
+
+  if (empty($items)) {
+    return alert("No items");
+  }
+
+  $output = implode("<br>", $items);
+  return formatOutput($output);
+}
+
+/* ───────────────────────────────────────────────────────────────────── */
+/*                               submitBtn                               */
+/* ───────────────────────────────────────────────────────────────────── */
+function submitBtn(string $text = "Generate") {
+  return '
+    <button type="submit" class="btn btn-success btn-lg mb-3">
+      <span class="dice"></span> '.$text.'
+    </button>';
+}
 ?>
