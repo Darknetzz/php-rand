@@ -1,7 +1,7 @@
 <div id="string_tools" class="content">
 <div class="card">
 <h1 class="card-header">Random String Generator</h1>
-<div class="card card-body">
+<div class="card-body">
 <span class="description">This will generate a string with the charset defined.</span>
 <hr>
 <form class="form" action="gen.php" method="POST" id="stringgen">
@@ -22,7 +22,7 @@
 
 <?php
 echo '
-<div class="card border-secondary" style="margin:15px;">
+<div class="card border-secondary">
   <h5 class="card-header text-bg-secondary">Options</h5>
   <div class="card-body">
     <label><input type="checkbox" name="n" value="1" checked> Contain numbers</label> <font color="grey">0-9</font><br>

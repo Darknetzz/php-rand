@@ -10,8 +10,7 @@ body {
   } */
   
   select, select:active,
-  input, input:active, input:focus,
-  .card, .jumbotron, 
+  input, input:active, input:focus, .jumbotron, 
   .form-control, .form-control:active, .form-control:focus,
   .form-select, .form-select:active, .form-select:focus {
     background-color:#303030;
@@ -36,7 +35,7 @@ body {
     bottom:0px;
   }
   
-  .container {
+  .container-fluid {
     margin-bottom: 100px;
     padding-bottom: 100px;
   }
@@ -45,6 +44,11 @@ body {
     display:none;
   }
 
-  .output .card {
+  .output, .card {
+    margin:15px;
+  }
+  
+  .card-body {
+    padding:15px;
     margin:15px;
   }

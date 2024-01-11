@@ -279,8 +279,6 @@ if ($action == "spinwheel") {
       $excludes[]     = $dice;
   }
 
-  echo "Spins: $spins<br>";
-
   if (count($items) < 1) {
     echo $output = "No items";
   }
