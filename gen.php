@@ -158,10 +158,11 @@ if (isset($_POST['numgenfrom']) && isset($_POST['numgento'])) {
 if (isset($_POST['rot'])) {
   if ($_POST['bruteforce'] == 1) {
     $alphabet = 26;
-    $strrot = "";
+    $strrot = "<table class='table table-sm table-primary'>";
     for ($i = 0; $i < $alphabet; $i++) {
-        $strrot .= "<br>".str_rot($_POST['rot'], $i);
+        $strrot .= "<tr><td>ROT$i</td> <td>".str_rot($_POST['rot'], $i)."</td></tr>";
     }
+    $strrot .= "</table>";
   }
   elseif (!empty($_POST['rotations'])) {
     $rotations = $_POST['rotations']+26;
@@ -170,7 +171,7 @@ if (isset($_POST['rot'])) {
     $rotations = 13;
     $strrot = str_rot($_POST['rot'], $rotations);
   }
-  echo "<b>Your string would be: </b>".$strrot;
+  echo formatOutput($strrot);
 }
 
 /* ───────────────────────────────────────────────────────────────────── */
@@ -237,22 +238,20 @@ if (in_array($cipher, openssl_get_cipher_methods()))
 /*                               Spin the wheel                               */
 /* -------------------------------------------------------------------------- */
 if ($action == "spinwheel") {
-  foreach ($_POST['wheelitem'] as $wheelitem) {
-    if (!empty($wheelitem)) {
-      $valid = true;
-    }
+
+  if (empty($_POST['wheelitem'])) {
+    die(alert("You must enter at least one item.", "danger"));
   }
 
-  if ($valid !== true) {
-    die("No items");
+  $wheelItems = $_POST['wheelitem'];
+  $countItems = count($wheelItems);
+
+  foreach ($wheelItems as $i => $wheelItem) {
+    $value          = trim($wheelItem);
   }
   
-  $wheelitems = count($_POST['wheelitem']);
-  $roll = mt_rand(0, $wheelitems-1);
-  $item = $_POST['wheelitem'][$roll];
-  while (empty($item)) {
-    $item = $_POST['wheelitem'][mt_rand(0, $wheelitems-1)];
-  }
+  $dice = mt_rand(0, $countItems-1);
+  $item = (!empty($wheelItems[$roll]) ? $wheelItems[$roll] : "Item #".$dice+1);
   echo formatOutput($item);
 
 }

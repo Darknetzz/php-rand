@@ -9,19 +9,29 @@
         <input type="hidden" name="action" value="spinwheel">
         <div class="wheelitems">
             <div class="form-floating mb-3 wheelitem">
-                <input type="text" name="wheelitem[]" class="form-control" name="item[]">
+                <input type="text" name="wheelitem[0]" class="form-control" placeholder="Item #1">
                 <label for="floatingInput">Item #1</label>
             </div>
             <div class="form-floating mb-3 wheelitem">
-                <input type="text" name="wheelitem[]" class="form-control" name="item[]">
+                <input type="text" name="wheelitem[1]" class="form-control" placeholder="Item #2">
                 <label for="floatingInput">Item #2</label>
             </div>
         </div>
         
         <div class="btn-group mb-3">
             <button type="button" class="btn btn-success rounded-circle mb-3" id="addtowheel"><?= icon("plus-circle") ?></button>
-            &nbsp;&nbsp;&nbsp;&nbsp;
             <button type="button" class="btn btn-danger rounded-circle mb-3" id="removefromwheel"><?= icon("dash-circle") ?></button>
+            <button type="button" class="btn btn-danger rounded-circle mb-3" id="clear"><?= icon("trash") ?></button>
+        </div>
+
+        <h4>Options</h4>
+        <div class="form-group mb-3">
+            <label>
+                <input type="checkbox" class="form-input mb-3"> Spin more than once
+            </label>
+            <label>
+                <input type="checkbox" class="form-input mb-3"> Force unique
+            </label>
         </div>
 
         <hr>
@@ -42,11 +52,11 @@
 
         var inputCount =($(".wheelitem").length);
         console.log("Adding: "+inputCount);
-
+        var placeholder = "Item #"+(inputCount+1);
         var input = `
         <div class="form-floating mb-3 wheelitem">
-            <input type="text" name="wheelitem[]" class="form-control" name="item[]">
-            <label for="floatingInput">Item #`+(inputCount+1)+`</label>
+            <input type="text" name="wheelitem[]" class="form-control" name="item[]" placeholder="`+placeholder+`">
+            <label for="floatingInput">`+placeholder+`</label>
         </div>
         `;
         $(".wheelitems").append(input);
@@ -68,6 +78,10 @@
         }
 
         console.log("New count: "+inputCount);
+    });
+
+    $("#clear").on("click", function() {
+        $(".wheelitem").remove();
     });
 
 </script>
