@@ -42,7 +42,29 @@ foreach (glob("modules/*.php") as $module) {
 <script>
 $( document ).ready(function() {
 
+  /* ───────────────────────────────────────────────────────────────────── */
+  /*                                navigate                               */
+  /* ───────────────────────────────────────────────────────────────────── */
+  function navigate(to) {
 
+    console.log("[navigate] Navigating to: "+to)
+
+    // Reset all nav links
+    var navLinks = $(".nav-link");
+    navLinks.prop("class", "link nav-link");
+
+    // Set this nav link as active
+    var navLink = $(`.nav-link[href='${to}']`);
+    navLink.prop("class", "link nav-link link-success active");
+    
+    $(".content").hide();
+    $(to).fadeIn();
+
+  }
+
+  /* ───────────────────────────────────────────────────────────────────── */
+  /*                             randomizeDice                             */
+  /* ───────────────────────────────────────────────────────────────────── */
   function randomizeDice() {
     var dice = [1, 2, 3, 4, 5, 6];
     var diceIcon = dice[Math.floor(Math.random()*dice.length)];
@@ -50,6 +72,9 @@ $( document ).ready(function() {
   }
   randomizeDice();
 
+  /* ───────────────────────────────────────────────────────────────────── */
+  /*                              Form submit                              */
+  /* ───────────────────────────────────────────────────────────────────── */
     //function submitForm(formname, responseid) {
     $(".form").submit(function(e) {
         e.preventDefault(); // avoid to execute the actual submit of the form.
@@ -96,37 +121,26 @@ $( document ).ready(function() {
       randomizeDice();
     });
 
+    /* ───────────────────────────────────────────────────────────────────── */
+    /*                      Navigation (and hash check)                      */
+    /* ───────────────────────────────────────────────────────────────────── */
     if (window.location.hash != '' && window.location.hash != undefined) {
-      var hash = window.location.hash;
+      // Hash is set on page load, so navigate to it
+      var hash      = window.location.hash;
       var afterhash = hash.replace('#','');
-      $(".content").hide();
-      $(hash).fadeIn(1000);
-      $(".nav-link").parent().prop("class", "");
-      $("#nav"+afterhash).parent().prop("class", "nav-item active");
+      navigate(hash);
       console.log("Hash detected: "+hash+", setting nav"+afterhash+" parent as the active tab.");
     } else {
-      // Hide everything, put first to avoid a split second of seeing everything | EDIT: Nevermind, putting hidden in html element works better, so the browser doesn't render it at all.
-      $(".content").hide();
-      // Start by only showing random string generator
-      $("#dashboard").fadeIn(1000);
-      console.log("Init with #rsgen");
+      navigate("#dashboard");
     }
 
-    // Handle navbar
-    $(".nav-link").click(function() {
-        var navLink = $(this);
-        var navItems = $(".nav-item");
-        var navItem = navLink.parent();
-
-        navItems.prop("class", "nav-item");
-        navItem.prop("class", "nav-item active");
-
-        // $(".nav-link").prop("class", "nav-link");
-        // $(this).prop("class", "nav-link active");
-
+    /* ───────────────────────────────────────────────────────────────────── */
+    /*                               Click link                              */
+    /* ───────────────────────────────────────────────────────────────────── */
+    $(".link").click(function() {
         var elementToShow = $(this).attr("href");
-        $(".content").hide();
-        $(elementToShow).fadeIn();
+
+        navigate(elementToShow);
 
         if (elementToShow == undefined) {
             console.log("unable to show "+elementToShow);

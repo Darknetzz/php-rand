@@ -187,20 +187,20 @@ function submitBtn(string $text = "Generate") {
     </button>';
 }
 
+/* ───────────────────────────────────────────────────────────────────── */
+/*                              listModules                              */
+/* ───────────────────────────────────────────────────────────────────── */
 function listModules() {
-  $navItems = "";
-
   foreach (glob("modules/*.php") as $module) {
 
     $name       = str_replace('!', '', basename($module, '.php'));
     $formalname = ucwords(str_replace('_', ' ', $name));
-    $navItems  .= '
-    <li class="nav-item">
-      <a class="nav-link" href="#'.$name.'" id="nav'.$name.'" data-show="'.$name.'">'.$formalname.'</a>
-    </li>
-    ';
+    $modules[]  = [
+      "formalName" => $formalname,
+      "name"       => $name
+    ];
   }
 
-  return $navItems;
+  return $modules;
 }
 ?>
