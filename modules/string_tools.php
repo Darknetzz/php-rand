@@ -58,43 +58,44 @@ echo '
 
   <form class="form" action="gen.php" method="POST" id="strtools">
 
-  <input type="hidden" name="action" value="strtools">
-  <div class="output" id="strtoolsresponse" name="string"></div>
+    <input type="hidden" name="action" value="strtools">
+    <input type="text" name="string" class="form-control" placeholder="Input string here">
+    <div class="output" id="strtoolsresponse" name="string"></div>
 
-  <?php
-  $stringTools = [
-    "Character" => [
-      "Reverse",
-      "Replace",
-      "Repeat",
-      "Shuffle",
-      "Slugify",
-    ],
-    "Case" => [
-      "Randomcase",
-      "Lowercase",
-      "Uppercase",
-      "Titlecase",
-      "Invertedcase",
-      "Snakecase",
-      "Kebabcase",
-    ],
-    "Misc" => [
-      "L33t5p34k",
-      "Regex",
-    ],
-  ];
+    <?php
+    $stringTools = [
+      "Character" => [
+        "Reverse",
+        "Replace",
+        "Repeat",
+        "Shuffle",
+        "Slugify",
+      ],
+      "Case" => [
+        "Randomcase",
+        "Lowercase",
+        "Uppercase",
+        "Titlecase",
+        "Invertedcase",
+        "Snakecase",
+        "Kebabcase",
+      ],
+      "Misc" => [
+        "L33t5p34k",
+        "Regex",
+      ],
+    ];
 
-  foreach ($stringTools as $cat => $tool) {
-    echo "<h4>$cat</h4>";
-    echo "<div class='btn-group'>";
-    foreach ($tool as $t) {
-      $postvar = strtolower($t);
-      echo "<button type='submit' name='action' value='$postvar' class='btn btn-success'>$t</button> ";
+    foreach ($stringTools as $cat => $tool) {
+      echo "<h4>$cat</h4>";
+      echo "<div class='btn-group'>";
+      foreach ($tool as $t) {
+        $postvar = strtolower($t);
+        echo "<input type='submit' name='tool' value='$postvar' class='btn btn-success'> ";
+      }
+      echo "</div>";
     }
-    echo "</div>";
-  }
-  ?>
+    ?>
   </form>
 
   <!-- <div id="strtoolsresponse"></div> -->

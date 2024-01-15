@@ -6,16 +6,17 @@
 
     <div class="card-body">
 
-        <div class="d-flex justify-content-between">
-            <div class="input-group mb-3">
-                    <button type="button" class="btn btn-outline-danger" id="removefromwheel"><?= icon("dash-circle") ?></button>
+        <div class="row d-flex justify-content-center">
+            <h5>Items</h5>
+            <div class="input-group col-3" style="width:30%">
+                    <button type="button" class="btn btn-secondary" id="removefromwheel"><?= icon("dash-circle") ?></button>
                     <!-- <div class="form-floating"> -->
                         <input type="number" id="itemsamt" class="form-control" placeholder="Number of items" min="1" max="100" value="2">
                         <!-- <label for="floatingInput">Number of items</label> -->
                     <!-- </div> -->
-                    <button type="button" class="btn btn-outline-success" id="addtowheel"><?= icon("plus-circle") ?></button>
+                    <button type="button" class="btn btn-success" id="addtowheel"><?= icon("plus-circle") ?></button>
             </div>
-            <div>
+            <div class="col">
                 <button type="button" class="btn btn-danger" id="clear"><?= icon("trash") ?></button>
             </div>
         </div>
@@ -41,7 +42,7 @@
             <div class="card-body">
                 <div class="form-group mb-3">
 
-                    <div class="mb-1 form-check">
+                    <div class="form-check">
                         <input type="hidden" name="morespins" value="0">
                         <input id="morespins" name="morespins" value="1" type="checkbox" class="form-input mb-3">
                         <label for="morespins">Spin more than once</label>
