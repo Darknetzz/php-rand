@@ -34,19 +34,7 @@
 //   ["OpenSSL"         , "openssl"] , 
 // ];
 
-$navItems = "";
-
-foreach (glob("modules/*.php") as $module) {
-
-  $name = str_replace('!', '', basename($module, '.php'));
-  $formalname = ucwords(str_replace('_', ' ', $name));
-
-  $navItems .= '
-  <li class="nav-item">
-    <a class="nav-link" href="#'.$name.'" id="nav'.$name.'" data-show="'.$name.'">'.$formalname.'</a>
-  </li>
-  ';
-}
+$navItems = listModules();
 
 // $navItems = "";
 // foreach ($modules as $module) {
