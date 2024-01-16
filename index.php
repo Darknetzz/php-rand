@@ -45,13 +45,13 @@ $( document ).ready(function() {
   /* ───────────────────────────────────────────────────────────────────── */
   /*                               setAction                               */
   /* ───────────────────────────────────────────────────────────────────── */
-  function setFormVal(form, action, name = "action") {
-    console.log("[setFormVal] Setting form value "+name+" to: "+action);
-    $(form).find(".setFormVal").remove();
+  function setFormVal(form, name = "action", value = "") {
+    console.log("[setFormVal] Setting form value "+name+" to: "+value);
+    $(form).find(".setFormVal[name="+name+"]").remove();
     var hiddenInput = $("<input>")
       .attr("class", "setFormVal")
       .attr("type", "hidden")
-      .attr("name", name).val(action);
+      .attr("name", name).val(value);
     $(form).append(hiddenInput);
   }
 
@@ -99,7 +99,7 @@ $( document ).ready(function() {
         var clickedGenBtn = $('.genBtn:focus');
         var name          = clickedGenBtn.length ? clickedGenBtn.attr("name") : "";
         var value         = clickedGenBtn.length ? clickedGenBtn.attr("value") : "";
-        setFormVal(form, value, name);
+        setFormVal(form, name, value);
 
         // Set action
         var actionInput = form.find("input[name=action]");
@@ -110,7 +110,7 @@ $( document ).ready(function() {
           console.error("Unable to submit form, form or action is undefined.");
           return;
         }
-        setFormVal(form, action);
+        setFormVal(form, "action", action);
 
         // Send form
         var url = form.attr('action');
