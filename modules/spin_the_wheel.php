@@ -74,7 +74,7 @@
         <hr>
 
         <div class="btn-group mb-3">
-            <?= submitBtn() ?>
+            <?= submitBtn("spinthewheel") ?>
         </div>
 
         <div class="responseDiv" id="spinwheelresponse"></div>
@@ -94,7 +94,6 @@
     $("#addtowheel").on("click", function(e) {
 
         var inputCount =($(".wheelitem").length);
-        console.log("Adding: "+inputCount);
         var placeholder = "Item #"+(inputCount+1);
         var input = `
         <div class="form-floating mb-3 wheelitem">
@@ -107,7 +106,6 @@
 
         $("#itemsamt").val(inputCount);
 
-        console.log("New count: "+inputCount);
     });
 
 
@@ -117,7 +115,6 @@
     $("#removefromwheel").on("click", function() {
 
         var inputCount = ($(".wheelitem").length);
-        console.log("Removing: "+inputCount);
 
         if (inputCount > 2) {
             $(".wheelitem").last().remove();
@@ -128,7 +125,6 @@
 
         $("#itemsamt").val(inputCount);
 
-        console.log("New count: "+inputCount);
     });
 
     /* ───────────────────────────────────────────────────────────────────── */

@@ -43,6 +43,20 @@ foreach (glob("modules/*.php") as $module) {
 $( document ).ready(function() {
 
   /* ───────────────────────────────────────────────────────────────────── */
+  /*                               setAction                               */
+  /* ───────────────────────────────────────────────────────────────────── */
+  function setAction(form, action) {
+    console.log("[setAction] Setting action to: "+action);
+    console.log("[setAction] Form data: "+$(form).serialize());
+    $(form).find("input[name=action]").remove();
+    var hiddenInput = $("<input>")
+      .attr("type", "hidden")
+      .attr("name", "action").val(action);
+    $(form).append(hiddenInput);
+  }
+
+
+  /* ───────────────────────────────────────────────────────────────────── */
   /*                                navigate                               */
   /* ───────────────────────────────────────────────────────────────────── */
   function navigate(to) {
@@ -50,11 +64,11 @@ $( document ).ready(function() {
     console.log("[navigate] Navigating to: "+to)
 
     // Reset all nav links
-    var navLinks = $(".nav-link");
+    var navLinks = $(".link.nav-link");
     navLinks.prop("class", "link nav-link");
 
     // Set this nav link as active
-    var navLink = $(`.nav-link[href='${to}']`);
+    var navLink = $(`.link.nav-link[href='${to}']`);
     navLink.prop("class", "link nav-link link-success active");
     
     $(".content").hide();
@@ -79,11 +93,11 @@ $( document ).ready(function() {
     $(".form").submit(function(e) {
         e.preventDefault(); // avoid to execute the actual submit of the form.
     
-        var form = $(this);
-        // var form = $("#"+formname);
+        var form    = $(this);
+        var action  = $(this).find('.genBtn').attr("value");
+        setAction(form, action);
         var url = form.attr('action');
-        var responseid = form.prop('id')+'response';
-        var responseObj = $("#"+responseid);
+        var responseObj = form.find(".responseDiv");
 
         var btnName = $("button[clicked=true]").prop("name");
         var btnValue = $("button[clicked=true]").val();
@@ -99,8 +113,6 @@ $( document ).ready(function() {
           }
         }
 
-        console.log("Form data: "+serializeForm);
-        console.log("Generating through "+form.prop('id')+" to "+responseid);
         $.ajax({
                type: "POST",
                url: url,

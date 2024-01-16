@@ -180,10 +180,11 @@ function spinWheel(?array $wheelItems = [], int $spins = 1, bool $unique = False
 /* ───────────────────────────────────────────────────────────────────── */
 /*                               submitBtn                               */
 /* ───────────────────────────────────────────────────────────────────── */
-function submitBtn(string $text = "Generate") {
+function submitBtn(string $value = "", string $name = "action", string $text = "Generate", bool $hasDice = True) {
+  $dice = ($hasDice) ? "<span class='dice'></span> " : "";
   return '
-    <button type="submit" class="btn btn-success btn-lg mb-3">
-      <span class="dice"></span> '.$text.'
+    <button name="'.$name.'" value="'.$value.'" type="submit" class="genBtn btn btn-success btn-lg mb-3">
+      '.$dice.' '.$text.'
     </button>';
 }
 

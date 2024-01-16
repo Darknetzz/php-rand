@@ -2,10 +2,28 @@
 header('Content-Type: text/html; charset=utf-8');
 
 require_once("functions.php");
+die("It works");
+/* ───────────────────────────────────────────────────────────────────── */
+/*                               Debug info                              */
+/* ───────────────────────────────────────────────────────────────────── */
+$rVars = trim(json_encode($_REQUEST, JSON_PRETTY_PRINT));
+$debug = "
+  <a class='btn btn-warning' data-bs-toggle='collapse' data-bs-target='#debugCard' aria-expanded='false' aria-controls='debugCard'>".icon('bug-fill')."</a>
+  <div class='collapse' id='debugCard' style='margin:15px;'>
+    <div class='card border-warning'>
+      <h4 class='card-header text-bg-warning'>
+        ".icon('bug-fill')." Debug
+      </h4>
+      <div class='card-body'>
+          <pre>$rVars</pre>
+      </div>
+    </div>
+  </div>
+";
 
 // echo "<hr>";
 if (!isset($_POST['action'])) {
-  die("No action specified.");
+  die("No action specified. $debug");
 }
 
 $action = $_POST['action'];
@@ -75,7 +93,7 @@ if ($action == 'repeatstr') {
 /* ───────────────────────────────────────────────────────────────────── */
 /*                                  Base                                 */
 /* ───────────────────────────────────────────────────────────────────── */
-if ($action == 'base') {
+if ($action == 'base64encode' || $action == 'base64decode' || $action == 'base') {
   if (!isset($_POST['from']) || $_POST['from'] == "text") {
     $from = 36;
   } else {
@@ -109,21 +127,21 @@ if (isset($_POST['hash'])) {
 /* ───────────────────────────────────────────────────────────────────── */
 /*                                bin2hex                                */
 /* ───────────────────────────────────────────────────────────────────── */
-if (isset($_POST['bin2hex'])) {
-    $bin2hex = bin2hex($_POST['bin2hex']);
-    echo "<b>Your hex string would be:</b> $bin2hex";
-}
+if ($action == 'bin2hex' || $action == 'hex2bin') {
+  $input = $_POST['binhex'];
+  $output = bin2hex($_POST['binhex']);
 
-/* ───────────────────────────────────────────────────────────────────── */
-/*                                hex2bin                                */
-/* ───────────────────────────────────────────────────────────────────── */
-if (isset($_POST['hex2bin'])) {
-    if (ctype_xdigit($_POST['hex2bin']) && (strlen($_POST['hex2bin']) % 2) == 0) {
-    $hex2bin = hex2bin($_POST['hex2bin']);
-    echo "<b>Your binary string would be:</b> $hex2bin";
+  if ($action == 'bin2hex') {
+    $output = bin2hex($input);
+  }
+  if ($action == 'hex2bin') {
+    if (!ctype_xdigit($input) || (strlen($input) % 2) != 0) {
+      $output = "<b>Input must only include hexadecimal and have an even length.</b>";
     } else {
-    echo "<b>Input must only include hexadecimal and have an even length.</b>";
+      $output = hex2bin($input);
     }
+  }
+  echo formatOutput($output);
 }
 
 /* ───────────────────────────────────────────────────────────────────── */
@@ -304,21 +322,5 @@ if ($action == "strtools") {
   echo formatOutput($string);
 }
 
-/* ───────────────────────────────────────────────────────────────────── */
-/*                               Debug info                              */
-/* ───────────────────────────────────────────────────────────────────── */
-$postVars = trim(json_encode($_POST, JSON_PRETTY_PRINT));
-echo "
-  <a class='btn btn-warning' data-bs-toggle='collapse' data-bs-target='#debugCard' aria-expanded='false' aria-controls='debugCard'>".icon('bug-fill')."</a>
-  <div class='collapse' id='debugCard' style='margin:15px;'>
-    <div class='card border-warning'>
-      <h4 class='card-header text-bg-warning'>
-        ".icon('bug-fill')." Debug
-      </h4>
-      <div class='card-body'>
-          <pre>$postVars</pre>
-      </div>
-    </div>
-  </div>
-";
+
 ?>

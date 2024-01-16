@@ -5,7 +5,6 @@
 <span class="description">This will generate a string with the charset defined.</span>
 <hr>
 <form class="form" action="gen.php" method="POST" id="stringgen">
-  <input type="hidden" name="action" value="stringgen">
   <input type="hidden" name="n" value="0">
   <input type="hidden" name="l" value="0">
   <input type="hidden" name="u" value="0">
@@ -41,7 +40,7 @@ echo '
     </div>
   </div>
 </div>
-'.submitBtn();
+'.submitBtn("stringgen");
 
 ?>
 </form>
@@ -58,8 +57,7 @@ echo '
 
   <form class="form" action="gen.php" method="POST" id="strtools">
 
-    <input type="hidden" name="action" value="strtools">
-    <input type="text" name="string" class="form-control" placeholder="Input string here">
+    <textarea type="text" name="string" class="form-control" placeholder="Input string here"></textarea>
     <div class="output" id="strtoolsresponse" name="string"></div>
 
     <?php
@@ -91,7 +89,7 @@ echo '
       echo "<div class='btn-group'>";
       foreach ($tool as $t) {
         $postvar = strtolower($t);
-        echo "<input type='submit' name='tool' value='$postvar' class='btn btn-success'> ";
+        echo submitBtn($postvar, "action", $t, hasDice: False);
       }
       echo "</div>";
     }
