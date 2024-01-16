@@ -2,7 +2,6 @@
 header('Content-Type: text/html; charset=utf-8');
 
 require_once("functions.php");
-die("It works");
 /* ───────────────────────────────────────────────────────────────────── */
 /*                               Debug info                              */
 /* ───────────────────────────────────────────────────────────────────── */
@@ -21,9 +20,10 @@ $debug = "
   </div>
 ";
 
+echo $debug;
 // echo "<hr>";
 if (!isset($_POST['action'])) {
-  die("No action specified. $debug");
+  die("No action specified.");
 }
 
 $action = $_POST['action'];
@@ -118,10 +118,13 @@ if ($action == 'base64encode' || $action == 'base64decode' || $action == 'base')
 /*                                  Hash                                 */
 /* ───────────────────────────────────────────────────────────────────── */
 if (isset($_POST['hash'])) {
-  $types = ["SHA512", "SHA256", "SHA1", "MD5"];
+  $types  = ["SHA512", "SHA256", "SHA1", "MD5"];
+  $output = "<table class='table border border-success'>";
   foreach ($types as $type) {
-    echo "<b>$type:</b> ".hash($type, $_POST['hash'])."<br>";
+    $output .= "<tr><td><b>$type:</b></td> <td class='text-break'>".hash($type, $_POST['hash'])."</td></tr>";
   }
+  $output .= "</table>";
+  echo formatOutput("Input: $_POST[hash]<hr>".$output);
 }
 
 /* ───────────────────────────────────────────────────────────────────── */
@@ -149,25 +152,19 @@ if ($action == 'bin2hex' || $action == 'hex2bin') {
 /* ───────────────────────────────────────────────────────────────────── */
 if (isset($_POST['numgenfrom']) && isset($_POST['numgento'])) {
     $numgenfrom = $_POST['numgenfrom'];
-    $numgento = $_POST['numgento'];
-    if (strlen($numgenfrom) > 20 || strlen($numgento) > 20) {
-        die("Please use numbers with less than 20 digits.");
-    } 
-    if (is_numeric($numgenfrom) === FALSE || is_numeric($numgento) === FALSE) {
-        die("All values must be numeric!");
+    $numgento   = $_POST['numgento'];
+    $enableSeed = (isset($_POST['seed']) ? True : False);
+    $seed       = Null;
+    if ($enableSeed !== False) {
+      $seed = $_POST['numgenseed'];
     }
-    $seed = "None";
-    if (!empty($_POST['numgenseed']) && $_POST['seed'] == 1) {
-        $seed = $_POST['numgenseed'];
-        if (!ctype_digit(strval($seed)) || strlen($seed) > 17) {
-            echo "<b>Warning: Seed was not used because it's not a valid seed.</b><br>";
-        } else {
-            mt_srand($seed);
-        }
-    }
+    $gen = numGen($numgenfrom, $numgento, $seed);
   $gen = mt_rand($numgenfrom, $numgento);
-  echo "Your number is <h3>$gen</h3><br>
-  Seed: $seed";
+  echo formatOutput(
+    "$gen
+    <hr>
+    Seed: $seed"
+  );
 }
 
 /* ───────────────────────────────────────────────────────────────────── */
@@ -176,9 +173,9 @@ if (isset($_POST['numgenfrom']) && isset($_POST['numgento'])) {
 if (isset($_POST['rot'])) {
   if ($_POST['bruteforce'] == 1) {
     $alphabet = 26;
-    $strrot = "<table class='table table-sm table-primary'>";
+    $strrot = "<table>";
     for ($i = 0; $i < $alphabet; $i++) {
-        $strrot .= "<tr><td>ROT$i</td> <td>".str_rot($_POST['rot'], $i)."</td></tr>";
+        $strrot .= "<tr><td>$i:</td> <td>=</td> <td>".str_rot($_POST['rot'], $i)."</td></tr>";
     }
     $strrot .= "</table>";
   }

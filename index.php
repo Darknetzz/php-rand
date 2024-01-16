@@ -93,8 +93,11 @@ $( document ).ready(function() {
     $(".form").submit(function(e) {
         e.preventDefault(); // avoid to execute the actual submit of the form.
     
-        var form    = $(this);
-        var action  = $(this).find('.genBtn').attr("value");
+        var form          = $(this);
+
+        var clickedGenBtn = $('.genBtn[name=action]:focus');
+        var action        = clickedGenBtn.length ? clickedGenBtn.attr("value") : "";
+
         setAction(form, action);
         var url = form.attr('action');
         var responseObj = form.find(".responseDiv");

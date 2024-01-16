@@ -6,12 +6,12 @@
   <input type="hidden" name="action" value="rot">
   <?php
   if (isset($_POST['rot'])) {
-  $rot = $_POST['rot'];
-  $rotations = $_POST['rotations'];
+    $rot = $_POST['rot'];
+    $rotations = $_POST['rotations'];
   }
   else {
-  $rot = NULL;
-  $rotations = NULL;
+    $rot = NULL;
+    $rotations = NULL;
   }
   echo '
   <div class="form-floating mb-3">
@@ -25,8 +25,8 @@
   echo '<label><input type="checkbox" name="bruteforce" id="rotbruteforce" value="1"> Bruteforce</label><br>';
   ?>
   <input type="submit" name="rot" value="Generate" class="btn btn-success">
+  <div class="responseDiv" id="rotresponse"></div>
 </form>
- <div class="responseDiv" id="rotresponse"></div>
 </div>
 </div>
 </div>

@@ -19,16 +19,17 @@ $navbar = '
     <span class="navbar-toggler-icon"></span>
   </button>
   <div class="collapse navbar-collapse" id="navbarNav">
+    <div class="d-flex justify-content-between w-100">
+      <ul class="navbar-nav">
+        '.$navItems.'
+      </ul>
 
-    <ul class="navbar-nav">
-      '.$navItems.'
-    </ul>
-
-    <ul class="navbar-nav">
-      <li class="nav-item">
-        <a class="nav-link" target="_blank" href="https://github.com/Darknetzz/phprand"><i class="bi bi-github"></i> GitHub</a>
-      </li>
-    </ul>
+      <ul class="navbar-nav mx-2">
+        <li class="nav-item">
+          <a class="nav-link link-info" target="_blank" href="https://github.com/Darknetzz/phprand"><i class="bi bi-github"></i> GitHub</a>
+        </li>
+      </ul>
+    </div>
 
   </div>
 </nav>

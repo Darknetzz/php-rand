@@ -8,8 +8,8 @@
           <?= submitBtn("bin2hex", "action", "bin2hex", hasDice: False) ?>
           <?= submitBtn("hex2bin", "action", "hex2bin", hasDice: False) ?>
         </div>
+        <div class="responseDiv" data-formid="binhex"></div>
       </form>
-      <div class="responseDiv" data-formid="binhex"></div>
     </div>
   </div>
 </div>

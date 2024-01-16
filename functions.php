@@ -21,8 +21,9 @@ function icon($icon, $rem = 1, $color = Null) {
 function alert($message, $type = 'success') {
   return "
   <div class='alert alert-{$type} alert-dismissible fade show' style='margin:15px;' role='alert'>
-  {$message}
-  <button type='button' class='btn-close' data-bs-dismiss='alert' aria-label='Close'></button>
+    {$message}
+    <button type='button' class='btn-close' data-bs-dismiss='alert' aria-label='Close'></button>
+  </div>
   ";
 }
 
@@ -78,9 +79,9 @@ function formatOutput($response) {
   }
   return "
   <div class='output'>
-    <h5 class='p-3 bg-success-subtle text-success-emphasis border border-primary-subtle rounded-3' style='margin:15px;'>
+    <h6 class='p-3 bg-success-subtle text-success-emphasis border border-primary-subtle rounded-3' style='margin:15px;'>
       ".$response."
-    </h5>
+    </h6>
   </div>
   ";
 }
@@ -203,5 +204,34 @@ function listModules() {
   }
 
   return $modules;
+}
+
+
+/* ───────────────────────────────────────────────────────────────────── */
+/*                                 numGen                                */
+/* ───────────────────────────────────────────────────────────────────── */
+function numGen(int $from, int $to, string $seed = Null) {
+  $from = (int)$from;
+  $to   = (int)$to;
+
+  if (strlen($from) > 20 || strlen($to) > 20) {
+    die("Please use numbers with less than 20 digits.");
+  } 
+  if (is_numeric($from) === FALSE || is_numeric($to) === FALSE) {
+      die("All values must be numeric!");
+  }
+  if (!empty($seed)) {
+      if (!ctype_digit(strval($seed)) || strlen($seed) > 17) {
+          echo alert("<b>Warning: Seed was not used because it's not a valid seed.</b><br>", "warning");
+      } else {
+          mt_srand($seed);
+      }
+  }
+
+  if ($from > $to) {
+    return alert("The first number must be smaller than the second number.", "danger");
+  }
+  $num = mt_rand($from, $to);
+  return $num;
 }
 ?>

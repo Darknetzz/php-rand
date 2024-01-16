@@ -18,9 +18,9 @@
             <input type="text" name="numgenseed" class="form-control" value="" placeholder="Optional">
             </div>
             <br>
-            <input type="submit" value="Generate" class="btn btn-success">
+            <?= submitBtn("numgen") ?>
+            <div class="responseDiv" id="numgenresponse"></div>
         </form>
-    <div class="responseDiv" id="numgenresponse"></div>
     </div>
 </div>
 </div>

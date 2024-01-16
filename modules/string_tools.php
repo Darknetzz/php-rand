@@ -43,9 +43,9 @@ echo '
 '.submitBtn("stringgen");
 
 ?>
+<div class="responseDiv" id="stringgenresponse"></div>
 </form>
 
-<div class="responseDiv" id="stringgenresponse"></div>
 </div>
 </div>
 

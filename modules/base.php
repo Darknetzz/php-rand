@@ -4,8 +4,8 @@
 <div class="card card-body">
 <span class="description">Input any text or base encoded string below, and this tool will convert it to all other base formats.</span>
 <form class="form" action="gen.php" method="POST" id="base">
-  <input type="text" name="base" class="form-control">
-  <select name="from" class="form-select">
+  <input type="text" name="base" class="form-control mb-2">
+  <select name="from" class="form-select mb-2">
     <option value="text" disabled selected>Please choose input type [default: text/base36]...</option>
     <?php
     for ($i = 2; $i <= 36; $i++) {
@@ -19,8 +19,8 @@
     ?>
   </select>
   <?= submitBtn("base", "action", "Convert", hasDice: False) ?>
+  <div class="responseDiv" id="baseresponse"></div>
 </form>
- <div class="responseDiv" id="baseresponse"></div>
 </div>
 </div>
 </div>
