@@ -73,7 +73,7 @@
                 <textarea type="text" id="strtoolsinput" name="string" class="form-control mb-3"
                     placeholder="Input string here"></textarea>
 
-                <div class="responseDiv" id="strtoolsresponse" name="string"></div>
+                <div class="responseDiv" id="strtoolsresponse"></div>
 
                 <div class="card border border-secondary">
                     <h4 class="card-header text-bg-secondary">Options</h4>
@@ -203,15 +203,22 @@ $("#strtools").on("submit", async function() {
   console.log("outputToTextbox: "+outputToTextbox);
 
   if (outputToTextbox) {
-    $("#strtoolsresponse").hide();
+    var resdiv = $("#strtoolsresponse");
+
+    $(this).prepend(`<div class="loading"><?= alert(spinner("Generating..."), "primary") ?></div>`);
+    $(this).children().find("button").attr("disabled", true);
+    resdiv.hide();
+
     var output = await new Promise(function(resolve, reject) {
       // Simulate an asynchronous operation
       setTimeout(function() {
-        resolve($("#strtoolsresponse").text());
-      }, 500); // Replace with your actual asynchronous operation
+        resolve(resdiv.text());
+        $(".loading").remove();
+      }, 1000); // Replace with your actual asynchronous operation
     });
 
     console.log("Writing output ("+output+") to textbox");
+    $(this).children().find("button").attr("disabled", false);
     $("#strtoolsinput").val(output);
     return false;
   }

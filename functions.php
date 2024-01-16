@@ -29,6 +29,20 @@ function alert($message, $type = 'success') {
   ";
 }
 
+/* ───────────────────────────────────────────────────────────────────── */
+/*                                spinner                                */
+/* ───────────────────────────────────────────────────────────────────── */
+function spinner(string $text, string $type = "border", string $color = "primary") {
+  return '
+      <div class="spinner-container">
+          <div class="spinner-'.$type.' text-'.$type.'" role="status">
+              <span class="visually-hidden">'.$text.'</span>
+          </div>
+          <span class="spinner-text">'.$text.'</span>
+      </div>
+  ';
+}
+
 /**
  * Cleans a string.
  *
