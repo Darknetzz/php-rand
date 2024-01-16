@@ -267,15 +267,22 @@ if ($action == "spinwheel") {
 /* -------------------------------------------------------------------------- */
 /*                                String tools                                */
 /* -------------------------------------------------------------------------- */
-if ($action == "strtools") {
-  $string = $_POST['string'];
-  $action = $_POST['tool'];
+if ($action == "stringtools") {
+  $string = (!empty($_POST['string']) ? $_POST['string'] : "");
+  $tool   = (!empty($_POST['tool'])  ? $_POST['tool']   : "");
+  if (empty($string)) {
+    echo formatOutput("You must enter a string.", type: "danger");
+  }
+  if (empty($tool)) {
+    echo formatOutput("You must select a tool.", type: "danger");
+  }
 
   /* -------------------------------------------------------------------------- */
   /*                                   reverse                                  */
   /* -------------------------------------------------------------------------- */
   if ($action == "reverse") {
     $string = strrev($string);
+    echo formatOutput($string);
   }
 
   
@@ -285,6 +292,7 @@ if ($action == "strtools") {
   /* -------------------------------------------------------------------------- */
   if ($action == "shuffle") {
     $string = str_shuffle($string);
+    echo formatOutput($string);
   }
 
   /* -------------------------------------------------------------------------- */
@@ -301,6 +309,7 @@ if ($action == "strtools") {
       'B' => '6',
     ];
     $string = str_ireplace(array_keys($translate), array_values($translate), $string);
+    echo formatOutput($string);
     // $string = strtr($string, $translate);
   }
 
@@ -315,9 +324,8 @@ if ($action == "strtools") {
         $string[$i] = strtoupper($char);
       }
     }
+    echo formatOutput($string);
   }
-
-  echo formatOutput($string);
 }
 
 echo $debug;

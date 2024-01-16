@@ -5,13 +5,15 @@
  * 
  */
 function icon($icon, $rem = 1, $color = Null) {
+  $style = "style='";
   if ($color !== Null) {
-    $color = "color: {$color}";
+    $style .= "color: {$color};";
   }
   if ($rem !== 1) {
-    $rem = "font-size: {$rem}rem";
+    $style .= "font-size: {$rem}rem;";
   }
-  return "<i class='bi bi-{$icon}' style='{$rem}; {$color};'></i>";
+  $style .= "'";
+  return "<i class='bi bi-{$icon}' {$style}'></i>";
 }
 
 /**
