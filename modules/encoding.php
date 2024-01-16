@@ -10,8 +10,8 @@
   <!-- <form class="form" action="gen.php" method="POST">
     <input type="text" name="encode" class="form-control mb-2" placeholder="Text to encode/decode">
     <div class="btn-group">
-      <?= submitBtn("base64encode", "action", "Base64 Encode", hasDice: False) ?>
-      <?= submitBtn("base64decode", "action", "Base64 Decode", hasDice: False) ?>
+      <?= submitBtn("base64encode", "action", "Base64 Encode", "lock-fill") ?>
+      <?= submitBtn("base64decode", "action", "Base64 Decode", "unlock-fill") ?>
     </div>
   </form>
   <div class="responseDiv" id="encodingresponse"></div> -->

@@ -20,7 +20,6 @@ $debug = "
   </div>
 ";
 
-echo $debug;
 // echo "<hr>";
 if (!isset($_POST['action'])) {
   die("No action specified.");
@@ -131,20 +130,22 @@ if (isset($_POST['hash'])) {
 /*                                bin2hex                                */
 /* ───────────────────────────────────────────────────────────────────── */
 if ($action == 'bin2hex' || $action == 'hex2bin') {
-  $input = $_POST['binhex'];
+  $input  = $_POST['binhex'];
   $output = bin2hex($_POST['binhex']);
+  $type   = "success";
 
   if ($action == 'bin2hex') {
     $output = bin2hex($input);
   }
   if ($action == 'hex2bin') {
     if (!ctype_xdigit($input) || (strlen($input) % 2) != 0) {
+      $type   = "danger";
       $output = "<b>Input must only include hexadecimal and have an even length.</b>";
     } else {
       $output = hex2bin($input);
     }
   }
-  echo formatOutput($output);
+  echo formatOutput($output, type: $type);
 }
 
 /* ───────────────────────────────────────────────────────────────────── */
@@ -159,12 +160,12 @@ if (isset($_POST['numgenfrom']) && isset($_POST['numgento'])) {
       $seed = $_POST['numgenseed'];
     }
     $gen = numGen($numgenfrom, $numgento, $seed);
-  $gen = mt_rand($numgenfrom, $numgento);
-  echo formatOutput(
-    "$gen
-    <hr>
-    Seed: $seed"
-  );
+    echo formatOutput(
+      "
+      $gen
+      <hr>
+      Seed: $seed"
+    );
 }
 
 /* ───────────────────────────────────────────────────────────────────── */
@@ -175,7 +176,7 @@ if (isset($_POST['rot'])) {
     $alphabet = 26;
     $strrot = "<table>";
     for ($i = 0; $i < $alphabet; $i++) {
-        $strrot .= "<tr><td>$i:</td> <td>=</td> <td>".str_rot($_POST['rot'], $i)."</td></tr>";
+        $strrot .= "<tr><td><b>$i</b></td> <td>:</td> <td>".str_rot($_POST['rot'], $i)."</td></tr>";
     }
     $strrot .= "</table>";
   }
@@ -319,5 +320,5 @@ if ($action == "strtools") {
   echo formatOutput($string);
 }
 
-
+echo $debug;
 ?>

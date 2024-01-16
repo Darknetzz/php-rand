@@ -18,7 +18,7 @@
     }
     ?>
   </select>
-  <?= submitBtn("base", "action", "Convert", hasDice: False) ?>
+  <?= submitBtn("base", "action", "Convert", "arrow-repeat") ?>
   <div class="responseDiv" id="baseresponse"></div>
 </form>
 </div>

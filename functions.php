@@ -73,17 +73,23 @@ function returnClean($randomString) {
  * @param string $response The response to print.
  * @return void
  */
-function formatOutput($response) {
+function formatOutput($response, $size = 6, $type = "success") {
+
   if (is_array($response)) {
     $response = json_encode($response, JSON_PRETTY_PRINT);
   }
-  return "
-  <div class='output'>
-    <h6 class='p-3 bg-success-subtle text-success-emphasis border border-primary-subtle rounded-3' style='margin:15px;'>
-      ".$response."
-    </h6>
-  </div>
+
+  if (empty($response)) {
+    $response = "No output";
+  }
+
+  $response = "
+  <h$size class='output bg-$type-subtle text-$type-emphasis rounded-3' style='padding:20px;'>
+      {$response}
+  </h$size>
   ";
+
+  return $response;
 }
 
 /**
@@ -181,11 +187,11 @@ function spinWheel(?array $wheelItems = [], int $spins = 1, bool $unique = False
 /* ───────────────────────────────────────────────────────────────────── */
 /*                               submitBtn                               */
 /* ───────────────────────────────────────────────────────────────────── */
-function submitBtn(string $value = "", string $name = "action", string $text = "Generate", bool $hasDice = True) {
-  $dice = ($hasDice) ? "<span class='dice'></span> " : "";
+function submitBtn(string $value = "", string $name = "action", string $text = "Generate", string $icon = "dice", string $size = "lg") {
+  $icon = ($icon == "dice") ? "<span class='dice'></span> " : icon($icon);
   return '
-    <button name="'.$name.'" value="'.$value.'" type="submit" class="genBtn btn btn-success btn-lg mb-3">
-      '.$dice.' '.$text.'
+    <button name="'.$name.'" value="'.$value.'" type="submit" class="genBtn btn btn-success btn-'.$size.' mb-3">
+      '.$icon.' '.$text.'
     </button>';
 }
 

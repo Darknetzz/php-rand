@@ -20,11 +20,18 @@
   </div>
 
   ';
-  echo '<input type="number" name="rotations" id="rotations" class="form-control" value="'.$rotations.'" placeholder="Optional: Amount of rotations (13 default)">';
+  echo '<input type="number" name="rotations" id="rotations" class="form-control mb-1" value="'.$rotations.'" placeholder="Optional: Amount of rotations (13 default)" style="display:none;">';
   echo '<input type="hidden" name="bruteforce" value="0">';
-  echo '<label><input type="checkbox" name="bruteforce" id="rotbruteforce" value="1"> Bruteforce</label><br>';
+  echo '
+
+  <div class="form-check form-switch">
+    <input class="form-check-input" type="checkbox" name="bruteforce" id="rotbruteforce" value="1" role="switch" checked>
+    <label class="form-check-label" for="rotbruteforce">Bruteforce</label>
+  </div>
+
+  <br>';
+  echo submitBtn("rot", "action", "Generate", "arrow-repeat")
   ?>
-  <input type="submit" name="rot" value="Generate" class="btn btn-success">
   <div class="responseDiv" id="rotresponse"></div>
 </form>
 </div>

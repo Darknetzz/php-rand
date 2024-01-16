@@ -89,7 +89,7 @@ echo '
       echo "<div class='btn-group'>";
       foreach ($tool as $t) {
         $postvar = strtolower($t);
-        echo submitBtn($postvar, "action", $t, hasDice: False);
+        echo submitBtn($postvar, "action", $t, "arrow-repeat", "sm");
       }
       echo "</div>";
     }

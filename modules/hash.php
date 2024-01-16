@@ -4,7 +4,7 @@
 <div class="card card-body">
 <form class="form" action="gen.php" method="POST" id="hasher">
   <input type="text" name="hash" class="form-control mb-2">
-  <?= submitBtn("hasher", "action", "Hash", hasDice: False) ?>
+  <?= submitBtn("hasher", "action", "Hash", "key-fill") ?>
   <div class="responseDiv" id="hasherresponse"></div>
 </form>
 </div>
