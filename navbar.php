@@ -15,7 +15,7 @@ foreach ($modules as $module) {
 $navbar = '
 <nav class="navbar ps-3 navbar-expand-lg navbar-dark bg-dark">
   <a class="navbar-brand" href="index.php">RAND</a>
-  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+  <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
     <span class="navbar-toggler-icon"></span>
   </button>
   <div class="collapse navbar-collapse" id="navbarNav">
@@ -30,7 +30,6 @@ $navbar = '
         </li>
       </ul>
     </div>
-
   </div>
 </nav>
 ';

@@ -11,11 +11,6 @@
             <span class="description">This will generate a string with the charset defined.</span>
             <hr>
             <form class="form" action="gen.php" method="POST" id="stringgen">
-                <input type="hidden" name="n" value="0">
-                <input type="hidden" name="l" value="0">
-                <input type="hidden" name="u" value="0">
-                <input type="hidden" name="s" value="0">
-                <input type="hidden" name="c" value="0">
 
                 <div class="input-group mb-3">
                     <!-- <span class="input-group-text">Length</span> -->
@@ -26,28 +21,66 @@
                 </div>
 
                 <?php
+                $opts = [
+                  "n" => [
+                    "desc" =>"Contain numbers",
+                    "checked" => "checked",
+                    "chars" => "",
+                  ],
+                  "l" => [
+                    "desc" =>"Contain lowercase letters",
+                    "checked" => "checked",
+                    "chars" => "",
+                  ],
+                  "u" => [
+                    "desc" =>"Contain uppercase letters", 
+                    "checked" => "checked",
+                    "chars" => "",
+                  ],
+                  "s" => [
+                    "desc" =>"Contain symbols", 
+                    "checked" => "",
+                    "chars" => "",
+                  ],
+                  "e" => [
+                    "desc" =>"Contain extended symbols", 
+                    "checked" => "",
+                    "chars" => "",
+                  ],
+                  "c" => [
+                    "desc" =>"Custom characters", 
+                    "checked" => "",
+                    "chars" => "",
+                  ],
+                ];
+
                 echo '
                 <div class="card border-secondary">
-                  <h5 class="card-header text-bg-secondary">Options</h5>
-                  <div class="card-body">
-                    <label><input type="checkbox" name="n" value="1" checked> Contain numbers</label> <font color="grey">0-9</font><br>
-                    <label><input type="checkbox" name="l" value="1" checked> Contain lowercase letters</label> <font color="grey">a-z</font><br>
-                    <label><input type="checkbox" name="u" value="1" checked> Contain uppercase letters</label> <font color="grey">A-Z</font><br>
-                    <label><input type="checkbox" name="s" value="1"> Contain symbols</label> <font color="grey">!#¤%&\/()=?;:-_.,\'"*^<>{}[]@~+´`</font><br>
-                    <label><input type="checkbox" name="e" value="1"> Contain extended symbols</label> <font color="grey">ƒ†‡™•</font><br>
-                    <label><input type="checkbox" name="c" id="c" value="1"> Custom characters</label><br>
-                    <div id="cchars" style="display:none;">
-                      <textarea class="form-control border-secondary" name="cchars" placeholder="Input custom characters here"></textarea>
-                      <span class="form-text">
-                        Your custom characters will be appended to the character set.<br>
-                        If you want to generate a string that contains only your custom characters,
-                        uncheck all other options.
-                      </span>
-                    </div>
-                  </div>
+                <h5 class="card-header text-bg-secondary">Options</h5>
+                <div class="card-body">    
+                ';
+                foreach ($opts as $opt => $data) {
+                  $checked  = $data["checked"];
+                  $desc     = $data["desc"];
+                  echo '<input type="hidden" name="'.$opt.'" value="0">';
+                  echo '<label><input type="checkbox" name="'.$opt.'" value="1" '.$checked.'> '.$desc.'</label><br>';
+                }
+                echo '
+                <div id="cchars" style="display:none;">
+                <textarea class="form-control border-secondary" name="cchars" placeholder="Input custom characters here"></textarea>
+                <span class="form-text">
+                  Your custom characters will be appended to the character set.<br>
+                  If you want to generate a string that contains only your custom characters,
+                  uncheck all other options.
+                </span>
                 </div>
-                '.submitBtn("stringgen");
+                </div>
+                </div>
+                ';
                 ?>
+
+               
+                <?= submitBtn("stringgen") ?>
                 <div class="responseDiv" id="stringgenresponse"></div>
             </form>
         </div>
@@ -71,10 +104,12 @@
                 <input type="hidden" name="action" value="stringtools">
 
                 <textarea type="text" id="strtoolsinput" name="string" class="form-control mb-3"
-                    placeholder="Input string here"></textarea>
+                    style="height:200px;" placeholder="Input string here"></textarea>
 
                 <div class="responseDiv" id="strtoolsresponse"></div>
-
+                <button class="btn btn-secondary" id="undo"><?= icon("arrow-counterclockwise") ?> Undo</button>
+                <button class="btn btn-secondary" id="clear"><?= icon("trash") ?> Clear</button>
+                
                 <div class="card border border-secondary">
                     <h4 class="card-header text-bg-secondary">Options</h4>
                     <div class="card-body">
@@ -106,6 +141,7 @@
                                     placeholder="Replace">
                                 <label for="replaceReplace">Replace</label>
                             </div>
+                            <?= submitBtn("replace", "tool", "Replace", "arrow-repeat", "sm") ?>
                         </div>
 
                         <!--
@@ -130,34 +166,109 @@
                         <?php
       $stringTools = [
         "Character" => [
-          "Reverse",
-          "Shuffle",
-          "Slugify",
+          [
+            "name" => "Reverse",
+            "icon" => "arrow-left",
+            "value" => "reverse",
+            "tooltip" => "Reverse the string"
+          ],
+          [
+            "name" => "Repeat",
+            "icon" => "repeat",
+            "value" => "repeat",
+            "tooltip" => "Repeat the string"
+          ],
+          [
+            "name" => "Shuffle",
+            "icon" => "dice",
+            "value" => "shuffle",
+            "tooltip" => "Shuffle the characters in the string"
+          ],
+          [
+            "name" => "Slugify",
+            "icon" => "code-slash",
+            "value" => "slugify",
+            "tooltip" => "Convert the string to a URL-friendly slug"
+          ],
         ],
         "Case" => [
-          "Randomcase",
-          "Lowercase",
-          "Uppercase",
-          "Titlecase",
-          "Invertedcase",
-          "Snakecase",
-          "Kebabcase",
+          [
+            "name" => "Randomcase",
+            "icon" => "shuffle",
+            "value" => "randomcase",
+            "tooltip" => "Randomly change the case of characters in the string"
+          ],
+          [
+            "name" => "Lowercase",
+            "icon" => "alphabet",
+            "value" => "lowercase",
+            "tooltip" => "Convert the string to lowercase"
+          ],
+          [
+            "name" => "Uppercase",
+            "icon" => "alphabet-uppercase",
+            "value" => "uppercase",
+            "tooltip" => "Convert the string to uppercase"
+          ],
+          [
+            "name" => "Titlecase",
+            "icon" => "type",
+            "value" => "titlecase",
+            "tooltip" => "Convert the string to title case"
+          ],
+          [
+            "name" => "Invertedcase",
+            "icon" => "arrow-down-up",
+            "value" => "invertedcase",
+            "tooltip" => "Invert the case of characters in the string"
+          ],
+          [
+            "name" => "Camelcase",
+            "icon" => "c-square",
+            "value" => "camelcase",
+            "tooltip" => "Convert the string to camel case"
+          ],
+          [
+            "name" => "Kebabcase",
+            "icon" => "dash",
+            "value" => "kebabcase",
+            "tooltip" => "Convert the string to kebab case"
+          ],
         ],
         "Misc" => [
-          "L33t5p34k",
-          "Regex",
+          [
+            "name" => "L33t5p34k",
+            "icon" => "123",
+            "value" => "l33t5p34k",
+            "tooltip" => "Convert the string to l33t5p34k"
+          ],
+          [
+            "name" => "Regex",
+            "icon" => "regex",
+            "value" => "regex",
+            "tooltip" => "Perform regular expression operations on the string"
+          ],
         ],
       ];
 
+      echo "<div class='row'>";
       foreach ($stringTools as $cat => $tool) {
         echo "<h4>$cat</h4>";
-        echo "<div class='btn-group'>";
+        echo "<div class='col'>";
         foreach ($tool as $t) {
-          $postvar = strtolower($t);
-          echo submitBtn($postvar, "tool", $t, "arrow-repeat", "sm");
+          $postvar = strtolower($t["value"]);
+          $name = $t["name"];
+          $icon = $t["icon"];
+          $tooltip = $t["tooltip"];
+          echo "
+          <span title='$tooltip'>
+          ".submitBtn($postvar, "tool", $name, $icon, "sm")."
+          </span>
+          ";
         }
         echo "</div>";
       }
+      echo "</div>";
 
       ?>
             </form>
@@ -223,5 +334,13 @@ $("#strtools").on("submit", async function() {
     return false;
   }
 
+});
+
+$("#undo").click(function() {
+    $("#strtoolsinput").val($("#strtoolsresponse").text());
+});
+
+$("#clear").click(function() {
+    $("#strtoolsinput").val("");
 });
 </script>
