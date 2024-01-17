@@ -106,9 +106,10 @@
                 <textarea type="text" id="strtoolsinput" name="string" class="form-control mb-3"
                     style="height:200px;" placeholder="Input string here"></textarea>
 
+                <div class="historyDiv" style='display:none;'></div>
                 <div class="responseDiv" id="strtoolsresponse"></div>
-                <button class="btn btn-secondary" id="undo"><?= icon("arrow-counterclockwise") ?> Undo</button>
-                <button class="btn btn-secondary" id="clear"><?= icon("trash") ?> Clear</button>
+                <button type="button" class="btn btn-secondary" id="undo" disabled><?= icon("arrow-counterclockwise") ?> Undo</button>
+                <button type="button" class="btn btn-secondary" id="clear"><?= icon("trash") ?> Clear</button>
                 
                 <div class="card border border-secondary">
                     <h4 class="card-header text-bg-secondary">Options</h4>
@@ -166,6 +167,16 @@
                         <?php
       $stringTools = [
         "Character" => [
+          [
+            "name" => "Trim",
+            "icon" => "scissors",
+            "value" => "trim",
+          ],
+          [
+            "name" => "Remove whitespace",
+            "icon" => "eraser",
+            "value" => "removewhitespace",
+          ],
           [
             "name" => "Reverse",
             "icon" => "arrow-left",
@@ -280,7 +291,9 @@
 </div>
 
 <script>
-// Toggle charset
+/* ───────────────────────────────────────────────────────────────────── */
+/*                           // Toggle charset                           */
+/* ───────────────────────────────────────────────────────────────────── */
 $("#c").change(function() {
     if ($(this).is(":checked")) {
         $("#cchars").fadeIn();
@@ -289,7 +302,9 @@ $("#c").change(function() {
     }
 });
 
-// Repeat
+/* ───────────────────────────────────────────────────────────────────── */
+/*                               // Repeat                               */
+/* ───────────────────────────────────────────────────────────────────── */
 $("#repeat").change(function() {
     if ($(this).is(":checked")) {
         $(".repeatInput").fadeIn();
@@ -298,7 +313,9 @@ $("#repeat").change(function() {
     }
 });
 
-// Replace
+/* ───────────────────────────────────────────────────────────────────── */
+/*                               // Replace                              */
+/* ───────────────────────────────────────────────────────────────────── */
 $("#replace").change(function() {
     if ($(this).is(":checked")) {
         $(".replaceInput").fadeIn();
@@ -307,18 +324,27 @@ $("#replace").change(function() {
     }
 });
 
-// Output to textbox
+/* ───────────────────────────────────────────────────────────────────── */
+/*                          // Output to textbox                         */
+/* ───────────────────────────────────────────────────────────────────── */
 $("#strtools").on("submit", async function() {
 
+  var textbox         = $("#strtoolsinput");
   var outputToTextbox = $("#outputToTextbox").is(":checked");
-  console.log("outputToTextbox: "+outputToTextbox);
+  var historyDiv      = $(".historyDiv");
+  $("#undo").attr("disabled", false);
+
+  var resdiv = $("#strtoolsresponse");
 
   if (outputToTextbox) {
-    var resdiv = $("#strtoolsresponse");
-
-    $(this).prepend(`<div class="loading"><?= alert(spinner("Generating..."), "primary") ?></div>`);
-    $(this).children().find("button").attr("disabled", true);
     resdiv.hide();
+
+    $(this).prepend(`
+      <div class="loading">
+        <?= alert(spinner("Generating..."), "primary") ?>
+      </div>
+    `);
+    $(this).children().find("button").attr("disabled", true);
 
     var output = await new Promise(function(resolve, reject) {
       // Simulate an asynchronous operation
@@ -328,18 +354,42 @@ $("#strtools").on("submit", async function() {
       }, 1000); // Replace with your actual asynchronous operation
     });
 
+    historyDiv.prepend(`<span class='historyItem'>${output}</span>`); // Use 'output' instead of 'resdiv.text()'
+
     console.log("Writing output ("+output+") to textbox");
     $(this).children().find("button").attr("disabled", false);
-    $("#strtoolsinput").val(output);
+    textbox.val(output);
+
     return false;
   }
 
+  console.log("Outputting to div");
+  resdiv.show();
+  return false;
 });
 
+/* ───────────────────────────────────────────────────────────────────── */
+/*                                  undo                                 */
+/* ───────────────────────────────────────────────────────────────────── */
 $("#undo").click(function() {
-    $("#strtoolsinput").val($("#strtoolsresponse").text());
+    var textbox     = $("#strtoolsinput");
+    var historyDiv  = $(".historyDiv");
+    if (historyDiv.children().length < 2) {
+        $("#undo").attr("disabled", true);
+        $("#strtoolsresponse").html(`<?= alert("No history found", "warning") ?>`);
+        $("#strtoolsresponse").fadeIn();
+        return;
+    }
+
+    var firstHistoryItem = historyDiv.children().second();
+    console.log("Undoing: "+firstHistoryItem.text());
+    textbox.val(firstHistoryItem.text());
+    historyDiv.children().first().remove();
 });
 
+/* ───────────────────────────────────────────────────────────────────── */
+/*                                 clear                                 */
+/* ───────────────────────────────────────────────────────────────────── */
 $("#clear").click(function() {
     $("#strtoolsinput").val("");
 });
