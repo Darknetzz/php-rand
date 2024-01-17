@@ -109,7 +109,8 @@
                 <div class="historyDiv" style='display:none;'></div>
                 <div class="responseDiv" id="strtoolsresponse"></div>
                 <button type="button" class="btn btn-secondary" id="undo" disabled><?= icon("arrow-counterclockwise") ?> Undo</button>
-                <button type="button" class="btn btn-secondary" id="clear"><?= icon("trash") ?> Clear</button>
+                <button type="button" class="btn btn-secondary" id="redo" disabled><?= icon("arrow-clockwise") ?> Redo</button>
+                <button type="button" class="btn btn-secondary" id="clear" disabled><?= icon("trash") ?> Clear</button>
                 
                 <div class="card border border-secondary">
                     <h4 class="card-header text-bg-secondary">Options</h4>
@@ -291,6 +292,8 @@
 </div>
 
 <script>
+  $(document).ready(function() {
+
 /* ───────────────────────────────────────────────────────────────────── */
 /*                           // Toggle charset                           */
 /* ───────────────────────────────────────────────────────────────────── */
@@ -323,6 +326,7 @@ $("#replace").change(function() {
         $(".replaceInput").fadeOut();
     }
 });
+
 
 /* ───────────────────────────────────────────────────────────────────── */
 /*                          // Output to textbox                         */
@@ -374,14 +378,23 @@ $("#strtools").on("submit", async function() {
 $("#undo").click(function() {
     var textbox     = $("#strtoolsinput");
     var historyDiv  = $(".historyDiv");
-    if (historyDiv.children().length < 2) {
+
+    // Only one item
+    if (historyDiv.children().length === 1) {
+        textbox.val("");
+        $("#undo").attr("disabled", true);
+        return;
+    }
+
+    // No items
+    if (historyDiv.children().length < 1) {
         $("#undo").attr("disabled", true);
         $("#strtoolsresponse").html(`<?= alert("No history found", "warning") ?>`);
         $("#strtoolsresponse").fadeIn();
         return;
     }
 
-    var firstHistoryItem = historyDiv.children().second();
+    var firstHistoryItem = historyDiv.children().eq(1);
     console.log("Undoing: "+firstHistoryItem.text());
     textbox.val(firstHistoryItem.text());
     historyDiv.children().first().remove();
@@ -391,6 +404,18 @@ $("#undo").click(function() {
 /*                                 clear                                 */
 /* ───────────────────────────────────────────────────────────────────── */
 $("#clear").click(function() {
+    console.log("Clearing textbox");
+    $(this).attr("disabled", true);
     $("#strtoolsinput").val("");
 });
+
+/* ───────────────────────────────────────────────────────────────────── */
+/*                            on textbox input                           */
+/* ───────────────────────────────────────────────────────────────────── */
+$("#strtoolsinput").on("input", function() {
+  console.log("input");
+  $("#clear").prop("disabled", $(this).val().length === 0);
+});
+
+  });
 </script>
