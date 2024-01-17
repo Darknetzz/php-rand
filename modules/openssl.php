@@ -17,18 +17,35 @@
             <form class="form" action="gen.php" method="POST" id="openssl">
               <input type="hidden" name="action" value="openssl">
                 <?php
-                  $openssl = NULL;
-                  $key = NULL;
-                  $iv = NULL;
+                  $openssl   = Null;
+                  $key       = Null;
+                  $iv        = Null;
+                  $stringVal = Null;
                   if (isset($_POST['openssl'])) {
-                    $openssl = $_POST['openssl'];
-                    $key = $_POST['key'];
-                    $iv = $_POST['iv'];
+                    $openssl   = $_POST['openssl'];
+                    $key       = $_POST['key'];
+                    $iv        = $_POST['iv'];
+                    $stringVal = "value='$openssl'";
                   }
-                  echo 'String: <input type="text" name="openssl" class="form-control" value="'.$openssl.'">';
-                  echo 'Cipher: <select class="form-control" name="cipher">'.$ciphers.'</select>';
-                  echo 'Key: <input type="text" name="key" class="form-control" value="'.$key.'" placeholder="Optional - key to encrypt string with, will generate random psuedo bytes if not set">';
-                  echo 'Initialization Vector: <input type="text" name="iv" class="form-control" value="'.$iv.'" placeholder="Optional, will randomize if not set">';
+                  echo '<div class="form-floating mb-3">';
+                  echo '<input type="text" name="openssl" class="form-control" id="opensslInput" '.$stringVal.'>';
+                  echo '<label for="opensslInput">String</label>';
+                  echo '</div>';
+
+                  echo '<div class="form-floating mb-3">';
+                  echo '<select class="form-control" name="cipher" id="cipherSelect">'.$ciphers.'</select>';
+                  echo '<label for="cipherSelect">Cipher</label>';
+                  echo '</div>';
+
+                  echo '<div class="form-floating mb-3">';
+                  echo '<input type="text" name="key" class="form-control" id="keyInput" value="'.$key.'" placeholder="Optional - key to encrypt string with, will generate random psuedo bytes if not set">';
+                  echo '<label for="keyInput">Key</label>';
+                  echo '</div>';
+
+                  echo '<div class="form-floating mb-3">';
+                  echo '<input type="text" name="iv" class="form-control" id="ivInput" value="'.$iv.'" placeholder="Optional, will randomize if not set">';
+                  echo '<label for="ivInput">Initialization Vector</label>';
+                  echo '</div>';
                 ?>
                 <div class="btn-group mt-3">
                     <?= submitBtn("encrypt", "tool", "Encrypt", "lock", "lg") ?>

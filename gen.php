@@ -238,7 +238,9 @@ do {
         if ($tool == "decrypt") {
           $string = openssl_decrypt($string, $cipher, $key, iv: $iv);
         }
-
+        if (empty($string)) {
+          $string = "[empty]";
+        }
         echo formatOutput("
           <b>".$string."</b>
           <hr>

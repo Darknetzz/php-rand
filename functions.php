@@ -21,9 +21,21 @@ function icon($icon, $rem = 1, $color = Null) {
  * 
  */
 function alert($message, $type = 'success') {
+  if ($type == "danger") {
+    $icon = icon("exclamation-triangle");
+  }
+  if ($type == "warning") {
+    $icon = icon("exclamation-circle");
+  }
+  if ($type == "success") {
+    $icon = icon("check-circle");
+  }
+  if ($type == "info") {
+    $icon = icon("info-circle");
+  }
   return "
   <div class='alert alert-{$type} alert-dismissible fade show' style='margin:15px;' role='alert'>
-    {$message}
+    {$icon} {$message}
     <button type='button' class='btn-close' data-bs-dismiss='alert' aria-label='Close'></button>
   </div>
   ";
