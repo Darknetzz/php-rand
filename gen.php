@@ -202,54 +202,48 @@ do {
   /* ───────────────────────────────────────────────────────────────────── */
   /*                                OpenSSL                                */
   /* ───────────────────────────────────────────────────────────────────── */
-  if (isset($_POST['openssl'])) {
-      //$key should have been previously generated in a cryptographically safe way, like openssl_random_pseudo_bytes
-    $plaintext = $_POST['openssl'];
-    $key = $_POST['key'];
-    $iv = $_POST['iv'];
-    $cipher = $_POST['cipher'];
-    if (in_array($cipher, openssl_get_cipher_methods()))
-    {
-      if (empty($iv)) {
-        $ivlen = openssl_cipher_iv_length($cipher);
-        $iv = openssl_random_pseudo_bytes($ivlen);
-      }
-      if (empty($key)) {
-        $key = openssl_random_pseudo_bytes($ivlen);
-      }
-        $ciphertext = @openssl_encrypt($plaintext, $cipher, $key, $options=0, $iv, $tag);
-        //store $cipher, $iv, and $tag for decryption later
-        $original_plaintext = @openssl_decrypt($ciphertext, $cipher, $key, $options=0, $iv, $tag);
-        echo "<b>Your OpenSSL encrypted string would be: </b>".$ciphertext."<br>
-        <b>Encryption key:</b> $key<br>
-        <b>Initialization vector (Hex representation):</b> ".bin2hex($iv);
-    }
-  }
+  if ($action == 'openssl') {
 
-  /* ───────────────────────────────────────────────────────────────────── */
-  /*                            OpenSSL Decrypt                            */
-  /* ───────────────────────────────────────────────────────────────────── */
-  if (isset($_POST['openssld'])) {
-    //$key should have been previously generated in a cryptographically safe way, like openssl_random_pseudo_bytes
-  $plaintext = $_POST['openssld'];
-  $key = $_POST['key'];
-  $iv = $_POST['iv'];
-  $cipher = $_POST['cipher'];
-  if (in_array($cipher, openssl_get_cipher_methods()))
-  {
-    if (empty($iv)) {
-      die("IV must be set. In decryption it can't be generated for you.");
-    }
-      # $ciphertext = openssl_encrypt($plaintext, $cipher, $key, $options=0, $iv, $tag);
-      //store $cipher, $iv, and $tag for decryption later
-      $original_plaintext = @openssl_decrypt($plaintext, $cipher, $key, $options=0, hex2bin($iv), $tag);
-      if (empty($original_plaintext)) {
-        die("Failed to decrypt. Are you sure you have the right encryption key and IV?");
+      $tool   = !empty($_POST['tool'])                  ? $_POST['tool']   : '';
+      $string = !empty($_POST['openssl'])               ? $_POST['openssl']: '';
+      $key    = !empty($_POST['key'])                   ? $_POST['key']    : '';
+      $cipher = !empty($_POST['cipher'])                ? $_POST['cipher'] : '';
+      $iv     = !empty($_POST['iv'])                    ? $_POST['iv']     : '';
+
+      # No cipher provided, use aes-256-cbc as default
+      if (empty($_POST['cipher'])) {
+        $cipher = "aes-256-cbc";
+        if (!in_array($cipher, openssl_get_cipher_methods())) {
+          die(formatOutput("Cipher `$cipher` is not supported.", type: "danger"));
+        }
+        echo formatOutput("No cipher selected, using `$cipher` as default.", type: "danger");
       }
-      echo "<b>Your OpenSSL decrypted string would be: </b>".$original_plaintext."<br>
-      <b>Encryption key:</b> $key<br>
-      <b>Initialization vector (Hex representation):</b> $iv";
-  }
+
+      # No IV provided, generate random IV
+      if (empty($_POST['iv'])) {
+        $ivlen  = (openssl_cipher_iv_length($cipher) / 2);
+        $iv     = bin2hex(openssl_random_pseudo_bytes($ivlen));
+        echo formatOutput("No IV specified, using random IV: ".$iv, type: "warning");
+      }
+
+      # No key provided, warn user
+      if (empty($_POST['key'])) {
+        echo formatOutput("No key specified, <b>this is unsafe</b>.", type: "warning");
+      }
+      //$key should have been previously generated in a cryptographically safe way, like openssl_random_pseudo_bytes
+
+        if ($tool == "encrypt") {
+          $string = openssl_encrypt($string, $cipher, $key, iv: $iv);
+        }
+        if ($tool == "decrypt") {
+          $string = openssl_decrypt($string, $cipher, $key, iv: $iv);
+        }
+
+        echo formatOutput("
+          <b>".$string."</b>
+          <hr>
+          <b>Encryption key:</b> $key<br>
+          <b>Initialization vector (Hex representation):</b> ".$iv);
   }
 
   /* -------------------------------------------------------------------------- */
