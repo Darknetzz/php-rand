@@ -105,6 +105,10 @@
 
                 <textarea type="text" id="strtoolsinput" name="string" class="form-control mb-3"
                     style="height:200px;" placeholder="Input string here"></textarea>
+                
+                <span id="charcount"></span>
+                <span id="wordcount"></span>
+                <span id="linecount"></span>
 
                 <div class="historyDiv" style='display:none;'></div>
                 <div class="responseDiv" id="strtoolsresponse"></div>
@@ -167,17 +171,35 @@
 
                         <?php
       $stringTools = [
-        "Character" => [
+
+        "Sanitize"  => [
           [
             "name" => "Trim",
             "icon" => "scissors",
             "value" => "trim",
+            "tooltip" => "Remove whitespace from both sides of the string"
           ],
           [
             "name" => "Remove whitespace",
             "icon" => "eraser",
             "value" => "removewhitespace",
+            "tooltip" => "Remove whitespace from the string"
           ],
+          [
+            "name" => "Slugify",
+            "icon" => "code-slash",
+            "value" => "slugify",
+            "tooltip" => "Convert the string to a URL-friendly slug"
+          ],
+          [
+            "name" => "Kebabcase",
+            "icon" => "dash",
+            "value" => "kebabcase",
+            "tooltip" => "Convert the string to kebab case"
+          ],
+        ],
+
+        "Character" => [
           [
             "name" => "Reverse",
             "icon" => "arrow-left",
@@ -196,13 +218,8 @@
             "value" => "shuffle",
             "tooltip" => "Shuffle the characters in the string"
           ],
-          [
-            "name" => "Slugify",
-            "icon" => "code-slash",
-            "value" => "slugify",
-            "tooltip" => "Convert the string to a URL-friendly slug"
-          ],
         ],
+
         "Case" => [
           [
             "name" => "Randomcase",
@@ -240,13 +257,8 @@
             "value" => "camelcase",
             "tooltip" => "Convert the string to camel case"
           ],
-          [
-            "name" => "Kebabcase",
-            "icon" => "dash",
-            "value" => "kebabcase",
-            "tooltip" => "Convert the string to kebab case"
-          ],
         ],
+
         "Misc" => [
           [
             "name" => "L33t5p34k",
@@ -259,6 +271,120 @@
             "icon" => "regex",
             "value" => "regex",
             "tooltip" => "Perform regular expression operations on the string"
+          ],
+        ],
+        
+        "Formatting" => [
+          [
+            "name" => "CRLF to LF",
+            "icon" => "text-wrap",
+            "value" => "crlf2lf",
+            "tooltip" => "Convert DOS-like (\\r\\n) line endings to LF (\\n) line endings"
+          ],
+          [
+            "name" => "LF to CRLF",
+            "icon" => "text-wrap",
+            "value" => "crlf2lf",
+            "tooltip" => "Convert to LF (\\n) line endings DOS-like (\\r\\n) line endings"
+          ],
+          [
+            "name" => "Format",
+            "icon" => "text-wrap",
+            "value" => "formatlineendings",
+            "tooltip" => "Format line endings"
+          ],
+        ],
+
+        "Remove" => [
+          [
+            "name" => "HTML tags",
+            "icon" => "code-square",
+            "value" => "removehtmltags",
+            "tooltip" => "Remove HTML tags"
+          ],
+          [
+            "name" => "Punctuation",
+            "icon" => "dot",
+            "value" => "removepunctuation",
+            "tooltip" => "Remove punctuation"
+          ],
+          [
+            "name" => "Newlines",
+            "icon" => "code-square",
+            "value" => "removenewlines",
+            "tooltip" => "Remove newlines"
+          ],
+          [
+            "name" => "Tabs",
+            "icon" => "code-square",
+            "value" => "removetabs",
+            "tooltip" => "Remove tabs"
+          ],
+          [
+            "name" => "Spaces",
+            "icon" => "code-square",
+            "value" => "removespaces",
+            "tooltip" => "Remove spaces"
+          ],
+          [
+            "name" => "Slashes",
+            "icon" => "code-square",
+            "value" => "removeslashes",
+            "tooltip" => "Remove slashes"
+          ],
+          [
+            "name" => "Backslashes",
+            "icon" => "code-square",
+            "value" => "removebackslashes",
+            "tooltip" => "Remove backslashes"
+          ],
+          [
+            "name" => "Non-ASCII",
+            "icon" => "code-square",
+            "value" => "removebackslashes",
+            "tooltip" => "Remove non-ASCII characters"
+          ],
+          [
+            "name" => "Non-printable",
+            "icon" => "code-square",
+            "value" => "removebackslashes",
+            "tooltip" => "Remove non-printable characters"
+          ],
+          [
+            "name" => "Whitespace",
+            "icon" => "code-square",
+            "value" => "removebackslashes",
+            "tooltip" => "Remove whitespace characters"
+          ],
+          [
+            "name" => "Numbers",
+            "icon" => "code-square",
+            "value" => "removebackslashes",
+            "tooltip" => "Remove numbers"
+          ],
+          [
+            "name" => "Letters",
+            "icon" => "code-square",
+            "value" => "removebackslashes",
+            "tooltip" => "Remove letters"
+          ],
+          [
+            "name" => "Symbols",
+            "icon" => "code-square",
+            "value" => "removebackslashes",
+            "tooltip" => "Remove symbols"
+          ],
+          [
+            "name" => "Extended symbols",
+            "icon" => "code-square",
+            "value" => "removebackslashes",
+            "tooltip" => "Remove extended symbols"
+          ],
+          [
+            "name" => "Custom characters",
+            "icon" => "code-square",
+            "value" => "removebackslashes",
+            "tooltip" => "Remove custom characters"
           ],
         ],
       ];
@@ -412,10 +538,16 @@ $("#clear").click(function() {
 /* ───────────────────────────────────────────────────────────────────── */
 /*                            on textbox input                           */
 /* ───────────────────────────────────────────────────────────────────── */
-$("#strtoolsinput").on("input", function() {
-  console.log("input");
+$("#strtoolsinput").on("input","change", function() {
   $("#clear").prop("disabled", $(this).val().length === 0);
+
+  var charcount = $(this).val().length;
+  var wordcount = $(this).val().split(" ").length;
+  var linecount = $(this).val().split("\n").length;
+  $("#charcount").html("Characters: "+charcount+"<br>");
+  $("#wordcount").html("Words: "+wordcount+"<br>");
+  $("#linecount").html("Lines: "+linecount+"<br>");
 });
 
-  });
+});
 </script>

@@ -13,7 +13,7 @@ function icon($icon, $rem = 1, $color = Null) {
     $style .= "font-size: {$rem}rem;";
   }
   $style .= "'";
-  return "<i class='bi bi-{$icon}' {$style}'></i>";
+  return "<i class='bi bi-{$icon}' {$style}></i>";
 }
 
 /**

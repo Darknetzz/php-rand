@@ -42,27 +42,27 @@
             <div class="card-body">
                 <div class="form-group mb-3">
 
-                    <div class="form-check">
+                    <div class="form-check form-switch">
                         <input type="hidden" name="morespins" value="0">
-                        <input id="morespins" name="morespins" value="1" type="checkbox" class="form-input mb-3">
-                        <label for="morespins">Spin more than once</label>
+                        <input id="morespins" name="morespins" value="1" type="checkbox" class="form-check-input mb-3">
+                        <label for="morespins" class="form-check-label">Spin more than once</label>
                     </div>
 
                     <div id="spinsopt" style="display:none;">
 
-                            <div class="form-floating">
-                                <input 
-                                id="spinsamt" name="spinsamt" type="number" class="form-control mb-3"
-                                placeholder="Number of spins" min="1" max="100"
-                                >
-                                <label for="spinsamt">Number of spins</label>
-                            </div>
+                        <div class="form-floating">
+                            <input 
+                            id="spinsamt" name="spinsamt" type="number" class="form-control mb-3"
+                            placeholder="Number of spins" min="1" max="100"
+                            >
+                            <label for="spinsamt">Number of spins</label>
+                        </div>
 
-                            <div class="form-check">
-                                <input type="hidden" name="unique" value="0">
-                                <input type="checkbox" id="unique" name="unique" value="1" class="form-input mb-3">
-                                <label for="unique">Force unique</label>
-                            </div>
+                        <div class="form-check form-switch">
+                            <input type="hidden" name="unique" value="0">
+                            <input type="checkbox" id="unique" name="unique" value="1" class="form-check-input mb-3">
+                            <label for="unique" class="form-check-label">Force unique</label>
+                        </div>
 
                     </div>
 
