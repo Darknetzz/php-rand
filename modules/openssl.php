@@ -14,8 +14,7 @@
     <div class="card card-primary">
         <h1 class="card-header">OpenSSL</h1>
         <div class="card card-body">
-            <form class="form" action="gen.php" method="POST" id="openssl">
-              <input type="hidden" name="action" value="openssl">
+            <form class="form" action="gen.php" method="POST" id="openssl" data-action="openssl">
                 <?php
                   $openssl   = Null;
                   $key       = Null;

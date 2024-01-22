@@ -23,8 +23,7 @@
 
         <hr>
 
-        <form class="form" method="POST" action="gen.php" id="spinwheel">
-        <input type="hidden" name="action" value="spinwheel">
+        <form class="form" method="POST" action="gen.php" id="spinwheel" data-action="spinwheel">
         <div class="wheelitems">
             <div class="form-floating mb-3 wheelitem">
                 <input type="text" name="wheelitem[0]" class="form-control" placeholder="Item #1">

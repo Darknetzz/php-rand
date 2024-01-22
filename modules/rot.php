@@ -2,8 +2,7 @@
 <div class="card card-primary">
 <h1 class="card-header">ROT</h1>
 <div class="card card-body">
-<form class="form" action="gen.php" method="POST" id="rot">
-  <input type="hidden" name="action" value="rot">
+<form class="form" action="gen.php" method="POST" id="rot" data-action="rot">
   <?php
   if (isset($_POST['rot'])) {
     $rot = $_POST['rot'];

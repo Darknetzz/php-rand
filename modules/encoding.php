@@ -5,7 +5,7 @@
 <h1 class="card-header">Base</h1>
 <div class="card card-body">
 <span class="description">Input any text or base encoded string below, and this tool will convert it to all other base formats.</span>
-<form class="form" action="gen.php" method="POST" id="base">
+<form class="form" action="gen.php" method="POST" id="base" data-action="base">
   <input type="text" name="base" class="form-control mb-2">
   <select name="from" class="form-select mb-2">
     <option value="text" disabled selected>Please choose input type [default: text/base36]...</option>

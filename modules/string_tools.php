@@ -10,7 +10,7 @@
         <div class="card-body">
             <span class="description">This will generate a string with the charset defined.</span>
             <hr>
-            <form class="form" action="gen.php" method="POST" id="stringgen">
+            <form class="form" action="gen.php" method="POST" id="stringgen" data-action="stringgen">
 
                 <div class="input-group mb-3">
                     <!-- <span class="input-group-text">Length</span> -->
@@ -25,27 +25,27 @@
                   "n" => [
                     "desc" =>"Contain numbers",
                     "checked" => "checked",
-                    "chars" => "",
+                    "chars" => "0-9",
                   ],
                   "l" => [
                     "desc" =>"Contain lowercase letters",
                     "checked" => "checked",
-                    "chars" => "",
+                    "chars" => "a-z",
                   ],
                   "u" => [
                     "desc" =>"Contain uppercase letters", 
                     "checked" => "checked",
-                    "chars" => "",
+                    "chars" => "A-Z",
                   ],
                   "s" => [
                     "desc" =>"Contain symbols", 
                     "checked" => "",
-                    "chars" => "",
+                    "chars" => "!#¤%&\/() = ?;: -_.,'\"*^<>{}[]@~+´`",
                   ],
                   "e" => [
                     "desc" =>"Contain extended symbols", 
                     "checked" => "",
-                    "chars" => "",
+                    "chars" => "ƒ†‡™•",
                   ],
                   "c" => [
                     "desc" =>"Custom characters", 
@@ -62,8 +62,19 @@
                 foreach ($opts as $opt => $data) {
                   $checked  = $data["checked"];
                   $desc     = $data["desc"];
+                  $chars    = $data["chars"];
+                  
                   echo '<input type="hidden" name="'.$opt.'" value="0">';
-                  echo '<label><input type="checkbox" name="'.$opt.'" value="1" '.$checked.'> '.$desc.'</label><br>';
+                  echo '
+                  <div class="d-flex justify-content-between">
+                    <div>
+                      <label><input type="checkbox" name="'.$opt.'" value="1" '.$checked.'> '.$desc.'</label>
+                    </div>
+                    <div>
+                      '.(!empty($chars) ? "<span class='badge bg-secondary'>".$chars."</span>" : "").'
+                    </div>
+                  </div>
+                  <br>';
                 }
                 echo '
                 <div id="cchars" style="display:none;">

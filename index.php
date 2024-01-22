@@ -47,7 +47,7 @@ $( document ).ready(function() {
   /* ───────────────────────────────────────────────────────────────────── */
   function setFormVal(form, name = "action", value = "") {
     console.log("[setFormVal] Setting form value "+name+" to: "+value);
-    $(form).find(".setFormVal[name="+name+"]").remove();
+    $(form).find(".setFormVal[name='"+name+"']").remove();
     var hiddenInput = $("<input>")
       .attr("class", "setFormVal")
       .attr("type", "hidden")
@@ -97,20 +97,24 @@ $( document ).ready(function() {
 
         // Set clicken `.genBtn` as form value
         var clickedGenBtn = $('.genBtn:focus');
-        var name          = clickedGenBtn.length ? clickedGenBtn.attr("name") : "";
-        var value         = clickedGenBtn.length ? clickedGenBtn.attr("value") : "";
-        setFormVal(form, name, value);
 
-        // Set action
-        var actionInput = form.find("input[name=action]");
-        if (actionInput.length) {
-          action = actionInput.val();
+        // Set form action
+        if (form.data("action")) {
+          var action = form.data("action");
         }
-        if (form == undefined || action == "" || action == undefined) {
-          console.error("Unable to submit form, form or action is undefined.");
-          return;
+        if (form.find("input[name=action]").length) {
+          var action = form.find("input[name=action]").val();
         }
-        setFormVal(form, "action", action);
+        setFormVal(form, "action", action)
+
+        // Set clicked button as form value
+        if (clickedGenBtn.length) {
+          var name          = clickedGenBtn.length ? clickedGenBtn.attr("name") : "";
+          var value         = clickedGenBtn.length ? clickedGenBtn.attr("value") : "";
+          if (name != "action" && name != "") {
+            setFormVal(form, name, value);
+          }
+        } 
 
         // Send form
         var url = form.attr('action');
