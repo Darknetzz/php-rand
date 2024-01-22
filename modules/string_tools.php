@@ -68,7 +68,7 @@
                   echo '
                   <div class="d-flex justify-content-between">
                     <div>
-                      <label><input type="checkbox" name="'.$opt.'" value="1" '.$checked.'> '.$desc.'</label>
+                      <label><input type="checkbox" id="'.$opt.'" name="'.$opt.'" value="1" '.$checked.'> '.$desc.'</label>
                     </div>
                     <div>
                       '.(!empty($chars) ? "<span class='badge bg-secondary'>".$chars."</span>" : "").'
