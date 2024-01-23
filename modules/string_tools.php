@@ -123,9 +123,9 @@
 
                 <div class="historyDiv" style='display:none;'></div>
                 <div class="responseDiv" id="strtoolsresponse"></div>
-                <button type="button" class="btn btn-secondary" id="undo" disabled><?= icon("arrow-counterclockwise") ?> Undo</button>
-                <button type="button" class="btn btn-secondary" id="redo" disabled><?= icon("arrow-clockwise") ?> Redo</button>
-                <button type="button" class="btn btn-secondary" id="clear" disabled><?= icon("trash") ?> Clear</button>
+                <button type="button" class="btn btn-secondary" id="undo"><?= icon("arrow-counterclockwise") ?> Undo</button>
+                <button type="button" class="btn btn-secondary" id="redo"><?= icon("arrow-clockwise") ?> Redo</button>
+                <button type="button" class="btn btn-secondary" class="clear" data-target="#strtoolsinput"><?= icon("trash") ?> Clear</button>
                 
                 <div class="card border border-secondary">
                     <h4 class="card-header text-bg-secondary">Options</h4>
@@ -540,17 +540,18 @@ $("#undo").click(function() {
 /* ───────────────────────────────────────────────────────────────────── */
 /*                                 clear                                 */
 /* ───────────────────────────────────────────────────────────────────── */
-$("#clear").click(function() {
+$(".clear").click(function() {
+    target = $(this).data("target");
     console.log("Clearing textbox");
     $(this).attr("disabled", true);
-    $("#strtoolsinput").val("");
+    $(target).text("");
 });
 
 /* ───────────────────────────────────────────────────────────────────── */
 /*                            on textbox input                           */
 /* ───────────────────────────────────────────────────────────────────── */
-$("#strtoolsinput").on("input","change", function() {
-  $("#clear").prop("disabled", $(this).val().length === 0);
+$("#strtoolsinput").on("change keyup", function() {
+  $(".clear[data-target='#strtoolsinput']").attr("disabled", false);
 
   var charcount = $(this).val().length;
   var wordcount = $(this).val().split(" ").length;

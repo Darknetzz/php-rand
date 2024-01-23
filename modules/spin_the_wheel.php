@@ -17,7 +17,7 @@
                     <button type="button" class="btn btn-success" id="addtowheel"><?= icon("plus-circle") ?></button>
             </div>
             <div class="col">
-                <button type="button" class="btn btn-danger" id="clear"><?= icon("trash") ?></button>
+                <button type="button" class="btn btn-danger" class="clear"><?= icon("trash") ?></button>
             </div>
         </div>
 
@@ -129,7 +129,7 @@
     /* ───────────────────────────────────────────────────────────────────── */
     /*                                 clear                                 */
     /* ───────────────────────────────────────────────────────────────────── */
-    $("#clear").on("click", function() {
+    $(".clear").on("click", function() {
         $(".wheelitem:gt(1)").remove();
 
         $("#itemsamt").val($(".wheelitem").length);
