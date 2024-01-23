@@ -114,18 +114,16 @@
 
                 <input type="hidden" name="action" value="stringtools">
 
-                <textarea type="text" id="strtoolsinput" name="string" class="form-control mb-3"
+                <textarea type="text" id="strtoolsinput" name="string" class="form-control mb-1"
                     style="height:200px;" placeholder="Input string here"></textarea>
                 
-                <span id="charcount"></span>
-                <span id="wordcount"></span>
-                <span id="linecount"></span>
+                <div id="count" class="mb-3 border border-secondary"></div>
 
                 <div class="historyDiv" style='display:none;'></div>
                 <div class="responseDiv" id="strtoolsresponse"></div>
-                <button type="button" class="btn btn-secondary" id="undo"><?= icon("arrow-counterclockwise") ?> Undo</button>
-                <button type="button" class="btn btn-secondary" id="redo"><?= icon("arrow-clockwise") ?> Redo</button>
-                <button type="button" class="btn btn-secondary" class="clear" data-target="#strtoolsinput"><?= icon("trash") ?> Clear</button>
+                <button type="button" class="btn btn-secondary undo" data-target="#strtoolsinput"><?= icon("arrow-counterclockwise") ?> Undo</button>
+                <button type="button" class="btn btn-secondary redo" data-target="#strtoolsinput"><?= icon("arrow-clockwise") ?> Redo</button>
+                <button type="button" class="btn btn-secondary clear" data-target="#strtoolsinput"><?= icon("trash") ?> Clear</button>
                 
                 <div class="card border border-secondary">
                     <h4 class="card-header text-bg-secondary">Options</h4>
@@ -429,7 +427,31 @@
 </div>
 
 <script>
-  $(document).ready(function() {
+$(document).ready(function() {
+
+  /* ───────────────────────────────────────────────────────────────────── */
+  /*                           updateCharCount();                          */
+  /* ───────────────────────────────────────────────────────────────────── */
+  function updateCharCount() {
+    var charcount = $("#strtoolsinput").val().length;
+    var wordcount = $("#strtoolsinput").val().split(" ").length;
+    var linecount = $("#strtoolsinput").val().split("\n").length;
+    $("#count").html(`
+      <div class="d-flex justify-content-evenly">
+        <span class="form-text">Characters: ${charcount}</span><br>
+        <span class="form-text">Words: ${wordcount}</span><br>
+        <span class="form-text">Lines: ${linecount}</span><br>
+      </div>
+    `);
+  }
+
+  /* ───────────────────────────────────────────────────────────────────── */
+  /*                             clearInput();                             */
+  /* ───────────────────────────────────────────────────────────────────── */
+  function clearInput() {
+    $("#strtoolsinput").val("");
+    $(".clear[data-target='#strtoolsinput']").attr("disabled", true);
+  }
 
 /* ───────────────────────────────────────────────────────────────────── */
 /*                           // Toggle charset                           */
@@ -501,6 +523,7 @@ $("#strtools").on("submit", async function() {
     $(this).children().find("button").attr("disabled", false);
     textbox.val(output);
 
+    updateCharCount();
     return false;
   }
 
@@ -512,7 +535,7 @@ $("#strtools").on("submit", async function() {
 /* ───────────────────────────────────────────────────────────────────── */
 /*                                  undo                                 */
 /* ───────────────────────────────────────────────────────────────────── */
-$("#undo").click(function() {
+$(".undo").click(function() {
     var textbox     = $("#strtoolsinput");
     var historyDiv  = $(".historyDiv");
 
@@ -535,16 +558,15 @@ $("#undo").click(function() {
     console.log("Undoing: "+firstHistoryItem.text());
     textbox.val(firstHistoryItem.text());
     historyDiv.children().first().remove();
+    updateCharCount();
 });
 
 /* ───────────────────────────────────────────────────────────────────── */
 /*                                 clear                                 */
 /* ───────────────────────────────────────────────────────────────────── */
 $(".clear").click(function() {
-    target = $(this).data("target");
-    console.log("Clearing textbox");
-    $(this).attr("disabled", true);
-    $(target).text("");
+    clearInput();
+    updateCharCount();
 });
 
 /* ───────────────────────────────────────────────────────────────────── */
@@ -552,13 +574,7 @@ $(".clear").click(function() {
 /* ───────────────────────────────────────────────────────────────────── */
 $("#strtoolsinput").on("change keyup", function() {
   $(".clear[data-target='#strtoolsinput']").attr("disabled", false);
-
-  var charcount = $(this).val().length;
-  var wordcount = $(this).val().split(" ").length;
-  var linecount = $(this).val().split("\n").length;
-  $("#charcount").html("Characters: "+charcount+"<br>");
-  $("#wordcount").html("Words: "+wordcount+"<br>");
-  $("#linecount").html("Lines: "+linecount+"<br>");
+  updateCharCount();
 });
 
 });
