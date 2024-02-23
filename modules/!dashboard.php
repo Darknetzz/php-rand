@@ -12,7 +12,7 @@
 
       <hr>
 
-      <h5 class="text-danger"><?= icon("exclamation-triangle-fill") ?> Disclaimer</h5>
+      <h5 class="text-warning"><?= icon("exclamation-triangle-fill") ?> Disclaimer</h5>
       <p>
         RAND is by no means a professional tool. It is a tool that I made for myself, and I am sharing it with you.
         The code is not perfect, and there are probably bugs. If you find a bug, please report it on the GitHub page.
