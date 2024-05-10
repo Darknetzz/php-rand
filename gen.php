@@ -132,18 +132,32 @@ do {
   /*                                binhex                                 */
   /* ───────────────────────────────────────────────────────────────────── */
   if ($action == 'binhex') {
-    $tool   = $_POST['tool'];
-    $input  = $_POST['binhex'];
-    $type   = "success";
+    $tool             = $_POST['tool'];
+    $input            = $_POST['binhex'];
+    $type             = "success";
+    $split            = (!empty($_POST['split']) ? $_POST['split'] : False);
+    $removeDelimiters = (!empty($_POST['removedelimiters']) ? $_POST['removedelimiters']: False);
+    $delimiter        = (!empty($_POST['delimiter']) ? $_POST['delimiter'] : ":");
+    $chunk_length     = (!empty($_POST['chunklength']) ? $_POST['chunklength'] : 2);
+
 
     if ($tool == 'bin2hex') {
       $output = bin2hex($input);
+
+      # Split
+      if ($split == 1) {
+        $output = chunk_split($output, $chunk_length, $delimiter);
+        $output = rtrim($output, $delimiter);
+      }
     }
     if ($tool == 'hex2bin') {
       if (!ctype_xdigit($input) || (strlen($input) % 2) != 0) {
         $type   = "danger";
         $output = "<b>Input must only include hexadecimal and have an even length.</b>";
       } else {
+        if ($removeDelimiters == 1) {
+          $input  = str_replace($delimiter, '', $output);
+        }
         $output = hex2bin($input);
       }
     }
