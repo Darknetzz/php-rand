@@ -15,6 +15,7 @@ body {
   .form-select, .form-select:active, .form-select:focus {
     background-color:#303030;
     color:#FFF;
+    max-width:500px;
   }
   
   .description {

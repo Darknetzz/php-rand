@@ -5,9 +5,10 @@ $navItems = '';
 foreach ($modules as $module) {
   $name       = $module["name"];
   $formalname = $module["formalName"];
+  $icon       = pageIcon($name);
   $navItems  .= '
       <li class="nav-item">
-        <a class="link nav-link" href="#'.$name.'" id="nav'.$name.'" data-show="'.$name.'">'.$formalname.'</a>
+        <a class="link nav-link" href="#'.$name.'" id="nav'.$name.'" data-show="'.$name.'">'.$icon.$formalname.'</a>
       </li>
     ';
 }

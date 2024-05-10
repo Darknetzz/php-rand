@@ -131,38 +131,74 @@ do {
   /* ───────────────────────────────────────────────────────────────────── */
   /*                                binhex                                 */
   /* ───────────────────────────────────────────────────────────────────── */
-  if ($action == 'binhex') {
-    $tool             = $_POST['tool'];
-    $input            = $_POST['binhex'];
-    $type             = "success";
-    $split            = (!empty($_POST['split']) ? $_POST['split'] : False);
-    $removeDelimiters = (!empty($_POST['removedelimiters']) ? $_POST['removedelimiters']: False);
-    $delimiter        = (!empty($_POST['delimiter']) ? $_POST['delimiter'] : ":");
-    $chunk_length     = (!empty($_POST['chunklength']) ? $_POST['chunklength'] : 2);
+  if ($action == 'hex') {
+    $tool         = $_POST['tool'];
+    $type         = "success";
+    $split        = (!empty($_POST['split']) ? True : False);
+    $delimiter    = (!empty($_POST['delimiter']) ? $_POST['delimiter'] : ":");
+    $chunk_length = (!empty($_POST['chunklength']) ? $_POST['chunklength'] : 2);
+
+    if ($tool == "hex2bin" || $tool == "bin2hex") {
+      $input = $_POST['binhex'];
+    }
+    if ($tool == "ip2hex" || $tool == "hex2ip") {
+      $input = $_POST['iphex'];
+    }
+    $input        = trim($input);
+
+    if (empty($input)) {
+      echo formatOutput("Empty input", type: "danger");
+      break;
+    }
 
 
+    # Bin2Hex
     if ($tool == 'bin2hex') {
       $output = bin2hex($input);
 
       # Split
-      if ($split == 1) {
+      if ($split == True) {
         $output = chunk_split($output, $chunk_length, $delimiter);
         $output = rtrim($output, $delimiter);
       }
     }
+
+    # Hex2Bin
     if ($tool == 'hex2bin') {
+      $input = preg_replace('/[^a-zA-Z0-9]/', '', $input);
       if (!ctype_xdigit($input) || (strlen($input) % 2) != 0) {
         $type   = "danger";
         $output = "<b>Input must only include hexadecimal and have an even length.</b>";
       } else {
-        if ($removeDelimiters == 1) {
-          $input  = str_replace($delimiter, '', $output);
-        }
         $output = hex2bin($input);
       }
     }
+
+    # IP2Hex
+    if ($tool == 'ip2hex') {
+      $input = str_replace(" ", "", $input);
+
+      # More than one IP given
+      if (strpos($input, ",") !== False) {
+        $ip_array = explode(",", $input);
+        $output = "";
+        foreach ($ip_array as $ip) {
+          $output .= ip2hex($ip, $split, $delimiter)."<br>";
+        }
+      } else {
+        $output = ip2hex($input, $split, $delimiter);
+      }
+    }
+
+    # Hex2IP
+    if ($tool == 'hex2ip') {
+      $output = hex2ip($input);
+    }
+
+
     echo formatOutput($output, type: $type);
   }
+
 
   /* ───────────────────────────────────────────────────────────────────── */
   /*                                 numgen                                */

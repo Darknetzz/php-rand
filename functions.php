@@ -13,7 +13,7 @@ function icon($icon, $rem = 1, $color = Null) {
     $style .= "font-size: {$rem}rem;";
   }
   $style .= "'";
-  return "<i class='bi bi-{$icon}' {$style}></i>";
+  return "<i class='bi bi-{$icon} mx-1' {$style}></i>";
 }
 
 /**
@@ -223,6 +223,40 @@ function submitBtn(string $value = "", string $name = "action", string $text = "
     </button>';
 }
 
+/* ────────────────────────────────────────────────────────────────────────── */
+/*                                  pageIcon                                  */
+/* ────────────────────────────────────────────────────────────────────────── */
+function pageIcon($page) {
+  if ($page == "dashboard") {
+    $icon = "house";
+  }
+  if ($page == "encoding") {
+    $icon = "key-fill";
+  }
+  if ($page == "hash") {
+    $icon = "key-fill";
+  }
+  if ($page == "hex") {
+    $icon = "file-earmark-binary-fill";
+  }
+  if ($page == "number_tools") {
+    $icon = "123";
+  }
+  if ($page == "openssl") {
+    $icon = "key-fill";
+  }
+  if ($page == "rot") {
+    $icon = "arrow-clockwise";
+  }
+  if ($page == "spin_the_wheel") {
+    $icon = "circle-fill";
+  }
+  if ($page == "string_tools") {
+    $icon = "alphabet";
+  }
+  return icon($icon);
+}
+
 /* ───────────────────────────────────────────────────────────────────── */
 /*                              listModules                              */
 /* ───────────────────────────────────────────────────────────────────── */
@@ -232,6 +266,7 @@ function listModules() {
     $name       = str_replace('!', '', basename($module, '.php'));
     $formalname = ucwords(str_replace('_', ' ', $name));
     $modules[]  = [
+      "icon"       => pageIcon($name),
       "formalName" => $formalname,
       "name"       => $name
     ];
@@ -267,5 +302,26 @@ function numGen(int $from, int $to, string $seed = Null) {
   }
   $num = mt_rand($from, $to);
   return $num;
+}
+
+/* ────────────────────────────────────────────────────────────────────────── */
+/*                                   ip2hex                                   */
+/* ────────────────────────────────────────────────────────────────────────── */
+function ip2hex ($ip, $split = False, $delimiter = ":") {
+  $hex = bin2hex(inet_pton($ip));
+  if ($split) {
+    $hex = str_split($hex, 2);
+    $hex = implode($delimiter, $hex);
+  }
+  return $hex;
+}
+
+/* ────────────────────────────────────────────────────────────────────────── */
+/*                                   hex2ip                                   */
+/* ────────────────────────────────────────────────────────────────────────── */
+function hex2ip ($hex) {
+  $hex = preg_replace('/[^a-f0-9]/i', '', $hex);  // Remove non-hex characters
+  $ip  = inet_ntop(hex2bin($hex));
+  return $ip;
 }
 ?>
