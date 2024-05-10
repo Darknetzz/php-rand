@@ -101,7 +101,7 @@ function returnClean($randomString) {
  * @param string $response The response to print.
  * @return void
  */
-function formatOutput($response, $size = 6, $type = "success") {
+function formatOutput($response, $size = 4, $type = "success") {
 
   if (is_array($response)) {
     $response = json_encode($response, JSON_PRETTY_PRINT);

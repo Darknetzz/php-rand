@@ -137,6 +137,7 @@ do {
     $split        = (!empty($_POST['split']) ? True : False);
     $delimiter    = (!empty($_POST['delimiter']) ? $_POST['delimiter'] : ":");
     $chunk_length = (!empty($_POST['chunklength']) ? $_POST['chunklength'] : 2);
+    $linebreak    = (!empty($_POST['linebreak']) ? $_POST['linebreak'] : Null);
 
     if ($tool == "hex2bin" || $tool == "bin2hex") {
       $input = $_POST['binhex'];
@@ -183,7 +184,10 @@ do {
         $ip_array = explode(",", $input);
         $output = "";
         foreach ($ip_array as $ip) {
-          $output .= ip2hex($ip, $split, $delimiter)."<br>";
+          $output .= ip2hex($ip, $split, $delimiter);
+          if ($linebreak !== Null) {
+            $output .= "<br>";
+          }
         }
       } else {
         $output = ip2hex($input, $split, $delimiter);
