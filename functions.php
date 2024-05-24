@@ -21,6 +21,7 @@ function icon($icon, $rem = 1, $color = Null) {
  * 
  */
 function alert($message, $type = 'success') {
+  $icon = "";
   if ($type == "danger") {
     $icon = icon("exclamation-triangle");
   }
