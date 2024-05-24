@@ -330,11 +330,17 @@ do {
   /*                                Serialization                           */
   /* ───────────────────────────────────────────────────────────────────── */
   if ($action == "serialization") {
-    $type  = $_POST['type'];
-    $input = $_POST['input'];
+    $type          = $_POST['type'];
+    $input         = $_POST['input'];
+    $stripcomments = $_POST['stripcomments'];
     if (empty($type) || empty($input)) {
       echo formatOutput("You must select a type and enter data.", type: "danger");
       break;
+    }
+
+    if (!empty($stripcomments)) {
+      $input = preg_replace('/^.*#.*\n/', '', $input);
+      $input = preg_replace('/^.*\/\/.*\n/', '', $input);
     }
 
     $xmlparser = xml_parser_create();
