@@ -32,7 +32,7 @@
                         <option value="YAML">YAML</option>
                 </select>
                 <label>
-                    <input type="checkbox" name="stripcomments"> Remove comments (lines starting with <code>#</code> or <code>//</code>)
+                    <input type="checkbox" name="stripcomments" value="1"> Remove comments (lines starting with <code>#</code> or <code>//</code>)
                 </label>
                 <hr>
                 <?= submitBtn("serialization", "action", "Generate", "arrow-repeat") ?>

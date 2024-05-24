@@ -338,7 +338,7 @@ do {
       break;
     }
 
-    if (!empty($stripcomments)) {
+    if (!empty($stripcomments) && $stripcomments == 1) {
       $input = preg_replace('/^.*#.*\n/', '', $input);
       $input = preg_replace('/^.*\/\/.*\n/', '', $input);
     }
