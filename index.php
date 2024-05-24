@@ -14,6 +14,25 @@
 <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.0.0-beta17/dist/js/tabler.min.js"></script>
 
 
+<!-- /* ────────────────────────────────────────────────────────────────────────── */ -->
+<!-- /*                               CODE HIGHLIGHT                               */ -->
+<!-- /* ────────────────────────────────────────────────────────────────────────── */ -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+
+<!-- and it's easy to individually load additional languages -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/go.min.js"></script>
+
+<script src="https://cdn.jsdelivr.net/gh/WebCoder49/code-input@2.2/code-input.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/WebCoder49/code-input@2.2/code-input.min.css">
+
+<!-- Plugins -->
+<script src="js/hljs_autodetect.js"></script>
+<script src="js/hljs_indent.js"></script>
+<!-- /* ────────────────────────────────────────────────────────────────────────── */ -->
+
+<!--In the <head>-->
+
 <title>Rand</title>
 
 <body class="theme-dark">
@@ -44,6 +63,18 @@ foreach (glob("modules/*.php") as $module) {
 
 <script>
 $( document ).ready(function() {
+
+  /* ───────────────────────────────────────────────────────────────────── */
+  /*                               Code Input                              */
+  /* ───────────────────────────────────────────────────────────────────── */
+  // hljs.highlightAll();
+  codeInput.registerTemplate("default", codeInput.templates.hljs(hljs, [
+    new codeInput.plugins.Autodetect(),
+    new codeInput.plugins.Indent(true, 2) // 2 spaces indentation
+  ] /* Array of plugins (see below) */));
+  $(".code").on("paste", function() {
+    this.style.height = "auto";
+  });
 
   /* ───────────────────────────────────────────────────────────────────── */
   /*                               setAction                               */
@@ -89,6 +120,18 @@ $( document ).ready(function() {
   }
   randomizeDice();
 
+  /* ────────────────────────────────────────────────────────────────────────── */
+  /*                               Copy to clipboard                            */
+  /* ────────────────────────────────────────────────────────────────────────── */
+  $(".copyText").click(function() {
+    var copyText = $(this).closest(".responseDiv");
+    copyText.select();
+    // copyText[0].setSelectionRange(0, 99999); /* For mobile devices */
+    document.execCommand("copy");
+    $(this).html("<?= icon("check") ?> Copied!");
+    $(this).addClass("btn-success");
+  });
+
   /* ───────────────────────────────────────────────────────────────────── */
   /*                              Form submit                              */
   /* ───────────────────────────────────────────────────────────────────── */
@@ -100,6 +143,14 @@ $( document ).ready(function() {
 
         // Set clicken `.genBtn` as form value
         var clickedGenBtn = $('.genBtn:focus');
+
+        // Set response type
+        if (form.data("responsetype")) {
+          var responsetype = form.data("responsetype");
+        } else {
+          var responsetype = "html";
+        }
+        setFormVal(form, "responsetype", responsetype);
 
         // Set form action
         if (form.data("action")) {
@@ -118,6 +169,14 @@ $( document ).ready(function() {
             setFormVal(form, name, value);
           }
         } 
+        
+        // NOTE: This is not needed because we are checking for the response object type
+        //       in the showData function.
+        // Determine response type (text or HTML)
+        // var responseType = form.data("responseType");
+        // if (responseType == undefined) {
+        //   responseType = "html";
+        // }
 
         // Send form
         var url = form.attr('action');
@@ -127,13 +186,16 @@ $( document ).ready(function() {
         var btnValue = $("button[clicked=true]").val();
 
         var serializeForm = form.serialize()+"&"+btnName+"="+btnValue;
+        console.log("[submitForm] Sending form: "+serializeForm);
 
         function showData(obj, data) {
           if (obj.is("div")) {
             obj.html(data);
+          } else if (obj.is("code-input")) {
+            obj.val(data.trim());
           } else {
             data = data.replace(/<(.|\n)*?>/g, '');
-            obj.val(data);
+            obj.val(data.trim());
           }
         }
 
@@ -148,7 +210,11 @@ $( document ).ready(function() {
                error: function(data)
                {
                   console.log(data);
-                  showData(responseObj, "<div class='alert alert-danger'>Error: "+data.statusText+"</div>");
+                  if (responsetype == "html") {
+                    showData(responseObj, "<div class='alert alert-danger'>Error: "+data.statusText+"</div>");
+                  } else {
+                    showData(responseObj, "Error: "+data.statusText);
+                  }
                },
                success: function(data){
                 showData(responseObj, data);
@@ -190,6 +256,7 @@ $( document ).ready(function() {
 
     // turn off all autocomplete
     $(".form-control").prop("autocomplete", "off");
+    $("input[type=checkbox]").addClass("form-check-input");
 });
 </script>
 </html>

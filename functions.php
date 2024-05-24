@@ -101,7 +101,7 @@ function returnClean($randomString) {
  * @param string $response The response to print.
  * @return void
  */
-function formatOutput($response, $size = 4, $type = "success") {
+function formatOutput($response, $size = 4, $type = "success", $responsetype = "html") {
 
   if (is_array($response)) {
     $response = json_encode($response, JSON_PRETTY_PRINT);
@@ -111,13 +111,15 @@ function formatOutput($response, $size = 4, $type = "success") {
     $response = "No output";
   }
 
-  $response = "
-  <h$size class='output bg-$type-subtle text-$type-emphasis rounded-3' style='padding:20px;'>
-      {$response}
-  </h$size>
-  ";
+  if ($responsetype == "html") {
+    $response = "
+    <h$size class='output bg-$type-subtle text-$type-emphasis rounded-3' style='padding:20px;'>
+    {$response}
+    </h$size>
+    ";
+  }
 
-  return $response;
+  return trim($response);
 }
 
 /**
@@ -253,6 +255,12 @@ function pageIcon($page) {
   }
   if ($page == "string_tools") {
     $icon = "alphabet";
+  }
+  if ($page == "serialization") {
+    $icon = "list-ol";
+  }
+  if (empty($icon)) {
+    $icon = "question-octagon";
   }
   return icon($icon);
 }

@@ -27,6 +27,12 @@ do {
     die("No action specified.");
   }
 
+  # Return type (html / text)
+  $responsetype = "html";
+  if (!empty($_POST['responsetype'])) {
+    $responsetype = $_POST['responsetype'];
+  }
+
   $action = $_POST['action'];
 
 
@@ -320,7 +326,40 @@ do {
   /* ───────────────────────────────────────────────────────────────────── */
 
 
+  /* ───────────────────────────────────────────────────────────────────── */
+  /*                                Serialization                           */
+  /* ───────────────────────────────────────────────────────────────────── */
+  if ($action == "serialization") {
+    $type  = $_POST['type'];
+    $input = $_POST['input'];
+    if (empty($type) || empty($input)) {
+      echo formatOutput("You must select a type and enter data.", type: "danger");
+      break;
+    }
 
+    $xmlparser = xml_parser_create();
+    # Detect input
+    if (json_validate($input)) {
+      $input = json_decode($input, True);
+    } elseif (yaml_parse($input)) {
+      $input = yaml_parse($input);
+    } elseif (xml_parse($xmlparser, $input)) {
+      $input = xml_parse($xmlparser, $input);
+    } else {
+      echo formatOutput("Invalid input. It must valid JSON, XML or YAML.", type: "danger");
+      break;
+    }
+
+    # Convert to desired type
+    if ($type == "JSON") {
+      $output = json_encode($input, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+    } elseif ($type == "XML") {
+      $output = array2xml($input);
+    } elseif ($type == "YAML") {
+      $output = yaml_emit($input);
+    }
+    echo formatOutput($output, responsetype: "text");
+  }
 
   /* -------------------------------------------------------------------------- */
   /*                                String tools                                */
@@ -493,6 +532,10 @@ do {
     }
 
     echo formatOutput(nl2br($string));
+  }
+
+  if ($responsetype != "html") {
+    break;
   }
 
   echo $debug;

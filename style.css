@@ -13,8 +13,8 @@ body {
   input, input:active, input:focus, .jumbotron, 
   .form-control, .form-control:active, .form-control:focus,
   .form-select, .form-select:active, .form-select:focus {
-    background-color:#303030;
-    color:#FFF;
+    /* background-color:#303030; */
+    /* color:#FFF; */
     max-width:500px;
   }
   
@@ -52,4 +52,13 @@ body {
   .card-body {
     padding:15px;
     margin:15px;
+  }
+
+  /* Can be scrolled */
+  .code {
+    height: auto;
+    min-height: 300px;
+    overflow: auto;
+    /* white-space: nowrap; Allows textarea to scroll horizontally */
+    font-family: monospace;
   }
