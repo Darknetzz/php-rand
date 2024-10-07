@@ -260,6 +260,9 @@ function pageIcon($page) {
   if ($page == "serialization") {
     $icon = "list-ol";
   }
+  if ($page == "datetime") {
+    $icon = "clock";
+  }
   if (empty($icon)) {
     $icon = "question-octagon";
   }

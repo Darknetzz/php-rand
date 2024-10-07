@@ -36,6 +36,42 @@ do {
   $action = $_POST['action'];
 
 
+  /* ────────────────────────────────────────────────────────────────────────── */
+  /*                                  datetime                                  */
+  /* ────────────────────────────────────────────────────────────────────────── */
+  if ($action == "datetime") {
+    $timefrom_unit = $_POST['timefrom_unit'];
+    $timeto_unit   = $_POST['timeto_unit'];
+    $time          = $_POST['time'];
+
+    if (empty($time) || empty($timefrom_unit) || empty($timeto_unit)) {
+      echo formatOutput("You must enter a value and select units.", type: "danger");
+      break;
+    }
+
+    $time = intval($time);
+
+    $units    = [
+      "s" => ["seconds", 1],
+      "i" => ["minutes", 60],
+      "h" => ["hours", 3600],
+      "d" => ["days", 86400],
+      "w" => ["weeks", 604800],
+      "M" => ["months", 2628000],
+      "y" => ["years", 31536000]
+    ];
+
+    $timefrom = $units[$timefrom_unit][1];
+    $timeto   = $units[$timeto_unit][1];
+
+    $from_unit_name = $units[$timefrom_unit][0];
+    $to_unit_name   = $units[$timeto_unit][0];
+    $converted      = ($time * $timefrom) / $timeto;
+    $converted      = "$time $from_unit_name is equal to <b>$converted $to_unit_name</b>";
+    echo formatOutput($converted);
+  }
+
+
   /* ───────────────────────────────────────────────────────────────────── */
   /*                                 genstr                                */
   /* ───────────────────────────────────────────────────────────────────── */
@@ -109,12 +145,12 @@ do {
 
     $allBasesAreBelongToUs = "";
 
-    $allBasesAreBelongToUs .= "<b>Input (Base $from):</b> $_POST[base]<br><br>";
-    $allBasesAreBelongToUs .= "Base64 encode: ".base64_encode($_POST['base'])."<br>";
-    $allBasesAreBelongToUs .= "Base64 decode: ".base64_decode($_POST['base'])."<br>";
+    $allBasesAreBelongToUs .= "<b>Input (Base $from):</b> <code>$_POST[base]</code><br><br>";
+    $allBasesAreBelongToUs .= "Base64 encode: <code>".base64_encode($_POST['base'])."</code><br>";
+    $allBasesAreBelongToUs .= "Base64 decode: <code>".base64_decode($_POST['base'])."</code><br>";
     $allBasesAreBelongToUs .= "<hr>";
     for ($i = 2; $i <= 36; $i++) {
-      $allBasesAreBelongToUs .= "<b>Base$i:</b> ".base_convert($_POST['base'], $from, $i)."<br>";
+      $allBasesAreBelongToUs .= "<b>Base$i:</b> <code>".base_convert($_POST['base'], $from, $i)."</code><br>";
     }
 
     echo formatOutput($allBasesAreBelongToUs);
