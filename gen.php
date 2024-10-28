@@ -384,9 +384,12 @@ do {
     # Detect input
     if (json_validate($input)) {
       $input = json_decode($input, True);
-    } elseif (yaml_parse($input)) {
-      $input = yaml_parse($input);
-    } elseif (xml_parse($xmlparser, $input)) {
+    } 
+    # REVIEW: yaml_parse is undefined.
+    // elseif (yaml_parse($input)) {
+    //   $input = yaml_parse($input);
+    // } 
+    elseif (xml_parse($xmlparser, $input)) {
       $input = xml_parse($xmlparser, $input);
     } else {
       echo formatOutput("Invalid input. It must valid JSON, XML or YAML.", type: "danger");
@@ -396,11 +399,15 @@ do {
     # Convert to desired type
     if ($type == "JSON") {
       $output = json_encode($input, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
-    } elseif ($type == "XML") {
-      $output = array2xml($input);
-    } elseif ($type == "YAML") {
-      $output = yaml_emit($input);
-    }
+    } 
+    # REVIEW: array2xml is undefined.
+    // elseif ($type == "XML") {
+    //   $output = array2xml($input);
+    // } 
+    # REVIEW: yaml_emit is undefined.
+    // elseif ($type == "YAML") {
+    //   $output = yaml_emit($input);
+    // }
     echo formatOutput($output, responsetype: "text");
   }
 
