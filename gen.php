@@ -34,6 +34,7 @@ do {
   }
 
   $action = $_POST['action'];
+  $tool   = ($_POST['tool'] ?? Null);
 
 
   /* ────────────────────────────────────────────────────────────────────────── */
@@ -574,6 +575,162 @@ do {
     }
 
     echo formatOutput(nl2br($string));
+  }
+
+  /* ───────────────────────────────────────────────────────────────────── */
+  /*                                IP tools                               */
+  /* ───────────────────────────────────────────────────────────────────── */
+  if ($action == "ip") {
+
+    /* ────────────────────────────────────────────────────────────────────────── */
+    /*                                 cidr2range                                 */
+    /* ────────────────────────────────────────────────────────────────────────── */
+    if ($tool == "cidr2range") {
+        $cidr = (!empty($_POST['cidr']) ? $_POST['cidr'] : Null);
+        if (empty($cidr)) {
+          echo formatOutput("You must enter a CIDR range.", type: "danger");
+          break;
+        }
+
+        $range = cidr2range($cidr);
+        if (!$range) {
+          echo formatOutput("Invalid CIDR range.", type: "danger");
+          break;
+        }
+        if (is_array($range['cidr'])) {
+          $range['cidr'] = implode("<br>", $range['cidr']);
+        }
+        echo formatOutput("
+          <table class='table table-bordered'>
+            <tr class='table table-primary'>
+              <th>Property</th>
+              <th>Value</th>
+            </tr>
+            <tr>
+              <td>CIDR range</td>
+              <td>". $range['cidr'] ."</td>
+            </tr>
+            <tr>
+              <td>Start IP</td>
+              <td>". $range['start'] ."</td>
+            </tr>
+            <tr>
+              <td>End IP</td>
+              <td>". $range['end'] ."</td>
+            </tr>
+            <tr>
+              <td>Total IPs</td>
+              <td>". $range['total'] ."</td>
+            </tr>
+          </table>
+        ");
+    }
+
+    /* ────────────────────────────────────────────────────────────────────────── */
+    /*                                 range2cidr                                 */
+    /* ────────────────────────────────────────────────────────────────────────── */
+    if ($tool == "range2cidr") {
+      $startip = (!empty($_POST['startip']) ? $_POST['startip'] : Null);
+      $endip   = (!empty($_POST['endip'])   ? $_POST['endip']   : Null);
+
+      if (empty($startip) || empty($endip)) {
+        echo formatOutput("You must enter a start and end IP.", type: "danger");
+        break;
+      }
+
+      $cidr = range2cidr($startip, $endip);
+      if (!$cidr) {
+        echo formatOutput("Invalid IP range.", type: "danger");
+        break;
+      }
+      if (is_array($cidr["cidrs"])) {
+        $cidr["cidrs"] = implode("<br>", $cidr["cidrs"]);
+      }
+      echo formatOutput("
+        <table class='table table-bordered'>
+          <tr class='table table-primary'>
+            <th>Property</th>
+            <th>Value</th>
+          </tr>
+          <tr>
+            <td>CIDR range(s)</td>
+            <td>". $cidr["cidrs"] ."</td>
+          </tr>
+          <tr>
+            <td>Start</td>
+            <td>". $cidr["start"] ."</td>
+          </tr>
+          <tr>
+            <td>End</td>
+            <td>". $cidr["end"] ."</td>
+          </tr>
+          <tr>
+            <td>Total IPs</td>
+            <td>". $cidr["total_ips"] ."</td>
+          </tr>
+        </table>
+      ");
+    }
+
+    /* ────────────────────────────────────────────────────────────────────────── */
+    /*                                 subnetmask                                 */
+    /* ────────────────────────────────────────────────────────────────────────── */
+    if ($tool == "subnetmask") {
+      $ip     = (!empty($_POST['ip'])     ? $_POST['ip']     : Null);
+      $subnet = (!empty($_POST['subnet']) ? $_POST['subnet'] : Null);
+
+      if (empty($ip) || empty($subnet)) {
+        echo formatOutput("You must enter an IP and subnet mask.", type: "danger");
+        break;
+      }
+
+      $subnetmask = subnetmask($ip, $subnet);
+      if (!$subnetmask) {
+        echo formatOutput("Invalid IP or subnet mask.", type: "danger");
+        break;
+      }
+
+      if (is_array($subnetmask["cidrs"])) {
+        $subnetmask["cidrs"] = implode("<br>", $subnetmask["cidrs"]);
+      }
+
+      echo formatOutput("
+        <table class='table table-bordered'>
+          <tr class='table table-primary'>
+            <th>Property</th>
+            <th>Value</th>
+          </tr>
+          <tr>
+            <td>Network</td>
+            <td>". $subnetmask["network"] ."</td>
+          </tr>
+          <tr>
+            <td>First IP</td>
+            <td>". $subnetmask["start"] ."</td>
+          </tr>
+          <tr>
+            <td>Last IP</td>
+            <td>". $subnetmask["end"] ."</td>
+          </tr>
+          <tr>
+            <td>Broadcast</td>
+            <td>". $subnetmask["broadcast"] ."</td>
+          </tr>
+          <tr>
+            <td>Subnet mask</td>
+            <td>". $subnetmask["subnet"] ."</td>
+          </tr>
+          <tr>
+            <td>CIDR</td>
+            <td>". $subnetmask["cidr"] ."</td>
+          </tr>
+          <tr>
+            <td>Usable IPs</td>
+            <td>". $subnetmask["usable_ips"] ."</td>
+          </tr>
+      ");
+    }
+
   }
 
   if ($responsetype != "html") {

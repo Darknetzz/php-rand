@@ -263,6 +263,9 @@ function pageIcon($page) {
   if ($page == "datetime") {
     $icon = "clock";
   }
+  if ($page == "ip") {
+    $icon = "globe";
+  }
   if (empty($icon)) {
     $icon = "question-octagon";
   }
@@ -336,4 +339,126 @@ function hex2ip ($hex) {
   $ip  = inet_ntop(hex2bin($hex));
   return $ip;
 }
+
+/* ────────────────────────────────────────────────────────────────────────── */
+/*                               cidr2range                                   */
+/* ────────────────────────────────────────────────────────────────────────── */
+function cidr2range($cidr) {
+  if (strpos($cidr, '/') === False) {
+    return False;
+  }
+  $range = [];
+  $cidr = explode('/', $cidr);
+  $prefix = isset($cidr[1]) ? (int)$cidr[1] : 0;
+
+  if (filter_var($cidr[0], FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+    $range["start"] = long2ip((ip2long($cidr[0])) & ((-1 << (32 - $prefix)) & 0xFFFFFFFF));
+    $range["end"] = long2ip((ip2long($cidr[0])) | ((1 << (32 - $prefix)) - 1));
+  } elseif (filter_var($cidr[0], FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+    $ip = inet_pton($cidr[0]);
+    $binMask = str_repeat("1", $prefix) . str_repeat("0", 128 - $prefix);
+    $mask = inet_ntop(pack('H*', base_convert($binMask, 2, 16)));
+    $range["start"] = inet_ntop($ip & inet_pton($mask));
+    $range["end"] = inet_ntop($ip | ~inet_pton($mask));
+  } else {
+    return False;
+  }
+
+  $range["cidr"]  = $cidr[0] . "/" . $prefix;
+  $range["total"] = ip2long($range["end"]) - ip2long($range["start"]) + 1;
+
+  return $range;
+}
+
+
+/* ────────────────────────────────────────────────────────────────────────── */
+/*                                 range2cidr                                 */
+/* ────────────────────────────────────────────────────────────────────────── */
+/**
+ * Converts an IP range to multiple CIDR notations if necessary.
+ *
+ * @param string $start The starting IP address of the range.
+ * @param string $end The ending IP address of the range.
+ * @return array An array of CIDR notations covering the IP range.
+ */
+function range2cidr($start, $end) {
+  if (
+    filter_var($start, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === False || 
+    filter_var($end, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === False) {
+    return False;
+  }
+  $start_long = ip2long($start);
+  $end_long   = ip2long($end);
+  $cidrs = [];
+
+  while ($end_long >= $start_long) {
+    $maxSize = 32;
+    while ($maxSize > 0) {
+      $mask = 1 << (32 - $maxSize);
+      if (($start_long & ($mask - 1)) != 0) {
+        break;
+      }
+      $maxSize--;
+    }
+
+    $maxDiff = 32 - (int)floor(log($end_long - $start_long + 1) / log(2));
+    if ($maxSize < $maxDiff) {
+      $maxSize = $maxDiff;
+    }
+
+    $cidr        = long2ip($start_long) . '/' . $maxSize;
+    $cidrs[]     = $cidr;
+    $start_long += 1 << (32 - $maxSize);
+
+    // Free memory by unsetting variables
+    unset($mask, $maxDiff, $cidr);
+  }
+
+  $ip["cidrs"]     = $cidrs;
+  $ip["start"]     = $start;
+  $ip["end"]       = $end;
+  $ip["total"]     = count($cidrs);
+  $ip["total_ips"] = (ip2long($end) - ip2long($start) + 1);
+  return $ip;
+}
+
+/* ────────────────────────────────────────────────────────────────────────── */
+/*                                subnetmask                                 */
+/* ────────────────────────────────────────────────────────────────────────── */
+function subnetmask($ip, $subnet) {
+  if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === False || filter_var($subnet, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === False) {
+    return False;
+  }
+  $ip         = ip2long($ip);
+  $subnet     = ip2long($subnet);
+  $network    = $ip & $subnet;
+  $broadcast  = $ip | ~$subnet;
+  $start      = $network + 1;
+  $end        = $broadcast - 1;
+  $start_ip   = long2ip($start);
+  $end_ip     = long2ip($end);
+  $total      = $broadcast - $network;
+
+  if ($subnet == 0 || $subnet == 4294967295) {
+    $end    = $start;
+    $end_ip = $start_ip;
+    $total  = 1; // Adjust total for special cases
+  }
+
+  $range      = [
+    "start_long" => $start,
+    "end_long"   => $end,
+    "network"    => long2ip($network),
+    "broadcast"  => long2ip($broadcast),
+    "start"      => $start_ip,
+    "end"        => $end_ip,
+    "total"      => $total,
+    "total_ips"  => ($end - $start) + 1,
+    "subnet"     => long2ip($subnet),
+    "cidr"       => long2ip($network) . "/" . (32 - (int)log(~$subnet & 0xFFFFFFFF, 2)),
+    "usable_ips" => cidr2range(long2ip($network) . "/" . (32 - (int)log(~$subnet & 0xFFFFFFFF, 2)), True)["total"]
+  ];
+  return $range;
+}
+
 ?>
