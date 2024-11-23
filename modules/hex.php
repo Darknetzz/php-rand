@@ -3,7 +3,7 @@
     <h1 class="card-header">Binhex</h1>
     <div class="card card-body">
       <form class="form" action="gen.php" method="POST" id="binhex" data-action="hex">
-        <input type="text" name="binhex" class="form-control mb-2" placeholder="Binary or Hexadecimal">
+        <textarea type="text" name="binhex" class="form-control mb-2" placeholder="Binary or Hexadecimal"></textarea>
         <label class="mb-2">
           <input type="checkbox" name="split" value="1" class="toggledelimiter"> Split output
         </label>
