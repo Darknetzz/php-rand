@@ -263,7 +263,7 @@ function pageIcon($page) {
   if ($page == "datetime") {
     $icon = "clock";
   }
-  if ($page == "ip") {
+  if ($page == "networking") {
     $icon = "globe";
   }
   if (empty($icon)) {
