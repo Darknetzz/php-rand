@@ -18,6 +18,10 @@
                         <input type="number" name="digits" class="form-control" id="stringgenLength" value="10">
                         <label for="stringgenLength">Length</label>
                     </div>
+                    <div class="form-floating">
+                        <input type="number" name="strings" class="form-control" id="strings" value="1">
+                        <label for="strings">Amount of strings to generate</label>
+                    </div>
                 </div>
 
                 <?php
