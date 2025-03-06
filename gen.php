@@ -114,7 +114,10 @@ do {
     $charactersLength = strlen($charsets);
 
     echo "<hr>";
-    echo formatOutput($randomString);
+    foreach ($randomString as $string) {
+      echo formatOutput($string);
+    }
+    // echo formatOutput($randomString);
     echo "
 
     <button class='btn btn-info' type='button' data-bs-toggle='collapse' data-bs-target='#additionalInfo' aria-expanded='false' aria-controls='additionalInfo'>".icon('info-circle')."</button>
