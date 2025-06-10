@@ -24,7 +24,7 @@ $unitSelector = function($inputName = "time") {
     <div class="card card-primary">
         <h1 class="card-header">Datetime</h1>
         <div class="card-body">
-            <p class="datetime-current"></p>
+            <p class="datetime-current text-success"></p>
             <hr>
             <form class="form" action="gen.php" method="POST" id="datetime" data-action="datetime">
 
