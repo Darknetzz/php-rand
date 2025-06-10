@@ -22,12 +22,13 @@ $unitSelector = function($inputName = "time") {
 
 <div id="datetime" class="content">
     <div class="card card-primary">
-        <h1 class="card-header">Unit converter</h1>
+        <h1 class="card-header">Datetime</h1>
         <div class="card-body">
-            <span class="text-muted">Convert time units</span>
+            <p class="datetime-current"></p>
             <hr>
             <form class="form" action="gen.php" method="POST" id="datetime" data-action="datetime">
 
+                <h2>Convert Time Units</h2>
                 <table class="table table-default w-50">
                     <tr class="table-secondary">
                         <th></th>
