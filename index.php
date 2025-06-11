@@ -8,7 +8,6 @@
 <link rel="stylesheet"
   href="https://cdn.jsdelivr.net/npm/@tabler/core@1.3.2/dist/css/tabler.min.css" />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
-<link rel="stylesheet" href="style.css">
 
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"
     integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
@@ -27,6 +26,7 @@
 <!-- and it's easy to individually load additional languages -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/go.min.js"></script>
 
+
 <script src="https://cdn.jsdelivr.net/gh/WebCoder49/code-input@2.2/code-input.min.js"></script>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/WebCoder49/code-input@2.2/code-input.min.css">
 
@@ -34,6 +34,8 @@
 <script src="js/hljs_autodetect.js"></script>
 <script src="js/hljs_indent.js"></script>
 <!-- /* =====================================================================───── */ -->
+
+<link rel="stylesheet" href="style.css">
 
 <!--In the <head>-->
 

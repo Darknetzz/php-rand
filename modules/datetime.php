@@ -21,25 +21,40 @@ $unitSelector = function($inputName = "time") {
 ?>
 
 <div id="datetime" class="content">
+
+    <div class="card card-primary">
+        <h1 class="card-header">Current Datetime</h1>
+        <div class="card-body">
+            <pre><h2 class="datetime-current text-success text-center"></h2></pre>
+        </div>
+    </div>
+
+
+    <div class="card card-primary">
+        <h1 class="card-header">Time Calculator</h1>
+        <div class="card-body">
+            <?= alert("Coming soon...", "info") ?>
+        </div>
+    </div>
+
+
     <div class="card card-primary">
         <h1 class="card-header">Datetime</h1>
         <div class="card-body">
-            <p class="datetime-current text-success"></p>
-            <hr>
             <form class="form" action="gen.php" method="POST" id="datetime" data-action="datetime">
 
                 <h2>Convert Time Units</h2>
                 <table class="table table-default w-50">
-                    <tr class="table-secondary">
+                    <tr class="tablehead">
                         <th></th>
                         <th>Value</th>
                         <th>Unit</th>
                     </tr>
 
                     <tr>
-                        <th class="table-secondary">
+                        <td class="tablehead">
                             From
-                        </th>
+                        </td>
                         <td>
                             <input type="text" name="time" class="form-control" placeholder="Please enter a number">
                         </td>
@@ -49,7 +64,7 @@ $unitSelector = function($inputName = "time") {
                     </tr>
 
                     <tr>
-                        <th class="table-secondary">
+                        <th class="tablehead">
                             To
                         </th>
                         <!-- <td>

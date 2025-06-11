@@ -62,3 +62,9 @@ body {
     /* white-space: nowrap; Allows textarea to scroll horizontally */
     font-family: monospace;
   }
+
+  .tablehead {
+      text-align: center;
+      background-color: var(--tblr-green-lt);
+      color: var(--tblr-green-dk);
+    }
