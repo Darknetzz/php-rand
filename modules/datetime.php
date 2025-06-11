@@ -18,14 +18,37 @@ $unitSelector = function($inputName = "time") {
     $options .= "</select>";
     return $options;
 };
+
+$timeZoneSelector = function($inputName = "timezone") {
+    $timezones = DateTimeZone::listIdentifiers();
+    $options = "
+        <select name='$inputName' class='form-select'>
+            <option value='' disabled selected>Select a timezone</option>";
+    foreach ($timezones as $timezone) {
+        $options .= '<option value="'.$timezone.'">'.$timezone.'</option>';
+    }
+    $options .= "</select>";
+    return $options;
+};
 ?>
 
 <div id="datetime" class="content">
 
     <div class="card card-primary">
         <h1 class="card-header">Current Datetime</h1>
-        <div class="card-body">
-            <pre><h2 class="datetime-current text-success text-center"></h2></pre>
+        <div class="card-body" style="text-align: center;">
+            <table class="table table-default w-50">
+                <tr class="tablehead">
+                    <th>Timezone</th>
+                    <th>Current Time</th>
+                    <th class="w-50">Select Timezone</th>
+                </tr>
+                <tr>
+                    <td class="timezone"></td>
+                    <td class="datetime-current text-success"></td>
+                    <td><?= $timeZoneSelector("timezone") ?></td>
+                </tr>
+            </table>
         </div>
     </div>
 

@@ -70,6 +70,19 @@ foreach (glob("modules/*.php") as $module) {
 
 <script>
 /* ===================================================================== */
+/*                         FUNCTION: getTimeZone                         */
+/* ===================================================================== */
+function getTimeZone() {
+    var date    = new Date();
+    var offset  = -date.getTimezoneOffset();
+    var hours   = Math.floor(Math.abs(offset) / 60);
+    var minutes = Math.abs(offset) % 60;
+    var sign    = offset >= 0 ? '+' : '-';
+    var tz      = 'UTC' + sign + (hours < 10 ? '0' : '') + hours + ':' + (minutes < 10 ? '0' : '') + minutes;
+    return tz
+}
+
+/* ===================================================================== */
 /*                          FUNCTION: updateTime                         */
 /* ===================================================================== */
 function updateTime() {
@@ -148,6 +161,10 @@ function randomizeDice() {
 /*                        FUNCTION: document.ready                       */
 /* ===================================================================== */
 $(document).ready(function() {
+
+    const tz = getTimeZone();
+    $(".timezone").text(tz);
+
     updateTime();
     setInterval(function() {
         updateTime();
