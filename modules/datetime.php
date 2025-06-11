@@ -65,12 +65,6 @@ $timeZoneSelector = function($inputName = "timezone") {
         <h1 class="card-header">Time Calculator</h1>
         <div class="card-body">
             <table class="table table-default w-50">
-                <tr class="tablehead">
-                    <th></th>
-                    <th>Value</th>
-                    <th>Unit</th>
-                </tr>
-
                 <tr>
                     <th class="tablehead">
                         Start Time
@@ -106,9 +100,9 @@ $timeZoneSelector = function($inputName = "timezone") {
                     </tr>
 
                     <tr>
-                        <td class="tablehead">
+                        <th class="tablehead">
                             From
-                        </td>
+                        </th>
                         <td>
                             <input type="text" name="time" class="form-control" placeholder="Please enter a number">
                         </td>
