@@ -63,8 +63,12 @@ body {
     font-family: monospace;
   }
 
-  .tablehead {
-      text-align: center;
-      background-color: var(--tblr-green-lt);
-      color: var(--tblr-green-dk);
-    }
+  .tablehead,
+  td.tablehead,
+  th.tablehead,
+  .tablehead td,
+  .tablehead th {
+    text-align: center;
+    background-color: var(--tblr-green-lt);
+    color: var(--tblr-green-dk);
+  }

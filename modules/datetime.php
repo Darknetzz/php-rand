@@ -25,7 +25,15 @@ $timeZoneSelector = function($inputName = "timezone") {
         <select name='$inputName' class='form-select'>
             <option value='' disabled selected>Select a timezone</option>";
     foreach ($timezones as $timezone) {
-        $options .= '<option value="'.$timezone.'">'.$timezone.'</option>';
+        $offset_seconds  = (new DateTime("now", new DateTimeZone($timezone)))->getOffset();
+        if ($offset_seconds === 0) {
+            $offset_format = "UTC";
+        } else {
+            $offset_hours = $offset_seconds / 3600;
+            $sign = $offset_hours > 0 ? '+' : '-';
+            $offset_format = "UTC" . $sign . abs($offset_hours);
+        }
+        $options .= '<option value="'.$timezone.'">'.$timezone.' ('.$offset_format.')</option>';
     }
     $options .= "</select>";
     return $options;
@@ -64,9 +72,9 @@ $timeZoneSelector = function($inputName = "timezone") {
                 </tr>
 
                 <tr>
-                    <td class="tablehead">
+                    <th class="tablehead">
                         Start Time
-                    </td>
+                    </th>
                     <td>
                         now
                     </td>
