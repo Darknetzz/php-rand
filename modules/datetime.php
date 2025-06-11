@@ -33,17 +33,40 @@ $unitSelector = function($inputName = "time") {
     <div class="card card-primary">
         <h1 class="card-header">Time Calculator</h1>
         <div class="card-body">
-            <?= alert("Coming soon...", "info") ?>
+            <table class="table table-default w-50">
+                <tr class="tablehead">
+                    <th></th>
+                    <th>Value</th>
+                    <th>Unit</th>
+                </tr>
+
+                <tr>
+                    <td class="tablehead">
+                        Start Time
+                    </td>
+                    <td>
+                        now
+                    </td>
+                </tr>
+
+                <tr>
+                    <th class="tablehead">
+                        To
+                    </th>
+                    <td colspan="2">
+                        <?= $unitSelector("timecalc_to_unit") ?>
+                    </td>
+                </tr>
+            </table>
         </div>
     </div>
 
 
     <div class="card card-primary">
-        <h1 class="card-header">Datetime</h1>
+        <h1 class="card-header">Convert Time Units</h1>
         <div class="card-body">
             <form class="form" action="gen.php" method="POST" id="datetime" data-action="datetime">
 
-                <h2>Convert Time Units</h2>
                 <table class="table table-default w-50">
                     <tr class="tablehead">
                         <th></th>
