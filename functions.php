@@ -234,13 +234,10 @@ function pageIcon($page) {
     $icon = "house";
   }
   if ($page == "encoding") {
-    $icon = "key-fill";
+    $icon = "file-earmark-binary-fill";
   }
   if ($page == "hash") {
     $icon = "key-fill";
-  }
-  if ($page == "hex") {
-    $icon = "file-earmark-binary-fill";
   }
   if ($page == "number_tools") {
     $icon = "123";
