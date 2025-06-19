@@ -86,7 +86,7 @@ function getTimeZone() {
 /*                          FUNCTION: updateTime                         */
 /* ===================================================================== */
 function updateTime() {
-    const obj = $(".datetime-current");
+    const obj = $(".datetime");
     const now = new Date();
     const pad = n => n.toString().padStart(2, '0');
     const formatted = now.getFullYear() + '-' +
@@ -95,7 +95,7 @@ function updateTime() {
         pad(now.getHours()) + ':' +
         pad(now.getMinutes()) + ':' +
         pad(now.getSeconds());
-    obj.text(formatted);
+    obj.text(formatted)
 }
 
 /* ===================================================================== */

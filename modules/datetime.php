@@ -53,7 +53,7 @@ $timeZoneSelector = function($inputName = "timezone") {
                 </tr>
                 <tr>
                     <td class="timezone"></td>
-                    <td class="datetime-current text-success"></td>
+                    <td class="datetime text-success"></td>
                     <td><?= $timeZoneSelector("timezone") ?></td>
                 </tr>
             </table>
@@ -70,19 +70,32 @@ $timeZoneSelector = function($inputName = "timezone") {
                         Start Time
                     </th>
                     <td>
-                        now
+                        <input type="datetime-local" name="timecalc_start" class="form-control" placeholder="Please enter a date and time" value="<?= date('Y-m-d\TH:i') ?>">
                     </td>
                 </tr>
-
                 <tr>
                     <th class="tablehead">
-                        To
+                        Add/Subtract
                     </th>
-                    <td colspan="2">
-                        <?= $unitSelector("timecalc_to_unit") ?>
+                    <td>
+                        <select name="timecalc_action" class="form-select">
+                            <option value="add">add</option>
+                            <option value="subtract">subtract</option>
+                        </select>
+                    </td>
+                </tr>
+                    <th class="tablehead">
+                        Units
+                    </th>
+                    <td>
+                        <input type="number" name="timecalc_value" class="form-control" placeholder="Please enter a number">
+                    </td>
+                    <td>
+                        <?= $unitSelector("timecalc_unit") ?>
                     </td>
                 </tr>
             </table>
+            <?= submitBtn("timecalc", "action", "Calculate", "calculator") ?>
         </div>
     </div>
 
