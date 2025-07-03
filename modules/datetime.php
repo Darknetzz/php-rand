@@ -22,7 +22,7 @@ $unitSelector = function($inputName = "time") {
 $timeZoneSelector = function($inputName = "timezone") {
     $timezones = DateTimeZone::listIdentifiers();
     $options = "
-        <select name='$inputName' class='form-select'>
+        <select name='$inputName' class='form-select timezone-select'>
             <option value='' disabled selected>Select a timezone</option>";
     foreach ($timezones as $timezone) {
         $offset_seconds  = (new DateTime("now", new DateTimeZone($timezone)))->getOffset();
@@ -45,7 +45,7 @@ $timeZoneSelector = function($inputName = "timezone") {
     <div class="card card-primary">
         <h1 class="card-header">Current Datetime</h1>
         <div class="card-body" style="text-align: center;">
-            <table class="table table-default w-50">
+            <table class="table table-default w-100">
                 <tr class="tablehead">
                     <th>Timezone</th>
                     <th>Current Time</th>
@@ -64,6 +64,7 @@ $timeZoneSelector = function($inputName = "timezone") {
     <div class="card card-primary">
         <h1 class="card-header">Time Calculator</h1>
         <div class="card-body">
+            <p class="text-warning">Work in progress! This tool allows you to add or subtract time from a given date and time.</p>
             <table class="table table-default w-50">
                 <tr>
                     <th class="tablehead">

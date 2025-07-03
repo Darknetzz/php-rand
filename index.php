@@ -83,11 +83,32 @@ function getTimeZone() {
 }
 
 /* ===================================================================== */
+/*                         FUNCTION: setTimeZone                         */
+/* ===================================================================== */
+function setTimeZone(tz = null) {
+    if (tz == null) {
+        tz = getTimeZone();
+    }
+    console.log("[setTimeZone] Setting timezone to: " + tz);
+    $(".timezone").text(tz);
+    // Set the timezone in the datetime object
+    var date = new Date();
+    date.toLocaleString("en-US", { timeZone: tz });
+    updateTime(tz);
+}
+
+/* ===================================================================== */
 /*                          FUNCTION: updateTime                         */
 /* ===================================================================== */
-function updateTime() {
+function updateTime(tz = null) {
     const obj = $(".datetime");
-    const now = new Date();
+    let now;
+    if (tz && tz.match(/^[A-Za-z_/\-]+$/)) {
+        // Only use toLocaleString if tz is a valid IANA time zone name
+        now = new Date(new Date().toLocaleString("en-US", { timeZone: tz }));
+    } else {
+        now = new Date();
+    }
     const pad = n => n.toString().padStart(2, '0');
     const formatted = now.getFullYear() + '-' +
         pad(now.getMonth() + 1) + '-' +
@@ -162,15 +183,27 @@ function randomizeDice() {
 /* ===================================================================== */
 $(document).ready(function() {
 
-    const tz = getTimeZone();
+    var tz = getTimeZone();
     $(".timezone").text(tz);
 
-    updateTime();
+    console.log("[document.ready] Current timezone: " + tz);
+
+    updateTime(tz);
     setInterval(function() {
-        updateTime();
+        updateTime(tz);
     }, 1000);
 
     randomizeDice();
+
+    /* ===================================================================== */
+    /*                            Timezone update                            */
+    /* ===================================================================== */
+    $(".timezone").text(getTimeZone());
+    $(".timezone-select").change(function() {
+        tz = $(this).val();
+        setTimeZone(tz);
+        updateTime(tz);
+    });
 
     /* ===================================================================== */
     /*                               Code Input                              */
