@@ -6,25 +6,29 @@
 
 <!-- <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous"> -->
 <link rel="stylesheet"
-  href="https://cdn.jsdelivr.net/npm/@tabler/core@1.3.2/dist/css/tabler.min.css" />
+  href="https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/css/tabler.min.css" />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
 
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"
     integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
 <!-- <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script> -->
 <script
-  src="https://cdn.jsdelivr.net/npm/@tabler/core@1.3.2/dist/js/tabler.min.js">
+  src="https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/js/tabler.min.js">
 </script>
 
+<!-- /* =============================== Marked ============================== */ -->
+<script src="
+https://cdn.jsdelivr.net/npm/marked@16.0.0/lib/marked.umd.min.js
+"></script>
 
 <!-- /* =====================================================================───── */ -->
 <!-- /*                               CODE HIGHLIGHT                               */ -->
 <!-- /* =====================================================================───── */ -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/dark.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/dark.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
 
 <!-- and it's easy to individually load additional languages -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/go.min.js"></script>
+<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/go.min.js"></script> -->
 
 
 <script src="https://cdn.jsdelivr.net/gh/WebCoder49/code-input@2.2/code-input.min.js"></script>
@@ -61,6 +65,21 @@ foreach (glob("modules/*.php") as $module) {
 
     </div>
     </div> <!-- CONTAINER END -->
+
+    <div class="modal" tabindex="-1" id="changelogModal">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">Changelog</div>
+                <div class="modal-body" id="changelogMarkdown">
+                    <?= file_get_contents("CHANGELOG.md") ?>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="error"></div>
 
 
@@ -343,7 +362,16 @@ $(document).ready(function() {
     // turn off all autocomplete
     $(".form-control").prop("autocomplete", "off");
     $("input[type=checkbox]").addClass("form-check-input");
+
+
+    /* ===================================================================== */
+    /*                            Changelog modal                            */
+    /* ===================================================================== */
+    var changelog = $("#changelogMarkdown");
+    changelog.html(marked.parse(changelog.text()));
 });
 </script>
+
+
 
 </html>

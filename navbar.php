@@ -27,7 +27,10 @@ $navbar = '
 
       <ul class="navbar-nav mx-2">
         <li class="nav-item">
-          <a class="nav-link link-info" target="_blank" href="https://github.com/Darknetzz/phprand"><i class="bi bi-github"></i> GitHub</a>
+          <a class="nav-link link-info" target="_blank" href="https://github.com/Darknetzz/phprand">'.icon('github').' GitHub</a>
+        </li>
+        <li class="nav-item" data-bs-toggle="modal" data-bs-target="#changelogModal">
+          <a class="nav-link link-info" target="javascript:void(0);">'.icon('journal-text').' Changelog</a>
         </li>
       </ul>
     </div>

@@ -4,7 +4,7 @@
  * Icon
  * 
  */
-function icon($icon, $rem = 1, $color = Null) {
+function icon($icon, $rem = 1, $color = Null, $margin = 1) {
   $style = "style='";
   if ($color !== Null) {
     $style .= "color: {$color};";
@@ -13,7 +13,7 @@ function icon($icon, $rem = 1, $color = Null) {
     $style .= "font-size: {$rem}rem;";
   }
   $style .= "'";
-  return "<i class='bi bi-{$icon} mx-1' {$style}></i>";
+  return "<i class='bi bi-{$icon} m-{$margin}' {$style}></i>";
 }
 
 /**
