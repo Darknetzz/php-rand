@@ -6,5 +6,6 @@
 > ### updated
 > * tabler to v1.4.0
 > * highlight.js to v11.11.1
+> * changed opacity and color of modal-background
 > ### fixed
 > * href on nav changelog button
