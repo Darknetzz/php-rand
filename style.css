@@ -72,3 +72,9 @@ body {
     background-color: var(--tblr-green-lt);
     color: var(--tblr-green-dk);
   }
+
+  .modal-backdrop
+  {
+      opacity:0.9 !important;
+      background-color: #111;
+  }
