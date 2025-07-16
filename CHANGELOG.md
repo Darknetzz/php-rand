@@ -1,4 +1,9 @@
 
+# **v.1.0.1**
+> ### added
+> * logogen module
+
+
 # **v1.0.0**
 > ### added
 > * changelog modal
