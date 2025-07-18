@@ -83,7 +83,7 @@ foreach (glob("modules/*.php") as $module) {
     <div id="error"></div>
 
 
-    <footer>Made with ❤️ by <a href="https://github.com/darknetzz" target="_blank" style="color:grey;">darknetzz</a>
+    <footer>Made with ❤️ by <a href="https://github.com/Darknetzz" target="_blank" style="color:grey;">Darknetzz</a>
     </footer>
 </body>
 
