@@ -31,5 +31,13 @@ A set of useful tools for developers.
 # install
 Simply clone the repo and put it on your webserver with PHP support.
 
+```bash
+# Assuming your webroot is located in `/var/www/html`
+cd /var/www/html
+
+# Clone the repo
+git clone https://github.com/Darknetzz/php-rand.git
+```
+
 # demo
 * demo @ https://roste.org/rand
