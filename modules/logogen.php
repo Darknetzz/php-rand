@@ -114,27 +114,27 @@ foreach ($image_formats as $format => $mime) {
 // IMG_FILTER_SCATTER: Applies scatter effect to the image, use args and arg2 to define the effect strength and additionally arg3 to only apply the on select pixel colors.
 $filters = [
     "negate"     => [
-        "name"   => "Negate", 
+        "name"   => "Negate",
         "filter" => IMG_FILTER_NEGATE,
         "args"   => Null,
     ],
     "grayscale"  => [
-        "name"   => "Grayscale", 
+        "name"   => "Grayscale",
         "filter" => IMG_FILTER_GRAYSCALE,
         "args"   => Null,
     ],
     "brightness" => [
-        "name"   => "Brightness", 
+        "name"   => "Brightness",
         "filter" => IMG_FILTER_BRIGHTNESS,
         "args"   => ["brightness_level" => 0],
     ],
     "contrast"   => [
-        "name"   => "Contrast", 
+        "name"   => "Contrast",
         "filter" => IMG_FILTER_CONTRAST,
         "args"   => ["contrast_level" => 0],
     ],
     "colorize"   => [
-        "name"   => "Colorize", 
+        "name"   => "Colorize",
         "filter" => IMG_FILTER_COLORIZE,
         "args"   => [
             "red"   => 0,
@@ -144,22 +144,22 @@ $filters = [
         ],
     ],
     "emboss"     => [
-        "name"   => "Emboss", 
+        "name"   => "Emboss",
         "filter" => IMG_FILTER_EMBOSS,
         "args"   => Null,
     ],
     "edge"       => [
-        "name"   => "Edge", 
+        "name"   => "Edge",
         "filter" => IMG_FILTER_EDGEDETECT,
         "args"   => Null,
     ],
     "gaussian"   => [
-        "name"   => "Gaussian blur", 
+        "name"   => "Gaussian blur",
         "filter" => IMG_FILTER_GAUSSIAN_BLUR,
         "args"   => Null,
     ],
     "pixelate"   => [
-        "name"   => "Pixelate", 
+        "name"   => "Pixelate",
         "filter" => IMG_FILTER_PIXELATE,
         "args"   => [
             "block_size" => 0,
@@ -167,22 +167,22 @@ $filters = [
         ],
     ],
     "mean"       => [
-        "name"   => "Mean removal", 
+        "name"   => "Mean removal",
         "filter" => IMG_FILTER_MEAN_REMOVAL,
         "args"   => Null,
     ],
     "smooth"     => [
-        "name"   => "Smooth", 
+        "name"   => "Smooth",
         "filter" => IMG_FILTER_SMOOTH,
         "args"   => ["smooth_level" => 0],
     ],
     "selective"  => [
-        "name"   => "Selective blur", 
+        "name"   => "Selective blur",
         "filter" => IMG_FILTER_SELECTIVE_BLUR,
         "args"   => Null,
     ],
     "scatter"    => [
-        "name"   => "Scatter", 
+        "name"   => "Scatter",
         "filter" => IMG_FILTER_SCATTER,
         "args"   => [
             "strength" => 0,
@@ -194,7 +194,7 @@ $filters = [
 $filters_select = "";
 $filters_args    = "";
 foreach ($filters as $name => $filter) {
-    
+
     $filter_name = $filter["name"];
     $filter_id   = $filter["filter"];
     $arglist     = $filter["args"];
@@ -206,7 +206,7 @@ foreach ($filters as $name => $filter) {
         </label>
     ';
 
-    $filter_args = 
+    $filter_args =
         '<table class="table table-sm args-table" style="display:none;" data-filter="'.$name.'">
             <tr><th colspan="100%" class="text-success bg-secondary">✅ '.$filter["name"].'</th></tr>';
     if (empty($arglist)) {
@@ -345,8 +345,8 @@ $filter_args    = isset($_GET['filter_args']) ? $_GET['filter_args'] : [];
                                 <?= $shapes_select ?>
                             </td>
                         </tr>
-                        
-                        
+
+
                         <tr>
                             <th <?= $classes['input-title'] ?>>
                                 Output
@@ -418,7 +418,7 @@ $filter_args    = isset($_GET['filter_args']) ? $_GET['filter_args'] : [];
                         <tr>
                             <th <?= $classes['table-title'] ?>>
                                 <!-- <label for="enablebordercheckbox" class="form-check form-switch form-switch-3"> -->
-                                    Border 
+                                    Border
                                     <!-- <input class="form-check-input toggleInput" type="checkbox" name="enableborder" id="enablebordercheckbox" data-target=".border-inputs"> -->
                                 <!-- </label> -->
                             </th>
@@ -516,7 +516,7 @@ $filter_args    = isset($_GET['filter_args']) ? $_GET['filter_args'] : [];
                         <tr>
                             <th <?= $classes['table-title'] ?>>
                                 <label for="enablebordercheckbox" class="form-check form-switch form-switch-3">
-                                    Filters 
+                                    Filters
                                     <input class="form-check-input toggleInput" type="checkbox" name="enablefilters" id="enablefilterscheckbox" data-target=".filters-inputs">
                                 </label>
                             </th>
@@ -540,7 +540,7 @@ $filter_args    = isset($_GET['filter_args']) ? $_GET['filter_args'] : [];
                     <thead <?= $classes['thead'] ?>>
                         <th <?= $classes['table-title'] ?>>
                             <label for="enabledebugcheckbox" class="form-check form-switch form-switch-3">
-                                Debug 
+                                Debug
                                 <input class="form-check-input toggleInput" type="checkbox" name="enabledebug" id="enabledebugcheckbox" data-target=".debug">
                             </label>
                         </th></tr>
@@ -610,8 +610,8 @@ $(document).ready(function() {
             };
 
             var params    = $.param(data);
-            var url       = "gen.php?" + params;
-            var debug_url = "gen.php?debug=1&" + params;
+            var url       = "logogen.php?" + params;
+            var debug_url = "logogen.php?debug=1&" + params;
 
             $("#openImage").attr("href", url).show();
 
