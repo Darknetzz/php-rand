@@ -1,0 +1,3 @@
+[submodule "php-logogen"]
+	path = php-logogen
+	url = git@github.com:Darknetzz/php-logogen.git
