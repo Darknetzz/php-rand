@@ -1,7 +1,7 @@
 
 # **v.1.0.1**
 > ### added
-> * logogen module
+> * logogen submodule
 
 
 # **v1.0.0**

@@ -12,6 +12,10 @@ foreach ($modules as $module) {
       </li>
     ';
 }
+$navItems .= '
+  <li class="nav-item">
+    <a class="nav-link" href="php-logogen" target="_blank">'.icon('image').' Logogen</a>
+  </li>';
 
 $navbar = '
 <nav class="navbar ps-3 navbar-expand-lg navbar-dark bg-dark">
