@@ -26,6 +26,7 @@ A set of useful tools for developers.
 * String tools
   * Generate random string
   * Trim, reverse, shuffle, convert etc.
+* LogoGen (https://github.com/Darknetzz/php-logogen)
 
 # install
 Simply clone the repo and put it on your webserver with PHP support.
