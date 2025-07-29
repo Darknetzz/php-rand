@@ -275,6 +275,24 @@ do {
       );
   }
 
+
+  /* ===================================================================== */
+  /*                           MODULE: Calculator                          */
+  /* ===================================================================== */
+  if ($action == 'calc' && !empty($_POST['calcinput'])) {
+    $calcinput = $_POST['calcinput'];
+    if (empty($calcinput)) {
+      echo formatOutput("You must enter a calculation.", type: "danger");
+      break;
+    }
+    $result = calc($calcinput);
+    if ($result === False) {
+      echo formatOutput("Invalid calculation.", type: "danger");
+    } else {
+      echo formatOutput("Result: <b>$result</b>");
+    }
+  }
+
 /* ===================================================================== */
 /*                               MODULE: ROT                             */
 /* ===================================================================== */
@@ -392,11 +410,11 @@ do {
     # Detect input
     if (json_validate($input)) {
       $input = json_decode($input, True);
-    } 
+    }
     # REVIEW: yaml_parse is undefined.
     // elseif (yaml_parse($input)) {
     //   $input = yaml_parse($input);
-    // } 
+    // }
     elseif (xml_parse($xmlparser, $input)) {
       $input = xml_parse($xmlparser, $input);
     } else {
@@ -407,11 +425,11 @@ do {
     # Convert to desired type
     if ($type == "JSON") {
       $output = json_encode($input, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
-    } 
+    }
     # REVIEW: array2xml is undefined.
     // elseif ($type == "XML") {
     //   $output = array2xml($input);
-    // } 
+    // }
     # REVIEW: yaml_emit is undefined.
     // elseif ($type == "YAML") {
     //   $output = yaml_emit($input);
@@ -448,7 +466,7 @@ do {
     if ($tool == "removewhitespace") {
       $string = preg_replace('/\s+/', '', $string);
     }
-    
+
 
 /* ===================================================================== */
 /*                             NOTE: reverse                             */

@@ -1,9 +1,9 @@
 <div id="rot" class="content">
-<div class="card card-primary">
-<h1 class="card-header">ROT</h1>
-<div class="card card-body">
-<form class="form" action="gen.php" method="POST" data-action="rot">
-  <?php
+    <div class="card card-primary">
+        <h1 class="card-header">ROT</h1>
+        <div class="card card-body">
+            <form class="form" action="gen.php" method="POST" data-action="rot">
+                <?php
   if (isset($_POST['rot'])) {
     $rot = $_POST['rot'];
     $rotations = $_POST['rotations'];
@@ -31,19 +31,19 @@
   <br>';
   echo submitBtn("rot", "action", "Generate", "arrow-repeat")
   ?>
-  <div class="responseDiv" id="rotresponse"></div>
-</form>
-</div>
-</div>
+                <div class="responseDiv" id="rotresponse"></div>
+            </form>
+        </div>
+    </div>
 </div>
 
 <script>
-    // Toggle ROT bruteforce
-   $("#rotbruteforce").change(function() {
-      if ($(this).is(":checked")) {
+// Toggle ROT bruteforce
+$("#rotbruteforce").change(function() {
+    if ($(this).is(":checked")) {
         $("#rotations").fadeOut();
-      } else {
+    } else {
         $("#rotations").fadeIn();
-      }
-    });
+    }
+});
 </script>

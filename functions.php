@@ -337,6 +337,30 @@ function numGen(int $from, int $to, string $seed = Null) {
   return $num;
 }
 
+/* ===================================================================== */
+/*                             FUNCTION: calc                            */
+/* ===================================================================== */
+function calc($input) {
+  $input = trim($input);
+  if (empty($input)) {
+    return alert("You must enter a calculation.", "danger");
+  }
+
+  // Remove any non-numeric characters except for +, -, *, /, and spaces
+  $input = preg_replace('/[^0-9+\-*\/\s]/', '', $input);
+
+  // Evaluate the expression
+  try {
+    $result = eval("return {$input};");
+    if ($result === False) {
+      return alert("Invalid calculation.", "danger");
+    }
+    return formatOutput($result, 4, "success");
+  } catch (Throwable $e) {
+    return alert("Error in calculation: " . $e->getMessage(), "danger");
+  }
+}
+
 /* ────────────────────────────────────────────────────────────────────────── */
 /*                       FUNCTION:   ip2hex                                   */
 /* ────────────────────────────────────────────────────────────────────────── */

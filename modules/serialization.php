@@ -14,25 +14,30 @@
 
             <hr>
 
-            <form class="form" action="gen.php" method="POST" id="serializationForm" data-action="serialization" data-responsetype="text">
+            <form class="form" action="gen.php" method="POST" id="serializationForm" data-action="serialization"
+                data-responsetype="text">
                 <div class="d-flex justify-content-evenly mb-2">
                     <div style="width:50%">
-                        <code-input name="input" template="default" class="code code-input_registered" id="rotInput" placeholder="Input your valid JSON, YAML or XML here"></code-input>
+                        <code-input name="input" template="default" class="code code-input_registered" id="rotInput"
+                            placeholder="Input your valid JSON, YAML or XML here"></code-input>
                     </div>
                     <div style="width:50%">
-                        <code-input name="output" template="default" class="code code-input_registered responseDiv" placeholder="Output will show here" readonly></code-input>
-                        <button type="button" class="copyText btn btn-primary" data-clipboard-target=".responseDiv"><?= icon("clipboard") ?> Copy</button>
+                        <code-input name="output" template="default" class="code code-input_registered responseDiv"
+                            placeholder="Output will show here" readonly></code-input>
+                        <button type="button" class="copyText btn btn-primary"
+                            data-clipboard-target=".responseDiv"><?= icon("clipboard") ?> Copy</button>
                     </div>
                 </div>
                 Output type:
                 <select class="form-select mb-3" name="type" required>
-                        <!-- <option value="" disabled selected>Select output type</option> -->
-                        <option value="JSON">JSON</option>
-                        <option value="XML">XML</option>
-                        <option value="YAML">YAML</option>
+                    <!-- <option value="" disabled selected>Select output type</option> -->
+                    <option value="JSON">JSON</option>
+                    <option value="XML">XML</option>
+                    <option value="YAML">YAML</option>
                 </select>
                 <label>
-                    <input type="checkbox" name="stripcomments" value="1"> Remove comments (lines starting with <code>#</code> or <code>//</code>)
+                    <input type="checkbox" name="stripcomments" value="1"> Remove comments (lines starting with
+                    <code>#</code> or <code>//</code>)
                 </label>
                 <hr>
                 <?= submitBtn("serialization", "action", "Generate", "arrow-repeat") ?>
