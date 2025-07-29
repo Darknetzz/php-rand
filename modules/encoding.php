@@ -4,8 +4,7 @@
     <div class="card card-primary">
         <h1 class="card-header">Base</h1>
         <div class="card-body">
-            <span class="description">Input any text or base encoded string below, and this tool will convert it to all
-                other base formats.</span>
+            <span class="description">Input any text or base encoded string below, and this tool will convert it to all other base formats.</span>
             <form class="form" action="gen.php" method="POST" id="base" data-action="base">
                 <textarea name="base" class="form-control mb-2"
                     placeholder="Enter text or base encoded string to convert..." value="" required></textarea>
