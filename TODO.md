@@ -1,0 +1,1 @@
+- [ ] Minimize navbar to have dropdown menus with modules

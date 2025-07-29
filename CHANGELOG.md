@@ -1,3 +1,6 @@
+# **v1.0.2**
+> ### added
+> * calculator
 
 # **v.1.0.1**
 > ### added
