@@ -18,8 +18,10 @@ A set of useful tools for developers.
   * Subnet mask
   * IP2Hex, Hex2IP
 * Number tools
+  * Number generator
+  * Calculator
 * OpenSSL
-* Rot
+* ROT
 * Serialization
   * JSON, YAML and XML
 * Spin the wheel
