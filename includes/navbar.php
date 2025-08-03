@@ -34,6 +34,45 @@ $navbarItems = [
             ],
         ],
     ],
+    "encoding" => [
+        "name"       => "encoding",
+        "formalName" => "Encoding",
+        "icon"       => icon('file-binary'),
+        "subitems" => [
+            "base64" => [
+                "name"       => "base64",
+                "formalName" => "Base64 Encoder/Decoder",
+                "icon"       => icon('filetype-b64')
+            ],
+            "urlencode" => [
+                "name"       => "urlencode",
+                "formalName" => "URL Encoder/Decoder",
+                "icon"       => icon('link')
+            ],
+            "htmlentities" => [
+                "name"       => "htmlentities",
+                "formalName" => "HTML Entities Encoder/Decoder",
+                "icon"       => icon('code-slash')
+            ],
+            "hash" => [
+                "name"       => "hash",
+                "formalName" => "Hash Generator",
+                "icon"       => icon('shield-lock')
+            ],
+        ],
+    ],
+    "network" => [
+        "name"       => "network",
+        "formalName" => "Network Tools",
+        "icon"       => icon('wifi'),
+        "subitems" => [
+            "networking" => [
+                "name"       => "networking",
+                "formalName" => "IP Tools",
+                "icon"       => icon('globe')
+            ],
+        ],
+    ],
 ];
 
 $navHTML = '
@@ -44,21 +83,12 @@ $navHTML = '
   </button>
   <div class="collapse navbar-collapse" id="navbarNav">
     <div class="d-flex justify-content-between w-100">
+    <div class="nav-left">
       <ul class="navbar-nav">';
 
 foreach ($navbarItems as $moduleName => $module) {
 
-    # NOTE: Module is not a file
-    if (!is_file(APP_ROOT . DIRSEP . "modules" . DIRSEP . $moduleName)) {
-        $navHTML .= '
-            <li class="nav-item">
-                <a class="nav-link" href="#' . $moduleName . '" id="nav' . $moduleName . '" data-show="' . $moduleName . '" disabled>
-                    ' . $module["icon"] . $module["formalName"] . '
-                </a>
-            </li>
-        ';
-        continue; // Skip if the module is a file
-    }
+    $moduleFile = APP_ROOT . DIRSEP . "modules" . DIRSEP . $moduleName . ".php";
 
     $name       = $module["name"] ?? $moduleName;
     $formalname = $module["formalName"] ?? ucfirst($name);
@@ -76,22 +106,24 @@ foreach ($navbarItems as $moduleName => $module) {
             $subIcon       = $subitem["icon"] ?? icon('gear');
             $navHTML .= '
                 <li>
-                    <a class="dropdown-item" href="#' . $subName . '" id="nav' . $subName . '" data-show="' . $subName . '">' . $subIcon . $subFormalName . '</a>
+                    <a class="dropdown-item link" href="#' . $subName . '" id="nav' . $subName . '" data-show="' . $subName . '">' . $subIcon . $subFormalName . '</a>
                 </li>
             ';
-        $navHTML .= '
+        }
+            $navHTML .= '
             </ul>
         </li>
         ';
         continue;
-        }
-}
-  $navHTML  .= '
+    }
+    $navHTML  .= '
       <li class="nav-item">
         <a class="link nav-link" href="#' . $name . '" id="nav' . $name . '" data-show="' . $name . '">' . $icon . $formalname . '</a>
       </li>
     ';
 }
+$navHTML .= "</div>
+    <div class='nav-right'>";
 
 $navHTML .= '
       <ul class="navbar-nav mx-2">
@@ -105,6 +137,7 @@ $navHTML .= '
     </ul>
   </div>
 </nav>
+</div>
 ';
 
 echo $navHTML;
