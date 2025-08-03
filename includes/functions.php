@@ -247,66 +247,66 @@ function submitBtn(string $value = "", string $name = "action", string $text = "
 /* ────────────────────────────────────────────────────────────────────────── */
 /*                   FUNCTION:      pageIcon                                  */
 /* ────────────────────────────────────────────────────────────────────────── */
-function pageIcon($page) {
-  if ($page == "dashboard") {
-    $icon = "house";
-  }
-  if ($page == "logogen") {
-    $icon = "image";
-  }
-  if ($page == "encoding") {
-    $icon = "file-earmark-binary-fill";
-  }
-  if ($page == "hash") {
-    $icon = "key-fill";
-  }
-  if ($page == "number_tools") {
-    $icon = "123";
-  }
-  if ($page == "openssl") {
-    $icon = "key-fill";
-  }
-  if ($page == "rot") {
-    $icon = "arrow-clockwise";
-  }
-  if ($page == "spin_the_wheel") {
-    $icon = "circle-fill";
-  }
-  if ($page == "string_tools") {
-    $icon = "alphabet";
-  }
-  if ($page == "serialization") {
-    $icon = "list-ol";
-  }
-  if ($page == "datetime") {
-    $icon = "clock";
-  }
-  if ($page == "networking") {
-    $icon = "globe";
-  }
-  if (empty($icon)) {
-    $icon = "question-octagon";
-  }
-  return icon($icon);
-}
+// function pageIcon($page) {
+//   if ($page == "dashboard") {
+//     $icon = "house";
+//   }
+//   if ($page == "logogen") {
+//     $icon = "image";
+//   }
+//   if ($page == "encoding") {
+//     $icon = "file-earmark-binary-fill";
+//   }
+//   if ($page == "hash") {
+//     $icon = "key-fill";
+//   }
+//   if ($page == "number_tools") {
+//     $icon = "123";
+//   }
+//   if ($page == "openssl") {
+//     $icon = "key-fill";
+//   }
+//   if ($page == "rot") {
+//     $icon = "arrow-clockwise";
+//   }
+//   if ($page == "spin_the_wheel") {
+//     $icon = "circle-fill";
+//   }
+//   if ($page == "string_tools") {
+//     $icon = "alphabet";
+//   }
+//   if ($page == "serialization") {
+//     $icon = "list-ol";
+//   }
+//   if ($page == "datetime") {
+//     $icon = "clock";
+//   }
+//   if ($page == "networking") {
+//     $icon = "globe";
+//   }
+//   if (empty($icon)) {
+//     $icon = "question-octagon";
+//   }
+//   return icon($icon);
+// }
 
 /* ───────────────────────────────────────────────────────────────────── */
 /*                FUNCTION:     listModules                              */
 /* ───────────────────────────────────────────────────────────────────── */
-function listModules() {
-  foreach (glob("modules/*.php") as $module) {
+// function listModules() {
+//   foreach (glob("modules/*.php") as $module) {
 
-    $name       = str_replace('!', '', basename($module, '.php'));
-    $formalname = ucwords(str_replace('_', ' ', $name));
-    $modules[]  = [
-      "icon"       => pageIcon($name),
-      "formalName" => $formalname,
-      "name"       => $name
-    ];
-  }
+//     $name       = str_replace('!', '', basename($module, '.php'));
+//     $formalname = ucwords(str_replace('_', ' ', $name));
+//     $modules[]  = [
+//       "icon"       => pageIcon($name),
+//       "formalName" => $formalname,
+//       "name"       => $name
+//     ];
+//   }
 
-  return $modules;
-}
+//   return $modules;
+// }
 
 
 /* ───────────────────────────────────────────────────────────────────── */
