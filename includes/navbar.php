@@ -17,8 +17,8 @@ $navbarItems = [
         "formalName" => "Generators",
         "icon"       => icon('gear'),
         "subitems" => [
-            "numgen" => [
-                "name"       => "numgen",
+            "number_generator" => [
+                "name"       => "number_generator",
                 "formalName" => "Number Generator",
                 "icon"       => icon('123')
             ],

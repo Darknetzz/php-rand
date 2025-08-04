@@ -18,6 +18,31 @@
         The code is not perfect, and there are probably bugs. If you find a bug, please report it on the GitHub page.
     </p>
 
+    <?php
+      foreach ($navbarItems as $moduleName => $module) {
+
+          $name       = $module["name"] ?? $moduleName;
+          $formalName = $module["formalName"] ?? ucfirst($name);
+          $icon       = $module["icon"] ?? icon('gear');
+
+          echo "
+          <ul class='list-unstyled'>
+            <li><h2 class='text-primary'>$icon $formalName</h2></li>";
+
+          # Module has subitems
+          if (!empty($module["subitems"])) {
+            echo "<ul>";
+              foreach ($module["subitems"] as $subitemName => $subitem) {
+                  $formalName = $subitem["formalName"] ?? ucfirst($subitemName);
+                  $icon       = $subitem["icon"] ?? icon('gear');
+                  echo "<li><a href='#" . $subitemName . "' id='nav" . $subName . "' data-show='" . $subName . "'> $icon $subitemName</a></li>";
+              }
+            echo "</ul>";
+          }
+          echo "</ul><hr>";
+        }
+      ?>
+
     <hr>
   </div>
 </div>
