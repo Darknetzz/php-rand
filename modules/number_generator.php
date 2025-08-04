@@ -1,4 +1,4 @@
-<div id="number_tools" class="content">
+<div id="number_generator" class="content">
 
     <div class="card card-primary">
         <h1 class="card-header">Number Generator</h1>

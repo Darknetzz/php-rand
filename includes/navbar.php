@@ -25,7 +25,7 @@ $navbarItems = [
             "string_generator" => [
                 "name"       => "string_generator",
                 "formalName" => "String Generator",
-                "icon"       => icon('text')
+                "icon"       => icon('alphabet')
             ],
             "logogen" => [
                 "name"       => "logogen",
@@ -42,7 +42,7 @@ $navbarItems = [
     "encryption" => [
         "name"       => "encryption",
         "formalName" => "Encryption",
-        "icon"       => icon('lock'),
+        "icon"       => icon('shield-lock'),
         "subitems" => [
             "aes" => [
                 "name"       => "aes",
@@ -54,8 +54,8 @@ $navbarItems = [
                 "formalName" => "RSA Encryption/Decryption",
                 "icon"       => icon('key')
             ],
-            "hashing" => [
-                "name"       => "hashing",
+            "hash" => [
+                "name"       => "hash",
                 "formalName" => "Hashing Tools",
                 "icon"       => icon('shield-check')
             ],
