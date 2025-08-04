@@ -7,11 +7,6 @@ $navbarItems = [
         "formalName" => "Dashboard",
         "icon"       => icon('house')
     ],
-    "datetime" => [
-        "name"       => "datetime",
-        "formalName" => "Date & Time",
-        "icon"       => icon('calendar')
-    ],
     "generators" => [
         "name"       => "generators",
         "formalName" => "Generators",
@@ -117,6 +112,11 @@ $navbarItems = [
                 "name"       => "string_tools",
                 "formalName" => "String Tools",
                 "icon"       => icon('type')
+            ],
+            "datetime" => [
+                "name"       => "datetime",
+                "formalName" => "Date & Time",
+                "icon"       => icon('calendar')
             ],
         ],
     ],
