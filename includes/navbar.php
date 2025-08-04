@@ -32,10 +32,37 @@ $navbarItems = [
                 "formalName" => "Logo Generator",
                 "icon"       => icon('image')
             ],
-            "string_tools" => [
-                "name"       => "string_tools",
-                "formalName" => "String Tools",
-                "icon"       => icon('type')
+            "spin_the_wheel" => [
+                "name"       => "spin_the_wheel",
+                "formalName" => "Spin Wheel",
+                "icon"       => icon('slash-circle')
+            ],
+        ],
+    ],
+    "encryption" => [
+        "name"       => "encryption",
+        "formalName" => "Encryption",
+        "icon"       => icon('lock'),
+        "subitems" => [
+            "aes" => [
+                "name"       => "aes",
+                "formalName" => "AES Encryption/Decryption",
+                "icon"       => icon('shield-lock')
+            ],
+            "rsa" => [
+                "name"       => "rsa",
+                "formalName" => "RSA Encryption/Decryption",
+                "icon"       => icon('key')
+            ],
+            "hashing" => [
+                "name"       => "hashing",
+                "formalName" => "Hashing Tools",
+                "icon"       => icon('shield-check')
+            ],
+            "rot" => [
+                "name"       => "rot",
+                "formalName" => "ROT Encoder/Decoder",
+                "icon"       => icon('arrow-repeat')
             ],
         ],
     ],
@@ -80,6 +107,16 @@ $navbarItems = [
                 "name"       => "calculator",
                 "formalName" => "Calculator",
                 "icon"       => icon('calculator')
+            ],
+            "serialization" => [
+                "name"       => "serialization",
+                "formalName" => "Serialization Tools",
+                "icon"       => icon('box-arrow-in-right')
+            ],
+            "string_tools" => [
+                "name"       => "string_tools",
+                "formalName" => "String Tools",
+                "icon"       => icon('type')
             ],
         ],
     ],
