@@ -22,8 +22,8 @@ $navbarItems = [
                 "formalName" => "Number Generator",
                 "icon"       => icon('123')
             ],
-            "stringgen" => [
-                "name"       => "stringgen",
+            "string_generator" => [
+                "name"       => "string_generator",
                 "formalName" => "String Generator",
                 "icon"       => icon('text')
             ],
@@ -32,6 +32,11 @@ $navbarItems = [
                 "formalName" => "Logo Generator",
                 "icon"       => icon('image')
             ],
+            "string_tools" => [
+                "name"       => "string_tools",
+                "formalName" => "String Tools",
+                "icon"       => icon('type')
+            ],
         ],
     ],
     "encoding" => [
@@ -39,10 +44,15 @@ $navbarItems = [
         "formalName" => "Encoding",
         "icon"       => icon('file-binary'),
         "subitems" => [
-            "base64" => [
-                "name"       => "base64",
-                "formalName" => "Base64 Encoder/Decoder",
-                "icon"       => icon('filetype-b64')
+            "base" => [
+                "name"       => "base",
+                "formalName" => "Base Encoder/Decoder",
+                "icon"       => icon('file-earmark-binary')
+            ],
+            "binhex" => [
+                "name"       => "binhex",
+                "formalName" => "Binary/Hexadecimal Encoder/Decoder",
+                "icon"       => icon('file-binary')
             ],
             "urlencode" => [
                 "name"       => "urlencode",
@@ -58,6 +68,18 @@ $navbarItems = [
                 "name"       => "hash",
                 "formalName" => "Hash Generator",
                 "icon"       => icon('shield-lock')
+            ],
+        ],
+    ],
+    "tools" => [
+        "name"       => "tools",
+        "formalName" => "Tools",
+        "icon"       => icon('wrench'),
+        "subitems" => [
+            "calculator" => [
+                "name"       => "calculator",
+                "formalName" => "Calculator",
+                "icon"       => icon('calculator')
             ],
         ],
     ],

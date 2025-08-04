@@ -1,4 +1,4 @@
-<div id="encoding" class="content">
+<div id="base" class="content">
 
     <!-- Base -->
     <div class="card card-primary">
@@ -26,25 +26,5 @@
             </form>
         </div>
     </div>
-
-    <!-- Character Encodings -->
-    <div class="card card-primary">
-        <h1 class="card-header">Character Encodings</h1>
-        <div class="card-body">
-            <form class="form" action="gen.php" method="POST" id="base">
-                <span class="form-text">
-                    Character Encodings: These are used to represent text in computers, telecommunications equipment,
-                    and other devices that use text. Examples include ASCII, Unicode (UTF-8, UTF-16, UTF-32),
-                    ISO-8859-1, etc.
-                </span>
-                <textarea name="character" class="form-control mb-2"
-                    placeholder="Enter text to encode/decode..."></textarea>
-                <?= alert("Coming soon...", "info") ?>
-            </form>
-        </div>
-    </div>
-
-
-
 
 </div>
