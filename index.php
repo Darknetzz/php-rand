@@ -40,7 +40,7 @@ https://cdn.jsdelivr.net/npm/marked@16.0.0/lib/marked.umd.min.js
 <!-- /* =====================================================================───── */ -->
 
 <!-- Axios for AJAX requests -->
-<script src="/js/axios.min.js"></script>
+<script src="js/axios.min.js"></script>
 
 <link rel="stylesheet" href="style.css">
 
