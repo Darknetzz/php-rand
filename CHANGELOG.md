@@ -1,7 +1,10 @@
 # **v1.1.0**
+> ### added
+> * urlencoding module
+> * htmlentities module
 > ### changed
-> included files are moved to `includes` directory
-> navbar is reworked to simplify gathering modules into dropdowns
+> * included files are moved to `includes` directory
+> * navbar is reworked to simplify gathering modules into dropdowns
 
 # **v1.0.2**
 > ### added
