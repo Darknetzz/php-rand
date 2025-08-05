@@ -35,7 +35,7 @@
               foreach ($module["subitems"] as $subitemName => $subitem) {
                   $formalName = $subitem["formalName"] ?? ucfirst($subitemName);
                   $icon       = $subitem["icon"] ?? icon('gear');
-                  echo "<li><a href='#" . $subitemName . "' id='nav" . $subName . "' data-show='" . $subName . "'> $icon $subitemName</a></li>";
+                  echo "<li><a href='#" . $subitemName . "' id='nav" . $subName . "' data-show='" . $subName . "'> $icon $formalName</a></li>";
               }
             echo "</ul>";
           }
