@@ -757,6 +757,46 @@ do {
 
   }
 
+/* ===================================================================== */
+/*                             MODULE: URL tools                          */
+/* ===================================================================== */
+  if ($action == "urlencode") {
+    $url = (!empty($_POST['urlencode']) ? $_POST['urlencode'] : Null);
+
+    if (empty($url)) {
+      echo formatOutput("You must enter a URL.", type: "danger");
+      break;
+    }
+
+    $output = "<b>URL:</b> <code>".htmlspecialchars($url)."</code><br>";
+    $output .= "<b>URL encoded:</b> <code>".urlencode($url)."</code><br>";
+    $output .= "<b>URL decoded:</b> <code>".urldecode($url)."</code><br>";
+
+    echo formatOutput($output);
+  }
+
+/* ===================================================================== */
+/*                         MODULE: HTML Entities                         */
+/* ===================================================================== */
+if ($action == "htmlentities") {
+    $input = (!empty($_POST['htmlentities']) ? $_POST['htmlentities'] : Null);
+
+    if (empty($input)) {
+      echo formatOutput("You must enter a string.", type: "danger");
+      break;
+    }
+
+    $output = "<b>Input:</b> <br>
+      <pre><code>".htmlspecialchars($input)."</code></pre><br>";
+    $output .= "<b>HTML entities:</b> <br>
+      <pre><code>".htmlentities($input)."</code></pre><br>";
+    $output .= "<b>HTML decoded:</b> <br>
+      <pre><code>".html_entity_decode($input)."</code></pre><br>";
+
+    echo formatOutput($output);
+  }
+
+
   if ($responsetype != "html") {
     break;
   }

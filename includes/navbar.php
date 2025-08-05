@@ -39,15 +39,10 @@ $navbarItems = [
         "formalName" => "Encryption",
         "icon"       => icon('shield-lock'),
         "subitems" => [
-            "aes" => [
-                "name"       => "aes",
-                "formalName" => "AES Encryption/Decryption",
-                "icon"       => icon('shield-lock')
-            ],
-            "rsa" => [
-                "name"       => "rsa",
-                "formalName" => "RSA Encryption/Decryption",
-                "icon"       => icon('key')
+            "openssl" => [
+                "name"       => "openssl",
+                "formalName" => "OpenSSL Encryption/Decryption",
+                "icon"       => icon('lock')
             ],
             "hash" => [
                 "name"       => "hash",
@@ -68,22 +63,22 @@ $navbarItems = [
         "subitems" => [
             "base" => [
                 "name"       => "base",
-                "formalName" => "Base Encoder/Decoder",
+                "formalName" => "Base",
                 "icon"       => icon('file-earmark-binary')
             ],
             "binhex" => [
                 "name"       => "binhex",
-                "formalName" => "Binary/Hexadecimal Encoder/Decoder",
+                "formalName" => "Binary/Hexadecimal",
                 "icon"       => icon('file-binary')
             ],
-            "urlencode" => [
-                "name"       => "urlencode",
-                "formalName" => "URL Encoder/Decoder",
+            "urlencoding" => [
+                "name"       => "urlencoding",
+                "formalName" => "URL Encoding",
                 "icon"       => icon('link')
             ],
             "htmlentities" => [
                 "name"       => "htmlentities",
-                "formalName" => "HTML Entities Encoder/Decoder",
+                "formalName" => "HTML Entities",
                 "icon"       => icon('code-slash')
             ],
             "hash" => [

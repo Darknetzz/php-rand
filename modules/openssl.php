@@ -27,7 +27,7 @@
                     $stringVal = "value='$openssl'";
                   }
                   echo '<div class="form-floating mb-3">';
-                  echo '<input type="text" name="openssl" class="form-control" id="opensslInput" '.$stringVal.'>';
+                  echo '<textarea name="openssl" class="form-control" id="opensslInput">'.$stringVal.'</textarea>';
                   echo '<label for="opensslInput">String</label>';
                   echo '</div>';
 
