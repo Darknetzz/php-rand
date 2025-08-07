@@ -35,6 +35,9 @@ A set of useful tools for developers.
 Simply clone the repo and put it on your webserver with PHP support.
 
 ```bash
+# install dependencies
+sudo apt install -y php8.3-openssl php8.3-mbstring #...
+
 # Assuming your webroot is located in `/var/www/html`
 cd /var/www/html
 
