@@ -22,8 +22,8 @@ $navbarItems = [
                 "formalName" => "String Generator",
                 "icon"       => icon('alphabet')
             ],
-            "logogen" => [
-                "name"       => "logogen",
+            "logo_generator" => [
+                "name"       => "logo_generator",
                 "formalName" => "Logo Generator",
                 "icon"       => icon('image')
             ],

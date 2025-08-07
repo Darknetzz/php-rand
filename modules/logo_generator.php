@@ -1,0 +1,3 @@
+<div id="logo_generator" class="content" data-url="php-logogen">
+    Working on it...
+</div>

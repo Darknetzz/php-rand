@@ -95,17 +95,6 @@ function navigate(to) {
 
 }
 
-
-/* ===================================================================== */
-/*                        FUNCTION: randomizeDice                        */
-/* ===================================================================== */
-function randomizeDice() {
-    var dice = [1, 2, 3, 4, 5, 6];
-    var diceIcon = dice[Math.floor(Math.random() * dice.length)];
-    $(".dice").html('<i class="bi bi-dice-' + diceIcon + '"></i>');
-}
-
-
 /* ===================================================================== */
 /*                        FUNCTION: axiosNavigate                        */
 /* ===================================================================== */
@@ -131,6 +120,16 @@ function axiosNavigate(to, responseSelector = ".responseDiv") {
     }
 
     runAxios();
+}
+
+
+/* ===================================================================== */
+/*                        FUNCTION: randomizeDice                        */
+/* ===================================================================== */
+function randomizeDice() {
+    var dice = [1, 2, 3, 4, 5, 6];
+    var diceIcon = dice[Math.floor(Math.random() * dice.length)];
+    $(".dice").html('<i class="bi bi-dice-' + diceIcon + '"></i>');
 }
 
 
@@ -295,6 +294,7 @@ $(document).ready(function() {
             console.log("Showing " + elementToShow);
         }
     });
+
 
     // turn off all autocomplete
     $(".form-control").prop("autocomplete", "off");
