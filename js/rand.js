@@ -106,6 +106,33 @@ function randomizeDice() {
 }
 
 
+/* ===================================================================== */
+/*                        FUNCTION: axiosNavigate                        */
+/* ===================================================================== */
+function axiosNavigate(to, responseSelector = ".responseDiv") {
+    console.log("[axiosNavigate] Navigating to: " + to);
+
+    function runAxios() {
+        if (typeof axios === "undefined") {
+            setTimeout(runAxios, 100);
+            return;
+        }
+        axios({
+            method: 'get',
+            url: to,
+            responseType: 'stream'
+        })
+        .then(function (response) {
+            $(responseSelector).html(response.data);
+        })
+        .catch(function (error) {
+            $(responseSelector).html("<div class='alert alert-danger'>Error: " + error + "</div>");
+        });
+    }
+
+    runAxios();
+}
+
 
 /* ===================================================================== */
 /*                        FUNCTION: document.ready                       */
@@ -279,4 +306,4 @@ $(document).ready(function() {
     /* ===================================================================== */
     var changelog = $("#changelogMarkdown");
     changelog.html(marked.parse(changelog.text()));
-});
+}); // document.ready
