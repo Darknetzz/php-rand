@@ -5,14 +5,19 @@ A set of useful tools for developers.
 ![Rand](images/image.png)
 
 # features
-* Datetime
-  * Time unit calculator
-* Encoding
+* Generators
+  * String generator
+  * Number generator
+  * Spin the wheel
+* Encoding / Decoding
   * Base converters
   * Bin2Hex, Hex2Bin
   * URL encoding/decoding
   * HTML entities encode/decode
   * Hashing: SHA512, SHA256, SHA1, MD5
+* Encryption / Decryption
+  * OpenSSL
+  * ROT
 * Networking
   * CIDR to range
   * Range to CIDR
@@ -21,15 +26,12 @@ A set of useful tools for developers.
 * Number tools
   * Number generator
   * Calculator
-* OpenSSL
-* ROT
 * Serialization
   * JSON, YAML and XML
-* Spin the wheel
-* String tools
-  * Generate random string
-  * Trim, reverse, shuffle, convert etc.
 * LogoGen (https://github.com/Darknetzz/php-logogen)
+* Misc.
+  * String tools - trim, reverse, shuffle, convert etc.
+  * Datetime tools
 
 # install
 Simply clone the repo and put it on your webserver with PHP support.
