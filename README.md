@@ -8,6 +8,7 @@ A set of useful tools for developers.
 * Generators
   * String generator
   * Number generator
+  * LogoGen (https://github.com/Darknetzz/php-logogen)
   * Spin the wheel
 * Encoding / Decoding
   * Base converters
@@ -25,7 +26,6 @@ A set of useful tools for developers.
   * IP2Hex, Hex2IP
 * Serialization
   * JSON, YAML and XML
-* LogoGen (https://github.com/Darknetzz/php-logogen)
 * Misc.
   * String tools - trim, reverse, shuffle, convert etc.
   * Datetime tools
