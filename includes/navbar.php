@@ -10,7 +10,7 @@ $navbarItems = [
     "generators" => [
         "name"       => "generators",
         "formalName" => "Generators",
-        "icon"       => icon('gear'),
+        "icon"       => icon('braces-asterisk'),
         "subitems" => [
             "number_generator" => [
                 "name"       => "number_generator",
@@ -88,10 +88,10 @@ $navbarItems = [
             ],
         ],
     ],
-    "tools" => [
-        "name"       => "tools",
-        "formalName" => "Tools",
-        "icon"       => icon('wrench'),
+    "misc" => [
+        "name"       => "misc",
+        "formalName" => "Miscellaneous",
+        "icon"       => icon('briefcase'),
         "subitems" => [
             "calculator" => [
                 "name"       => "calculator",
@@ -113,13 +113,6 @@ $navbarItems = [
                 "formalName" => "Date & Time",
                 "icon"       => icon('calendar')
             ],
-        ],
-    ],
-    "network" => [
-        "name"       => "network",
-        "formalName" => "Network Tools",
-        "icon"       => icon('wifi'),
-        "subitems" => [
             "networking" => [
                 "name"       => "networking",
                 "formalName" => "IP Tools",
