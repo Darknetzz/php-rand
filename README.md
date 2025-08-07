@@ -23,15 +23,13 @@ A set of useful tools for developers.
   * Range to CIDR
   * Subnet mask
   * IP2Hex, Hex2IP
-* Number tools
-  * Number generator
-  * Calculator
 * Serialization
   * JSON, YAML and XML
 * LogoGen (https://github.com/Darknetzz/php-logogen)
 * Misc.
   * String tools - trim, reverse, shuffle, convert etc.
   * Datetime tools
+  * Calculator
 
 # install
 Simply clone the repo and put it on your webserver with PHP support.
