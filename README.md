@@ -10,8 +10,9 @@ A set of useful tools for developers.
 * Encoding
   * Base converters
   * Bin2Hex, Hex2Bin
-* Hash
-  * SHA512, SHA256, SHA1, MD5
+  * URL encoding/decoding
+  * HTML entities encode/decode
+  * Hashing: SHA512, SHA256, SHA1, MD5
 * Networking
   * CIDR to range
   * Range to CIDR
