@@ -7,7 +7,7 @@
 > * htmlentities module
 > ### changed
 > * included files are moved to `includes` directory
-> * navbar: reworked to simplify gathering modules into dropdowns
+> * navbar: reworked and reorganized to simplify gathering modules into dropdowns
 > * dashboard: moved disclaimer to top of page
 
 # **v1.0.2**

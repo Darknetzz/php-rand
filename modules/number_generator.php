@@ -13,7 +13,7 @@
                 }
                 ?>
                 <input type="hidden" name="seed" value="0">
-                <label><input type="checkbox" id="number_toolsseedtoggle" name="seed" value="1"> Seed</label><br>
+                <label class="my-3"><input type="checkbox" id="number_toolsseedtoggle" name="seed" value="1"> Seed</label><br>
                 <div class="number_toolsseed" style="display:none;">
                 with seed:
                 <input type="text" name="numgenseed" class="form-control" value="" placeholder="Optional">

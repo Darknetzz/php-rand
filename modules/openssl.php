@@ -32,7 +32,7 @@
                   echo '</div>';
 
                   echo '<div class="form-floating mb-3">';
-                  echo '<select class="form-control" name="cipher" id="cipherSelect">'.$ciphers.'</select>';
+                  echo '<select class="form-select" name="cipher" id="cipherSelect">'.$ciphers.'</select>';
                   echo '<label for="cipherSelect">Cipher</label>';
                   echo '</div>';
 
