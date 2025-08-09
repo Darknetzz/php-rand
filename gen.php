@@ -146,20 +146,25 @@ do {
 /*                               MODULE: Base                            */
 /* ===================================================================== */
   if ($action == 'base64encode' || $action == 'base64decode' || $action == 'base') {
-    if (!isset($_POST['from']) || $_POST['from'] == "text") {
-      $from = 36;
-    } else {
-      $from = $_POST['from'];
-    }
+    $from = (!isset($_POST['from']) || empty($_POST['from'])) ? 36 : intval($_POST['from']);
+    $to   = (!isset($_POST['to']) || empty($_POST['to'])) ? Null : intval($_POST['to']);
 
     $allBasesAreBelongToUs = "";
 
     $allBasesAreBelongToUs .= "<b>Input (Base $from):</b> <code>$_POST[base]</code><br><br>";
-    $allBasesAreBelongToUs .= "Base64 encode: <code>".base64_encode($_POST['base'])."</code><br>";
-    $allBasesAreBelongToUs .= "Base64 decode: <code>".base64_decode($_POST['base'])."</code><br>";
+    // $allBasesAreBelongToUs .= "Base64 encode: <code>".base64_encode($_POST['base'])."</code><br>";
+    // $allBasesAreBelongToUs .= "Base64 decode: <code>".base64_decode($_POST['base'])."</code><br>";
     $allBasesAreBelongToUs .= "<hr>";
-    for ($i = 2; $i <= 36; $i++) {
-      $allBasesAreBelongToUs .= "<b>Base$i:</b> <code>".base_convert($_POST['base'], $from, $i)."</code><br>";
+    if (!empty($to) && is_numeric($to) && $to >= 1 && $to <= 36) {
+      $allBasesAreBelongToUs .= "<b>Base $from to Base $to:</b><br>
+      <pre><code>".base_convert($_POST['base'], $from, $to)."</code></pre>
+      <br>";
+    } else {
+      for ($i = 2; $i <= 36; $i++) {
+        $allBasesAreBelongToUs .= "<b>Base$i:</b><br>
+        <pre><code>".base_convert($_POST['base'], $from, $i)."</code></pre>
+        <br>";
+      }
     }
 
     echo formatOutput($allBasesAreBelongToUs);
