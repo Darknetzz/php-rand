@@ -34,14 +34,14 @@ $navbarItems = [
             ],
         ],
     ],
-    "encryption" => [
-        "name"       => "encryption",
-        "formalName" => "Encryption",
+    "cryptography" => [
+        "name"       => "cryptography",
+        "formalName" => "Cryptography",
         "icon"       => icon('shield-lock'),
         "subitems" => [
             "openssl" => [
                 "name"       => "openssl",
-                "formalName" => "OpenSSL Encryption/Decryption",
+                "formalName" => "OpenSSL",
                 "icon"       => icon('lock')
             ],
             "hash" => [
@@ -51,7 +51,7 @@ $navbarItems = [
             ],
             "rot" => [
                 "name"       => "rot",
-                "formalName" => "ROT Encoder/Decoder",
+                "formalName" => "ROT Cipher",
                 "icon"       => icon('arrow-repeat')
             ],
         ],
@@ -88,25 +88,10 @@ $navbarItems = [
         "formalName" => "Convert",
         "icon"      => icon('arrow-left-right'),
         "subitems" => [
-            "json" => [
-                "name"       => "json",
-                "formalName" => "JSON Tools",
-                "icon"       => icon('file-code')
-            ],
-            "xml" => [
-                "name"       => "xml",
-                "formalName" => "XML Tools",
-                "icon"       => icon('file-code')
-            ],
-            "csv" => [
-                "name"       => "csv",
-                "formalName" => "CSV Tools",
-                "icon"       => icon('file-spreadsheet')
-            ],
-            "yaml" => [
-                "name"       => "yaml",
-                "formalName" => "YAML Tools",
-                "icon"       => icon('file-text')
+            "string_tools" => [
+                "name"       => "string_tools",
+                "formalName" => "String Tools",
+                "icon"       => icon('type')
             ],
         ],
     ],
@@ -124,11 +109,6 @@ $navbarItems = [
                 "name"       => "serialization",
                 "formalName" => "Serialization Tools",
                 "icon"       => icon('box-arrow-in-right')
-            ],
-            "string_tools" => [
-                "name"       => "string_tools",
-                "formalName" => "String Tools",
-                "icon"       => icon('type')
             ],
             "datetime" => [
                 "name"       => "datetime",

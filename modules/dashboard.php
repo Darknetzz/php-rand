@@ -26,6 +26,8 @@
             <br>
             To see more, click one of the links below or in the navbar.
 
+            <hr>
+
             <?php
       foreach ($navbarItems as $moduleName => $module) {
 

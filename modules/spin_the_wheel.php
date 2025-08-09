@@ -75,7 +75,7 @@
                 <hr>
 
                 <div class="btn-group mb-3">
-                    <?= submitBtn("spinwheel") ?>
+                    <?= submitBtn("spinwheel", text: "Spin") ?>
                 </div>
 
                 <div class="responseDiv" id="spinwheelresponse"></div>

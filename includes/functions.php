@@ -4,15 +4,14 @@
 /*                             FUNCTION: icon                            */
 /* ===================================================================== */
 function icon($icon, $rem = 1, $color = Null, $margin = 1) {
-  $style = "style='";
+  $style = "";
   if ($color !== Null) {
     $style .= "color: {$color};";
   }
   if ($rem !== 1) {
     $style .= "font-size: {$rem}rem;";
   }
-  $style .= "'";
-  return "<i class='bi bi-{$icon} m-{$margin}' {$style}></i>";
+  return "<i class='bi bi-{$icon} m-{$margin}' style='{$style}'></i>";
 }
 
 /* ===================================================================== */

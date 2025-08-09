@@ -3,7 +3,7 @@
     <div class="card card-primary">
         <h1 class="card-header">Binhex</h1>
         <div class="card-body">
-            <span class="form-text">
+            <span class="form-text m-3">
                 Binary-to-Text Encodings: These are used to encode binary data, notably when that data needs to be
                 stored and transferred over media designed to deal with text. This ensures that the data remains
                 intact without modification during transport. Examples include Base64, Base32, Base16 (hexadecimal),
