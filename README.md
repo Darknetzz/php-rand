@@ -36,13 +36,13 @@ Simply clone the repo and put it on your webserver with PHP support.
 
 ```bash
 # install dependencies
-sudo apt install -y php8.3-openssl php8.3-mbstring #...
+sudo apt install -y php8.3-common php8.3-mbstring php8.3-mcrypt php8.3-gd php8.3-mcrypt php8.3-yaml php8.3-xml
 
 # Assuming your webroot is located in `/var/www/html`
 cd /var/www/html
 
 # Clone the repo
-git clone https://github.com/Darknetzz/php-rand.git
+git clone --recurse-submodules https://github.com/Darknetzz/php-rand.git
 ```
 
 # demo
