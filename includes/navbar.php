@@ -2,11 +2,11 @@
 
 # VAR: $navbarItems
 $navbarItems = [
-    "dashboard" => [
-        "name"       => "dashboard",
-        "formalName" => "Dashboard",
-        "icon"       => icon('house')
-    ],
+    // "dashboard" => [
+    //     "name"       => "dashboard",
+    //     "formalName" => "Dashboard",
+    //     "icon"       => icon('speedometer2')
+    // ],
     "generators" => [
         "name"       => "generators",
         "formalName" => "Generators",
@@ -80,6 +80,33 @@ $navbarItems = [
                 "name"       => "htmlentities",
                 "formalName" => "HTML Entities",
                 "icon"       => icon('code-slash')
+            ],
+        ],
+    ],
+    "convert" => [
+        "name"      => "convert",
+        "formalName" => "Convert",
+        "icon"      => icon('arrow-left-right'),
+        "subitems" => [
+            "json" => [
+                "name"       => "json",
+                "formalName" => "JSON Tools",
+                "icon"       => icon('file-code')
+            ],
+            "xml" => [
+                "name"       => "xml",
+                "formalName" => "XML Tools",
+                "icon"       => icon('file-code')
+            ],
+            "csv" => [
+                "name"       => "csv",
+                "formalName" => "CSV Tools",
+                "icon"       => icon('file-spreadsheet')
+            ],
+            "yaml" => [
+                "name"       => "yaml",
+                "formalName" => "YAML Tools",
+                "icon"       => icon('file-text')
             ],
         ],
     ],
