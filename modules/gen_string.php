@@ -1,4 +1,4 @@
-<div id="string_generator" class="content">
+<div id="gen_string" class="content">
 
     <!--
     /* ───────────────────────────────────────────────────────────────────── */

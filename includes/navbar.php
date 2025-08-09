@@ -12,19 +12,19 @@ $navbarItems = [
         "formalName" => "Generators",
         "icon"       => icon('braces-asterisk'),
         "subitems" => [
-            "number_generator" => [
-                "name"       => "number_generator",
+            "gen_number" => [
+                "name"       => "gen_number",
                 "formalName" => "Number Generator",
                 "icon"       => icon('123')
             ],
-            "string_generator" => [
-                "name"       => "string_generator",
+            "gen_string" => [
+                "name"       => "gen_string",
                 "formalName" => "String Generator",
                 "icon"       => icon('alphabet')
             ],
-            "logo_generator" => [
-                "name"       => "logo_generator",
-                "formalName" => "Logo Generator",
+            "gen_image" => [
+                "name"       => "gen_image",
+                "formalName" => "Image Generator",
                 "icon"       => icon('image')
             ],
             "spin_the_wheel" => [
