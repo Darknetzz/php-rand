@@ -1,115 +1,12 @@
 <div id="string_tools" class="content">
 
     <!--
-    /* ───────────────────────────────────────────────────────────────────── */
-    /*                                 GENERATOR                             */
-    /* ───────────────────────────────────────────────────────────────────── */
-    -->
-    <div class="card">
-        <h1 class="card-header">Random String Generator</h1>
-        <div class="card-body">
-            <span class="description">This will generate a string with the charset defined.</span>
-            <hr>
-            <form class="form" action="gen.php" method="POST" id="stringgen" data-action="stringgen">
-
-                <div class="input-group mb-3">
-                    <!-- <span class="input-group-text">Length</span> -->
-                    <div class="form-floating">
-                        <input type="number" name="digits" class="form-control" id="stringgenLength" value="10">
-                        <label for="stringgenLength">Length</label>
-                    </div>
-                    <div class="form-floating">
-                        <input type="number" name="strings" class="form-control" id="strings" value="1">
-                        <label for="strings">Amount of strings to generate</label>
-                    </div>
-                </div>
-
-                <?php
-                $opts = [
-                  "n" => [
-                    "desc" =>"Contain numbers",
-                    "checked" => "checked",
-                    "chars" => "0-9",
-                  ],
-                  "l" => [
-                    "desc" =>"Contain lowercase letters",
-                    "checked" => "checked",
-                    "chars" => "a-z",
-                  ],
-                  "u" => [
-                    "desc" =>"Contain uppercase letters", 
-                    "checked" => "checked",
-                    "chars" => "A-Z",
-                  ],
-                  "s" => [
-                    "desc" =>"Contain symbols", 
-                    "checked" => "",
-                    "chars" => "!#¤%&\/() = ?;: -_.,'\"*^<>{}[]@~+´`",
-                  ],
-                  "e" => [
-                    "desc" =>"Contain extended symbols", 
-                    "checked" => "",
-                    "chars" => "ƒ†‡™•",
-                  ],
-                  "c" => [
-                    "desc" =>"Custom characters", 
-                    "checked" => "",
-                    "chars" => "",
-                  ],
-                ];
-
-                echo '
-                <div class="card border-secondary">
-                <h5 class="card-header text-bg-secondary">Options</h5>
-                <div class="card-body">    
-                ';
-                foreach ($opts as $opt => $data) {
-                  $checked  = $data["checked"];
-                  $desc     = $data["desc"];
-                  $chars    = $data["chars"];
-                  
-                  echo '<input type="hidden" name="'.$opt.'" value="0">';
-                  echo '
-                  <div class="d-flex justify-content-between">
-                    <div>
-                      <label><input type="checkbox" id="'.$opt.'" name="'.$opt.'" value="1" '.$checked.'> '.$desc.'</label>
-                    </div>
-                    <div>
-                      '.(!empty($chars) ? "<span class='badge bg-secondary'>".$chars."</span>" : "").'
-                    </div>
-                  </div>
-                  <br>';
-                }
-                echo '
-                <div id="cchars" style="display:none;">
-                <textarea class="form-control border-secondary" name="cchars" placeholder="Input custom characters here"></textarea>
-                <span class="form-text">
-                  Your custom characters will be appended to the character set.<br>
-                  If you want to generate a string that contains only your custom characters,
-                  uncheck all other options.
-                </span>
-                </div>
-                </div>
-                </div>
-                ';
-                ?>
-
-               
-                <?= submitBtn("stringgen") ?>
-                <div class="responseDiv" id="stringgenresponse"></div>
-            </form>
-        </div>
-    </div>
-
-    <hr>
-
-    <!--
 /* ───────────────────────────────────────────────────────────────────── */
 /*                                 TOOLS                                 */
 /* ───────────────────────────────────────────────────────────────────── */
 -->
     <div class="card">
-        <h1 class="card-header">Tools</h1>
+        <h1 class="card-header">String Tools</h1>
         <div class="card-body">
 
             <span class="description">This will perform various operations on the input string.</span>
@@ -118,26 +15,29 @@
 
                 <input type="hidden" name="action" value="stringtools">
 
-                <textarea type="text" id="strtoolsinput" name="string" class="form-control mb-1"
-                    style="height:200px;" placeholder="Input string here"></textarea>
-                
+                <textarea type="text" id="strtoolsinput" name="string" class="form-control mb-1" style="height:200px;"
+                    placeholder="Input string here"></textarea>
+
                 <div id="count" class="mb-3 border border-secondary"></div>
 
                 <div class="historyDiv" style='display:none;'></div>
                 <div class="responseDiv" id="strtoolsresponse"></div>
-                <button type="button" class="btn btn-secondary undo" data-target="#strtoolsinput"><?= icon("arrow-counterclockwise") ?> Undo</button>
-                <button type="button" class="btn btn-secondary redo" data-target="#strtoolsinput"><?= icon("arrow-clockwise") ?> Redo</button>
-                <button type="button" class="btn btn-secondary clear" data-target="#strtoolsinput"><?= icon("trash") ?> Clear</button>
-                
+                <button type="button" class="btn btn-secondary undo"
+                    data-target="#strtoolsinput"><?= icon("arrow-counterclockwise") ?> Undo</button>
+                <button type="button" class="btn btn-secondary redo"
+                    data-target="#strtoolsinput"><?= icon("arrow-clockwise") ?> Redo</button>
+                <button type="button" class="btn btn-secondary clear" data-target="#strtoolsinput"><?= icon("trash") ?>
+                    Clear</button>
+
                 <div class="card border border-secondary">
                     <h4 class="card-header text-bg-secondary">Options</h4>
                     <div class="card-body">
 
-                    <div class="form-check form-switch">
-                      <input class="form-check-input" type="checkbox" name="outputToTextbox" id="outputToTextbox" value="1"
-                          role="switch" checked>
-                      <label class="form-check-label" for="outputToTextbox">Output to textbox</label>
-                    </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" name="outputToTextbox" id="outputToTextbox"
+                                value="1" role="switch" checked>
+                            <label class="form-check-label" for="outputToTextbox">Output to textbox</label>
+                        </div>
 
                         <!--
       /*  ───────────────────────────────────────────────────────────────────── */
@@ -286,7 +186,7 @@
             "tooltip" => "Perform regular expression operations on the string"
           ],
         ],
-        
+
         "Formatting" => [
           [
             "name" => "CRLF to LF",
@@ -433,153 +333,154 @@
 <script>
 $(document).ready(function() {
 
-  /* ───────────────────────────────────────────────────────────────────── */
-  /*                           updateCharCount();                          */
-  /* ───────────────────────────────────────────────────────────────────── */
-  function updateCharCount() {
-    var charcount = $("#strtoolsinput").val().length;
-    var wordcount = $("#strtoolsinput").val().split(" ").length;
-    var linecount = $("#strtoolsinput").val().split("\n").length;
-    $("#count").html(`
+    /* ───────────────────────────────────────────────────────────────────── */
+    /*                           updateCharCount();                          */
+    /* ───────────────────────────────────────────────────────────────────── */
+    function updateCharCount() {
+        var charcount = $("#strtoolsinput").val().length;
+        var wordcount = $("#strtoolsinput").val().split(" ").length;
+        var linecount = $("#strtoolsinput").val().split("\n").length;
+        $("#count").html(`
       <div class="d-flex justify-content-evenly">
         <span class="form-text">Characters: ${charcount}</span><br>
         <span class="form-text">Words: ${wordcount}</span><br>
         <span class="form-text">Lines: ${linecount}</span><br>
       </div>
     `);
-  }
-
-  /* ───────────────────────────────────────────────────────────────────── */
-  /*                             clearInput();                             */
-  /* ───────────────────────────────────────────────────────────────────── */
-  function clearInput() {
-    $("#strtoolsinput").val("");
-    $(".clear[data-target='#strtoolsinput']").attr("disabled", true);
-  }
-
-/* ───────────────────────────────────────────────────────────────────── */
-/*                           // Toggle charset                           */
-/* ───────────────────────────────────────────────────────────────────── */
-$("#c").change(function() {
-    if ($(this).is(":checked")) {
-        $("#cchars").fadeIn();
-    } else {
-        $("#cchars").fadeOut();
     }
-});
 
-/* ───────────────────────────────────────────────────────────────────── */
-/*                               // Repeat                               */
-/* ───────────────────────────────────────────────────────────────────── */
-$("#repeat").change(function() {
-    if ($(this).is(":checked")) {
-        $(".repeatInput").fadeIn();
-    } else {
-        $(".repeatInput").fadeOut();
+    /* ───────────────────────────────────────────────────────────────────── */
+    /*                             clearInput();                             */
+    /* ───────────────────────────────────────────────────────────────────── */
+    function clearInput() {
+        $("#strtoolsinput").val("");
+        $(".clear[data-target='#strtoolsinput']").attr("disabled", true);
     }
-});
 
-/* ───────────────────────────────────────────────────────────────────── */
-/*                               // Replace                              */
-/* ───────────────────────────────────────────────────────────────────── */
-$("#replace").change(function() {
-    if ($(this).is(":checked")) {
-        $(".replaceInput").fadeIn();
-    } else {
-        $(".replaceInput").fadeOut();
-    }
-});
+    /* ───────────────────────────────────────────────────────────────────── */
+    /*                           // Toggle charset                           */
+    /* ───────────────────────────────────────────────────────────────────── */
+    $("#c").change(function() {
+        if ($(this).is(":checked")) {
+            $("#cchars").fadeIn();
+        } else {
+            $("#cchars").fadeOut();
+        }
+    });
+
+    /* ───────────────────────────────────────────────────────────────────── */
+    /*                               // Repeat                               */
+    /* ───────────────────────────────────────────────────────────────────── */
+    $("#repeat").change(function() {
+        if ($(this).is(":checked")) {
+            $(".repeatInput").fadeIn();
+        } else {
+            $(".repeatInput").fadeOut();
+        }
+    });
+
+    /* ───────────────────────────────────────────────────────────────────── */
+    /*                               // Replace                              */
+    /* ───────────────────────────────────────────────────────────────────── */
+    $("#replace").change(function() {
+        if ($(this).is(":checked")) {
+            $(".replaceInput").fadeIn();
+        } else {
+            $(".replaceInput").fadeOut();
+        }
+    });
 
 
-/* ───────────────────────────────────────────────────────────────────── */
-/*                          // Output to textbox                         */
-/* ───────────────────────────────────────────────────────────────────── */
-$("#strtools").on("submit", async function() {
+    /* ───────────────────────────────────────────────────────────────────── */
+    /*                          // Output to textbox                         */
+    /* ───────────────────────────────────────────────────────────────────── */
+    $("#strtools").on("submit", async function() {
 
-  var textbox         = $("#strtoolsinput");
-  var outputToTextbox = $("#outputToTextbox").is(":checked");
-  var historyDiv      = $(".historyDiv");
-  $("#undo").attr("disabled", false);
+        var textbox = $("#strtoolsinput");
+        var outputToTextbox = $("#outputToTextbox").is(":checked");
+        var historyDiv = $(".historyDiv");
+        $("#undo").attr("disabled", false);
 
-  var resdiv = $("#strtoolsresponse");
+        var resdiv = $("#strtoolsresponse");
 
-  if (outputToTextbox) {
-    resdiv.hide();
+        if (outputToTextbox) {
+            resdiv.hide();
 
-    $(this).prepend(`
+            $(this).prepend(`
       <div class="loading">
         <?= alert(spinner("Generating..."), "primary") ?>
       </div>
     `);
-    $(this).children().find("button").attr("disabled", true);
+            $(this).children().find("button").attr("disabled", true);
 
-    var output = await new Promise(function(resolve, reject) {
-      // Simulate an asynchronous operation
-      setTimeout(function() {
-        resolve(resdiv.text());
-        $(".loading").remove();
-      }, 1000); // Replace with your actual asynchronous operation
+            var output = await new Promise(function(resolve, reject) {
+                // Simulate an asynchronous operation
+                setTimeout(function() {
+                    resolve(resdiv.text());
+                    $(".loading").remove();
+                }, 1000); // Replace with your actual asynchronous operation
+            });
+
+            historyDiv.prepend(
+            `<span class='historyItem'>${output}</span>`); // Use 'output' instead of 'resdiv.text()'
+
+            console.log("Writing output (" + output + ") to textbox");
+            $(this).children().find("button").attr("disabled", false);
+            textbox.val(output);
+
+            updateCharCount();
+            return false;
+        }
+
+        console.log("Outputting to div");
+        resdiv.show();
+        return false;
     });
 
-    historyDiv.prepend(`<span class='historyItem'>${output}</span>`); // Use 'output' instead of 'resdiv.text()'
+    /* ───────────────────────────────────────────────────────────────────── */
+    /*                                  undo                                 */
+    /* ───────────────────────────────────────────────────────────────────── */
+    $(".undo").click(function() {
+        var textbox = $("#strtoolsinput");
+        var historyDiv = $(".historyDiv");
 
-    console.log("Writing output ("+output+") to textbox");
-    $(this).children().find("button").attr("disabled", false);
-    textbox.val(output);
+        // Only one item
+        if (historyDiv.children().length === 1) {
+            textbox.val("");
+            $("#undo").attr("disabled", true);
+            return;
+        }
 
-    updateCharCount();
-    return false;
-  }
+        // No items
+        if (historyDiv.children().length < 1) {
+            $("#undo").attr("disabled", true);
+            $("#strtoolsresponse").html(`<?= alert("No history found", "warning") ?>`);
+            $("#strtoolsresponse").fadeIn();
+            return;
+        }
 
-  console.log("Outputting to div");
-  resdiv.show();
-  return false;
-});
+        var firstHistoryItem = historyDiv.children().eq(1);
+        console.log("Undoing: " + firstHistoryItem.text());
+        textbox.val(firstHistoryItem.text());
+        historyDiv.children().first().remove();
+        updateCharCount();
+    });
 
-/* ───────────────────────────────────────────────────────────────────── */
-/*                                  undo                                 */
-/* ───────────────────────────────────────────────────────────────────── */
-$(".undo").click(function() {
-    var textbox     = $("#strtoolsinput");
-    var historyDiv  = $(".historyDiv");
+    /* ───────────────────────────────────────────────────────────────────── */
+    /*                                 clear                                 */
+    /* ───────────────────────────────────────────────────────────────────── */
+    $(".clear").click(function() {
+        clearInput();
+        updateCharCount();
+    });
 
-    // Only one item
-    if (historyDiv.children().length === 1) {
-        textbox.val("");
-        $("#undo").attr("disabled", true);
-        return;
-    }
-
-    // No items
-    if (historyDiv.children().length < 1) {
-        $("#undo").attr("disabled", true);
-        $("#strtoolsresponse").html(`<?= alert("No history found", "warning") ?>`);
-        $("#strtoolsresponse").fadeIn();
-        return;
-    }
-
-    var firstHistoryItem = historyDiv.children().eq(1);
-    console.log("Undoing: "+firstHistoryItem.text());
-    textbox.val(firstHistoryItem.text());
-    historyDiv.children().first().remove();
-    updateCharCount();
-});
-
-/* ───────────────────────────────────────────────────────────────────── */
-/*                                 clear                                 */
-/* ───────────────────────────────────────────────────────────────────── */
-$(".clear").click(function() {
-    clearInput();
-    updateCharCount();
-});
-
-/* ───────────────────────────────────────────────────────────────────── */
-/*                            on textbox input                           */
-/* ───────────────────────────────────────────────────────────────────── */
-$("#strtoolsinput").on("change keyup", function() {
-  $(".clear[data-target='#strtoolsinput']").attr("disabled", false);
-  updateCharCount();
-});
+    /* ───────────────────────────────────────────────────────────────────── */
+    /*                            on textbox input                           */
+    /* ───────────────────────────────────────────────────────────────────── */
+    $("#strtoolsinput").on("change keyup", function() {
+        $(".clear[data-target='#strtoolsinput']").attr("disabled", false);
+        updateCharCount();
+    });
 
 });
 </script>

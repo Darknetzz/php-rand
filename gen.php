@@ -1,7 +1,7 @@
 <?php
 header('Content-Type: text/html; charset=utf-8');
 
-require_once("functions.php");
+require_once("includes/_includes.php");
 
 do {
 
@@ -146,20 +146,25 @@ do {
 /*                               MODULE: Base                            */
 /* ===================================================================== */
   if ($action == 'base64encode' || $action == 'base64decode' || $action == 'base') {
-    if (!isset($_POST['from']) || $_POST['from'] == "text") {
-      $from = 36;
-    } else {
-      $from = $_POST['from'];
-    }
+    $from = (!isset($_POST['from']) || empty($_POST['from'])) ? 36 : intval($_POST['from']);
+    $to   = (!isset($_POST['to']) || empty($_POST['to'])) ? Null : intval($_POST['to']);
 
     $allBasesAreBelongToUs = "";
 
     $allBasesAreBelongToUs .= "<b>Input (Base $from):</b> <code>$_POST[base]</code><br><br>";
-    $allBasesAreBelongToUs .= "Base64 encode: <code>".base64_encode($_POST['base'])."</code><br>";
-    $allBasesAreBelongToUs .= "Base64 decode: <code>".base64_decode($_POST['base'])."</code><br>";
+    // $allBasesAreBelongToUs .= "Base64 encode: <code>".base64_encode($_POST['base'])."</code><br>";
+    // $allBasesAreBelongToUs .= "Base64 decode: <code>".base64_decode($_POST['base'])."</code><br>";
     $allBasesAreBelongToUs .= "<hr>";
-    for ($i = 2; $i <= 36; $i++) {
-      $allBasesAreBelongToUs .= "<b>Base$i:</b> <code>".base_convert($_POST['base'], $from, $i)."</code><br>";
+    if (!empty($to) && is_numeric($to) && $to >= 1 && $to <= 36) {
+      $allBasesAreBelongToUs .= "<b>Base $from to Base $to:</b><br>
+      <pre><code>".base_convert($_POST['base'], $from, $to)."</code></pre>
+      <br>";
+    } else {
+      for ($i = 2; $i <= 36; $i++) {
+        $allBasesAreBelongToUs .= "<b>Base$i:</b><br>
+        <pre><code>".base_convert($_POST['base'], $from, $i)."</code></pre>
+        <br>";
+      }
     }
 
     echo formatOutput($allBasesAreBelongToUs);
@@ -273,6 +278,24 @@ do {
         <hr>
         Seed: $seed"
       );
+  }
+
+
+  /* ===================================================================== */
+  /*                           MODULE: Calculator                          */
+  /* ===================================================================== */
+  if ($action == 'calc' && !empty($_POST['calcinput'])) {
+    $calcinput = $_POST['calcinput'];
+    if (empty($calcinput)) {
+      echo formatOutput("You must enter a calculation.", type: "danger");
+      break;
+    }
+    $result = calc($calcinput);
+    if ($result === False) {
+      echo formatOutput("Invalid calculation.", type: "danger");
+    } else {
+      echo formatOutput("Result: <b>$result</b>");
+    }
   }
 
 /* ===================================================================== */
@@ -392,11 +415,11 @@ do {
     # Detect input
     if (json_validate($input)) {
       $input = json_decode($input, True);
-    } 
+    }
     # REVIEW: yaml_parse is undefined.
     // elseif (yaml_parse($input)) {
     //   $input = yaml_parse($input);
-    // } 
+    // }
     elseif (xml_parse($xmlparser, $input)) {
       $input = xml_parse($xmlparser, $input);
     } else {
@@ -407,11 +430,11 @@ do {
     # Convert to desired type
     if ($type == "JSON") {
       $output = json_encode($input, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
-    } 
+    }
     # REVIEW: array2xml is undefined.
     // elseif ($type == "XML") {
     //   $output = array2xml($input);
-    // } 
+    // }
     # REVIEW: yaml_emit is undefined.
     // elseif ($type == "YAML") {
     //   $output = yaml_emit($input);
@@ -448,7 +471,7 @@ do {
     if ($tool == "removewhitespace") {
       $string = preg_replace('/\s+/', '', $string);
     }
-    
+
 
 /* ===================================================================== */
 /*                             NOTE: reverse                             */
@@ -738,6 +761,46 @@ do {
     }
 
   }
+
+/* ===================================================================== */
+/*                             MODULE: URL tools                          */
+/* ===================================================================== */
+  if ($action == "urlencode") {
+    $url = (!empty($_POST['urlencode']) ? $_POST['urlencode'] : Null);
+
+    if (empty($url)) {
+      echo formatOutput("You must enter a URL.", type: "danger");
+      break;
+    }
+
+    $output = "<b>URL:</b> <code>".htmlspecialchars($url)."</code><br>";
+    $output .= "<b>URL encoded:</b> <code>".urlencode($url)."</code><br>";
+    $output .= "<b>URL decoded:</b> <code>".urldecode($url)."</code><br>";
+
+    echo formatOutput($output);
+  }
+
+/* ===================================================================== */
+/*                         MODULE: HTML Entities                         */
+/* ===================================================================== */
+if ($action == "htmlentities") {
+    $input = (!empty($_POST['htmlentities']) ? $_POST['htmlentities'] : Null);
+
+    if (empty($input)) {
+      echo formatOutput("You must enter a string.", type: "danger");
+      break;
+    }
+
+    $output = "<b>Input:</b> <br>
+      <pre><code>".htmlspecialchars($input)."</code></pre><br>";
+    $output .= "<b>HTML entities:</b> <br>
+      <pre><code>".htmlentities($input)."</code></pre><br>";
+    $output .= "<b>HTML decoded:</b> <br>
+      <pre><code>".html_entity_decode($input)."</code></pre><br>";
+
+    echo formatOutput($output);
+  }
+
 
   if ($responsetype != "html") {
     break;

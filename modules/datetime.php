@@ -64,14 +64,16 @@ $timeZoneSelector = function($inputName = "timezone") {
     <div class="card card-primary">
         <h1 class="card-header">Time Calculator</h1>
         <div class="card-body">
-            <p class="text-warning">Work in progress! This tool allows you to add or subtract time from a given date and time.</p>
+            <p class="text-warning">Work in progress! This tool allows you to add or subtract time from a given date and
+                time.</p>
             <table class="table table-default w-50">
                 <tr>
                     <th class="tablehead">
                         Start Time
                     </th>
                     <td>
-                        <input type="datetime-local" name="timecalc_start" class="form-control" placeholder="Please enter a date and time" value="<?= date('Y-m-d\TH:i') ?>">
+                        <input type="datetime-local" name="timecalc_start" class="form-control"
+                            placeholder="Please enter a date and time" value="<?= date('Y-m-d\TH:i') ?>">
                     </td>
                 </tr>
                 <tr>
@@ -85,15 +87,15 @@ $timeZoneSelector = function($inputName = "timezone") {
                         </select>
                     </td>
                 </tr>
-                    <th class="tablehead">
-                        Units
-                    </th>
-                    <td>
-                        <input type="number" name="timecalc_value" class="form-control" placeholder="Please enter a number">
-                    </td>
-                    <td>
-                        <?= $unitSelector("timecalc_unit") ?>
-                    </td>
+                <th class="tablehead">
+                    Units
+                </th>
+                <td>
+                    <input type="number" name="timecalc_value" class="form-control" placeholder="Please enter a number">
+                </td>
+                <td>
+                    <?= $unitSelector("timecalc_unit") ?>
+                </td>
                 </tr>
             </table>
             <?= submitBtn("timecalc", "action", "Calculate", "calculator") ?>

@@ -1,7 +1,7 @@
-<!-- 
+<!--
 // ─────────────────────────────────────────────────────────────────────────────────────────────── #
 //                                             OPENSSL                                             #
-// ─────────────────────────────────────────────────────────────────────────────────────────────── # 
+// ─────────────────────────────────────────────────────────────────────────────────────────────── #
 -->
 <div id="openssl" class="content">
     <?php
@@ -27,12 +27,12 @@
                     $stringVal = "value='$openssl'";
                   }
                   echo '<div class="form-floating mb-3">';
-                  echo '<input type="text" name="openssl" class="form-control" id="opensslInput" '.$stringVal.'>';
+                  echo '<textarea name="openssl" class="form-control" id="opensslInput">'.$stringVal.'</textarea>';
                   echo '<label for="opensslInput">String</label>';
                   echo '</div>';
 
                   echo '<div class="form-floating mb-3">';
-                  echo '<select class="form-control" name="cipher" id="cipherSelect">'.$ciphers.'</select>';
+                  echo '<select class="form-select" name="cipher" id="cipherSelect">'.$ciphers.'</select>';
                   echo '<label for="cipherSelect">Cipher</label>';
                   echo '</div>';
 

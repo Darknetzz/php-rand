@@ -4,15 +4,14 @@
 /*                             FUNCTION: icon                            */
 /* ===================================================================== */
 function icon($icon, $rem = 1, $color = Null, $margin = 1) {
-  $style = "style='";
+  $style = "";
   if ($color !== Null) {
     $style .= "color: {$color};";
   }
   if ($rem !== 1) {
     $style .= "font-size: {$rem}rem;";
   }
-  $style .= "'";
-  return "<i class='bi bi-{$icon} m-{$margin}' {$style}></i>";
+  return "<i class='bi bi-{$icon} m-{$margin}' style='{$style}'></i>";
 }
 
 /* ===================================================================== */
@@ -247,66 +246,66 @@ function submitBtn(string $value = "", string $name = "action", string $text = "
 /* ────────────────────────────────────────────────────────────────────────── */
 /*                   FUNCTION:      pageIcon                                  */
 /* ────────────────────────────────────────────────────────────────────────── */
-function pageIcon($page) {
-  if ($page == "dashboard") {
-    $icon = "house";
-  }
-  if ($page == "logogen") {
-    $icon = "image";
-  }
-  if ($page == "encoding") {
-    $icon = "file-earmark-binary-fill";
-  }
-  if ($page == "hash") {
-    $icon = "key-fill";
-  }
-  if ($page == "number_tools") {
-    $icon = "123";
-  }
-  if ($page == "openssl") {
-    $icon = "key-fill";
-  }
-  if ($page == "rot") {
-    $icon = "arrow-clockwise";
-  }
-  if ($page == "spin_the_wheel") {
-    $icon = "circle-fill";
-  }
-  if ($page == "string_tools") {
-    $icon = "alphabet";
-  }
-  if ($page == "serialization") {
-    $icon = "list-ol";
-  }
-  if ($page == "datetime") {
-    $icon = "clock";
-  }
-  if ($page == "networking") {
-    $icon = "globe";
-  }
-  if (empty($icon)) {
-    $icon = "question-octagon";
-  }
-  return icon($icon);
-}
+// function pageIcon($page) {
+//   if ($page == "dashboard") {
+//     $icon = "house";
+//   }
+//   if ($page == "logogen") {
+//     $icon = "image";
+//   }
+//   if ($page == "encoding") {
+//     $icon = "file-earmark-binary-fill";
+//   }
+//   if ($page == "hash") {
+//     $icon = "key-fill";
+//   }
+//   if ($page == "number_tools") {
+//     $icon = "123";
+//   }
+//   if ($page == "openssl") {
+//     $icon = "key-fill";
+//   }
+//   if ($page == "rot") {
+//     $icon = "arrow-clockwise";
+//   }
+//   if ($page == "spin_the_wheel") {
+//     $icon = "circle-fill";
+//   }
+//   if ($page == "string_tools") {
+//     $icon = "alphabet";
+//   }
+//   if ($page == "serialization") {
+//     $icon = "list-ol";
+//   }
+//   if ($page == "datetime") {
+//     $icon = "clock";
+//   }
+//   if ($page == "networking") {
+//     $icon = "globe";
+//   }
+//   if (empty($icon)) {
+//     $icon = "question-octagon";
+//   }
+//   return icon($icon);
+// }
 
 /* ───────────────────────────────────────────────────────────────────── */
 /*                FUNCTION:     listModules                              */
 /* ───────────────────────────────────────────────────────────────────── */
-function listModules() {
-  foreach (glob("modules/*.php") as $module) {
+// function listModules() {
+//   foreach (glob("modules/*.php") as $module) {
 
-    $name       = str_replace('!', '', basename($module, '.php'));
-    $formalname = ucwords(str_replace('_', ' ', $name));
-    $modules[]  = [
-      "icon"       => pageIcon($name),
-      "formalName" => $formalname,
-      "name"       => $name
-    ];
-  }
+//     $name       = str_replace('!', '', basename($module, '.php'));
+//     $formalname = ucwords(str_replace('_', ' ', $name));
+//     $modules[]  = [
+//       "icon"       => pageIcon($name),
+//       "formalName" => $formalname,
+//       "name"       => $name
+//     ];
+//   }
 
-  return $modules;
-}
+//   return $modules;
+// }
 
 
 /* ───────────────────────────────────────────────────────────────────── */
@@ -335,6 +334,30 @@ function numGen(int $from, int $to, string $seed = Null) {
   }
   $num = mt_rand($from, $to);
   return $num;
+}
+
+/* ===================================================================== */
+/*                             FUNCTION: calc                            */
+/* ===================================================================== */
+function calc($input) {
+  $input = trim($input);
+  if (empty($input)) {
+    return alert("You must enter a calculation.", "danger");
+  }
+
+  // Remove any non-numeric characters except for +, -, *, /, and spaces
+  $input = preg_replace('/[^0-9+\-*\/\s]/', '', $input);
+
+  // Evaluate the expression
+  try {
+    $result = eval("return {$input};");
+    if ($result === False) {
+      return alert("Invalid calculation.", "danger");
+    }
+    return formatOutput($result, 4, "success");
+  } catch (Throwable $e) {
+    return alert("Error in calculation: " . $e->getMessage(), "danger");
+  }
 }
 
 /* ────────────────────────────────────────────────────────────────────────── */

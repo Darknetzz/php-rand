@@ -39,6 +39,9 @@ https://cdn.jsdelivr.net/npm/marked@16.0.0/lib/marked.umd.min.js
 <script src="js/hljs_indent.js"></script>
 <!-- /* =====================================================================───── */ -->
 
+<!-- Axios for AJAX requests -->
+<script src="js/axios.min.js"></script>
+
 <link rel="stylesheet" href="style.css">
 
 <!--In the <head>-->
@@ -46,8 +49,10 @@ https://cdn.jsdelivr.net/npm/marked@16.0.0/lib/marked.umd.min.js
 <title>Rand</title>
 
 <body class="theme-dark">
-    <?php include_once("functions.php"); ?>
-    <?php include_once("navbar.php"); ?>
+    <?php
+        require_once("includes/_includes.php");
+        require_once("includes/navbar.php");
+    ?>
     <br>
     <div class="container">
 
@@ -70,9 +75,7 @@ foreach (glob("modules/*.php") as $module) {
         <div class="modal-dialog" role="document">
             <div class="modal-content" data-backdrop="static">
                 <h1 class="modal-header">Changelog</h1>
-                <div class="modal-body" id="changelogMarkdown">
-                    <?= file_get_contents("CHANGELOG.md") ?>
-                </div>
+                <div class="modal-body" id="changelogMarkdown"><?= file_get_contents("CHANGELOG.md") ?></div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 </div>
@@ -87,290 +90,7 @@ foreach (glob("modules/*.php") as $module) {
     </footer>
 </body>
 
-<script>
-/* ===================================================================== */
-/*                         FUNCTION: getTimeZone                         */
-/* ===================================================================== */
-function getTimeZone() {
-    var date    = new Date();
-    var offset  = -date.getTimezoneOffset();
-    var hours   = Math.floor(Math.abs(offset) / 60);
-    var minutes = Math.abs(offset) % 60;
-    var sign    = offset >= 0 ? '+' : '-';
-    var tz      = 'UTC' + sign + (hours < 10 ? '0' : '') + hours + ':' + (minutes < 10 ? '0' : '') + minutes;
-    return tz
-}
-
-/* ===================================================================== */
-/*                         FUNCTION: setTimeZone                         */
-/* ===================================================================== */
-function setTimeZone(tz = null) {
-    if (tz == null) {
-        tz = getTimeZone();
-    }
-    console.log("[setTimeZone] Setting timezone to: " + tz);
-    $(".timezone").text(tz);
-    // Set the timezone in the datetime object
-    var date = new Date();
-    date.toLocaleString("en-US", { timeZone: tz });
-    updateTime(tz);
-}
-
-/* ===================================================================== */
-/*                          FUNCTION: updateTime                         */
-/* ===================================================================== */
-function updateTime(tz = null) {
-    const obj = $(".datetime");
-    let now;
-    if (tz && tz.match(/^[A-Za-z_/\-]+$/)) {
-        // Only use toLocaleString if tz is a valid IANA time zone name
-        now = new Date(new Date().toLocaleString("en-US", { timeZone: tz }));
-    } else {
-        now = new Date();
-    }
-    const pad = n => n.toString().padStart(2, '0');
-    const formatted = now.getFullYear() + '-' +
-        pad(now.getMonth() + 1) + '-' +
-        pad(now.getDate()) + ' ' +
-        pad(now.getHours()) + ':' +
-        pad(now.getMinutes()) + ':' +
-        pad(now.getSeconds());
-    obj.text(formatted)
-}
-
-/* ===================================================================== */
-/*                           FUNCTION: showData                          */
-/* ===================================================================== */
-function showData(obj, data) {
-    if (obj.is("div")) {
-        obj.html(data);
-    } else if (obj.is("code-input")) {
-        obj.val(data.trim());
-    } else {
-        data = data.replace(/<(.|\n)*?>/g, '');
-        obj.val(data.trim());
-    }
-}
-
-/* ===================================================================== */
-/*                         FUNCTION: setFormVal                          */
-/* ===================================================================== */
-function setFormVal(form, name = "action", value = "") {
-    console.log("[setFormVal] Setting form value " + name + " to: " + value);
-    $(form).find(".setFormVal[name='" + name + "']").remove();
-    var hiddenInput = $("<input>")
-        .attr("class", "setFormVal")
-        .attr("type", "hidden")
-        .attr("name", name).val(value);
-    $(form).append(hiddenInput);
-}
-
-/* ===================================================================== */
-/*                           FUNCTION: navigate                          */
-/* ===================================================================== */
-function navigate(to) {
-
-    console.log("[navigate] Navigating to: " + to)
-
-    // Reset all nav links
-    var navLinks = $(".link.nav-link");
-    navLinks.prop("class", "link nav-link");
-
-    // Set this nav link as active
-    var navLink = $(`.link.nav-link[href='${to}']`);
-    navLink.prop("class", "link nav-link link-success active");
-
-    $(".content").hide();
-    $(to).fadeIn();
-
-}
-
-
-/* ===================================================================== */
-/*                        FUNCTION: randomizeDice                        */
-/* ===================================================================== */
-function randomizeDice() {
-    var dice = [1, 2, 3, 4, 5, 6];
-    var diceIcon = dice[Math.floor(Math.random() * dice.length)];
-    $(".dice").html('<i class="bi bi-dice-' + diceIcon + '"></i>');
-}
-
-
-
-/* ===================================================================== */
-/*                        FUNCTION: document.ready                       */
-/* ===================================================================== */
-$(document).ready(function() {
-
-    var tz = getTimeZone();
-    $(".timezone").text(tz);
-
-    console.log("[document.ready] Current timezone: " + tz);
-
-    updateTime(tz);
-    setInterval(function() {
-        updateTime(tz);
-    }, 1000);
-
-    randomizeDice();
-
-    /* ===================================================================== */
-    /*                            Timezone update                            */
-    /* ===================================================================== */
-    $(".timezone").text(getTimeZone());
-    $(".timezone-select").change(function() {
-        tz = $(this).val();
-        setTimeZone(tz);
-        updateTime(tz);
-    });
-
-    /* ===================================================================== */
-    /*                               Code Input                              */
-    /* ===================================================================== */
-    // hljs.highlightAll();
-    codeInput.registerTemplate("default", codeInput.templates.hljs(hljs, [
-        new codeInput.plugins.Autodetect(),
-        new codeInput.plugins.Indent(true, 2) // 2 spaces indentation
-    ] /* Array of plugins (see below) */ ));
-    $(".code").on("paste", function() {
-        this.style.height = "auto";
-    });
-
-    /* =====================================================================───── */
-    /*                               Copy to clipboard                            */
-    /* =====================================================================───── */
-    $(".copyText").click(function() {
-        var copyText = $(this).closest(".responseDiv");
-        copyText.select();
-        // copyText[0].setSelectionRange(0, 99999); /* For mobile devices */
-        document.execCommand("copy");
-        $(this).html("<?= icon("check") ?> Copied!");
-        $(this).addClass("btn-success");
-    });
-
-    /* ===================================================================== */
-    /*                              Form submit                              */
-    /* ===================================================================== */
-    //function submitForm(formname, responseid) {
-    $(".form").submit(function(e) {
-        e.preventDefault(); // avoid to execute the actual submit of the form.
-
-        var form = $(this);
-
-        // Set clicken `.genBtn` as form value
-        var clickedGenBtn = $('.genBtn:focus');
-
-        // Set response type
-        if (form.data("responsetype")) {
-            var responsetype = form.data("responsetype");
-        } else {
-            var responsetype = "html";
-        }
-        setFormVal(form, "responsetype", responsetype);
-
-        // Set form action
-        if (form.data("action")) {
-            var action = form.data("action");
-        }
-        if (form.find("input[name=action]").length) {
-            var action = form.find("input[name=action]").val();
-        }
-        setFormVal(form, "action", action)
-
-        // Set clicked button as form value
-        if (clickedGenBtn.length) {
-            var name = clickedGenBtn.length ? clickedGenBtn.attr("name") : "";
-            var value = clickedGenBtn.length ? clickedGenBtn.attr("value") : "";
-            if (name != "action" && name != "") {
-                setFormVal(form, name, value);
-            }
-        }
-
-        // NOTE: This is not needed because we are checking for the response object type
-        //       in the showData function.
-        // Determine response type (text or HTML)
-        // var responseType = form.data("responseType");
-        // if (responseType == undefined) {
-        //   responseType = "html";
-        // }
-
-        // Send form
-        var url = form.attr('action');
-        var responseObj = form.find(".responseDiv");
-
-        var btnName = $("button[clicked=true]").prop("name");
-        var btnValue = $("button[clicked=true]").val();
-
-        var serializeForm = form.serialize() + "&" + btnName + "=" + btnValue;
-        console.log("[submitForm] Sending form: " + serializeForm);
-
-        $.ajax({
-            type: "POST",
-            url: url,
-            data: serializeForm, // serializes the form's elements.
-            beforeSend: function() {
-                showData(responseObj, 'Generating...'); // show loading
-            },
-            error: function(data) {
-                console.log(data);
-                if (responsetype == "html") {
-                    showData(responseObj, "<div class='alert alert-danger'>Error: " + data
-                        .statusText + "</div>");
-                } else {
-                    showData(responseObj, "Error: " + data.statusText);
-                }
-            },
-            success: function(data) {
-                showData(responseObj, data);
-            }
-        });
-        randomizeDice();
-    });
-
-    /* ===================================================================== */
-    /*                      Navigation (and hash check)                      */
-    /* ===================================================================== */
-    if (window.location.hash != '' && window.location.hash != undefined) {
-        // Hash is set on page load, so navigate to it
-        var hash = window.location.hash;
-        var afterhash = hash.replace('#', '');
-        navigate(hash);
-        console.log("Hash detected: " + hash + ", setting nav" + afterhash + " parent as the active tab.");
-    } else {
-        navigate("#dashboard");
-    }
-
-    /* ===================================================================== */
-    /*                               Click link                              */
-    /* ===================================================================== */
-    $(".link").click(function() {
-        var elementToShow = $(this).attr("href");
-
-        navigate(elementToShow);
-
-        if (elementToShow == undefined) {
-            console.log("unable to show " + elementToShow);
-            $("#error").html("<br><div class='alert alert-danger'>Failed to show page (" +
-                elementToShow + ").</div>");
-            $("#error").show();
-        } else {
-            $("#error").hide();
-            console.log("Showing " + elementToShow);
-        }
-    });
-
-    // turn off all autocomplete
-    $(".form-control").prop("autocomplete", "off");
-    $("input[type=checkbox]").addClass("form-check-input");
-
-
-    /* ===================================================================== */
-    /*                            Changelog modal                            */
-    /* ===================================================================== */
-    var changelog = $("#changelogMarkdown");
-    changelog.html(marked.parse(changelog.text()));
-});
-</script>
+<script src="js/rand.js"></script>
 
 
 
