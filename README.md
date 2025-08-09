@@ -44,5 +44,7 @@ cd /var/www/html
 git clone --recurse-submodules https://github.com/Darknetzz/php-rand.git
 ```
 
+Open a webbrowser and visit `http://<webserver>/php-rand`
+
 # demo
 * demo @ https://roste.org/rand

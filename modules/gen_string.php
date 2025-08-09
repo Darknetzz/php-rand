@@ -75,7 +75,7 @@
                       <label><input type="checkbox" id="'.$opt.'" name="'.$opt.'" value="1" '.$checked.'> '.$desc.'</label>
                     </div>
                     <div>
-                      '.(!empty($chars) ? "<span class='badge bg-secondary'>".$chars."</span>" : "").'
+                      '.(!empty($chars) ? "<span class='badge text-bg-secondary'>".$chars."</span>" : "").'
                     </div>
                   </div>
                   <br>';
