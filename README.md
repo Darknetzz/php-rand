@@ -8,7 +8,7 @@ A set of useful tools for developers.
 * Generators
   * String generator
   * Number generator
-  * Logo generator (https://github.com/Darknetzz/php-logogen)
+  * Logo generator ([php-logogen](https://github.com/Darknetzz/php-logogen))
   * Spin the wheel
 * Encoding / Decoding
   * Base converters
