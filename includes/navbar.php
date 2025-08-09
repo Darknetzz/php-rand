@@ -46,7 +46,7 @@ $navbarItems = [
             ],
             "hash" => [
                 "name"       => "hash",
-                "formalName" => "Hashing Tools",
+                "formalName" => "Hashing",
                 "icon"       => icon('shield-check')
             ],
             "rot" => [
@@ -80,11 +80,6 @@ $navbarItems = [
                 "name"       => "htmlentities",
                 "formalName" => "HTML Entities",
                 "icon"       => icon('code-slash')
-            ],
-            "hash" => [
-                "name"       => "hash",
-                "formalName" => "Hash Generator",
-                "icon"       => icon('shield-lock')
             ],
         ],
     ],
