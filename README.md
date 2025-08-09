@@ -15,19 +15,18 @@ A set of useful tools for developers.
   * Bin2Hex, Hex2Bin
   * URL encoding/decoding
   * HTML entities encode/decode
-  * Hashing: SHA512, SHA256, SHA1, MD5
 * Encryption / Decryption
   * OpenSSL
-  * ROT
+  * Hashing (SHA512, SHA256, SHA1, MD5)
+  * ROT Cipher
 * Networking
   * CIDR to range
   * Range to CIDR
   * Subnet mask
   * IP2Hex, Hex2IP
-* Serialization
-  * JSON, YAML and XML
 * Misc.
   * String tools - trim, reverse, shuffle, convert etc.
+  * Serialization (JSON, YAML, XML)
   * Datetime tools
   * Calculator
 
