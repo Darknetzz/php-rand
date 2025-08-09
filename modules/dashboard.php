@@ -8,10 +8,8 @@
             </span>
         </h3>
         <div class="alert-description">
-            RAND is by no means a professional tool. It is a tool that I made for myself, and I am sharing it
-            with you.
-            The code is not perfect, and there are probably bugs. If you find a bug, please report it on the
-            GitHub page.
+            This is by no means a professional tool. It is a tool that I made for myself for fun.
+            It is likely filled with bugs and broken code, and there are better alternatives out there.
         </div>
     </div>
 
