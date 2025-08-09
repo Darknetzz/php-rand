@@ -2,7 +2,7 @@
 
 A set of useful tools for developers.
 
-![Rand](images/image.png)
+![Rand](images/image2.png)
 
 # features
 * Generators
