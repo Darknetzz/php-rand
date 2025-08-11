@@ -8,6 +8,7 @@
 > * renamed some modules
 > * navbar: reworked and reorganized to simplify gathering modules into dropdowns
 > * dashboard: moved disclaimer to top of page
+> * serialization: moved from misc to convert
 > ### fixed
 > * navbar: removed duplicate hash
 

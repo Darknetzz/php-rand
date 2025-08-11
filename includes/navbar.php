@@ -93,6 +93,11 @@ $navbarItems = [
                 "formalName" => "String Tools",
                 "icon"       => icon('type')
             ],
+            "serialization" => [
+                "name"       => "serialization",
+                "formalName" => "Serialization Tools",
+                "icon"       => icon('box-arrow-in-right')
+            ],
         ],
     ],
     "misc" => [
@@ -104,11 +109,6 @@ $navbarItems = [
                 "name"       => "calculator",
                 "formalName" => "Calculator",
                 "icon"       => icon('calculator')
-            ],
-            "serialization" => [
-                "name"       => "serialization",
-                "formalName" => "Serialization Tools",
-                "icon"       => icon('box-arrow-in-right')
             ],
             "datetime" => [
                 "name"       => "datetime",
