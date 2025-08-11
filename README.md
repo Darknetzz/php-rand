@@ -19,13 +19,15 @@ A set of useful tools for developers.
   * OpenSSL
   * Hashing (SHA512, SHA256, SHA1, MD5)
   * ROT Cipher
+* Convert
+  * String tools - trim, reverse, shuffle, convert etc.
+  * Serialization (JSON, YAML, XML)
 * Networking
   * CIDR to range
   * Range to CIDR
   * Subnet mask
   * IP2Hex, Hex2IP
 * Misc.
-  * String tools - trim, reverse, shuffle, convert etc.
   * Serialization (JSON, YAML, XML)
   * Datetime tools
   * Calculator
