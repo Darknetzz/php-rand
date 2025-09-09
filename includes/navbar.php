@@ -120,6 +120,16 @@ $navbarItems = [
                 "formalName" => "IP Tools",
                 "icon"       => icon('globe')
             ],
+            "minify" => [
+                "name"       => "minify",
+                "formalName" => "Minify",
+                "icon"       => icon('file-earmark-code')
+            ],
+            "markdown" => [
+                "name"       => "markdown",
+                "formalName" => "Markdown",
+                "icon"       => icon('markdown')
+            ],
         ],
     ],
 ];
