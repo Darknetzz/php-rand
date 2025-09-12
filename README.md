@@ -2,6 +2,10 @@
 
 A set of useful tools for developers.
 
+
+> [!WARNING]  
+> Disclaimer: Please do not host this tool on a publicly server. It most likely contains a bunch of security holes.
+
 ![Rand](images/image2.png)
 
 # features
