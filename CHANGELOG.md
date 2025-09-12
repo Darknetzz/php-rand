@@ -1,9 +1,9 @@
 ## **v1.1.0**
 > ### added
-> * urlencoding module
-> * htmlentities module
-> * minify module (coming soon)
-> * markdown module (coming soon)
+> * encoding: urlencoding
+> * encoding: htmlentities
+> * convert: markdown
+> * convert: minify (coming soon)
 > ### changed
 > * spin the wheel: is now an actual wheel
 > * included files are moved to `includes` directory

@@ -23,6 +23,7 @@ A set of useful tools for developers.
   * String tools - trim, reverse, shuffle, convert etc.
   * Serialization (JSON, YAML, XML)
   * Markdown editor (client-side)
+  * Minify (WIP...)
 * Networking
   * CIDR to range
   * Range to CIDR
