@@ -98,6 +98,11 @@ $navbarItems = [
                 "formalName" => "Serialization Tools",
                 "icon"       => icon('box-arrow-in-right')
             ],
+            "markdown" => [
+                "name"       => "markdown",
+                "formalName" => "Markdown",
+                "icon"       => icon('markdown')
+            ],
         ],
     ],
     "misc" => [
@@ -124,11 +129,6 @@ $navbarItems = [
                 "name"       => "minify",
                 "formalName" => "Minify",
                 "icon"       => icon('file-earmark-code')
-            ],
-            "markdown" => [
-                "name"       => "markdown",
-                "formalName" => "Markdown",
-                "icon"       => icon('markdown')
             ],
         ],
     ],

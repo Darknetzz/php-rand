@@ -22,6 +22,7 @@ A set of useful tools for developers.
 * Convert
   * String tools - trim, reverse, shuffle, convert etc.
   * Serialization (JSON, YAML, XML)
+  * Markdown editor (client-side)
 * Networking
   * CIDR to range
   * Range to CIDR
@@ -31,7 +32,6 @@ A set of useful tools for developers.
   * Serialization (JSON, YAML, XML)
   * Datetime tools
   * Calculator
-  * Markdown editor (client-side)
 
 # install
 Simply clone the repo and put it on your webserver with PHP support.
