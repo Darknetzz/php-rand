@@ -2,6 +2,10 @@
 
 A set of useful tools for developers.
 
+
+> [!WARNING]  
+> Disclaimer: Please do not host this tool on a publicly server. It most likely contains a bunch of security holes.
+
 ![Rand](images/image2.png)
 
 # features
@@ -19,13 +23,17 @@ A set of useful tools for developers.
   * OpenSSL
   * Hashing (SHA512, SHA256, SHA1, MD5)
   * ROT Cipher
+* Convert
+  * String tools - trim, reverse, shuffle, convert etc.
+  * Serialization (JSON, YAML, XML)
+  * Markdown editor (client-side)
+  * Minify (WIP...)
 * Networking
   * CIDR to range
   * Range to CIDR
   * Subnet mask
   * IP2Hex, Hex2IP
 * Misc.
-  * String tools - trim, reverse, shuffle, convert etc.
   * Serialization (JSON, YAML, XML)
   * Datetime tools
   * Calculator

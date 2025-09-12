@@ -93,6 +93,16 @@ $navbarItems = [
                 "formalName" => "String Tools",
                 "icon"       => icon('type')
             ],
+            "serialization" => [
+                "name"       => "serialization",
+                "formalName" => "Serialization Tools",
+                "icon"       => icon('box-arrow-in-right')
+            ],
+            "markdown" => [
+                "name"       => "markdown",
+                "formalName" => "Markdown",
+                "icon"       => icon('markdown')
+            ],
         ],
     ],
     "misc" => [
@@ -105,11 +115,6 @@ $navbarItems = [
                 "formalName" => "Calculator",
                 "icon"       => icon('calculator')
             ],
-            "serialization" => [
-                "name"       => "serialization",
-                "formalName" => "Serialization Tools",
-                "icon"       => icon('box-arrow-in-right')
-            ],
             "datetime" => [
                 "name"       => "datetime",
                 "formalName" => "Date & Time",
@@ -120,12 +125,17 @@ $navbarItems = [
                 "formalName" => "IP Tools",
                 "icon"       => icon('globe')
             ],
+            "minify" => [
+                "name"       => "minify",
+                "formalName" => "Minify",
+                "icon"       => icon('file-earmark-code')
+            ],
         ],
     ],
 ];
 
 $navHTML = '
-<nav class="navbar ps-3 navbar-expand-lg navbar-dark bg-dark">
+<nav class="navbar ps-3 navbar-expand-md d-print-none navbar-dark bg-dark sticky-top">
   <a class="navbar-brand text-lime mx-3" href="index.php">' . icon("dice-".mt_rand(1,6)). " " . SITE_TITLE . '</a>
   <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
     <span class="navbar-toggler-icon"></span>

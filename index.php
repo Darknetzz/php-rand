@@ -17,9 +17,8 @@
 </script>
 
 <!-- /* =============================== Marked ============================== */ -->
-<script src="
-https://cdn.jsdelivr.net/npm/marked@16.0.0/lib/marked.umd.min.js
-"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked/lib/marked.umd.js"></script>
+
 
 <!-- /* =====================================================================───── */ -->
 <!-- /*                               CODE HIGHLIGHT                               */ -->

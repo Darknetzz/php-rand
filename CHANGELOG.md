@@ -1,12 +1,16 @@
 ## **v1.1.0**
 > ### added
-> * urlencoding module
-> * htmlentities module
+> * encoding: urlencoding
+> * encoding: htmlentities
+> * convert: markdown
+> * convert: minify (coming soon)
 > ### changed
+> * spin the wheel: is now an actual wheel
 > * included files are moved to `includes` directory
 > * renamed some modules
 > * navbar: reworked and reorganized to simplify gathering modules into dropdowns
 > * dashboard: moved disclaimer to top of page
+> * serialization: moved from misc to convert
 > ### fixed
 > * navbar: removed duplicate hash
 
