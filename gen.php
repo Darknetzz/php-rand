@@ -807,31 +807,50 @@ if ($action == "htmlentities") {
   # ─────────────────────────────────────────────────────────────────────────── //
   #                                MODULE: minify                               //
   # ─────────────────────────────────────────────────────────────────────────── //
-  // if ($action == "minify") {
-  //   $tool  = (!empty($_POST['tool']) ? $_POST['tool'] : Null);
-  //   $input = (!empty($_POST['input']) ? $_POST['input'] : Null);
+  if ($tool == "minify") {
+    $type  = (!empty($_POST['type']) ? $_POST['type'] : Null);
+    $input = (!empty($_POST['input']) ? $_POST['input'] : Null);
 
-  //   if (empty($tool) || empty($input)) {
-  //     echo formatOutput("You must select a tool and enter data.", type: "danger");
-  //     break;
-  //   }
+    if (empty($type) || empty($input)) {
+      echo formatOutput("You must select a tool and enter data.", type: "danger");
+      break;
+    }
 
-  //   if ($tool == "cssmin") {
-  //     require_once("includes/cssmin.php");
-  //     $output = CssMin::minify($input);
-  //   }
-  //   if ($tool == "jsmin") {
-  //     require_once("includes/jsmin.php");
-  //     $output = JSMin::minify($input);
-  //   }
-  //   if ($tool == "htmlmin") {
-  //     require_once("includes/htmlmin.php");
-  //     $htmlMin = new \voku\helper\HtmlMin();
-  //     $output  = $htmlMin->minify($input);
-  //   }
+    $output = "";
 
-  //   echo formatOutput($output, responsetype: "text");
-  // }
+    if ($type == "css") {
+      if (!class_exists(\MatthiasMullie\Minify\CSS::class)) {
+        echo formatOutput("CSS minifier class not available (install matthiasmullie/minify).", type: "danger");
+        break;
+      }
+      $minifier = new Minify\CSS();
+      $minifier->add($input);
+      $output = $minifier->minify();
+    } elseif ($type == "js") {
+      if (!class_exists(\MatthiasMullie\Minify\JS::class)) {
+        echo formatOutput("JS minifier class not available (install matthiasmullie/minify).", type: "danger");
+        break;
+      }
+      $minifier = new Minify\JS();
+      $minifier->add($input);
+      $output = $minifier->minify();
+    } elseif ($type == "html") {
+      // Fallback simple HTML minifier (MatthiasMullie library does not provide HTML)
+      $output = $input;
+      // Remove HTML comments (except IE conditionals)
+      $output = preg_replace('/<!--(?!\[if).*?-->/s', '', $output);
+      // Collapse whitespace between tags
+      $output = preg_replace('/>\s+</', '><', $output);
+      // Collapse multiple spaces/newlines
+      $output = preg_replace('/\s{2,}/', ' ', $output);
+      $output = trim($output);
+    } else {
+      echo formatOutput("Invalid type selected '$type'.", type: "danger");
+      break;
+    }
+
+    echo formatOutput($output);
+  }
 
   # ─────────────────────────────────────────────────────────────────────────── //
 
