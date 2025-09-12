@@ -240,6 +240,17 @@ $(document).ready(function() {
         var serializeForm = form.serialize() + "&" + btnName + "=" + btnValue;
         console.log("[submitForm] Sending form: " + serializeForm);
 
+        if (responseObj.length == 0) {
+            console.log("[submitForm] No response object found.");
+            $("#error").html("<br><div class='alert alert-danger'>No response object found.</div>");
+            $("#error").show();
+            return;
+        } else {
+            $("#error").hide();
+        }
+
+        // AJAX call
+
         $.ajax({
             type: "POST",
             url: url,

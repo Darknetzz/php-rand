@@ -808,6 +808,7 @@ if ($action == "htmlentities") {
   #                                MODULE: minify                               //
   # ─────────────────────────────────────────────────────────────────────────── //
   if ($tool == "minify") {
+    echo formatOutput($_POST);
     $type  = (!empty($_POST['type']) ? $_POST['type'] : Null);
     $input = (!empty($_POST['input']) ? $_POST['input'] : Null);
 
@@ -823,17 +824,13 @@ if ($action == "htmlentities") {
         echo formatOutput("CSS minifier class not available (install matthiasmullie/minify).", type: "danger");
         break;
       }
-      $minifier = new Minify\CSS();
-      $minifier->add($input);
-      $output = $minifier->minify();
+      $output = new Minify\CSS($input);
     } elseif ($type == "js") {
       if (!class_exists(\MatthiasMullie\Minify\JS::class)) {
         echo formatOutput("JS minifier class not available (install matthiasmullie/minify).", type: "danger");
         break;
       }
-      $minifier = new Minify\JS();
-      $minifier->add($input);
-      $output = $minifier->minify();
+      $output = new Minify\JS($input);
     } elseif ($type == "html") {
       // Fallback simple HTML minifier (MatthiasMullie library does not provide HTML)
       $output = $input;
@@ -849,7 +846,7 @@ if ($action == "htmlentities") {
       break;
     }
 
-    echo formatOutput($output);
+    echo formatOutput($output, responsetype: "text");
   }
 
   # ─────────────────────────────────────────────────────────────────────────── //

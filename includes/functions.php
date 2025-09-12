@@ -121,6 +121,11 @@ function formatOutput($response, $size = 4, $type = "success", $responsetype = "
     $response = "No output";
   }
 
+  if ($responsetype == "text") {
+    $response = htmlspecialchars($response, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    $response = nl2br($response);
+  }
+
   if ($responsetype == "html") {
     $response = "
     <h$size class='output bg-$type-subtle text-$type-emphasis rounded-3' style='padding:20px;'>
@@ -128,6 +133,14 @@ function formatOutput($response, $size = 4, $type = "success", $responsetype = "
     </h$size>
     ";
   }
+
+  // if ($responsetype == "text") {
+  //   header('Content-Type: text/plain; charset=utf-8');
+  //   header('Content-Disposition: attachment; filename="output.txt"');
+  //   header('Expires: 0');
+  //   header('Cache-Control: must-revalidate');
+  //   header('Pragma: public');
+  // }
 
   return trim($response);
 }
