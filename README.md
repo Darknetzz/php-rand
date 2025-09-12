@@ -50,6 +50,10 @@ cd /var/www/html
 
 # Clone the repo
 git clone --recurse-submodules https://github.com/Darknetzz/php-rand.git
+
+# Get the Composer dependencies (https://getcomposer.org/download/)
+cd php-rand
+composer install
 ```
 
 Open a webbrowser and visit `http://<webserver>/php-rand`
