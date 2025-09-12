@@ -36,6 +36,7 @@ do {
 
   $action = $_POST['action'];
   $tool   = ($_POST['tool'] ?? Null);
+  $input  = ($_POST['input'] ?? Null);
 
 
 /* ===================================================================== */
@@ -800,6 +801,39 @@ if ($action == "htmlentities") {
 
     echo formatOutput($output);
   }
+
+
+
+  # ─────────────────────────────────────────────────────────────────────────── //
+  #                                MODULE: minify                               //
+  # ─────────────────────────────────────────────────────────────────────────── //
+  // if ($action == "minify") {
+  //   $tool  = (!empty($_POST['tool']) ? $_POST['tool'] : Null);
+  //   $input = (!empty($_POST['input']) ? $_POST['input'] : Null);
+
+  //   if (empty($tool) || empty($input)) {
+  //     echo formatOutput("You must select a tool and enter data.", type: "danger");
+  //     break;
+  //   }
+
+  //   if ($tool == "cssmin") {
+  //     require_once("includes/cssmin.php");
+  //     $output = CssMin::minify($input);
+  //   }
+  //   if ($tool == "jsmin") {
+  //     require_once("includes/jsmin.php");
+  //     $output = JSMin::minify($input);
+  //   }
+  //   if ($tool == "htmlmin") {
+  //     require_once("includes/htmlmin.php");
+  //     $htmlMin = new \voku\helper\HtmlMin();
+  //     $output  = $htmlMin->minify($input);
+  //   }
+
+  //   echo formatOutput($output, responsetype: "text");
+  // }
+
+  # ─────────────────────────────────────────────────────────────────────────── //
 
 
   if ($responsetype != "html") {

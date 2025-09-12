@@ -31,6 +31,7 @@ A set of useful tools for developers.
   * Serialization (JSON, YAML, XML)
   * Datetime tools
   * Calculator
+  * Markdown editor (client-side)
 
 # install
 Simply clone the repo and put it on your webserver with PHP support.
