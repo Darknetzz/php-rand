@@ -39,6 +39,20 @@ A set of useful tools for developers.
   * Calculator
 
 # install
+
+## docker (recommended)
+```bash
+# clone repo
+git clone --recurse-submodules https://github.com/Darknetzz/php-rand.git && cd php-rand
+
+# build image
+docker build --no-cache -t php-rand .
+
+# run container
+docker run -d -p 12345:80 --name phprand php-rand
+```
+
+## manual installation
 Simply clone the repo and put it on your webserver with PHP support.
 
 ```bash
