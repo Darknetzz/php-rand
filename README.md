@@ -2,9 +2,12 @@
 
 A set of useful tools for developers.
 
+Demo: https://roste.org/rand
+
 
 > [!WARNING]  
 > Disclaimer: Please do not host this tool on a publicly server. It most likely contains a bunch of security holes.
+
 
 ![Rand](images/image2.png)
 
@@ -40,7 +43,29 @@ A set of useful tools for developers.
 
 # install
 
-## docker (recommended)
+## docker pull
+```bash
+# pull latest image
+docker pull darknetz/php-rand:latest
+
+# run container (replace 12345 with your desired port)
+docker run -d -p 12345:80 --name php-rand darknetz/php-rand:latest
+```
+
+## docker compose
+```yaml
+version: '3.8'
+
+services:
+  phprand:
+    image: darknetz/php-rand:latest
+    container_name: php-rand
+    ports:
+      - "12345:80"  # replace 12345 with your desired port
+    restart: unless-stopped
+```
+
+## dockerfile build and run
 ```bash
 # clone repo
 git clone --recurse-submodules https://github.com/Darknetzz/php-rand.git && cd php-rand
@@ -48,12 +73,13 @@ git clone --recurse-submodules https://github.com/Darknetzz/php-rand.git && cd p
 # build image
 docker build --no-cache -t php-rand .
 
-# run container
-docker run -d -p 12345:80 --name phprand php-rand
+# run container (replace 12345 with your desired port)
+docker run -d -p 12345:80 --name php-rand php-rand
 ```
 
-## manual installation
-Simply clone the repo and put it on your webserver with PHP support.
+## manual installation (without docker)
+If you want to run this on your own webserver,
+simply clone the repo and put it on your webserver with PHP support.
 
 ```bash
 # install dependencies
@@ -71,6 +97,3 @@ composer install
 ```
 
 Open a webbrowser and visit `http://<webserver>/php-rand`
-
-# demo
-* demo @ https://roste.org/rand
