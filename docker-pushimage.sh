@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 
+# This file is only intended to help automate the docker image build and push process.
+# Make sure you have a .env file in the root of the repo with the following variables:
+# IMAGE=your-dockerhub-username/php-rand
+# TAG=latest
+# VERSION=v1.0.0
+
 # from the repo root
 docker login
 
