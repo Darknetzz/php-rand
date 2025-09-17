@@ -54,8 +54,6 @@ docker run -d -p 12345:80 --name php-rand darknetz/php-rand:latest
 
 ## docker compose
 ```yaml
-version: '3.8'
-
 services:
   phprand:
     image: darknetz/php-rand:latest
