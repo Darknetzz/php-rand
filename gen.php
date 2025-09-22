@@ -158,12 +158,12 @@ do {
     $allBasesAreBelongToUs .= "<hr>";
     if (!empty($to) && is_numeric($to) && $to >= 1 && $to <= 36) {
       $allBasesAreBelongToUs .= "<b>Base $from to Base $to:</b><br>
-      <pre><code>".base_convert($_POST['base'], $from, $to)."</code></pre>
+      <pre><code>".convert_any($_POST['base'], $from, $to)."</code></pre>
       <br>";
     } else {
       for ($i = 2; $i <= 36; $i++) {
         $allBasesAreBelongToUs .= "<b>Base$i:</b><br>
-        <pre><code>".base_convert($_POST['base'], $from, $i)."</code></pre>
+        <pre><code>".convert_any($_POST['base'], $from, $i)."</code></pre>
         <br>";
       }
     }

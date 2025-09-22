@@ -61,12 +61,16 @@ foreach ($base_options as $value => $data) {
                   </select>
                 </label>
 
+                <br>
+
                 <label>Output type
                   <select name="to" class="form-select mb-2">
                       <option value="text" selected>All</option>
                       <?= $base_options_html ?>
                   </select>
                 </label>
+
+                <br>
 
                 <?= submitBtn("base", "action", "Convert", "arrow-repeat") ?>
                 <div class="responseDiv" id="baseresponse"></div>
