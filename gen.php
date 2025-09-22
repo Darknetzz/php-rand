@@ -147,26 +147,31 @@ do {
 /*                               MODULE: Base                            */
 /* ===================================================================== */
   if ($action == 'base64encode' || $action == 'base64decode' || $action == 'base') {
-    $from = (!isset($_POST['from']) || empty($_POST['from'])) ? 36 : intval($_POST['from']);
-    $to   = (!isset($_POST['to']) || empty($_POST['to'])) ? Null : intval($_POST['to']);
+    $input = (!empty($_POST['base']) ? $_POST['base'] : Null);
+    $from  = (!empty($_POST['from']) ? intval($_POST['from']) : "text");
+    $to    = (!empty($_POST['to']) ? intval($_POST['to']) : 64);
 
     $allBasesAreBelongToUs = "";
 
     $allBasesAreBelongToUs .= "<b>Input (Base $from):</b> <code>$_POST[base]</code><br><br>";
     // $allBasesAreBelongToUs .= "Base64 encode: <code>".base64_encode($_POST['base'])."</code><br>";
     // $allBasesAreBelongToUs .= "Base64 decode: <code>".base64_decode($_POST['base'])."</code><br>";
-    $allBasesAreBelongToUs .= "<hr>";
-    if (!empty($to) && is_numeric($to) && $to >= 1 && $to <= 36) {
-      $allBasesAreBelongToUs .= "<b>Base $from to Base $to:</b><br>
-      <pre><code>".convert_any($_POST['base'], $from, $to)."</code></pre>
-      <br>";
-    } else {
-      for ($i = 2; $i <= 36; $i++) {
-        $allBasesAreBelongToUs .= "<b>Base$i:</b><br>
-        <pre><code>".convert_any($_POST['base'], $from, $i)."</code></pre>
-        <br>";
-      }
-    }
+    $allBasesAreBelongToUs .= "
+      <hr>
+      <b>Base $from to Base $to:</b><br>
+      <pre><code>".convert_any($input, $from, $to).PHP_EOL."</code></pre>
+      ";
+    // if (!empty($to) && is_numeric($to) && $to >= 1 && $to <= 36) {
+    //   $allBasesAreBelongToUs .= "<b>Base $from to Base $to:</b><br>
+    //   <pre><code>".convert_any($_POST['base'], $from, $to).PHP_EOL."</code></pre>
+    //   <br>";
+    // } else {
+    //   for ($i = 2; $i <= 36; $i++) {
+    //     $allBasesAreBelongToUs .= "<b>Base$i:</b><br>
+    //     <pre><code>".convert_any($_POST['base'], $from, $i).PHP_EOL."</code></pre>
+    //     <br>";
+    //   }
+    // }
 
     echo formatOutput($allBasesAreBelongToUs);
   }

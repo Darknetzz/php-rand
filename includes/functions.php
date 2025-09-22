@@ -519,234 +519,294 @@ function subnetmask($ip, $subnet) {
 #                             FUNCTION: convert_any                           //
 # ─────────────────────────────────────────────────────────────────────────── //
 /**
- * Universal converter: between bases 1..64, text, hex, and base64.
+ * Universal converter: bases 1..64, text, hex, base64.
  *
- * $from and $to can be:
- *  - integer 1..64  (numeric base with digits 0-9 A-Z a-z + /)
- *  - 'text'         (UTF-8 bytes)
- *  - 'hex'          (binary-to-text encoding, not numeric base)
- *  - 'base64'       (binary-to-text encoding, not numeric base)
+ * FROM/TO selectors:
+ *  - integer 1..64          numeric base using digits 0-9 A-Z a-z + /
+ *  - 'text'                 UTF-8 bytes as text
+ *  - 'hex'                  binary-to-text (hex)
+ *  - 'base64'               binary-to-text (RFC 4648 Base64)
  *
- * Notes:
- *  - Base-1 is unary: the value is the count of '1' characters.
- *  - For 'text', bytes are interpreted/produced as UTF-8.
- *  - For 'hex' and 'base64', standard encoders/decoders are used.
+ * Quality-of-life:
+ *  - Bases ≤36 accept either case in input (auto-normalized).
+ *  - Numeric base-64 quietly strips trailing '=' padding.
+ *  - Base-1 (unary) supported, with a safety cap to avoid million-char outputs.
  */
-function convert_any($input, $from = "text", $to = "text") {
-    $alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz+/';
 
-    // Normalize selectors
-    $normalize = function($x) {
-        if (is_int($x)) return $x;
-        $x = strtolower(trim($x));
-        if ($x === 'dec') return 10;
-        if ($x === 'bin') return 2;
-        if ($x === 'oct') return 8;
-        if (ctype_digit($x)) return (int)$x;
-        return $x; // 'text' | 'hex' | 'base64'
-    };
-    $from = $normalize($from);
-    $to   = $normalize($to);
+function convert_any($input, $from = "text", $to = "base64") {
+    // Master alphabet for bases up to 64
+    $ALPH64 = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz+/';
+    // Uppercase alphabet for case-insensitive parse in bases <=36
+    $ALPH36U = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
-    // Helpers
-    $str_to_bytes = function(string $s): array {
-        // UTF-8 bytes
-        return array_values(unpack('C*', $s));
-    };
-    $bytes_to_str = function(array $bytes): string {
-        // From bytes to string (assumes they represent UTF-8)
-        return pack('C*', ...$bytes);
-    };
+    // Normalize selectors like '10', 'bin', 'oct', 'dec'
+    $from = normalize_selector($from);
+    $to   = normalize_selector($to);
 
-    // Validate bases
-    $is_base = function($b) { return is_int($b) && $b >= 1 && $b <= 64; };
+    // Sanitize trivial spacing
+    if (is_string($input)) {
+        $input = trim($input);
+    }
 
-    // Convert digits string (in base 2..64) to array of digit values
-    $digits_from_string = function(string $s, int $base) use ($alphabet): array {
-        $out = [];
-        $len = strlen($s);
-        for ($i = 0; $i < $len; $i++) {
-            $ch = $s[$i];
-            $v = strpos($alphabet, $ch);
-            if ($v === false || $v >= $base) {
-                throw new InvalidArgumentException("Invalid digit '$ch' for base $base.");
-            }
-            $out[] = $v;
-        }
-        return $out;
-    };
-
-    // Convert array of digit values to string using alphabet
-    $string_from_digits = function($digits) use ($alphabet) {
-        if (!$digits) return '0';
-        $s = '';
-        foreach ($digits as $d) {
-            $s .= $alphabet[$d];
-        }
-        // Trim leading zeros, but leave a single '0' if all were zeros
-        return ltrim($s, '0') === '' ? '0' : ltrim($s, '0');
-    };
-
-    // Core base conversion on big integers represented as digit arrays.
-    // Input: digits in base $fromBase. Output: digits in base $toBase.
-    $convert_digits = function(array $digits, int $fromBase, int $toBase): array {
-        if ($fromBase === $toBase) return $digits ?: [0];
-
-        // Strip leading zeros
-        while (count($digits) > 0 && $digits[0] === 0) array_shift($digits);
-        if (!$digits) return [0];
-
-        $result = [];
-        $source = $digits;
-
-        // Repeated division algorithm
-        while ($source) {
-            $quotient = [];
-            $remainder = 0;
-            foreach ($source as $d) {
-                $acc = $remainder * $fromBase + $d;
-                $q = intdiv($acc, $toBase);
-                $remainder = $acc % $toBase;
-                if ($quotient || $q !== 0) $quotient[] = $q;
-            }
-            array_unshift($result, $remainder);
-            $source = $quotient;
-        }
-        return $result ?: [0];
-    };
-
-    // Special handling for base-1 (unary)
-    $from_unary_to_digits = function(string $s): array {
-        if ($s === '') return [0];
-        // Only '1' allowed
-        if (trim(str_replace('1','',$s)) !== '') {
-            throw new InvalidArgumentException("Unary expects only '1' characters.");
-        }
-        // Value = count of '1'; return as base-10 digits array [value] in base-10 representation would be huge,
-        // but we want it in internal "digits array" form. We'll convert from decimal integer to an array later.
-        // Easier: create digits in base-256 directly from integer count by repeated division.
-        $n = strlen($s);
-        // Return as base-10-like internal? We'll just convert via generic path after constructing base-10-like digits.
-        // Build decimal digits array is overkill; better route: create base-2 digits directly.
-        // To keep it simple: produce base-2 digits for $n.
-        if ($n === 0) return [0];
-        // Build binary digits of $n
-        $bits = [];
-        while ($n > 0) { array_unshift($bits, $n & 1); $n >>= 1; }
-        return $bits; // base-2 digits
-    };
-
-    $digits_from_number_string = function($s, $base) use ($digits_from_string, $from_unary_to_digits) {
-        if ($base === 1) {
-            return $from_unary_to_digits($s); // returns base-2 digits
-        } elseif ($base >= 2 && $base <= 64) {
-            return $digits_from_string($s, $base);
-        } else {
-            throw new InvalidArgumentException("Unsupported from-base.");
-        }
-    };
-
-    // Step 1: normalize input into a byte array (if 'text'/'hex'/'base64') or a digit array with a known base.
+    // Decide if we're dealing with bytes, or digit-arrays in some base
     $have_bytes = false;
-    $bytes = [];
-    $digits = [];
-    $digits_base = null; // base of $digits if we use digits route
+    $bytes = array();
+    $digits = array();
+    $digits_base = null;
 
+    // Parse input by selector
     if ($from === 'text') {
-        $bytes = $str_to_bytes($input);
+        $bytes = str_to_bytes($input);
         $have_bytes = true;
+
     } elseif ($from === 'hex') {
-        if (strlen($input) % 2 !== 0) {
-            // tolerate odd length by prefixing a zero
-            $input = '0' . $input;
-        }
+        if (strlen($input) % 2 !== 0) $input = '0' . $input; // be lenient
         $bin = @hex2bin($input);
         if ($bin === false) throw new InvalidArgumentException("Invalid hex input.");
         $bytes = array_values(unpack('C*', $bin));
         $have_bytes = true;
+
     } elseif ($from === 'base64') {
         $bin = base64_decode($input, true);
         if ($bin === false) throw new InvalidArgumentException("Invalid base64 input.");
         $bytes = array_values(unpack('C*', $bin));
         $have_bytes = true;
-    } elseif ($is_base($from)) {
-        // Parse numeric string into digits
+
+    } elseif (is_base_selector($from)) {
+        // Numeric base path
+        if ($from === 64) {
+            // If someone pasted padded base64 into numeric base 64, strip '=' padding silently.
+            $input = rtrim($input, '=');
+        }
         if ($from === 1) {
-            $digits = $digits_from_number_string($input, 1); // base-2 digits
-            $digits_base = 2;
+            // Unary: value is length of '1' run
+            validate_unary($input);
+            $n = strlen($input);
+            // Represent n as base-2 digits so we can use generic converter
+            list($digits, $digits_base) = integer_to_digits($n, 2);
         } else {
-            $digits = $digits_from_number_string($input, $from);
+            // Bases ≤36 are case-insensitive: normalize to uppercase and use ALPH36U
+            $digits = digits_from_string($input, $from <= 36 ? strtoupper($input) : $input,
+                                         $from, $ALPH64, $ALPH36U);
             $digits_base = $from;
         }
+
     } else {
-        throw new InvalidArgumentException("Unsupported 'from' selector.");
+        throw new InvalidArgumentException("Unsupported 'from' selector: `$from`");
     }
 
-    // If we have bytes and the target is a numeric base, first turn bytes (base-256) into target-base digits.
-    if ($have_bytes && ($is_base($to))) {
-        // Convert bytes (each 0..255) base-256 -> base-$to
-        $digits = $bytes;           // treat as digits in base 256
+    // If we have bytes but need a numeric output base, treat bytes as base-256 digits
+    if ($have_bytes && is_base_selector($to)) {
+        $digits = $bytes;
         $digits_base = 256;
-        if ($to === 1) {
-            // bytes -> integer -> unary
-            // First convert to base-10/any, but easier: convert to base-2 then count → but unary requires exact count of value.
-            // We'll convert base-256 digits directly to base-2 digits, then to an integer count would be enormous for large inputs.
-            // Unary of large data is impractical; still, we support it.
-        }
+        $have_bytes = false;
     }
 
-    // If we have digits and the target is bytes/text/hex/base64, we need to convert digits to base-256 first.
+    // If we have numeric digits but need bytes encodings, convert to base-256 first
     if (!$have_bytes && ($to === 'text' || $to === 'hex' || $to === 'base64')) {
-        // Convert digits_base -> 256
-        if (!isset($digits_base)) throw new RuntimeException("Internal error: digits base not set.");
-        $digits = $convert_digits($digits, $digits_base, 256);
-        $digits_base = 256;
+        if ($digits_base === null) throw new RuntimeException("Internal error: digits base not set.");
+        $digits = convert_digits($digits, $digits_base, 256);
         $bytes = $digits;
         $have_bytes = true;
     }
 
-    // Now produce the final output depending on $to.
+    // Produce output
     if ($to === 'text') {
-        // From bytes to UTF-8 string
-        return $bytes_to_str($bytes);
+        return bytes_to_str($bytes);
+
     } elseif ($to === 'hex') {
-        return bin2hex($bytes_to_str($bytes));
+        return bin2hex(bytes_to_str($bytes));
+
     } elseif ($to === 'base64') {
-        return base64_encode($bytes_to_str($bytes));
-    } elseif ($is_base($to)) {
-        // We have either:
-        //  - digits with base $digits_base (from numeric input), or
-        //  - bytes with base-256 (from text/hex/base64).
+        return base64_encode(bytes_to_str($bytes));
+
+    } elseif (is_base_selector($to)) {
         if ($have_bytes) {
             $digits = $bytes;
             $digits_base = 256;
         }
+
         if ($to === 1) {
-            // Convert digits_base -> base-10 magnitude to replicate as unary.
-            // We'll convert to base-2 digits, then to an integer count. For large values, this will be huge.
-            $bits = $convert_digits($digits, $digits_base, 2);
-            // Convert binary digits to a PHP integer if possible, otherwise build unary by repeated subtraction (impractical).
-            // Realistically, unary of anything nontrivial is astronomical. We’ll guard against absurd sizes.
-            // If value is too large, refuse.
-            $value = 0;
-            foreach ($bits as $b) {
-                // Prevent overflow explosions
-                if ($value > PHP_INT_MAX >> 1) {
-                    throw new OverflowException("Result too large to represent in unary safely.");
-                }
-                $value = ($value << 1) + $b;
-            }
-            if ($value > 1000000) { // hard cap to avoid memory meltdown
+            // Convert to unary, with guardrails
+            $value_bits = convert_digits($digits, $digits_base, 2);
+            $n = bits_to_php_int($value_bits);
+            if ($n > 1000000) {
                 throw new OverflowException("Unary output would exceed 1,000,000 characters. Refusing.");
             }
-            return str_repeat('1', $value);
-        } else {
-            $out_digits = $convert_digits($digits, $digits_base, $to);
-            return $string_from_digits($out_digits);
+            return str_repeat('1', $n);
         }
+
+        // Generic numeric base conversion
+        $out_digits = convert_digits($digits, $digits_base, $to);
+        return digits_to_string($out_digits, $to, $ALPH64, $ALPH36U);
+
     } else {
-        throw new InvalidArgumentException("Unsupported 'to' selector.");
+        throw new InvalidArgumentException("Unsupported 'to' selector: `$to`");
     }
 }
+
+/* ------------------ Helpers ------------------ */
+
+# ─────────────────────────────────────────────────────────────────────────── //
+#                         FUNCTION: normalize_selector                        //
+# ─────────────────────────────────────────────────────────────────────────── //
+function normalize_selector($x) {
+    if (is_int($x)) return $x;
+    $s = strtolower(trim((string)$x));
+    if ($s === 'dec') return 10;
+    if ($s === 'bin') return 2;
+    if ($s === 'oct') return 8;
+    if (ctype_digit($s)) return (int)$s;
+    return $s; // 'text' | 'hex' | 'base64'
+}
+
+# ─────────────────────────────────────────────────────────────────────────── //
+#                          FUNCTION: is_base_selector                         //
+# ─────────────────────────────────────────────────────────────────────────── //
+function is_base_selector($b) {
+    return is_int($b) && $b >= 1 && $b <= 64;
+}
+
+# ─────────────────────────────────────────────────────────────────────────── //
+#                            FUNCTION: str_to_bytes                           //
+# ─────────────────────────────────────────────────────────────────────────── //
+function str_to_bytes($s) {
+    return array_values(unpack('C*', $s)); // UTF-8 raw bytes
+}
+
+# ─────────────────────────────────────────────────────────────────────────── //
+#                            FUNCTION: bytes_to_str                           //
+# ─────────────────────────────────────────────────────────────────────────── //
+function bytes_to_str($bytes) {
+    if (!$bytes) return '';
+    return pack('C*', ...$bytes);
+}
+
+# ─────────────────────────────────────────────────────────────────────────── //
+#                           FUNCTION: validate_unary                          //
+# ─────────────────────────────────────────────────────────────────────────── //
+function validate_unary($s) {
+    if ($s === '') return;
+    // allow only '1' characters
+    if (str_replace('1', '', $s) !== '') {
+        throw new InvalidArgumentException("Unary expects only '1' characters.");
+    }
+}
+
+# ─────────────────────────────────────────────────────────────────────────── //
+#                          FUNCTION: integer_to_digits                        //
+# ─────────────────────────────────────────────────────────────────────────── //
+function integer_to_digits($n, $base) {
+    if ($n === 0) return array(array(0), $base);
+    $out = array();
+    while ($n > 0) {
+        array_unshift($out, $n % $base);
+        $n = intdiv($n, $base);
+    }
+    return array($out, $base);
+}
+
+# ─────────────────────────────────────────────────────────────────────────── //
+#                         FUNCTION: digits_from_string                        //
+# ─────────────────────────────────────────────────────────────────────────── //
+// Parse string into digit array.
+// For bases ≤36, we treat input case-insensitively using ALPH36U.
+// For >36, we use ALPH64 case-sensitively.
+function digits_from_string($raw, $in, $base, $ALPH64, $ALPH36U) {
+    $out = array();
+    $len = strlen($in);
+
+    if ($base <= 36) {
+        for ($i = 0; $i < $len; $i++) {
+            $ch = $in[$i];
+            $pos = strpos($ALPH36U, $ch);
+            if ($pos === false || $pos >= $base) {
+                throw new InvalidArgumentException("Invalid digit '$raw[$i]' for base $base.");
+            }
+            $out[] = $pos;
+        }
+    } else {
+        for ($i = 0; $i < $len; $i++) {
+            $ch = $in[$i];
+            $pos = strpos($ALPH64, $ch);
+            if ($pos === false || $pos >= $base) {
+                throw new InvalidArgumentException("Invalid digit '$raw[$i]' for base $base.");
+            }
+            $out[] = $pos;
+        }
+    }
+    return $out;
+}
+
+# ─────────────────────────────────────────────────────────────────────────── //
+#                           FUNCTION: convert_digits                          //
+# ─────────────────────────────────────────────────────────────────────────── //
+// Convert digit-array between bases using repeated division (works for big integers).
+function convert_digits($digits, $fromBase, $toBase) {
+    if ($fromBase === $toBase) {
+        return $digits ? $digits : array(0);
+    }
+
+    // Strip leading zeros
+    while (count($digits) > 0 && $digits[0] === 0) array_shift($digits);
+    if (!$digits) return array(0);
+
+    $result = array();
+    $source = $digits;
+
+    while ($source) {
+        $quotient = array();
+        $remainder = 0;
+        foreach ($source as $d) {
+            $acc = $remainder * $fromBase + $d;
+            $q = intdiv($acc, $toBase);
+            $remainder = $acc % $toBase;
+            if (!empty($quotient) || $q !== 0) $quotient[] = $q;
+        }
+        array_unshift($result, $remainder);
+        $source = $quotient;
+    }
+    return $result ? $result : array(0);
+}
+
+# ─────────────────────────────────────────────────────────────────────────── //
+#                          FUNCTION: digits_to_string                         //
+# ─────────────────────────────────────────────────────────────────────────── //
+function digits_to_string($digits, $base, $ALPH64, $ALPH36U) {
+    if (!$digits) return '0';
+    $s = '';
+    if ($base <= 36) {
+        foreach ($digits as $d) $s .= $ALPH36U[$d];
+    } else {
+        foreach ($digits as $d) $s .= $ALPH64[$d];
+    }
+    $trim = ltrim($s, '0');
+    return $trim === '' ? '0' : $trim;
+}
+
+# ─────────────────────────────────────────────────────────────────────────── //
+#                           FUNCTION: bits_to_php_int                         //
+# ─────────────────────────────────────────────────────────────────────────── //
+// Turn binary digits (array of 0/1) into a PHP int, with overflow checks.
+function bits_to_php_int($bits) {
+    $n = 0;
+    foreach ($bits as $b) {
+        if ($n > (PHP_INT_MAX >> 1)) {
+            throw new OverflowException("Value too large for unary conversion on this platform.");
+        }
+        $n = ($n << 1) + ($b ? 1 : 0);
+    }
+    return $n;
+}
+
+/* -------------- Examples (uncomment to test) -------------- */
+
+// echo convert_any("Hello", "text", 36), PHP_EOL;         // Text -> base36
+// echo convert_any("SGVsbG8=", "base64", "text"), PHP_EOL; // Base64 -> text
+// echo convert_any("SGVsbG8=", 64, 10), PHP_EOL;           // Numeric base64 -> base10 (trims '=')
+// echo convert_any("ff", 36, 10), PHP_EOL;                 // Accepts lowercase for base36
+// echo convert_any("1295", 10, 36), PHP_EOL;               // -> ZZ
+// echo convert_any("48656c6c6f", "hex", "base64"), PHP_EOL;// -> SGVsbG8=
+// echo convert_any(str_repeat('1', 13), 1, 2), PHP_EOL;    // Unary 13 -> 1101
 
 ?>

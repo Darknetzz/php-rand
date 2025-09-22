@@ -3,7 +3,7 @@
     <?php
 $base_options = [
     "text"   => [
-      "name" => "Base36 (text)",
+      "name" => "Text",
       "attr" => null,
     ],
     2  => [
@@ -20,6 +20,14 @@ $base_options = [
     ],
     16 => [
       "name" => "Base 16 (hexadecimal)",
+      "attr" => null,
+    ],
+    32 => [
+      "name" => "Base 32",
+      "attr" => null,
+    ],
+    64 => [
+      "name" => "Base 64",
       "attr" => null,
     ],
     0 => [
@@ -56,7 +64,7 @@ foreach ($base_options as $value => $data) {
 
                 <label>Input type
                   <select name="from" class="form-select mb-2">
-                      <option value="text" disabled selected>Input type (default: text/base36)...</option>
+                      <option value="text" selected>Input type (default: text)...</option>
                       <?= $base_options_html ?>
                   </select>
                 </label>
@@ -65,7 +73,7 @@ foreach ($base_options as $value => $data) {
 
                 <label>Output type
                   <select name="to" class="form-select mb-2">
-                      <option value="text" selected>All</option>
+                      <option value="64" selected>Output type (default: base64)</option>
                       <?= $base_options_html ?>
                   </select>
                 </label>
