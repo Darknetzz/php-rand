@@ -54,17 +54,19 @@ foreach ($base_options as $value => $data) {
                 <textarea name="base" class="form-control mb-2"
                     placeholder="Enter text or base encoded string to convert..." value="" required></textarea>
 
-                <select name="from" class="form-select mb-2">
-                    <option value="text" disabled selected>Input type (default: text/base36)...</option>
-                    <?= $base_options_html ?>
-                </select>
+                <label>Input type
+                  <select name="from" class="form-select mb-2">
+                      <option value="text" disabled selected>Input type (default: text/base36)...</option>
+                      <?= $base_options_html ?>
+                  </select>
+                </label>
 
-                </select>
-
-                <select name="to" class="form-select mb-2">
-                    <option value="text" selected>All</option>
-                    <?= $base_options_html ?>
-                </select>
+                <label>Output type
+                  <select name="to" class="form-select mb-2">
+                      <option value="text" selected>All</option>
+                      <?= $base_options_html ?>
+                  </select>
+                </label>
 
                 <?= submitBtn("base", "action", "Convert", "arrow-repeat") ?>
                 <div class="responseDiv" id="baseresponse"></div>
