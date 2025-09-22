@@ -147,9 +147,10 @@ do {
 /*                               MODULE: Base                            */
 /* ===================================================================== */
   if ($action == 'base64encode' || $action == 'base64decode' || $action == 'base') {
+    // die(formatOutput($_POST));
     $input = (!empty($_POST['base']) ? $_POST['base'] : Null);
-    $from  = (!empty($_POST['from']) ? intval($_POST['from']) : "text");
-    $to    = (!empty($_POST['to']) ? intval($_POST['to']) : 64);
+    $from  = (!empty($_POST['from']) ? ($_POST['from']) : "text");
+    $to    = (!empty($_POST['to']) ? ($_POST['to']) : 64);
 
     $allBasesAreBelongToUs = "";
 
