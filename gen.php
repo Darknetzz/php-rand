@@ -102,14 +102,37 @@ do {
     for ($i = 0; $i < $strings; $i++) {
       $thisRandomString = $randomString[] = genStr($charsets, $length, $_POST['cchars']);
       $collapsibleText .= "
-              <b>String: $thisRandomString
-              <b>SHA1:</b> ".hash('sha1', $thisRandomString)."<br>
-              <b>SHA256:</b> ".hash('sha256', $thisRandomString)."<br>
-              <b>SHA512:</b> ".hash('sha512', $thisRandomString)."<br>
-              <b>MD5:</b> ".md5($thisRandomString)."<br>
-              <b>Possible combinations:</b> ".number_format(strlen($charsets)**$length)." (".strlen($charsets)."^$length)
-              <hr>
-              ";
+
+            <table class='table table-default'>
+
+              <tr>
+                <td>String</td>
+                <td><pre>$thisRandomString</pre></td>
+              </tr>
+
+              <tr>
+                <td>MD5</td>
+                <td><pre>".hash('md5', $thisRandomString)."</pre></td>
+              </tr>
+              <tr>
+                <td>SHA1</td>
+                <td><pre>".hash('sha1', $thisRandomString)."</pre></td>
+              </tr>
+              <tr>
+                <td>SHA256</td>
+                <td><pre>".hash('sha256', $thisRandomString)."</pre></td>
+              </tr>
+              <tr>
+                <td>SHA512</td>
+                <td><pre>".hash('sha512', $thisRandomString)."</pre></td>
+              </tr>
+
+              <tr>
+                <td>Possible combinations</td>
+                <td><pre>".number_format(strlen($charsets)**$length)." (".strlen($charsets)."^$length)</pre></td>
+              </tr>
+
+            </table>";
     }
 
     $charactersLength = strlen($charsets);
