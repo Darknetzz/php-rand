@@ -111,7 +111,7 @@ $navbarItems = [
             "metaphone" => [
                 "name"       => "metaphone",
                 "formalName" => "Metaphone",
-                "icon"       => icon()
+                "icon"       => icon("soundwave")
             ],
         ],
     ],
@@ -138,7 +138,7 @@ $navbarItems = [
             "levenshtein" => [
                 "name"       => "levenshtein",
                 "formalName" => "Levenshtein",
-                "icon"       => icon()
+                "icon"       => icon("intersect")
             ],
         ],
     ],
