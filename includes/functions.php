@@ -3,7 +3,7 @@
 /* ===================================================================== */
 /*                             FUNCTION: icon                            */
 /* ===================================================================== */
-function icon($icon, $rem = 1, $color = Null, $margin = 1) {
+function icon($icon = "question-circle", $rem = 1, $color = Null, $margin = 1) {
   $style = "";
   if ($color !== Null) {
     $style .= "color: {$color};";
@@ -251,7 +251,7 @@ function spinWheel(?array $wheelItems = [], int $spins = 1, bool $unique = False
 function submitBtn(string $value = "", string $name = "action", string $text = "Generate", string $icon = "dice", string $size = "lg") {
   $icon = ($icon == "dice") ? "<span class='dice'></span> " : icon($icon);
   return '
-    <button name="'.$name.'" value="'.$value.'" type="submit" class="genBtn btn btn-success btn-'.$size.' mb-3">
+    <button name="'.$name.'" value="'.$value.'" type="submit" class="genBtn btn btn-success btn-'.$size.' my-3">
       '.$icon.' '.$text.'
     </button>';
 }

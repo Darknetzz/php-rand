@@ -130,6 +130,11 @@ $navbarItems = [
                 "formalName" => "IP Tools",
                 "icon"       => icon('globe')
             ],
+            "metaphone" => [
+                "name"       => "metaphone",
+                "formalName" => "Metaphone",
+                "icon"       => icon()
+            ]
         ],
     ],
 ];
