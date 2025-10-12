@@ -886,6 +886,22 @@ if ($action == "htmlentities") {
     echo formatOutput($output);
   }
 
+  # =========================================================================== //
+  #                               MODULE: levenshtein                           //
+  # =========================================================================== //
+  if ($action == "levenshtein") {
+
+    $insertion_cost   = (!empty($_POST['insertion_cost']) ? $_POST['insertion_cost'] : 1);
+    $replacement_cost = (!empty($_POST['replacement_cost']) ? $_POST['replacement_cost'] : 1);
+    $deletion_cost    = (!empty($_POST['deletion_cost']) ? $_POST['deletion_cost'] : 1);
+
+    $output = levenshtein($_POST['levenshtein1'], $_POST['levenshtein2'], $insertion_cost, $replacement_cost, $deletion_cost);
+    if (empty($output)) {
+      $output = "No difference";
+    }
+    echo formatOutput($output);
+  }
+
   # ─────────────────────────────────────────────────────────────────────────── //
 
 

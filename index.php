@@ -29,8 +29,10 @@
 <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/go.min.js"></script> -->
 
 
-<script src="https://cdn.jsdelivr.net/gh/WebCoder49/code-input@2.2/code-input.min.js"></script>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/WebCoder49/code-input@2.2/code-input.min.css">
+<!-- <script src="https://cdn.jsdelivr.net/gh/WebCoder49/code-input@2.2/code-input.min.js"></script> -->
+<!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/WebCoder49/code-input@2.2/code-input.min.css"> -->
+<script src="https://cdn.jsdelivr.net/npm/@webcoder49/code-input@2.7.1/code-input.min.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/@webcoder49/code-input@2.7.1/code-input.min.css" rel="stylesheet">
 
 <!-- Plugins -->
 <script src="js/hljs_autodetect.js"></script>

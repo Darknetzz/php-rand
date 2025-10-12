@@ -134,7 +134,12 @@ $navbarItems = [
                 "name"       => "metaphone",
                 "formalName" => "Metaphone",
                 "icon"       => icon()
-            ]
+            ],
+            "levenshtein" => [
+                "name"       => "levenshtein",
+                "formalName" => "Levenshtein",
+                "icon"       => icon()
+            ],
         ],
     ],
 ];

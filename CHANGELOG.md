@@ -1,6 +1,7 @@
 ## **v1.1.1**
 > ### added
 > * module: metaphone
+> * module: levenshtein
 > ### changed
 > * genstr: info output in table
 
