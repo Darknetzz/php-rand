@@ -1,5 +1,7 @@
 ## **v1.1.1**
-### changed
+> ### added
+> * module: metaphone
+> ### changed
 > * genstr: info output in table
 
 ## **v1.1.0**

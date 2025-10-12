@@ -878,6 +878,14 @@ if ($action == "htmlentities") {
     echo formatOutput($output, responsetype: "text");
   }
 
+  # =========================================================================== //
+  #                               MODULE: metaphone                             //
+  # =========================================================================== //
+  if ($tool == "metaphone") {
+    echo formatOutput($_POST);
+    echo formatOutput(metaphone($_POST['metaphone']), responsetype: "text");
+  }
+
   # ─────────────────────────────────────────────────────────────────────────── //
 
 
