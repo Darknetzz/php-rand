@@ -31,6 +31,7 @@ Demo: https://roste.org/rand
   * Serialization (JSON, YAML, XML)
   * Markdown editor (client-side)
   * Minify (WIP...)
+  * Metaphone
 * Networking
   * CIDR to range
   * Range to CIDR
@@ -40,6 +41,7 @@ Demo: https://roste.org/rand
   * Serialization (JSON, YAML, XML)
   * Datetime tools
   * Calculator
+  * Levenshtein diff
 
 # install
 
