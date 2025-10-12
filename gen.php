@@ -881,9 +881,9 @@ if ($action == "htmlentities") {
   # =========================================================================== //
   #                               MODULE: metaphone                             //
   # =========================================================================== //
-  if ($tool == "metaphone") {
-    echo formatOutput($_POST);
-    echo formatOutput(metaphone($_POST['metaphone']), responsetype: "text");
+  if ($action == "metaphone") {
+    $output = metaphone($_POST['metaphone']);
+    echo formatOutput($output);
   }
 
   # ─────────────────────────────────────────────────────────────────────────── //
