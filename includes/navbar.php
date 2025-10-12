@@ -108,6 +108,11 @@ $navbarItems = [
                 "formalName" => "Minify",
                 "icon"       => icon('file-earmark-code')
             ],
+            "metaphone" => [
+                "name"       => "metaphone",
+                "formalName" => "Metaphone",
+                "icon"       => icon()
+            ],
         ],
     ],
     "misc" => [
@@ -129,11 +134,6 @@ $navbarItems = [
                 "name"       => "networking",
                 "formalName" => "IP Tools",
                 "icon"       => icon('globe')
-            ],
-            "metaphone" => [
-                "name"       => "metaphone",
-                "formalName" => "Metaphone",
-                "icon"       => icon()
             ],
             "levenshtein" => [
                 "name"       => "levenshtein",
