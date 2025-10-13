@@ -373,6 +373,31 @@ function calc($input) {
   }
 }
 
+# =========================================================================== //
+#                                FUNCTION: is_ip                              //
+# =========================================================================== //
+function is_ip(string $s): bool {
+  return filter_var($s, FILTER_VALIDATE_IP) !== false; // v4 or v6
+}
+
+# =========================================================================== //
+#                             FUNCTION: is_hostname                           //
+# =========================================================================== //
+function is_hostname(string $s): bool {
+  // allow a trailing dot (FQDN style) for validation purposes
+  $s = rtrim($s, '.');
+
+  // Convert IDN to ASCII (requires intl); returns false on failure
+  $ascii = function_exists('idn_to_ascii')
+      ? idn_to_ascii($s, IDNA_DEFAULT, INTL_IDNA_VARIANT_UTS46)
+      : $s;
+
+  if ($ascii === false) return false;
+
+  // RFC-ish hostname check (labels 1–63, total ≤253, letters/digits/hyphen, no underscores)
+  return filter_var($ascii, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME) !== false;
+}
+
 /* ────────────────────────────────────────────────────────────────────────── */
 /*                       FUNCTION:   ip2hex                                   */
 /* ────────────────────────────────────────────────────────────────────────── */

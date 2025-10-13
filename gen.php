@@ -648,6 +648,23 @@ do {
 /*                             MODULE: IP tools                          */
 /* ===================================================================== */
   if ($action == "ip") {
+
+# =========================================================================== //
+#                                NOTE: dnslookup                              //
+# =========================================================================== //
+if ($tool == "dnslookup") {
+  $hostname = (!empty($_POST['hostname']) ? $_POST['hostname'] : Null);
+  if ($hostname !== null) {
+    if (is_ip($hostname)) {
+      echo formatOutput(gethostbyaddr($hostname));
+    } elseif (is_hostname($hostname)) {
+      echo formatOutput(gethostbyname($hostname));
+    } else {
+      echo formatOutput("Invalid hostname/IP");
+    }
+  }
+}
+
 /* ===================================================================== */
 /*                            NOTE: cidr2range                           */
 /* ===================================================================== */

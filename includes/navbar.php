@@ -132,7 +132,7 @@ $navbarItems = [
             ],
             "networking" => [
                 "name"       => "networking",
-                "formalName" => "IP Tools",
+                "formalName" => "Network Tools",
                 "icon"       => icon('globe')
             ],
             "levenshtein" => [
