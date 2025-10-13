@@ -205,7 +205,12 @@ do {
 /*                               MODULE: Hash                            */
 /* ===================================================================== */
   if (isset($_POST['hash'])) {
-    $types  = ["SHA512", "SHA256", "SHA1", "MD5"];
+    // $types  = ["SHA512", "SHA256", "SHA1", "MD5"];
+    $hashalgo = (!empty($_POST['hashalgo']) ? $_POST['hashalgo'] : Null);
+    $types = hash_algos();
+    if (!empty($hashalgo) && in_array($hashalgo, hash_algos())) {
+      $types = [$hashalgo];
+    }
     $output = "<table class='table border border-success'>";
     foreach ($types as $type) {
       $output .= "<tr><td><b>$type:</b></td> <td class='text-break'>".hash($type, $_POST['hash'])."</td></tr>";
