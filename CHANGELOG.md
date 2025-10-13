@@ -2,6 +2,7 @@
 > ### added
 > * module: metaphone
 > * module: levenshtein
+> * module: diff
 > ### changed
 > * genstr: info output in table
 
