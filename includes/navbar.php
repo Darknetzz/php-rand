@@ -140,6 +140,11 @@ $navbarItems = [
                 "formalName" => "Levenshtein",
                 "icon"       => icon("intersect")
             ],
+            "diff" => [
+                "name"       => "diff",
+                "formalName" => "Diff",
+                "icon"       => icon("file-earmark-diff"),
+            ],
         ],
     ],
 ];

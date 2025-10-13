@@ -907,6 +907,21 @@ if ($action == "htmlentities") {
     echo formatOutput($output);
   }
 
+
+  # =========================================================================== //
+  #                                 MODULE: diff                                //
+  # =========================================================================== //
+  if ($action == "diff") {
+    $diff1 = (!empty($_POST['diff1']) ? $_POST['diff1'] : Null);
+    $diff2 = (!empty($_POST['diff2']) ? $_POST['diff2'] : Null);
+    if (!function_exists("xdiff_string_diff")) {
+      echo formatOutput("Function xdiff_string_diff must be available.");
+      break;
+    }
+    $diff  = xdiff_string_diff($diff1, $diff2);
+    echo formatOutput($diff);
+  }
+
   # ─────────────────────────────────────────────────────────────────────────── //
 
 
