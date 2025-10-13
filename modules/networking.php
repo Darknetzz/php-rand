@@ -7,22 +7,8 @@
             <form class="form" action="gen.php" method="POST" id="dnslookup" data-action="ip">
                 Hostname/IP:
                 <input class="form-control mb-2" type="text" name="hostname" placeholder="Hostname/IP">
-                Lookup Type:
-                <select class="form-select" name="dnstype">
-                    <option value="MX">MX</option>
-                    <option value="A">A</option>
-                    <option value="NS">NS</option>
-                    <option value="SOA">SOA</option>
-                    <option value="PTR">PTR</option>
-                    <option value="CNAME">CNAME</option>
-                    <option value="AAAA">AAAA</option>
-                    <option value="A6">A6</option>
-                    <option value="SRV">SRV</option>
-                    <option value="NAPTR">NAPTR</option>
-                    <option value="TXT">TXT</option>
-                    <option value="ANY">ANY</option>
-                </select>
                 <?= submitBtn("dnslookup", "tool", "Lookup", "search") ?>
+                <div class="responseDiv" data-formid="dnslookup"></div>
         </div>
     </div>
 
