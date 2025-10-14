@@ -1,5 +1,5 @@
 ## **v1.1.1**
-> ### added
+> ### new
 > * module: metaphone
 > * module: levenshtein
 > * module: diff
@@ -8,7 +8,7 @@
 > * genstr: info output in table
 
 ## **v1.1.0**
-> ### added
+> ### new
 > * encoding: urlencoding
 > * encoding: htmlentities
 > * convert: markdown
@@ -24,16 +24,16 @@
 > * navbar: removed duplicate hash
 
 ## **v1.0.2**
-> ### added
+> ### new
 > * calculator
 
 ## **v.1.0.1**
-> ### added
+> ### new
 > * logogen submodule
 
 
 ## **v1.0.0**
-> ### added
+> ### new
 > * changelog modal
 > * marked.js
 > ### updated
