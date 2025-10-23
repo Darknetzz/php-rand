@@ -11,9 +11,9 @@
                 <textarea class="form-control" name="levenshtein1" placeholder="String 1"></textarea>
                 <textarea class="form-control" name="levenshtein2" placeholder="String 2"></textarea>
 
-                <input type="number" class="form-control" name="insertion_cost" placeholder="Insertion cost (default: 1)">
-                <input type="number" class="form-control" name="replacement_cost" placeholder="Replacement cost (default: 1)">
-                <input type="number" class="form-control" name="deletion_cost" placeholder="Deletion cost (default: 1)">
+                Insertion cost: <input type="number" class="form-control" name="insertion_cost" placeholder="Insertion cost (default: 1)">
+                Replacement cost: <input type="number" class="form-control" name="replacement_cost" placeholder="Replacement cost (default: 1)">
+                Deletion cost: <input type="number" class="form-control" name="deletion_cost" placeholder="Deletion cost (default: 1)">
                 
                 <?= submitBtn("levenshtein", "action", "Convert", "arrow-repeat") ?>
                 <div class="responseDiv" id="levenshteinresponse"></div>
