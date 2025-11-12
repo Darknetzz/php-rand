@@ -21,7 +21,7 @@
                 <div id="count" class="mb-3 border border-secondary"></div>
 
                 <div class="historyDiv" style='display:none;'></div>
-                <div class="responseDiv" id="strtoolsresponse"></div>
+                <div class="responseDiv" id="strtoolsresponse" style="margin:10px; border: 0.1px solid; padding:10px;">Response will appear here.</div>
                 <button type="button" class="btn btn-secondary undo"
                     data-target="#strtoolsinput"><?= icon("arrow-counterclockwise") ?> Undo</button>
                 <button type="button" class="btn btn-secondary redo"
@@ -35,7 +35,7 @@
 
                         <div class="form-check form-switch">
                             <input class="form-check-input" type="checkbox" name="outputToTextbox" id="outputToTextbox"
-                                value="1" role="switch" checked>
+                                value="1" role="switch">
                             <label class="form-check-label" for="outputToTextbox">Output to textbox</label>
                         </div>
 
@@ -87,216 +87,216 @@
 
         "Sanitize"  => [
           [
-            "name" => "Trim",
-            "icon" => "scissors",
-            "value" => "trim",
+            "name"    => "Trim",
+            "icon"    => "scissors",
+            "value"   => "trim",
             "tooltip" => "Remove whitespace from both sides of the string"
           ],
           [
-            "name" => "Remove whitespace",
-            "icon" => "eraser",
-            "value" => "removewhitespace",
+            "name"    => "Remove whitespace",
+            "icon"    => "eraser",
+            "value"   => "removewhitespace",
             "tooltip" => "Remove whitespace from the string"
           ],
           [
-            "name" => "Slugify",
-            "icon" => "code-slash",
-            "value" => "slugify",
+            "name"    => "Slugify",
+            "icon"    => "code-slash",
+            "value"   => "slugify",
             "tooltip" => "Convert the string to a URL-friendly slug"
           ],
           [
-            "name" => "Kebabcase",
-            "icon" => "dash",
-            "value" => "kebabcase",
+            "name"    => "Kebabcase",
+            "icon"    => "dash",
+            "value"   => "kebabcase",
             "tooltip" => "Convert the string to kebab case"
           ],
         ],
 
         "Character" => [
           [
-            "name" => "Reverse",
-            "icon" => "arrow-left",
-            "value" => "reverse",
+            "name"    => "Reverse",
+            "icon"    => "arrow-left",
+            "value"   => "reverse",
             "tooltip" => "Reverse the string"
           ],
           [
-            "name" => "Repeat",
-            "icon" => "repeat",
-            "value" => "repeat",
+            "name"    => "Repeat",
+            "icon"    => "repeat",
+            "value"   => "repeat",
             "tooltip" => "Repeat the string"
           ],
           [
-            "name" => "Shuffle",
-            "icon" => "dice",
-            "value" => "shuffle",
+            "name"    => "Shuffle",
+            "icon"    => "dice",
+            "value"   => "shuffle",
             "tooltip" => "Shuffle the characters in the string"
           ],
         ],
 
         "Case" => [
           [
-            "name" => "Randomcase",
-            "icon" => "shuffle",
-            "value" => "randomcase",
+            "name"    => "Randomcase",
+            "icon"    => "shuffle",
+            "value"   => "randomcase",
             "tooltip" => "Randomly change the case of characters in the string"
           ],
           [
-            "name" => "Lowercase",
-            "icon" => "alphabet",
-            "value" => "lowercase",
+            "name"    => "Lowercase",
+            "icon"    => "alphabet",
+            "value"   => "lowercase",
             "tooltip" => "Convert the string to lowercase"
           ],
           [
-            "name" => "Uppercase",
-            "icon" => "alphabet-uppercase",
-            "value" => "uppercase",
+            "name"    => "Uppercase",
+            "icon"    => "alphabet-uppercase",
+            "value"   => "uppercase",
             "tooltip" => "Convert the string to uppercase"
           ],
           [
-            "name" => "Titlecase",
-            "icon" => "type",
-            "value" => "titlecase",
+            "name"    => "Titlecase",
+            "icon"    => "type",
+            "value"   => "titlecase",
             "tooltip" => "Convert the string to title case"
           ],
           [
-            "name" => "Invertedcase",
-            "icon" => "arrow-down-up",
-            "value" => "invertedcase",
+            "name"    => "Invertedcase",
+            "icon"    => "arrow-down-up",
+            "value"   => "invertedcase",
             "tooltip" => "Invert the case of characters in the string"
           ],
           [
-            "name" => "Camelcase",
-            "icon" => "c-square",
-            "value" => "camelcase",
+            "name"    => "Camelcase",
+            "icon"    => "c-square",
+            "value"   => "camelcase",
             "tooltip" => "Convert the string to camel case"
           ],
         ],
 
         "Misc" => [
           [
-            "name" => "L33t5p34k",
-            "icon" => "123",
-            "value" => "l33t5p34k",
+            "name"    => "L33t5p34k",
+            "icon"    => "123",
+            "value"   => "l33t5p34k",
             "tooltip" => "Convert the string to l33t5p34k"
           ],
           [
-            "name" => "Regex",
-            "icon" => "regex",
-            "value" => "regex",
+            "name"    => "Regex",
+            "icon"    => "regex",
+            "value"   => "regex",
             "tooltip" => "Perform regular expression operations on the string"
           ],
         ],
 
         "Formatting" => [
           [
-            "name" => "CRLF to LF",
-            "icon" => "text-wrap",
-            "value" => "crlf2lf",
+            "name"    => "CRLF to LF",
+            "icon"    => "text-wrap",
+            "value"   => "crlf2lf",
             "tooltip" => "Convert DOS-like (\\r\\n) line endings to LF (\\n) line endings"
           ],
           [
-            "name" => "LF to CRLF",
-            "icon" => "text-wrap",
-            "value" => "crlf2lf",
+            "name"    => "LF to CRLF",
+            "icon"    => "text-wrap",
+            "value"   => "crlf2lf",
             "tooltip" => "Convert to LF (\\n) line endings DOS-like (\\r\\n) line endings"
           ],
           [
-            "name" => "Format",
-            "icon" => "text-wrap",
-            "value" => "formatlineendings",
+            "name"    => "Format",
+            "icon"    => "text-wrap",
+            "value"   => "formatlineendings",
             "tooltip" => "Format line endings"
           ],
         ],
 
         "Remove" => [
           [
-            "name" => "HTML tags",
-            "icon" => "code-square",
-            "value" => "removehtmltags",
+            "name"    => "HTML tags",
+            "icon"    => "code-square",
+            "value"   => "removehtmltags",
             "tooltip" => "Remove HTML tags"
           ],
           [
-            "name" => "Punctuation",
-            "icon" => "dot",
-            "value" => "removepunctuation",
+            "name"    => "Punctuation",
+            "icon"    => "dot",
+            "value"   => "removepunctuation",
             "tooltip" => "Remove punctuation"
           ],
           [
-            "name" => "Newlines",
-            "icon" => "code-square",
-            "value" => "removenewlines",
+            "name"    => "Newlines",
+            "icon"    => "code-square",
+            "value"   => "removenewlines",
             "tooltip" => "Remove newlines"
           ],
           [
-            "name" => "Tabs",
-            "icon" => "code-square",
-            "value" => "removetabs",
+            "name"    => "Tabs",
+            "icon"    => "code-square",
+            "value"   => "removetabs",
             "tooltip" => "Remove tabs"
           ],
           [
-            "name" => "Spaces",
-            "icon" => "code-square",
-            "value" => "removespaces",
+            "name"    => "Spaces",
+            "icon"    => "code-square",
+            "value"   => "removespaces",
             "tooltip" => "Remove spaces"
           ],
           [
-            "name" => "Slashes",
-            "icon" => "code-square",
-            "value" => "removeslashes",
+            "name"    => "Slashes",
+            "icon"    => "code-square",
+            "value"   => "removeslashes",
             "tooltip" => "Remove slashes"
           ],
           [
-            "name" => "Backslashes",
-            "icon" => "code-square",
-            "value" => "removebackslashes",
+            "name"    => "Backslashes",
+            "icon"    => "code-square",
+            "value"   => "removebackslashes",
             "tooltip" => "Remove backslashes"
           ],
           [
-            "name" => "Non-ASCII",
-            "icon" => "code-square",
-            "value" => "removebackslashes",
+            "name"    => "Non-ASCII",
+            "icon"    => "code-square",
+            "value"   => "removebackslashes",
             "tooltip" => "Remove non-ASCII characters"
           ],
           [
             "name" => "Non-printable",
             "icon" => "code-square",
-            "value" => "removebackslashes",
+            "value"   => "removebackslashes",
             "tooltip" => "Remove non-printable characters"
           ],
           [
-            "name" => "Whitespace",
-            "icon" => "code-square",
-            "value" => "removebackslashes",
+            "name"    => "Whitespace",
+            "icon"    => "code-square",
+            "value"   => "removebackslashes",
             "tooltip" => "Remove whitespace characters"
           ],
           [
-            "name" => "Numbers",
-            "icon" => "code-square",
-            "value" => "removebackslashes",
+            "name"    => "Numbers",
+            "icon"    => "code-square",
+            "value"   => "removebackslashes",
             "tooltip" => "Remove numbers"
           ],
           [
-            "name" => "Letters",
-            "icon" => "code-square",
-            "value" => "removebackslashes",
+            "name"    => "Letters",
+            "icon"    => "code-square",
+            "value"   => "removebackslashes",
             "tooltip" => "Remove letters"
           ],
           [
-            "name" => "Symbols",
-            "icon" => "code-square",
-            "value" => "removebackslashes",
+            "name"    => "Symbols",
+            "icon"    => "code-square",
+            "value"   => "removebackslashes",
             "tooltip" => "Remove symbols"
           ],
           [
-            "name" => "Extended symbols",
-            "icon" => "code-square",
-            "value" => "removebackslashes",
+            "name"    => "Extended symbols",
+            "icon"    => "code-square",
+            "value"   => "removebackslashes",
             "tooltip" => "Remove extended symbols"
           ],
           [
-            "name" => "Custom characters",
-            "icon" => "code-square",
-            "value" => "removebackslashes",
+            "name"    => "Custom characters",
+            "icon"    => "code-square",
+            "value"   => "removebackslashes",
             "tooltip" => "Remove custom characters"
           ],
         ],
@@ -308,8 +308,8 @@
         echo "<div class='col'>";
         foreach ($tool as $t) {
           $postvar = strtolower($t["value"]);
-          $name = $t["name"];
-          $icon = $t["icon"];
+          $name    = $t["name"];
+          $icon    = $t["icon"];
           $tooltip = $t["tooltip"];
           echo "
           <span title='$tooltip'>
