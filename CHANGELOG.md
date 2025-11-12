@@ -6,6 +6,7 @@
 > * network: dns lookup
 > ### changed
 > * genstr: info output in table
+> * strtools: output to textbox is now disabled by default
 
 ## **v1.1.0**
 > ### new
