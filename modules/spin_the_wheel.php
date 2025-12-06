@@ -206,27 +206,28 @@ function rotate() {
     const sector = spinthewheel_sectors[getIndex()];
     ctx.canvas.style.transform = `rotate(${ang - PI / 2}rad)`;
 
-    spinEl.textContent = !angVel ? "SPIN" : sector.label;
+    spinEl.textContent = angVel > 0.001 ? sector.label : "SPIN";
     spinEl.style.background = sector.color ? sector.color : "#fff";
     spinEl.style.color = sector.text ? sector.text : "#000";
 }
 
 function frame() {
-    if (!angVel && spinButtonClicked) {
+    if (angVel > 0.001) {
+        angVel *= friction;
+        ang += angVel;
+        ang %= TAU;
+        rotate();
+    } else if (spinButtonClicked) {
+        angVel = 0;
+        ang %= TAU;
+        rotate();
         const finalSector = spinthewheel_sectors[getIndex()];
         events.fire("spinEnd", finalSector);
         $("#spinwheelresponse").html(`<div class="alert alert-success mb-0">${icon("check-circle")} Winner: <strong>${finalSector.label}</strong></div>`);
         spinButtonClicked = false;
-        return;
+    } else {
+        rotate();
     }
-
-    angVel *= friction;
-    if (angVel < 0.002) {
-        angVel = 0;
-    }
-    ang += angVel;
-    ang %= TAU;
-    rotate();
 }
 
 function engine() {
@@ -239,7 +240,7 @@ function init() {
     rotate();
     engine();
     spinEl.addEventListener("click", () => {
-        if (!angVel && !spinButtonClicked) {
+        if (angVel < 0.001 && !spinButtonClicked) {
             $("#spinwheelresponse").html("Spinning..."); // Show spinning state
             angVel = rand(0.25, 0.45);
             spinButtonClicked = true;
