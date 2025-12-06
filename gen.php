@@ -139,7 +139,7 @@ do {
 
     echo "<hr>";
     foreach ($randomString as $string) {
-      echo formatOutput($string);
+      echo "<div style='margin-bottom: 15px;'>" . copyableOutput($string) . "</div>";
     }
     // echo formatOutput($randomString);
     echo "
@@ -175,29 +175,12 @@ do {
     $from  = (!empty($_POST['from']) ? ($_POST['from']) : "text");
     $to    = (!empty($_POST['to']) ? ($_POST['to']) : 64);
 
-    $allBasesAreBelongToUs = "";
-
-    $allBasesAreBelongToUs .= "<b>Input (Base $from):</b> <code>$_POST[base]</code><br><br>";
-    // $allBasesAreBelongToUs .= "Base64 encode: <code>".base64_encode($_POST['base'])."</code><br>";
-    // $allBasesAreBelongToUs .= "Base64 decode: <code>".base64_decode($_POST['base'])."</code><br>";
-    $allBasesAreBelongToUs .= "
-      <hr>
-      <b>Base $from to Base $to:</b><br>
-      <pre><code>".convert_any($input, $from, $to).PHP_EOL."</code></pre>
-      ";
-    // if (!empty($to) && is_numeric($to) && $to >= 1 && $to <= 36) {
-    //   $allBasesAreBelongToUs .= "<b>Base $from to Base $to:</b><br>
-    //   <pre><code>".convert_any($_POST['base'], $from, $to).PHP_EOL."</code></pre>
-    //   <br>";
-    // } else {
-    //   for ($i = 2; $i <= 36; $i++) {
-    //     $allBasesAreBelongToUs .= "<b>Base$i:</b><br>
-    //     <pre><code>".convert_any($_POST['base'], $from, $i).PHP_EOL."</code></pre>
-    //     <br>";
-    //   }
-    // }
-
-    echo formatOutput($allBasesAreBelongToUs);
+    $result = convert_any($input, $from, $to);
+    
+    echo "<div style='margin-bottom: 20px;'>";
+    echo "<div style='margin-bottom: 15px;'><strong>Base $from → Base $to</strong></div>";
+    echo copyableOutput($result);
+    echo "</div>";
   }
 
 
@@ -205,18 +188,17 @@ do {
 /*                               MODULE: Hash                            */
 /* ===================================================================== */
   if (isset($_POST['hash'])) {
-    // $types  = ["SHA512", "SHA256", "SHA1", "MD5"];
     $hashalgo = (!empty($_POST['hashalgo']) ? $_POST['hashalgo'] : Null);
     $types = hash_algos();
     if (!empty($hashalgo) && in_array($hashalgo, hash_algos())) {
       $types = [$hashalgo];
     }
-    $output = "<table class='table border border-success'>";
+    $output = "";
     foreach ($types as $type) {
-      $output .= "<tr><td><b>$type:</b></td> <td class='text-break'>".hash($type, $_POST['hash'])."</td></tr>";
+      $hashValue = hash($type, $_POST['hash']);
+      $output .= "<div style='margin-bottom: 20px;'>" . copyableOutput($hashValue, $type) . "</div>";
     }
-    $output .= "</table>";
-    echo formatOutput("Input: $_POST[hash]<hr>".$output);
+    echo formatOutput($output);
   }
 
 /* ===================================================================== */
@@ -291,7 +273,7 @@ do {
     }
 
 
-    echo formatOutput($output, type: $type);
+    echo "<div style='margin-bottom: 15px;'>" . copyableOutput($output) . "</div>";
   }
 
 
@@ -307,12 +289,10 @@ do {
         $seed = $_POST['numgenseed'];
       }
       $gen = numGen($numgenfrom, $numgento, $seed);
-      echo formatOutput(
-        "
-        $gen
-        <hr>
-        Seed: $seed"
-      );
+      echo "<div style='margin-bottom: 15px;'>" . copyableOutput($gen) . "</div>";
+      if ($seed) {
+        echo "<div style='margin-top: 15px; opacity: 0.7;'><small><strong>Seed used:</strong> $seed</small></div>";
+      }
   }
 
 
@@ -339,20 +319,22 @@ do {
   if (isset($_POST['rot'])) {
     if ($_POST['bruteforce'] == 1) {
       $alphabet = 26;
-      $strrot = "<table>";
+      $output = "";
       for ($i = 0; $i < $alphabet; $i++) {
-          $strrot .= "<tr><td><b>$i</b></td> <td>:</td> <td>".str_rot($_POST['rot'], $i)."</td></tr>";
+          $rotated = str_rot($_POST['rot'], $i);
+          $output .= "<div style='margin-bottom: 15px;'>" . copyableOutput($rotated, "ROT" . $i) . "</div>";
       }
-      $strrot .= "</table>";
+      echo $output;
     }
     elseif (!empty($_POST['rotations'])) {
-      $rotations = $_POST['rotations']+26;
+      $rotations = $_POST['rotations'];
       $strrot = str_rot($_POST['rot'], $rotations);
+      echo "<div style='margin-bottom: 15px;'>" . copyableOutput($strrot) . "</div>";
     } else {
       $rotations = 13;
       $strrot = str_rot($_POST['rot'], $rotations);
+      echo "<div style='margin-bottom: 15px;'>" . copyableOutput($strrot) . "</div>";
     }
-    echo formatOutput($strrot);
   }
 
 /* ===================================================================== */
@@ -404,11 +386,15 @@ do {
         if (empty($string)) {
           $string = "[empty]";
         }
-        echo formatOutput("
-          <b>".$string."</b>
-          <hr>
-          <b>Encryption key:</b> $key<br>
-          <b>Initialization vector (Hex representation):</b> ".$iv);
+        echo "<div style='margin-bottom: 20px;'>";
+        echo copyableOutput($string);
+        echo "</div>";
+        echo "<div style='margin-top: 20px; padding: 15px; background-color: rgba(255, 193, 7, 0.1); border-radius: 0.5rem;'>";
+        echo "<strong>Encryption Details:</strong><br>";
+        echo "🔑 <strong>Cipher:</strong> <code>$cipher</code><br>";
+        echo "🔓 <strong>Key:</strong> <code>" . htmlspecialchars($key) . "</code><br>";
+        echo "📍 <strong>IV (Hex):</strong> <code>$iv</code>";
+        echo "</div>";
   }
 
 /* ===================================================================== */

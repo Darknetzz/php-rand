@@ -92,6 +92,29 @@ foreach (glob("modules/*.php") as $module) {
 
 <script src="js/rand.js"></script>
 
-
+<script>
+// Copy to clipboard function
+function copyToClipboard(elementId) {
+    const element = document.getElementById(elementId);
+    const text = element.textContent;
+    
+    navigator.clipboard.writeText(text).then(() => {
+        // Show visual feedback
+        const btn = event.target.closest('button');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="bi bi-check"></i> Copied!';
+        btn.classList.add('btn-success');
+        btn.classList.remove('btn-outline-secondary');
+        
+        setTimeout(() => {
+            btn.innerHTML = originalText;
+            btn.classList.remove('btn-success');
+            btn.classList.add('btn-outline-secondary');
+        }, 2000);
+    }).catch(() => {
+        alert('Failed to copy to clipboard');
+    });
+}
+</script>
 
 </html>

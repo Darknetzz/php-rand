@@ -834,4 +834,35 @@ function bits_to_php_int($bits) {
 // echo convert_any("48656c6c6f", "hex", "base64"), PHP_EOL;// -> SGVsbG8=
 // echo convert_any(str_repeat('1', 13), 1, 2), PHP_EOL;    // Unary 13 -> 1101
 
+/* ===================================================================== */
+/*                       FUNCTION: copyableOutput                        */
+/* ===================================================================== */
+/**
+ * Creates a copyable output box with a copy-to-clipboard button.
+ *
+ * @param string $content The content to display and copy.
+ * @param string $label Optional label for the output.
+ * @return string HTML for the copyable output.
+ */
+function copyableOutput($content, $label = "") {
+  $uniqueId = "copy_" . uniqid();
+  $html = "";
+  
+  if (!empty($label)) {
+    $html .= "<strong style='display: block; margin-bottom: 8px;'>$label</strong>";
+  }
+  
+  $html .= "<div style='display: flex; gap: 8px; align-items: stretch;'>";
+  $html .= "  <div style='flex: 1; background-color: #f8f9fa; padding: 12px; border-radius: 0.25rem; font-family: monospace; font-size: 0.9rem; word-break: break-all; user-select: all; overflow-y: auto; max-height: 300px;' id='$uniqueId'>";
+  $html .= htmlspecialchars($content);
+  $html .= "  </div>";
+  $html .= "  <button type='button' class='btn btn-sm btn-outline-secondary' onclick=\"copyToClipboard('$uniqueId')\" style='height: fit-content; white-space: nowrap;'>";
+  $html .= "    <i class='bi bi-files'></i> Copy";
+  $html .= "  </button>";
+  $html .= "</div>";
+  
+  return $html;
+}
+
 ?>
+
