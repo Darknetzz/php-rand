@@ -6,7 +6,7 @@
 /* ───────────────────────────────────────────────────────────────────── */
 -->
     <div class="card">
-        <h1 class="card-header">String Tools</h1>
+      <h1 class="card-header">✂️ String Tools</h1>
         <div class="card-body">
 
             <span class="description">This will perform various operations on the input string.</span>
@@ -17,9 +17,9 @@
 
                 <div class="row">
                     <div class="col-lg-6 d-flex flex-column">
-                        <label for="strtoolsinput" class="form-label"><strong>Input String</strong></label>
-                        <textarea type="text" id="strtoolsinput" name="string" class="form-control mb-3 flex-grow-1" style="min-height:300px; font-family: monospace; resize: vertical;"
-                            placeholder="Enter your text here..."></textarea>
+                        <label for="strtoolsinput" class="form-label mb-3"><strong style="font-size: 1.1rem;">Input String</strong></label>
+                        <textarea type="text" id="strtoolsinput" name="string" class="form-control mb-3 flex-grow-1" style="min-height:320px; font-family: monospace; resize: vertical; font-size: 0.95rem; border: 2px solid #495057;"
+                          placeholder="Enter your text here..."></textarea>
 
                         <div id="count" class="mb-3 p-3 border border-info rounded" style="background-color: rgba(0,123,255,0.05);">
                             <div class="d-flex justify-content-between flex-wrap">
@@ -40,10 +40,15 @@
                     </div>
 
                     <div class="col-lg-6 d-flex flex-column">
-                        <label class="form-label"><strong>Output</strong></label>
-                        <div class="responseDiv flex-grow-1" id="strtoolsresponse" style="margin:0; border: 1px solid #dee2e6; padding:15px; min-height: 300px; max-height: 500px; overflow-y: auto; background-color: rgba(0,0,0,0.1); border-radius: 0.25rem; font-family: monospace; white-space: pre-wrap; word-break: break-word;">Output will appear here...</div>
-                        
-                        <button type="button" class="btn btn-sm btn-info mt-2 copyOutput" style="width: 100%;"><?= icon("files") ?> Copy Output</button>
+                        <label class="form-label mb-3"><strong style="font-size: 1.1rem;">Output</strong></label>
+                        <div class="responseDiv flex-grow-1" id="strtoolsresponse" style="margin:0; border: 2px solid #495057; padding:20px; min-height: 320px; max-height: 520px; overflow-y: auto; background: linear-gradient(135deg, rgba(108, 92, 231, 0.12) 0%, rgba(13, 110, 253, 0.08) 100%); border-radius: 0.5rem; font-family: monospace; white-space: pre-wrap; word-break: break-word; font-size: 0.95rem; box-shadow: 0 6px 16px rgba(0,0,0,0.25);">
+                          <div style="opacity: 0.55; text-align: center; padding-top: 110px;">
+                            <div style="font-size: 3rem; margin-bottom: 10px;">🧵</div>
+                            <div>Processed output will appear here...</div>
+                          </div>
+                        </div>
+
+                        <button type="button" class="btn btn-sm btn-outline-light mt-2 copyOutput" data-target="#strtoolsresponse" style="width: 100%; border: 1px solid #e9ecef;"><?= icon("files") ?> Copy Output</button>
                     </div>
                 </div>
 
@@ -422,17 +427,9 @@ $(document).ready(function() {
     /*                            copy output                                */
     /* ───────────────────────────────────────────────────────────────────── */
     $(".copyOutput").click(function() {
-        var outputText = $("#strtoolsresponse").text();
-        navigator.clipboard.writeText(outputText).then(function() {
-            var btn = $(".copyOutput");
-            var originalText = btn.html();
-            btn.html("<?= icon('check') ?> Copied!");
-            btn.addClass("btn-success").removeClass("btn-info");
-            setTimeout(function() {
-                btn.html(originalText);
-                btn.removeClass("btn-success").addClass("btn-info");
-            }, 2000);
-        });
+      const targetId = $(this).data('target') || '#strtoolsresponse';
+      const el = document.querySelector(targetId);
+      copyToClipboard(el?.id || 'strtoolsresponse', this);
     });
 
     /* ───────────────────────────────────────────────────────────────────── */
