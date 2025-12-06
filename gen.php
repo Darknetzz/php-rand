@@ -25,7 +25,8 @@ do {
 
   // echo "<hr>";
   if (!isset($_POST['action'])) {
-    die("No action specified.");
+    echo formatOutput("Select a tool and enter your data to get started.", type: "info");
+    break;
   }
 
   # Return type (html / text)
