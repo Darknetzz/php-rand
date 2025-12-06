@@ -239,6 +239,11 @@ function init() {
 
 init();
 
+// Reset button text when spin completes
+events.addListener("spinEnd", () => {
+    spinEl.textContent = "SPIN";
+});
+
 /* ===================================================================== */
 /*                       Update wheel when items change                  */
 /* ===================================================================== */
@@ -249,7 +254,8 @@ $(document).on("input", ".wheelitem-input", function() {
 
 function updateItemNumbers() {
     document.querySelectorAll(".wheelitem").forEach((item, index) => {
-        item.querySelector(".input-group-text strong").textContent = index + 1;
+        const badge = item.querySelector(".badge strong");
+        if (badge) badge.textContent = index + 1;
     });
 }
 
@@ -261,10 +267,10 @@ $("#addtowheel").on("click", function(e) {
     var inputCount = $(".wheelitem").length;
     var placeholder = "Item #" + (inputCount + 1);
     var input = `
-        <div class="input-group mb-3 wheelitem">
-            <span class="input-group-text" style="width: 40px;"><strong>${inputCount + 1}</strong></span>
-            <input type="text" name="wheelitem[]" class="form-control wheelitem-input" placeholder="${placeholder}" value="${placeholder}">
-            <button type="button" class="btn btn-outline-danger remove-item" title="Remove item"><?= icon("trash") ?></button>
+        <div class="input-group mb-3 wheelitem" style="gap: 8px;">
+            <span class="badge bg-primary" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;"><strong>${inputCount + 1}</strong></span>
+            <input type="text" name="wheelitem[]" class="form-control wheelitem-input" placeholder="${placeholder}" value="${placeholder}" style="flex: 1;">
+            <button type="button" class="btn btn-sm btn-outline-danger remove-item" title="Remove item"><?= icon("trash") ?></button>
         </div>
     `;
     $(".wheelitems").append(input);
