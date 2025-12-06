@@ -852,11 +852,11 @@ function copyableOutput($content, $label = "") {
     $html .= "<strong style='display: block; margin-bottom: 8px;'>$label</strong>";
   }
   
-  $html .= "<div style='display: flex; gap: 8px; align-items: stretch;'>";
-  $html .= "  <div style='flex: 1; background-color: #f8f9fa; padding: 12px; border-radius: 0.25rem; font-family: monospace; font-size: 0.9rem; word-break: break-all; user-select: all; overflow-y: auto; max-height: 300px;' id='$uniqueId'>";
+  $html .= "<div style='display: flex; gap: 10px; align-items: stretch;'>";
+  $html .= "  <div style='flex: 1; background-color: #0f172a; color: #e9ecef; padding: 14px; border-radius: 0.4rem; font-family: monospace; font-size: 0.95rem; word-break: break-all; user-select: all; overflow-y: auto; max-height: 320px; border: 1px solid #334155; box-shadow: 0 6px 14px rgba(0,0,0,0.25);' id='$uniqueId'>";
   $html .= htmlspecialchars($content);
   $html .= "  </div>";
-  $html .= "  <button type='button' class='btn btn-sm btn-outline-secondary' onclick=\"copyToClipboard('$uniqueId')\" style='height: fit-content; white-space: nowrap;'>";
+  $html .= "  <button type='button' class='btn btn-sm btn-outline-light' onclick=\"copyToClipboard('$uniqueId')\" style='height: fit-content; white-space: nowrap; align-self: flex-start; border: 1px solid #e9ecef;'>";
   $html .= "    <i class='bi bi-files'></i> Copy";
   $html .= "  </button>";
   $html .= "</div>";
