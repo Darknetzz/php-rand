@@ -3,6 +3,7 @@
 > * module: metaphone
 > * module: levenshtein
 > * module: diff
+> * module: currency converter
 > * network: dns lookup
 > ### changed
 > * genstr: info output in table
