@@ -116,7 +116,7 @@ $navbarItems = [
             "currency" => [
                 "name"       => "currency",
                 "formalName" => "Currency Converter",
-                "icon"       => icon('cash-coin')
+                "icon"       => icon('currency-exchange')
             ],
         ],
     ],
