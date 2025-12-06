@@ -239,8 +239,11 @@ function init() {
     rotate();
     engine();
     spinEl.addEventListener("click", () => {
-        if (!angVel) angVel = rand(0.25, 0.45);
-        spinButtonClicked = true;
+        if (!angVel && !spinButtonClicked) {
+            $("#spinwheelresponse").html("Spinning..."); // Show spinning state
+            angVel = rand(0.25, 0.45);
+            spinButtonClicked = true;
+        }
     });
 }
 
