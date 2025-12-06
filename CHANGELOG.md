@@ -3,6 +3,7 @@
 > * global `copyableOutput()` function for styled output boxes with copy buttons
 > * global `copyToClipboard()` JavaScript function with Clipboard API and document.execCommand fallback
 > * timezone selector in datetime module
+> * pure PHP diff algorithm (no xdiff extension required)
 > ### changed
 > * **UI/UX Modernization** (all modules below):
 >   * openssl: complete redesign with amber gradient, security alert, encryption settings card
@@ -21,6 +22,8 @@
 >   * metaphone: teal gradient output, copyable phonetic key
 >   * datetime: removed WIP time calculator, simplified current time display with timezone selector, modern time unit converter
 >   * networking: complete redesign with split input/output layouts, 5 modernized tools (DNS lookup, CIDR to range, range to CIDR, subnet calculator, IP/hex converter) with gradient backgrounds and responsive grids
+>   * levenshtein: split layout, large textareas (200px), cost inputs in responsive grid, orange gradient output with prominent distance display
+>   * diff: unified diff viewer with side-by-side input layout, purple gradient output, improved error handling, works without xdiff extension
 > * all module outputs now use consistent copyableOutput() styling with dark theme optimization
 > * all modules updated with split input/output layouts (col-12 col-lg-6 responsive grid)
 > * all module outputs include gradient backgrounds themed by module purpose

@@ -1042,12 +1042,64 @@ if ($action == "htmlentities") {
   if ($action == "diff") {
     $diff1 = (!empty($_POST['diff1']) ? $_POST['diff1'] : Null);
     $diff2 = (!empty($_POST['diff2']) ? $_POST['diff2'] : Null);
-    if (!function_exists("xdiff_string_diff")) {
-      echo formatOutput("Function xdiff_string_diff must be available.");
+    
+    if (empty($diff1) && empty($diff2)) {
+      echo formatOutput("Please enter text in both fields to compare.", type: "danger");
       break;
     }
-    $diff  = xdiff_string_diff($diff1, $diff2);
-    echo formatOutput($diff);
+    
+    // Split by lines
+    $lines1 = explode("\n", $diff1);
+    $lines2 = explode("\n", $diff2);
+    
+    // Use built-in array_diff_assoc to find differences
+    $added = array_diff($lines2, $lines1);
+    $removed = array_diff($lines1, $lines2);
+    
+    // Create unified diff output with HTML for coloring
+    $output = "<span style='color: #999;'>--- Old</span>\n<span style='color: #999;'>+++ New</span>\n";
+    
+    // Track position in both arrays
+    $i = 0;
+    $j = 0;
+    
+    while ($i < count($lines1) || $j < count($lines2)) {
+      if ($i < count($lines1) && $j < count($lines2) && $lines1[$i] === $lines2[$j]) {
+        // Line is the same - gray
+        $output .= "<span style='color: #888;'> " . htmlspecialchars($lines1[$i]) . "</span>\n";
+        $i++;
+        $j++;
+      } else if ($i < count($lines1) && in_array($lines1[$i], $removed)) {
+        // Line was removed - red
+        $output .= "<span style='color: #ff6b6b;'>-" . htmlspecialchars($lines1[$i]) . "</span>\n";
+        $i++;
+      } else if ($j < count($lines2) && in_array($lines2[$j], $added)) {
+        // Line was added - green
+        $output .= "<span style='color: #51cf66;'>+" . htmlspecialchars($lines2[$j]) . "</span>\n";
+        $j++;
+      } else {
+        // Handle case where lines don't match
+        if ($i < count($lines1)) {
+          $output .= "<span style='color: #ff6b6b;'>-" . htmlspecialchars($lines1[$i]) . "</span>\n";
+          $i++;
+        }
+        if ($j < count($lines2)) {
+          $output .= "<span style='color: #51cf66;'>+" . htmlspecialchars($lines2[$j]) . "</span>\n";
+          $j++;
+        }
+      }
+    }
+    
+    if (trim(strip_tags($output)) === "--- Old\n+++ New") {
+      echo "<div style='margin-bottom: 15px;'>" . copyableOutput("No differences found - texts are identical.", "Diff Result") . "</div>";
+    } else {
+      echo "<div style='margin-bottom: 15px; display: flex; align-items: center; justify-content: space-between; background: #0f172a; color: #e9ecef; padding: 15px 20px; border-radius: 0.5rem; border: 2px solid #495057; box-shadow: 0 6px 16px rgba(0,0,0,0.25);'>";
+      echo "<div style='flex: 1; white-space: pre-wrap; word-break: break-word; font-family: monospace; font-size: 0.9rem;'>" . $output . "</div>";
+      echo "<button onclick='copyToClipboard(\"" . addslashes(strip_tags($output)) . "\", this)' class='btn btn-outline-light' style='margin-left: 15px; border: 1px solid #e9ecef; white-space: nowrap;'>";
+      echo "<i class='ti ti-copy'></i> Copy";
+      echo "</button>";
+      echo "</div>";
+    }
   }
 
   # ─────────────────────────────────────────────────────────────────────────── //
