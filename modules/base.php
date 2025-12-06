@@ -34,7 +34,6 @@ $base_options = [
       "name" => "---",
       "attr" => "disabled",
     ],
-    // Add more base options as needed
 ];
 
 for ($i = 32; $i <= 64; $i++) {
@@ -54,34 +53,46 @@ foreach ($base_options as $value => $data) {
 
     <!-- Base -->
     <div class="card card-primary">
-        <h1 class="card-header">Base</h1>
+        <h1 class="card-header">Base Converter</h1>
         <div class="card-body">
-            <span class="description">Input any text or base encoded string below, and this tool will convert it to all
-                other base formats.</span>
+            <span class="description">Convert between different base systems (binary, octal, decimal, hexadecimal, base64, etc.)</span>
+            <hr>
             <form class="form" action="gen.php" method="POST" id="base" data-action="base">
-                <textarea name="base" class="form-control mb-2"
-                    placeholder="Enter text or base encoded string to convert..." value="" required></textarea>
+                <div class="row g-3">
+                    <div class="col-12 col-lg-6">
+                        <label for="baseInput" class="form-label"><strong>Input</strong></label>
+                        <textarea name="base" id="baseInput" class="form-control" style="min-height: 200px; resize: vertical; font-family: monospace;"
+                            placeholder="Enter text or base encoded string to convert..." required></textarea>
+                    </div>
+                    <div class="col-12 col-lg-6 d-flex flex-column">
+                        <label class="form-label"><strong>Output</strong></label>
+                        <div class="responseDiv flex-grow-1" id="baseresponse" style="border: 1px solid #dee2e6; padding: 15px; min-height: 200px; max-height: 500px; overflow-y: auto; background-color: rgba(0,0,0,0.1); border-radius: 0.25rem; font-family: monospace; white-space: pre-wrap; word-break: break-word;">Result will appear here...</div>
+                    </div>
+                </div>
 
-                <label>Input type
-                  <select name="from" class="form-select mb-2">
-                      <option value="text" selected>Input type (default: text)...</option>
-                      <?= $base_options_html ?>
-                  </select>
-                </label>
+                <hr>
 
-                <br>
+                <div class="row g-3">
+                    <div class="col-12 col-md-6">
+                        <label for="fromBase" class="form-label"><strong>Input Type</strong></label>
+                        <select name="from" id="fromBase" class="form-select">
+                            <option value="text" selected>Text</option>
+                            <?= $base_options_html ?>
+                        </select>
+                    </div>
 
-                <label>Output type
-                  <select name="to" class="form-select mb-2">
-                      <option value="64" selected>Output type (default: base64)</option>
-                      <?= $base_options_html ?>
-                  </select>
-                </label>
+                    <div class="col-12 col-md-6">
+                        <label for="toBase" class="form-label"><strong>Output Type</strong></label>
+                        <select name="to" id="toBase" class="form-select">
+                            <option value="64" selected>Base 64</option>
+                            <?= $base_options_html ?>
+                        </select>
+                    </div>
+                </div>
 
-                <br>
+                <hr>
 
                 <?= submitBtn("base", "action", "Convert", "arrow-repeat") ?>
-                <div class="responseDiv" id="baseresponse"></div>
             </form>
         </div>
     </div>
