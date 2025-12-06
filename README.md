@@ -33,6 +33,7 @@ Demo: https://roste.org/rand
   * Minify (WIP...)
   * Metaphone
 * Networking
+  * DNS lookup (hostname/IP)
   * CIDR to range
   * Range to CIDR
   * Subnet mask
@@ -41,7 +42,8 @@ Demo: https://roste.org/rand
   * Serialization (JSON, YAML, XML)
   * Datetime tools
   * Calculator
-  * Levenshtein diff
+  * Levenshtein distance (tunable costs)
+  * Diff viewer (pure PHP, colorized)
 
 # install
 
