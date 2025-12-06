@@ -102,3 +102,34 @@ th.tablehead,
   background-color: #1e1e1e;
 }
 
+/* Random Data Button Styles */
+.input-with-random-btn {
+  position: relative;
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.input-with-random-btn input,
+.input-with-random-btn textarea {
+  flex: 1;
+}
+
+.random-data-btn {
+  flex-shrink: 0;
+  min-width: 38px;
+  transition: all 0.2s ease;
+}
+
+.random-data-btn:hover {
+  transform: scale(1.05);
+}
+
+.random-data-btn i {
+  font-size: 1rem;
+}
+
+/* Ensure textarea buttons align properly */
+.input-with-random-btn textarea + .random-data-btn {
+  margin-top: 0;
+}

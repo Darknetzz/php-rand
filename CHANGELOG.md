@@ -1,3 +1,11 @@
+## **v1.2.1**
+> ### new
+> * **Random Data Buttons** - automatic random data generation buttons for all input fields
+>   * Smart context detection based on placeholder text (email, URL, IP, hex, JSON, etc.)
+>   * Visual feedback with shuffle icon and success checkmark
+>   * Works automatically across all modules without configuration
+>   * Generates contextual data: emails, URLs, IPs, hex hashes, base64, JSON, code snippets, lorem ipsum
+
 ## **v1.2.0**
 > ### new
 > * global `copyableOutput()` function for styled output boxes with copy buttons

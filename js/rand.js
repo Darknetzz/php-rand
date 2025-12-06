@@ -317,4 +317,217 @@ $(document).ready(function() {
     /* ===================================================================== */
     var changelog = $("#changelogMarkdown");
     changelog.html(marked.parse(changelog.text()));
+
+    /* ===================================================================== */
+    /*                      Add Random Data Buttons                          */
+    /* ===================================================================== */
+    addRandomDataButtons();
+
 }); // document.ready
+
+/* ===================================================================== */
+/*                    FUNCTION: generateRandomData                       */
+/* ===================================================================== */
+function generateRandomData(type, placeholder = '') {
+    const randomStr = (len) => {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        let result = '';
+        for (let i = 0; i < len; i++) {
+            result += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return result;
+    };
+
+    const randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+
+    const randomText = (sentences = 3) => {
+        const words = ['lorem', 'ipsum', 'dolor', 'sit', 'amet', 'consectetur', 'adipiscing', 'elit', 
+                      'sed', 'do', 'eiusmod', 'tempor', 'incididunt', 'ut', 'labore', 'et', 'dolore',
+                      'magna', 'aliqua', 'enim', 'ad', 'minim', 'veniam', 'quis', 'nostrud', 'exercitation'];
+        let result = [];
+        for (let i = 0; i < sentences; i++) {
+            let sentence = [];
+            const wordCount = randomInt(8, 15);
+            for (let j = 0; j < wordCount; j++) {
+                sentence.push(words[randomInt(0, words.length - 1)]);
+            }
+            result.push(sentence.join(' ').charAt(0).toUpperCase() + sentence.join(' ').slice(1) + '.');
+        }
+        return result.join(' ');
+    };
+
+    const randomCode = () => {
+        const codeSnippets = [
+            'function hello() {\n  console.log("Hello, World!");\n  return true;\n}',
+            'const data = {\n  id: ' + randomInt(1, 1000) + ',\n  name: "' + randomStr(8) + '",\n  active: true\n};',
+            'for (let i = 0; i < 10; i++) {\n  console.log(i);\n}',
+            'if (condition) {\n  doSomething();\n} else {\n  doSomethingElse();\n}'
+        ];
+        return codeSnippets[randomInt(0, codeSnippets.length - 1)];
+    };
+
+    const randomEmail = () => {
+        const domains = ['example.com', 'test.com', 'sample.org', 'demo.net'];
+        return randomStr(8).toLowerCase() + '@' + domains[randomInt(0, domains.length - 1)];
+    };
+
+    const randomUrl = () => {
+        const protocols = ['http', 'https'];
+        const domains = ['example.com', 'test.org', 'sample.net', 'demo.io'];
+        return protocols[randomInt(0, 1)] + '://' + domains[randomInt(0, domains.length - 1)] + '/' + randomStr(6).toLowerCase();
+    };
+
+    const randomIP = () => {
+        return randomInt(1, 255) + '.' + randomInt(0, 255) + '.' + randomInt(0, 255) + '.' + randomInt(1, 254);
+    };
+
+    const randomHex = () => {
+        const hex = '0123456789abcdef';
+        let result = '';
+        for (let i = 0; i < 32; i++) {
+            result += hex.charAt(randomInt(0, 15));
+        }
+        return result;
+    };
+
+    const randomBase64 = () => {
+        return btoa(randomStr(24));
+    };
+
+    const randomJSON = () => {
+        return JSON.stringify({
+            id: randomInt(1, 1000),
+            name: randomStr(10),
+            email: randomEmail(),
+            active: Math.random() > 0.5,
+            timestamp: new Date().toISOString()
+        }, null, 2);
+    };
+
+    // Detect what type of data to generate based on context
+    const placeholderLower = placeholder.toLowerCase();
+    const typeLower = type.toLowerCase();
+
+    if (typeLower === 'number') {
+        return randomInt(1, 1000).toString();
+    }
+
+    if (placeholderLower.includes('email')) {
+        return randomEmail();
+    }
+
+    if (placeholderLower.includes('url') || placeholderLower.includes('link')) {
+        return randomUrl();
+    }
+
+    if (placeholderLower.includes('ip') || placeholderLower.includes('address')) {
+        return randomIP();
+    }
+
+    if (placeholderLower.includes('hex') || placeholderLower.includes('hash')) {
+        return randomHex();
+    }
+
+    if (placeholderLower.includes('base64') || placeholderLower.includes('encoded')) {
+        return randomBase64();
+    }
+
+    if (placeholderLower.includes('json')) {
+        return randomJSON();
+    }
+
+    if (placeholderLower.includes('code')) {
+        return randomCode();
+    }
+
+    // For textareas or text inputs, generate appropriate content
+    if (type === 'textarea') {
+        if (placeholderLower.includes('yaml') || placeholderLower.includes('xml')) {
+            return randomJSON(); // Close enough for demo purposes
+        }
+        return randomText(5) + '\n\n' + randomText(4);
+    }
+
+    // Default for text inputs
+    if (type === 'text') {
+        return randomStr(12);
+    }
+
+    // Fallback
+    return randomStr(16);
+}
+
+/* ===================================================================== */
+/*                   FUNCTION: addRandomDataButtons                      */
+/* ===================================================================== */
+function addRandomDataButtons() {
+    // Find all text inputs, number inputs, and textareas that don't already have a random button
+    const selectors = [
+        'input[type="text"]:not([readonly]):not([disabled])',
+        'input[type="number"]:not([readonly]):not([disabled])',
+        'textarea:not([readonly]):not([disabled])'
+    ];
+
+    $(selectors.join(',')).each(function() {
+        const $input = $(this);
+        
+        // Skip if already has a random button
+        if ($input.parent().hasClass('input-with-random-btn')) {
+            return;
+        }
+
+        // Skip certain inputs (checkboxes, hidden, etc.)
+        const skipIds = ['enablebordercheckbox', 'enablefilterscheckbox', 'enabledebugcheckbox'];
+        if (skipIds.includes($input.attr('id'))) {
+            return;
+        }
+
+        // Skip inputs that are part of special controls
+        if ($input.closest('.form-selectgroup').length > 0) {
+            return;
+        }
+
+        // Get input details
+        const inputType = $input.is('textarea') ? 'textarea' : $input.attr('type');
+        const placeholder = $input.attr('placeholder') || '';
+        const inputId = $input.attr('id') || 'input_' + Math.random().toString(36).substr(2, 9);
+        
+        if (!$input.attr('id')) {
+            $input.attr('id', inputId);
+        }
+
+        // Wrap the input if not already wrapped
+        if (!$input.parent().hasClass('input-with-random-btn')) {
+            $input.wrap('<div class="input-with-random-btn" style="position: relative; display: flex; gap: 8px; align-items: flex-start;"></div>');
+        }
+
+        // Create the random button
+        const $btn = $('<button>', {
+            type: 'button',
+            class: 'btn btn-sm btn-outline-secondary random-data-btn',
+            title: 'Generate random data',
+            html: '<i class="bi bi-shuffle"></i>',
+            css: {
+                'flex-shrink': '0',
+                'height': $input.is('textarea') ? 'auto' : 'fit-content',
+                'align-self': $input.is('textarea') ? 'flex-start' : 'center'
+            }
+        });
+
+        // Add click handler
+        $btn.on('click', function() {
+            const randomData = generateRandomData(inputType, placeholder);
+            $input.val(randomData).trigger('change').trigger('input');
+            
+            // Visual feedback
+            const originalHtml = $btn.html();
+            $btn.html('<i class="bi bi-check"></i>').addClass('btn-success').removeClass('btn-outline-secondary');
+            setTimeout(() => {
+                $btn.html(originalHtml).removeClass('btn-success').addClass('btn-outline-secondary');
+            }, 1000);
+        });
+
+        // Append button after input
+        $input.after($btn);
+    });
+}
