@@ -68,7 +68,7 @@
                     <div class="col-12 col-lg-6 d-flex justify-content-center">
                         <div class="spin_the_wheel_canvas">
                             <canvas class="spin_the_wheel_wheel" width="800" height="800"></canvas>
-                            <button class="btn btn-success spin_the_wheel_spinbtn">SPIN</button>
+                            <button type="button" class="btn btn-success spin_the_wheel_spinbtn">SPIN</button>
                         </div>
                     </div>
 
@@ -141,6 +141,7 @@ let arc = TAU / spinthewheel_sectors.length;
 document.addEventListener("DOMContentLoaded", () => {
     // Populate sectors from the form inputs
     updateWheelFromInputs();
+    init();
 });
 
 function updateWheelFromInputs() {
@@ -177,7 +178,7 @@ const events = {
 const friction = 0.991;
 let angVel = 0;
 let ang = 0;
-let spinButtonClicked = false;
+let isSpinning = false;
 
 const getIndex = () => Math.floor(tot - (ang / TAU) * tot) % tot;
 
@@ -206,28 +207,30 @@ function rotate() {
     const sector = spinthewheel_sectors[getIndex()];
     ctx.canvas.style.transform = `rotate(${ang - PI / 2}rad)`;
 
-    spinEl.textContent = angVel > 0.001 ? sector.label : "SPIN";
     spinEl.style.background = sector.color ? sector.color : "#fff";
     spinEl.style.color = sector.text ? sector.text : "#000";
 }
 
 function frame() {
-    if (angVel > 0.001) {
+    if (isSpinning) {
         angVel *= friction;
-        ang += angVel;
-        ang %= TAU;
-        rotate();
-    } else if (spinButtonClicked) {
-        angVel = 0;
-        ang %= TAU;
-        rotate();
-        const finalSector = spinthewheel_sectors[getIndex()];
-        events.fire("spinEnd", finalSector);
-        $("#spinwheelresponse").html(`<div class="alert alert-success mb-0">${icon("check-circle")} Winner: <strong>${finalSector.label}</strong></div>`);
-        spinButtonClicked = false;
-    } else {
-        rotate();
+        if (angVel < 0.001) {
+            // Spin has finished
+            angVel = 0;
+            isSpinning = false;
+            const finalSector = spinthewheel_sectors[getIndex()];
+            $("#spinwheelresponse").html(`<div class="alert alert-success mb-0">✓ Winner: <strong>${finalSector.label}</strong></div>`);
+            spinEl.textContent = "SPIN";
+        } else {
+            ang += angVel;
+            ang %= TAU;
+        }
     }
+    
+    // Always redraw the wheel
+    ctx.clearRect(0, 0, dia, dia);
+    spinthewheel_sectors.forEach(drawSector);
+    rotate();
 }
 
 function engine() {
@@ -236,24 +239,22 @@ function engine() {
 }
 
 function init() {
-    spinthewheel_sectors.forEach(drawSector);
-    rotate();
-    engine();
-    spinEl.addEventListener("click", () => {
-        if (angVel < 0.001 && !spinButtonClicked) {
-            $("#spinwheelresponse").html("Spinning..."); // Show spinning state
+    spinEl.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        // Only allow spin if wheel is not currently spinning
+        if (!isSpinning && angVel < 0.001) {
+            $("#spinwheelresponse").html("Spinning...");
             angVel = rand(0.25, 0.45);
-            spinButtonClicked = true;
+            isSpinning = true;
         }
     });
+    
+    // Start the animation engine AFTER setting up the click handler
+    engine();
 }
 
-init();
-
-// Reset button text when spin completes
-events.addListener("spinEnd", () => {
-    spinEl.textContent = "SPIN";
-});
+// Call init from DOMContentLoaded
 
 /* ===================================================================== */
 /*                       Update wheel when items change                  */
