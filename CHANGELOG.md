@@ -5,6 +5,18 @@
 >   * Visual feedback with shuffle icon and success checkmark
 >   * Works automatically across all modules without configuration
 >   * Generates contextual data: emails, URLs, IPs, hex hashes, base64, JSON, code snippets, lorem ipsum
+> * **Dashboard redesign** - complete modernization with improved UX
+>   * Hero section with call-to-action buttons
+>   * Stats dashboard showing tool counts by category
+>   * Feature highlights showcasing smart random data and key benefits
+>   * Color-coded tool categories with organized navigation
+>   * Fun facts section with educational content
+>   * Improved disclaimer styling
+> ### changed
+> * dashboard: complete UI overhaul with gradient backgrounds, stat cards, and better organization
+> * dashboard: added visual stats (total tools, crypto tools, generators, encoders)
+> * dashboard: improved navigation with color-coded categories (generators: teal, cryptography: blue, encoding: purple, convert: orange, misc: pink)
+> * dashboard: new feature alert banner for v1.2.1 random data buttons
 
 ## **v1.2.0**
 > ### new
