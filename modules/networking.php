@@ -5,10 +5,11 @@
         <div class="card-body">
 
             <form class="form" action="gen.php" method="POST" id="dnslookup" data-action="ip">
-                Hostname/IP:
-                <input class="form-control mb-2" type="text" name="hostname" placeholder="Hostname/IP">
+                <label for="hostnameInput" class="form-label"><strong>Hostname/IP</strong></label>
+                <input class="form-control mb-3" id="hostnameInput" type="text" name="hostname" placeholder="Enter hostname or IP address" style="font-family: monospace;">
                 <?= submitBtn("dnslookup", "tool", "Lookup", "search") ?>
-                <div class="responseDiv" data-formid="dnslookup"></div>
+                <hr>
+                <div class="responseDiv" data-formid="dnslookup" style="border: 1px solid #dee2e6; padding: 15px; min-height: 60px; background-color: rgba(0,0,0,0.1); border-radius: 0.25rem; font-family: monospace;">Result will appear here...</div>
         </div>
     </div>
 
@@ -16,18 +17,17 @@
         <h1 class="card-header">CIDR to range</h1>
         <div class="card-body">
             <form class="form" action="gen.php" method="POST" id="cidr2range" data-action="ip">
-                <input type="text" name="cidr" class="form-control mb-2" placeholder="CIDR Range">
-                <span class="text-muted">Examples:
+                <label for="cidrInput" class="form-label"><strong>CIDR Range</strong></label>
+                <input type="text" id="cidrInput" name="cidr" class="form-control mb-3" placeholder="e.g., 192.168.1.0/24" style="font-family: monospace;">
+                <span class="text-muted"><strong>Examples:</strong>
                     <ul>
-                        <li><span class="text-info m-1">192.168.1.0/24</span></li>
-                        <li><span class="text-info m-1">10.0.0.0/22</span></li>
+                        <li><code>192.168.1.0/24</code></li>
+                        <li><code>10.0.0.0/22</code></li>
                     </ul>
                 </span>
+                <?= submitBtn("cidr2range", "tool", "Calculate", "file-text-fill") ?>
                 <hr>
-                <div class="btn-group">
-                    <?= submitBtn("cidr2range", "tool", "Calculate", "file-text-fill") ?>
-                </div>
-                <div class="responseDiv" data-formid="cidr2range"></div>
+                <div class="responseDiv" data-formid="cidr2range" style="border: 1px solid #dee2e6; padding: 15px; min-height: 100px; max-height: 400px; overflow-y: auto; background-color: rgba(0,0,0,0.1); border-radius: 0.25rem;">Result will appear here...</div>
             </form>
         </div>
     </div>
@@ -36,14 +36,15 @@
         <h1 class="card-header">Range to CIDR</h1>
         <div class="card-body">
             <form class="form" action="gen.php" method="POST" id="range2cidr" data-action="ip">
-                <input type="text" name="startip" class="form-control mb-2" placeholder="Start IP">
-                <input type="text" name="endip" class="form-control mb-2" placeholder="End IP">
-                <span class="text-muted">The CIDR will be calculated based on the smallest possible subnet.</span>
+                <label for="startipInput" class="form-label"><strong>Start IP</strong></label>
+                <input type="text" id="startipInput" name="startip" class="form-control mb-3" placeholder="e.g., 192.168.1.0" style="font-family: monospace;">
+                <label for="endipInput" class="form-label"><strong>End IP</strong></label>
+                <input type="text" id="endipInput" name="endip" class="form-control mb-3" placeholder="e.g., 192.168.1.255" style="font-family: monospace;">
+                <span class="text-muted"><small>The CIDR will be calculated based on the smallest possible subnet.</small></span>
                 <hr>
-                <div class="btn-group">
-                    <?= submitBtn("range2cidr", "tool", "Calculate", "file-text-fill") ?>
-                </div>
-                <div class="responseDiv" data-formid="range2cidr"></div>
+                <?= submitBtn("range2cidr", "tool", "Calculate", "file-text-fill") ?>
+                <hr>
+                <div class="responseDiv" data-formid="range2cidr" style="border: 1px solid #dee2e6; padding: 15px; min-height: 100px; max-height: 400px; overflow-y: auto; background-color: rgba(0,0,0,0.1); border-radius: 0.25rem;">Result will appear here...</div>
             </form>
         </div>
     </div>
@@ -52,13 +53,13 @@
         <h1 class="card-header">Subnet mask</h1>
         <div class="card-body">
             <form class="form" action="gen.php" method="POST" id="subnetmask" data-action="ip">
-                <input type="text" name="ip" class="form-control mb-2" placeholder="IP Address">
-                <input type="text" name="subnet" class="form-control mb-2" placeholder="Subnet Mask">
+                <label for="ipInput" class="form-label"><strong>IP Address</strong></label>
+                <input type="text" id="ipInput" name="ip" class="form-control mb-3" placeholder="e.g., 192.168.1.100" style="font-family: monospace;">
+                <label for="subnetInput" class="form-label"><strong>Subnet Mask</strong></label>
+                <input type="text" id="subnetInput" name="subnet" class="form-control mb-3" placeholder="e.g., 255.255.255.0 or /24" style="font-family: monospace;">
+                <?= submitBtn("subnetmask", "tool", "Calculate", "file-text-fill") ?>
                 <hr>
-                <div class="btn-group">
-                    <?= submitBtn("subnetmask", "tool", "Calculate", "file-text-fill") ?>
-                </div>
-                <div class="responseDiv" data-formid="subnetmask"></div>
+                <div class="responseDiv" data-formid="subnetmask" style="border: 1px solid #dee2e6; padding: 15px; min-height: 100px; max-height: 400px; overflow-y: auto; background-color: rgba(0,0,0,0.1); border-radius: 0.25rem;">Result will appear here...</div>
             </form>
         </div>
     </div>
@@ -74,27 +75,30 @@
                 </p>
             </div>
             <form class="form" action="gen.php" method="POST" id="iphex" data-action="hex">
-                <input type="text" name="iphex" class="form-control mb-2" placeholder="IP or Hexadecimal">
-                <br>
-                <label class="mb-1">
-                    <input type="checkbox" name="split" value="1" class="toggledelimiter form-check-input"> Hex: Split
-                    output
-                </label>
-                <br>
-                <span class="delimiterinput" style="display:none;">
-                    Delimiter: <input class="form-control" type="text" name="delimiter" value=":"
-                        placeholder="Set the delimiter string">
-                </span>
-                <label class="togglelinebreak" style="display:none;">
-                    <input type="checkbox" name="linebreak" value="1" class="form-check-input"> Hex: Line break between
-                    each entry
-                </label>
-                <hr>
-                <div class="btn-group">
+                <label for="iphexInput" class="form-label"><strong>IP or Hexadecimal</strong></label>
+                <input type="text" id="iphexInput" name="iphex" class="form-control mb-3" placeholder="e.g., 192.168.1.10 or C0A8010A" style="font-family: monospace;">
+                
+                <div class="form-check mb-2">
+                    <input type="checkbox" name="split" value="1" class="toggledelimiter form-check-input" id="splitCheck">
+                    <label class="form-check-label" for="splitCheck"><strong>Hex: Split output</strong></label>
+                </div>
+                
+                <div class="delimiterinput mb-3" style="display:none;">
+                    <label for="delimiterInput" class="form-label">Delimiter</label>
+                    <input class="form-control" id="delimiterInput" type="text" name="delimiter" value=":" placeholder="Set the delimiter string" style="max-width: 200px; font-family: monospace;">
+                </div>
+                
+                <div class="form-check togglelinebreak mb-3" style="display:none;">
+                    <input type="checkbox" name="linebreak" value="1" class="form-check-input" id="linebreakCheck">
+                    <label class="form-check-label" for="linebreakCheck"><strong>Hex: Line break between each entry</strong></label>
+                </div>
+                
+                <div class="btn-group mb-3">
                     <?= submitBtn("ip2hex", "tool", "IP2Hex", "file-text-fill") ?>
                     <?= submitBtn("hex2ip", "tool", "Hex2IP", "file-binary-fill") ?>
                 </div>
-                <div class="responseDiv" data-formid="binhex"></div>
+                <hr>
+                <div class="responseDiv" data-formid="binhex" style="border: 1px solid #dee2e6; padding: 15px; min-height: 100px; max-height: 400px; overflow-y: auto; background-color: rgba(0,0,0,0.1); border-radius: 0.25rem; font-family: monospace; white-space: pre-wrap;">Result will appear here...</div>
             </form>
         </div>
     </div>
