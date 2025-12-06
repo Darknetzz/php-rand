@@ -256,7 +256,7 @@ $(document).ready(function() {
             url: url,
             data: serializeForm, // serializes the form's elements.
             beforeSend: function() {
-                showData(responseObj, 'Generating...'); // show loading
+                showData(responseObj, '<div class="text-center py-5"><div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;"><span class="visually-hidden">Loading...</span></div><p class="text-muted">Generating...</p></div>'); // show loading spinner
             },
             error: function(data) {
                 console.log(data);

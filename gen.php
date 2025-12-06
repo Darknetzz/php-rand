@@ -25,7 +25,6 @@ do {
 
   // echo "<hr>";
   if (!isset($_POST['action'])) {
-    echo formatOutput("Select a tool and enter your data to get started.", type: "info");
     break;
   }
 
