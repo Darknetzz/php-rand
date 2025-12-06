@@ -937,11 +937,14 @@ if ($tool == "dnslookup") {
       break;
     }
 
-    $output = "<b>URL:</b> <code>".htmlspecialchars($url)."</code><br>";
-    $output .= "<b>URL encoded:</b> <code>".urlencode($url)."</code><br>";
-    $output .= "<b>URL decoded:</b> <code>".urldecode($url)."</code><br>";
+    $encoded = urlencode($url);
+    $decoded = urldecode($url);
 
-    echo formatOutput($output);
+    $output  = "<div style='margin-bottom: 16px;'>" . copyableOutput($url, "Original Input") . "</div>";
+    $output .= "<div style='margin-bottom: 16px;'>" . copyableOutput($encoded, "URL Encoded") . "</div>";
+    $output .= "<div style='margin-bottom: 16px;'>" . copyableOutput($decoded, "URL Decoded") . "</div>";
+
+    echo $output;
   }
 
 /* ===================================================================== */
