@@ -58,39 +58,47 @@ foreach ($base_options as $value => $data) {
             <span class="description">Convert between different base systems (binary, octal, decimal, hexadecimal, base64, etc.)</span>
             <hr>
             <form class="form" action="gen.php" method="POST" id="base" data-action="base">
-                <div class="row g-3">
+                
+                <!-- Input/Output Section -->
+                <div class="row g-4 mb-4">
                     <div class="col-12 col-lg-6">
-                        <label for="baseInput" class="form-label"><strong>Input</strong></label>
-                        <textarea name="base" id="baseInput" class="form-control" style="min-height: 200px; resize: vertical; font-family: monospace;"
-                            placeholder="Enter text or base encoded string to convert..." required></textarea>
+                        <label for="baseInput" class="form-label mb-3"><strong style="font-size: 1.1rem;">Input</strong></label>
+                        <textarea name="base" id="baseInput" class="form-control" style="min-height: 300px; resize: vertical; font-family: monospace; font-size: 0.95rem; border: 2px solid #495057;"
+                            placeholder="Enter text or base encoded string to convert...&#10;&#10;Example: Hello World" required></textarea>
                     </div>
                     <div class="col-12 col-lg-6 d-flex flex-column">
-                        <label class="form-label"><strong>Output</strong></label>
-                        <div class="responseDiv flex-grow-1" id="baseresponse" style="border: 1px solid #dee2e6; padding: 15px; min-height: 200px; max-height: 500px; overflow-y: auto; background-color: rgba(0,0,0,0.1); border-radius: 0.25rem; font-family: monospace; white-space: pre-wrap; word-break: break-word;">Result will appear here...</div>
+                        <label class="form-label mb-3"><strong style="font-size: 1.1rem;">Output</strong></label>
+                        <div class="responseDiv flex-grow-1" id="baseresponse" style="border: 2px solid #495057; padding: 20px; min-height: 300px; max-height: 500px; overflow-y: auto; background: linear-gradient(135deg, rgba(0,50,0,0.15) 0%, rgba(0,100,0,0.05) 100%); border-radius: 0.5rem; font-family: monospace; font-size: 0.95rem; white-space: pre-wrap; word-break: break-word; color: #2d5016;">
+                            <div style="opacity: 0.5; text-align: center; padding-top: 100px;">
+                                <div style="font-size: 3rem; margin-bottom: 10px;">⟳</div>
+                                <div>Result will appear here...</div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <hr>
+                <!-- Conversion Options -->
+                <div class="card border-primary mb-4" style="background-color: rgba(13, 110, 253, 0.05);">
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-12 col-md-6">
+                                <label for="fromBase" class="form-label"><strong>Convert From:</strong></label>
+                                <select name="from" id="fromBase" class="form-select form-select-lg" style="font-family: monospace; border: 2px solid #0d6efd;">
+                                    <option value="text" selected>📝 Text</option>
+                                    <?= $base_options_html ?>
+                                </select>
+                            </div>
 
-                <div class="row g-3">
-                    <div class="col-12 col-md-6">
-                        <label for="fromBase" class="form-label"><strong>Input Type</strong></label>
-                        <select name="from" id="fromBase" class="form-select">
-                            <option value="text" selected>Text</option>
-                            <?= $base_options_html ?>
-                        </select>
-                    </div>
-
-                    <div class="col-12 col-md-6">
-                        <label for="toBase" class="form-label"><strong>Output Type</strong></label>
-                        <select name="to" id="toBase" class="form-select">
-                            <option value="64" selected>Base 64</option>
-                            <?= $base_options_html ?>
-                        </select>
+                            <div class="col-12 col-md-6">
+                                <label for="toBase" class="form-label"><strong>Convert To:</strong></label>
+                                <select name="to" id="toBase" class="form-select form-select-lg" style="font-family: monospace; border: 2px solid #0d6efd;">
+                                    <option value="64" selected>🔢 Base 64</option>
+                                    <?= $base_options_html ?>
+                                </select>
+                            </div>
+                        </div>
                     </div>
                 </div>
-
-                <hr>
 
                 <?= submitBtn("base", "action", "Convert", "arrow-repeat") ?>
             </form>
