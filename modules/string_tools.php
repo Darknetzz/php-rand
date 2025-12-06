@@ -16,9 +16,9 @@
                 <input type="hidden" name="action" value="stringtools">
 
                 <div class="row">
-                    <div class="col-lg-6">
+                    <div class="col-lg-6 d-flex flex-column">
                         <label for="strtoolsinput" class="form-label"><strong>Input String</strong></label>
-                        <textarea type="text" id="strtoolsinput" name="string" class="form-control mb-3" style="height:300px; font-family: monospace;"
+                        <textarea type="text" id="strtoolsinput" name="string" class="form-control mb-3 flex-grow-1" style="min-height:300px; font-family: monospace; resize: vertical;"
                             placeholder="Enter your text here..."></textarea>
 
                         <div id="count" class="mb-3 p-3 border border-info rounded" style="background-color: rgba(0,123,255,0.05);">
@@ -39,11 +39,11 @@
                         </div>
                     </div>
 
-                    <div class="col-lg-6">
+                    <div class="col-lg-6 d-flex flex-column">
                         <label class="form-label"><strong>Output</strong></label>
-                        <div class="responseDiv" id="strtoolsresponse" style="margin:0; border: 1px solid #dee2e6; padding:15px; height: 300px; overflow-y: auto; background-color: rgba(0,0,0,0.1); border-radius: 0.25rem; font-family: monospace; white-space: pre-wrap; word-break: break-all;">Output will appear here...</div>
+                        <div class="responseDiv flex-grow-1" id="strtoolsresponse" style="margin:0; border: 1px solid #dee2e6; padding:15px; min-height: 300px; max-height: 500px; overflow-y: auto; background-color: rgba(0,0,0,0.1); border-radius: 0.25rem; font-family: monospace; white-space: pre-wrap; word-break: break-word;">Output will appear here...</div>
                         
-                        <button type="button" class="btn btn-sm btn-info mt-2 copyOutput" style="width: 100%; margin-top: 10px;"><?= icon("files") ?> Copy Output</button>
+                        <button type="button" class="btn btn-sm btn-info mt-2 copyOutput" style="width: 100%;"><?= icon("files") ?> Copy Output</button>
                     </div>
                 </div>
 
