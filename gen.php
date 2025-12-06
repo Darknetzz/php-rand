@@ -974,7 +974,6 @@ if ($action == "htmlentities") {
   #                                MODULE: minify                               //
   # ─────────────────────────────────────────────────────────────────────────── //
   if ($tool == "minify") {
-    echo formatOutput($_POST);
     $type  = (!empty($_POST['type']) ? $_POST['type'] : Null);
     $input = (!empty($_POST['input']) ? $_POST['input'] : Null);
 
@@ -990,13 +989,15 @@ if ($action == "htmlentities") {
         echo formatOutput("CSS minifier class not available (install matthiasmullie/minify).", type: "danger");
         break;
       }
-      $output = new Minify\CSS($input);
+      $minifier = new Minify\CSS($input);
+      $output = $minifier->minify();
     } elseif ($type == "js") {
       if (!class_exists(\MatthiasMullie\Minify\JS::class)) {
         echo formatOutput("JS minifier class not available (install matthiasmullie/minify).", type: "danger");
         break;
       }
-      $output = new Minify\JS($input);
+      $minifier = new Minify\JS($input);
+      $output = $minifier->minify();
     } elseif ($type == "html") {
       // Fallback simple HTML minifier (MatthiasMullie library does not provide HTML)
       $output = $input;
@@ -1012,15 +1013,30 @@ if ($action == "htmlentities") {
       break;
     }
 
-    echo formatOutput($output, responsetype: "text");
+    $originalSize = strlen($input);
+    $minifiedSize = strlen($output);
+    $savings = $originalSize > 0 ? round((($originalSize - $minifiedSize) / $originalSize) * 100, 2) : 0;
+
+    echo "<div style='margin-bottom: 20px;'>" . copyableOutput($output, strtoupper($type) . " Minified") . "</div>";
+    echo "<div style='margin-top: 15px; padding: 12px; background-color: rgba(255, 193, 7, 0.15); border-radius: 0.5rem;'>";
+    echo "<strong>📊 Compression Stats:</strong><br>";
+    echo "Original: <code>" . number_format($originalSize) . " bytes</code> | ";
+    echo "Minified: <code>" . number_format($minifiedSize) . " bytes</code> | ";
+    echo "Saved: <code>" . number_format($originalSize - $minifiedSize) . " bytes</code> (<strong>" . $savings . "%</strong>)";
+    echo "</div>";
   }
 
   # =========================================================================== //
   #                               MODULE: metaphone                             //
   # =========================================================================== //
   if ($action == "metaphone") {
-    $output = metaphone($_POST['metaphone']);
-    echo formatOutput($output);
+    $input = $_POST['metaphone'] ?? '';
+    if (empty($input)) {
+      echo formatOutput("You must enter a string.", type: "danger");
+    } else {
+      $output = metaphone($input);
+      echo "<div style='margin-bottom: 15px;'>" . copyableOutput($output, "Metaphone Key") . "</div>";
+    }
   }
 
   # =========================================================================== //
