@@ -955,14 +955,11 @@ if ($action == "htmlentities") {
       break;
     }
 
-    $output = "<b>Input:</b> <br>
-      <pre><code>".htmlspecialchars($input)."</code></pre><br>";
-    $output .= "<b>HTML entities:</b> <br>
-      <pre><code>".htmlentities($input)."</code></pre><br>";
-    $output .= "<b>HTML decoded:</b> <br>
-      <pre><code>".html_entity_decode($input)."</code></pre><br>";
+    $output  = "<div style='margin-bottom: 16px;'>" . copyableOutput($input, "Original Input") . "</div>";
+    $output .= "<div style='margin-bottom: 16px;'>" . copyableOutput(htmlentities($input), "HTML Entities") . "</div>";
+    $output .= "<div style='margin-bottom: 16px;'>" . copyableOutput(html_entity_decode($input), "HTML Decoded") . "</div>";
 
-    echo formatOutput($output);
+    echo $output;
   }
 
 
