@@ -7,10 +7,15 @@
     display: inline-block;
     position: relative;
     overflow: hidden;
+    width: 100%;
+    max-width: 600px;
+    padding: 20px;
 }
 
 .spin_the_wheel_wheel {
     display: block;
+    width: 100%;
+    height: auto;
 }
 
 .spin_the_wheel_spinbtn {
