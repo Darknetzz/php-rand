@@ -6,20 +6,27 @@
             <form id="minifyForm" class="form" action="gen.php" method="POST" data-action="minify">
                 <input type="hidden" name="tool" value="minify">
                 <input type="hidden" name="responsetype" value="text">
-                <textarea name="input" id="minifyTextarea" class="form-control" rows="10" placeholder="Paste your code here..."></textarea>
-                <br>
-                <select name="type" id="minifyType" class="form-select mb-3" style="max-width: 200px;">
-                    <option value="js">JavaScript</option>
-                    <option value="html">HTML</option>
-                    <option value="css">CSS</option>
-                </select>
-                <?= submitBtn("minify", "tool", "Minify", "file-text-fill") ?>
+                
+                <div class="row g-3">
+                    <div class="col-12 col-lg-6">
+                        <label for="minifyTextarea" class="form-label"><strong>Input Code</strong></label>
+                        <textarea name="input" id="minifyTextarea" class="form-control" rows="15" placeholder="Paste your code here..." style="font-family: monospace; resize: vertical;"></textarea>
+                    </div>
+                    <div class="col-12 col-lg-6 d-flex flex-column">
+                        <label class="form-label"><strong>Minified Output</strong></label>
+                        <code id="minifyOutput" class="flex-grow-1 responseDiv" style="display: block; border: 1px solid #dee2e6; padding: 15px; min-height: 300px; max-height: 500px; overflow-y: auto; background-color: rgba(0,0,0,0.2); border-radius: 0.25rem; white-space: pre-wrap; word-break: break-word;" data-formid="minifyForm">Minified code will appear here...</code>
+                    </div>
+                </div>
                 
                 <hr>
-                <h1>Minified Output:</h1>
-                <!-- <pre class="box"> -->
-                    <code id="minifyOutput" class="bg-dark text-light p-3 responseDiv" style="white-space: pre-wrap;" data-formid="minifyForm"></code>
-                <!-- </pre> -->
+                <div class="d-flex gap-3 align-items-center flex-wrap">
+                    <select name="type" id="minifyType" class="form-select" style="max-width: 200px;">
+                        <option value="js">JavaScript</option>
+                        <option value="html">HTML</option>
+                        <option value="css">CSS</option>
+                    </select>
+                    <?= submitBtn("minify", "tool", "Minify", "file-text-fill") ?>
+                </div>
             </form>
         </div>
     </div>
