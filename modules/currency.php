@@ -93,18 +93,25 @@
         e.preventDefault();
         
         var formData = $(this).serialize();
+        var responseDiv = $("#currencyresponse");
         
-        axios.post('gen.php', formData, {
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded'
-            }
-        })
-        .then(function(response) {
-            $("#currencyresponse").html(response.data);
-        })
-        .catch(function(error) {
-            console.error(error);
-            $("#currencyresponse").html('<div class="alert alert-danger">Error processing request</div>');
-        });
+        // Show loading spinner
+        responseDiv.html('<div class="text-center py-5"><div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;"><span class="visually-hidden">Loading...</span></div><p class="text-muted">Generating...</p></div>');
+        
+        // Add minimum delay so spinner is visible
+        setTimeout(function() {
+            axios.post('gen.php', formData, {
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                }
+            })
+            .then(function(response) {
+                responseDiv.html(response.data);
+            })
+            .catch(function(error) {
+                console.error(error);
+                responseDiv.html('<div class="alert alert-danger">Error processing request</div>');
+            });
+        }, 500);
     });
 </script>
