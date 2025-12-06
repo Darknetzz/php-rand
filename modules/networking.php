@@ -9,6 +9,8 @@
                 <p style="margin-bottom: 0;">Resolve hostname to IP address or IP address to hostname.</p>
             </div>
             <form class="form" action="gen.php" method="POST" id="dnslookup" data-action="ip">
+                <input type="hidden" name="action" value="ip">
+                <input type="hidden" name="tool" value="dnslookup">
                 <div class="row g-4 mb-4">
                     <div class="col-12 col-lg-6">
                         <label for="hostnameInput" class="form-label mb-3"><strong style="font-size: 1.1rem;">Input</strong></label>
@@ -38,6 +40,8 @@
                 <p style="margin-bottom: 0;">Convert CIDR notation to IP range (start, end, total IPs).</p>
             </div>
             <form class="form" action="gen.php" method="POST" id="cidr2range" data-action="ip">
+                <input type="hidden" name="action" value="ip">
+                <input type="hidden" name="tool" value="cidr2range">
                 <div class="row g-4 mb-4">
                     <div class="col-12 col-lg-6">
                         <label for="cidrInput" class="form-label mb-3"><strong style="font-size: 1.1rem;">CIDR Input</strong></label>
@@ -68,6 +72,8 @@
                 <p style="margin-bottom: 0;">Convert IP range (start and end) to CIDR notation. Calculates the smallest possible subnet.</p>
             </div>
             <form class="form" action="gen.php" method="POST" id="range2cidr" data-action="ip">
+                <input type="hidden" name="action" value="ip">
+                <input type="hidden" name="tool" value="range2cidr">
                 <div class="row g-4 mb-4">
                     <div class="col-12 col-lg-6">
                         <label for="startipInput" class="form-label mb-3"><strong style="font-size: 1.1rem;">IP Range</strong></label>
@@ -98,6 +104,8 @@
                 <p style="margin-bottom: 0;">Calculate subnet information: network, first IP, last IP, and broadcast address.</p>
             </div>
             <form class="form" action="gen.php" method="POST" id="subnetmask" data-action="ip">
+                <input type="hidden" name="action" value="ip">
+                <input type="hidden" name="tool" value="subnetmask">
                 <div class="row g-4 mb-4">
                     <div class="col-12 col-lg-6">
                         <label for="ipInput" class="form-label mb-3"><strong style="font-size: 1.1rem;">Network Details</strong></label>
@@ -128,6 +136,8 @@
                 <p style="margin-bottom: 0;">Convert between IP addresses and hexadecimal format. Supports multiple IPs separated by commas: <code>192.168.1.10, 192.168.1.20, 10.0.0.50</code></p>
             </div>
             <form class="form" action="gen.php" method="POST" id="iphex" data-action="hex">
+                <input type="hidden" name="action" value="hex">
+                <input type="hidden" name="tool" value="ip2hex" id="iphexTool">
                 <div class="row g-4 mb-4">
                     <div class="col-12 col-lg-6">
                         <label for="iphexInput" class="form-label mb-3"><strong style="font-size: 1.1rem;">Input</strong></label>
@@ -159,8 +169,8 @@
                     </div>
                 </div>
                 <div class="d-grid gap-2 gap-sm-0 d-sm-flex">
-                    <button type="submit" class="btn btn-outline-primary flex-sm-grow-1" formaction="gen.php" value="ip2hex" name="tool" onclick="this.form.tool.value='ip2hex'" style="border: 2px solid #0d6efd;"><?= icon("arrow-right") ?> IP → Hex</button>
-                    <button type="submit" class="btn btn-outline-primary flex-sm-grow-1" formaction="gen.php" value="hex2ip" name="tool" onclick="this.form.tool.value='hex2ip'" style="border: 2px solid #0d6efd;"><?= icon("arrow-left") ?> Hex → IP</button>
+                    <button type="submit" class="btn btn-outline-primary flex-sm-grow-1" onclick="document.getElementById('iphexTool').value='ip2hex'" style="border: 2px solid #0d6efd;"><?= icon("arrow-right") ?> IP → Hex</button>
+                    <button type="submit" class="btn btn-outline-primary flex-sm-grow-1" onclick="document.getElementById('iphexTool').value='hex2ip'" style="border: 2px solid #0d6efd;"><?= icon("arrow-left") ?> Hex → IP</button>
                 </div>
             </form>
         </div>

@@ -769,16 +769,23 @@ do {
 # =========================================================================== //
 if ($tool == "dnslookup") {
   $hostname = (!empty($_POST['hostname']) ? $_POST['hostname'] : Null);
-  if ($hostname !== null) {
+  if (!empty($hostname)) {
+    $result = null;
+    
     if (is_ip($hostname)) {
       $result = gethostbyaddr($hostname);
     } elseif (is_hostname($hostname)) {
       $result = gethostbyname($hostname);
     } else {
-      echo formatOutput("Invalid hostname/IP", type: "danger");
+      echo formatOutput("Invalid hostname/IP format.", type: "danger");
       break;
     }
-    echo "<div style='margin-bottom: 15px;'>" . copyableOutput($result, $hostname) . "</div>";
+    
+    if ($result && $result !== $hostname) {
+      echo "<div style='margin-bottom: 15px;'>" . copyableOutput($result, $hostname) . "</div>";
+    } else if ($result === $hostname) {
+      echo formatOutput("Could not resolve: " . htmlspecialchars($hostname), type: "warning");
+    }
   }
 }
 
@@ -808,7 +815,13 @@ if ($tool == "dnslookup") {
             <div><strong>Total IPs:</strong><br><code style='font-size: 0.95rem;'>" . $range['total'] . "</code></div>
           </div>
         ";
-        echo "<div style='margin-bottom: 15px;'>" . copyableOutput($output, "CIDR Range Info") . "</div>";
+        
+        echo "<div style='margin-bottom: 15px; display: flex; align-items: center; justify-content: space-between; background: #0f172a; color: #e9ecef; padding: 15px 20px; border-radius: 0.5rem; border: 2px solid #495057; box-shadow: 0 6px 16px rgba(0,0,0,0.25);'>";
+        echo "<div style='flex: 1;'>" . $output . "</div>";
+        echo "<button onclick='copyToClipboard(\"CIDR: " . addslashes(strip_tags($range['cidr'])) . "\\nStart: " . addslashes($range['start']) . "\\nEnd: " . addslashes($range['end']) . "\\nTotal IPs: " . addslashes($range['total']) . "\", this)' class='btn btn-outline-light' style='margin-left: 15px; border: 1px solid #e9ecef; white-space: nowrap;'>";
+        echo "<i class='ti ti-copy'></i> Copy";
+        echo "</button>";
+        echo "</div>";
     }
 /* ===================================================================== */
 /*                            NOTE: range2cidr                           */
@@ -838,7 +851,13 @@ if ($tool == "dnslookup") {
           <div><strong>Total IPs:</strong><br><code style='font-size: 0.95rem;'>" . $cidr["total_ips"] . "</code></div>
         </div>
       ";
-      echo "<div style='margin-bottom: 15px;'>" . copyableOutput($output, "IP Range to CIDR") . "</div>";
+      
+      echo "<div style='margin-bottom: 15px; display: flex; align-items: center; justify-content: space-between; background: #0f172a; color: #e9ecef; padding: 15px 20px; border-radius: 0.5rem; border: 2px solid #495057; box-shadow: 0 6px 16px rgba(0,0,0,0.25);'>";
+      echo "<div style='flex: 1;'>" . $output . "</div>";
+      echo "<button onclick='copyToClipboard(\"CIDR: " . addslashes(strip_tags($cidr["cidrs"])) . "\\nStart: " . addslashes($cidr["start"]) . "\\nEnd: " . addslashes($cidr["end"]) . "\\nTotal IPs: " . addslashes($cidr["total_ips"]) . "\", this)' class='btn btn-outline-light' style='margin-left: 15px; border: 1px solid #e9ecef; white-space: nowrap;'>";
+      echo "<i class='ti ti-copy'></i> Copy";
+      echo "</button>";
+      echo "</div>";
     }
 /* ===================================================================== */
 /*                            NOTE: subnetmask                           */
@@ -873,7 +892,13 @@ if ($tool == "dnslookup") {
           <div><strong>Usable IPs:</strong><br><code style='font-size: 0.95rem;'>" . $subnetmask["usable_ips"] . "</code></div>
         </div>
       ";
-      echo "<div style='margin-bottom: 15px;'>" . copyableOutput($output, "Subnet Information") . "</div>";
+      
+      echo "<div style='margin-bottom: 15px; display: flex; align-items: center; justify-content: space-between; background: #0f172a; color: #e9ecef; padding: 15px 20px; border-radius: 0.5rem; border: 2px solid #495057; box-shadow: 0 6px 16px rgba(0,0,0,0.25);'>";
+      echo "<div style='flex: 1;'>" . $output . "</div>";
+      echo "<button onclick='copyToClipboard(\"Network: " . addslashes($subnetmask["network"]) . "\\nFirst IP: " . addslashes($subnetmask["start"]) . "\\nLast IP: " . addslashes($subnetmask["end"]) . "\\nBroadcast: " . addslashes($subnetmask["broadcast"]) . "\\nSubnet Mask: " . addslashes($subnetmask["subnet"]) . "\\nCIDR: " . addslashes($subnetmask["cidr"]) . "\\nUsable IPs: " . addslashes($subnetmask["usable_ips"]) . "\", this)' class='btn btn-outline-light' style='margin-left: 15px; border: 1px solid #e9ecef; white-space: nowrap;'>";
+      echo "<i class='ti ti-copy'></i> Copy";
+      echo "</button>";
+      echo "</div>";
     }
 
   }
