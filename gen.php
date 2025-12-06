@@ -1002,30 +1002,37 @@ if ($action == "htmlentities") {
     
     $distance = levenshtein($string1, $string2, $insertion_cost, $replacement_cost, $deletion_cost);
     
-    $output = "
-      <div style='text-align: center; padding: 30px;'>
-        <div style='font-size: 4rem; font-weight: bold; color: #ff5722; margin-bottom: 20px;'>$distance</div>
-        <div style='font-size: 1.2rem; margin-bottom: 30px;'>
-          <strong>Levenshtein Distance</strong>
-        </div>
-        <div style='display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; text-align: center; margin-top: 20px;'>
-          <div>
-            <small class='text-muted'><strong>Insertion Cost</strong></small><br>
-            <code style='font-size: 1.1rem;'>$insertion_cost</code>
+    echo "
+      <div style='margin-bottom: 15px;'>
+        <div style='display: flex; align-items: center; justify-content: space-between; background: #0f172a; color: #e9ecef; padding: 15px 20px; border-radius: 0.5rem; border: 1px solid #334155; box-shadow: 0 6px 16px rgba(0,0,0,0.25);'>
+          <div style='flex: 1;'>
+            <div style='text-align: center; padding: 30px;'>
+              <div style='font-size: 4rem; font-weight: bold; color: #ff5722; margin-bottom: 20px;'>$distance</div>
+              <div style='font-size: 1.2rem; margin-bottom: 30px;'>
+                <strong>Levenshtein Distance</strong>
+              </div>
+              <div style='display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; text-align: center; margin-top: 20px;'>
+                <div>
+                  <small style='opacity: 0.7;'><strong>Insertion Cost</strong></small><br>
+                  <code style='font-size: 1.1rem;'>$insertion_cost</code>
+                </div>
+                <div>
+                  <small style='opacity: 0.7;'><strong>Replacement Cost</strong></small><br>
+                  <code style='font-size: 1.1rem;'>$replacement_cost</code>
+                </div>
+                <div>
+                  <small style='opacity: 0.7;'><strong>Deletion Cost</strong></small><br>
+                  <code style='font-size: 1.1rem;'>$deletion_cost</code>
+                </div>
+              </div>
+            </div>
           </div>
-          <div>
-            <small class='text-muted'><strong>Replacement Cost</strong></small><br>
-            <code style='font-size: 1.1rem;'>$replacement_cost</code>
-          </div>
-          <div>
-            <small class='text-muted'><strong>Deletion Cost</strong></small><br>
-            <code style='font-size: 1.1rem;'>$deletion_cost</code>
-          </div>
+          <button onclick='copyToClipboard(\"$distance\", this)' class='btn btn-outline-light' style='margin-left: 15px; border: 1px solid #e9ecef; white-space: nowrap;'>
+            <i class='ti ti-copy'></i> Copy
+          </button>
         </div>
       </div>
     ";
-    
-    echo "<div style='margin-bottom: 15px;'>" . copyableOutput($output, "Levenshtein Distance: $distance") . "</div>";
   }
 
 
