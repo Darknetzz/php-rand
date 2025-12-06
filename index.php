@@ -93,27 +93,61 @@ foreach (glob("modules/*.php") as $module) {
 <script src="js/rand.js"></script>
 
 <script>
-// Copy to clipboard function
-function copyToClipboard(elementId) {
+// Copy to clipboard function with fallback and explicit button target
+function copyToClipboard(elementId, btnEl) {
     const element = document.getElementById(elementId);
-    const text = element.textContent;
-    
-    navigator.clipboard.writeText(text).then(() => {
-        // Show visual feedback
-        const btn = event.target.closest('button');
-        const originalText = btn.innerHTML;
-        btn.innerHTML = '<i class="bi bi-check"></i> Copied!';
-        btn.classList.add('btn-success');
-        btn.classList.remove('btn-outline-secondary');
-        
+    if (!element) return;
+    const text = element.textContent || "";
+    const btn = btnEl || (document.activeElement?.closest && document.activeElement.closest('button')) || null;
+
+    const setFeedback = (ok) => {
+        if (!btn) return;
+        const originalText = btn.getAttribute('data-original-text') || btn.innerHTML;
+        btn.setAttribute('data-original-text', originalText);
+        if (ok) {
+            btn.innerHTML = '<i class="bi bi-check"></i> Copied!';
+            btn.classList.add('btn-success');
+            btn.classList.remove('btn-outline-light');
+        } else {
+            btn.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Failed';
+            btn.classList.add('btn-danger');
+            btn.classList.remove('btn-outline-light');
+        }
         setTimeout(() => {
             btn.innerHTML = originalText;
-            btn.classList.remove('btn-success');
-            btn.classList.add('btn-outline-secondary');
-        }, 2000);
-    }).catch(() => {
-        alert('Failed to copy to clipboard');
-    });
+            btn.classList.remove('btn-success', 'btn-danger');
+            btn.classList.add('btn-outline-light');
+        }, 1600);
+    };
+
+    // Modern API path
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => setFeedback(true)).catch(() => {
+            // Fallback if HTTPS or permissions blocked
+            fallbackCopy(text, setFeedback);
+        });
+        return;
+    }
+
+    // Fallback for older browsers or non-secure origins
+    fallbackCopy(text, setFeedback);
+}
+
+function fallbackCopy(text, setFeedback) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.top = '-1000px';
+    ta.style.left = '-1000px';
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+        const ok = document.execCommand('copy');
+        setFeedback(ok);
+    } catch (e) {
+        setFeedback(false);
+    }
+    document.body.removeChild(ta);
 }
 </script>
 
