@@ -69,9 +69,9 @@ do {
 
     $from_unit_name = $units[$timefrom_unit][0];
     $to_unit_name   = $units[$timeto_unit][0];
-    $converted      = ($time * $timefrom) / $timeto;
-    $converted      = "$time $from_unit_name is equal to <b>$converted $to_unit_name</b>";
-    echo formatOutput($converted);
+    $converted      = round(($time * $timefrom) / $timeto, 6);
+    
+    echo "<div style='margin-bottom: 15px;'>" . copyableOutput($converted . " " . $to_unit_name, "$time $from_unit_name") . "</div>";
   }
 
 

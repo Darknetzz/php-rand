@@ -6,12 +6,10 @@ $unitSelector = function($inputName = "time") {
         "h" => "hours",
         "d" => "days",
         "w" => "weeks",
-        "m" => "months",
+        "M" => "months",
         "y" => "years"
     ];
-    $options = "
-        <select name='$inputName' class='form-select'>
-            <option value='' disabled selected>Select a unit</option>";
+    $options = "<select name='$inputName' class='form-select form-select-lg' style='font-family: monospace; border: 2px solid #495057;'>";
     foreach ($units as $key => $value) {
         $options .= '<option value="'.$key.'">'.$value.'</option>';
     }
@@ -21,9 +19,7 @@ $unitSelector = function($inputName = "time") {
 
 $timeZoneSelector = function($inputName = "timezone") {
     $timezones = DateTimeZone::listIdentifiers();
-    $options = "
-        <select name='$inputName' class='form-select timezone-select'>
-            <option value='' disabled selected>Select a timezone</option>";
+    $options = "<select name='$inputName' class='form-select form-select-lg timezone-select' style='font-family: monospace; border: 2px solid #495057; max-height: 400px;'>";
     foreach ($timezones as $timezone) {
         $offset_seconds  = (new DateTime("now", new DateTimeZone($timezone)))->getOffset();
         if ($offset_seconds === 0) {
@@ -42,109 +38,60 @@ $timeZoneSelector = function($inputName = "timezone") {
 
 <div id="datetime" class="content">
 
+    <!-- TIMEZONE & CURRENT TIME -->
     <div class="card card-primary">
-        <h1 class="card-header">Current Datetime</h1>
-        <div class="card-body" style="text-align: center;">
-            <table class="table table-default w-100">
-                <tr class="tablehead">
-                    <th>Timezone</th>
-                    <th>Current Time</th>
-                    <th class="w-50">Select Timezone</th>
-                </tr>
-                <tr>
-                    <td class="timezone"></td>
-                    <td class="datetime text-success"></td>
-                    <td><?= $timeZoneSelector("timezone") ?></td>
-                </tr>
-            </table>
+        <h1 class="card-header">🌍 Current Time</h1>
+        <div class="card-body">
+            <div class="row g-4">
+                <div class="col-12 col-lg-8">
+                    <label class="form-label mb-3"><strong style="font-size: 1.1rem;">Select Timezone</strong></label>
+                    <?= $timeZoneSelector("timezone") ?>
+                </div>
+                <div class="col-12 col-lg-4 d-flex flex-column">
+                    <label class="form-label mb-3"><strong style="font-size: 1.1rem;">Current Time</strong></label>
+                    <div style="padding: 15px; background: linear-gradient(135deg, rgba(13, 110, 253, 0.1) 0%, rgba(0, 184, 255, 0.08) 100%); border: 2px solid #0dcaf0; border-radius: 0.5rem; font-family: monospace; font-size: 1rem;">
+                        <div class="timezone" style="font-weight: bold; color: #0dcaf0;"></div>
+                        <div class="datetime" style="font-weight: bold; font-size: 1.1rem; margin-top: 8px;"></div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
-
+    <!-- TIME CONVERTER -->
     <div class="card card-primary">
-        <h1 class="card-header">Time Calculator</h1>
+        <h1 class="card-header">⏱️ Time Unit Converter</h1>
         <div class="card-body">
-            <p class="text-warning">Work in progress! This tool allows you to add or subtract time from a given date and
-                time.</p>
-            <table class="table table-default w-50">
-                <tr>
-                    <th class="tablehead">
-                        Start Time
-                    </th>
-                    <td>
-                        <input type="datetime-local" name="timecalc_start" class="form-control"
-                            placeholder="Please enter a date and time" value="<?= date('Y-m-d\TH:i') ?>">
-                    </td>
-                </tr>
-                <tr>
-                    <th class="tablehead">
-                        Add/Subtract
-                    </th>
-                    <td>
-                        <select name="timecalc_action" class="form-select">
-                            <option value="add">add</option>
-                            <option value="subtract">subtract</option>
-                        </select>
-                    </td>
-                </tr>
-                <th class="tablehead">
-                    Units
-                </th>
-                <td>
-                    <input type="number" name="timecalc_value" class="form-control" placeholder="Please enter a number">
-                </td>
-                <td>
-                    <?= $unitSelector("timecalc_unit") ?>
-                </td>
-                </tr>
-            </table>
-            <?= submitBtn("timecalc", "action", "Calculate", "calculator") ?>
-        </div>
-    </div>
+            <div class="alert alert-info mb-4">
+                <strong>ℹ️ Convert Between Units</strong><br>
+                <span style="display: inline-block; margin-top: 4px;">Easily convert time values between seconds, minutes, hours, days, weeks, months, and years.</span>
+            </div>
 
-
-    <div class="card card-primary">
-        <h1 class="card-header">Convert Time Units</h1>
-        <div class="card-body">
             <form class="form" action="gen.php" method="POST" id="datetime" data-action="datetime">
+                <div class="row g-4 mb-4">
+                    <div class="col-12 col-md-5">
+                        <label class="form-label mb-3"><strong>From</strong></label>
+                        <input type="number" name="time" class="form-control form-control-lg" placeholder="Enter a number" style="font-family: monospace; border: 2px solid #495057;" required>
+                    </div>
 
-                <table class="table table-default w-50">
-                    <tr class="tablehead">
-                        <th></th>
-                        <th>Value</th>
-                        <th>Unit</th>
-                    </tr>
+                    <div class="col-12 col-md-3">
+                        <label class="form-label mb-3"><strong>Unit</strong></label>
+                        <?= $unitSelector("timefrom_unit") ?>
+                    </div>
 
-                    <tr>
-                        <th class="tablehead">
-                            From
-                        </th>
-                        <td>
-                            <input type="text" name="time" class="form-control" placeholder="Please enter a number">
-                        </td>
-                        <td>
-                            <?= $unitSelector("timefrom_unit") ?>
-                        </td>
-                    </tr>
+                    <div class="col-12 col-md-4">
+                        <label class="form-label mb-3"><strong>To Unit</strong></label>
+                        <?= $unitSelector("timeto_unit") ?>
+                    </div>
+                </div>
 
-                    <tr>
-                        <th class="tablehead">
-                            To
-                        </th>
-                        <!-- <td>
-                            <input id="datetimeresponse" type="text" class="form-control text-cyan responseDiv" value="The converted time will appear here" disabled>
-                        </td> -->
-                        <td colspan="2">
-                            <?= $unitSelector("timeto_unit") ?>
-                        </td>
-                    </tr>
-                </table>
+                <div class="d-flex gap-3 mb-4">
+                    <?= submitBtn("datetime", "action", "⏱️ Convert", "shuffle", "lg") ?>
+                </div>
 
-                <?= submitBtn("datetime", "action", "Convert", "shuffle") ?>
-
-                <div class="responseDiv" id="datetimeresponse"></div>
-
+                <div id="datetimeresponse"></div>
             </form>
         </div>
     </div>
+
 </div>

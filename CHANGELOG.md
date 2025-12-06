@@ -1,3 +1,39 @@
+## **v1.2.0**
+> ### new
+> * global `copyableOutput()` function for styled output boxes with copy buttons
+> * global `copyToClipboard()` JavaScript function with Clipboard API and document.execCommand fallback
+> * timezone selector in datetime module
+> ### changed
+> * **UI/UX Modernization** (all modules below):
+>   * openssl: complete redesign with amber gradient, security alert, encryption settings card
+>   * hash: multi-algorithm display with individual copy buttons, teal/blue gradient output
+>   * gen_number: large input styling (1.5rem), seed toggle, copyable results
+>   * gen_string: split layout, character badges, multiple copyable results
+>   * base: cleaner output format with directional header
+>   * binhex: purple gradient, directional toggle buttons
+>   * rot: fixed bruteforce toggle, multi-rotation display with ROT labels
+>   * htmlentities: split output into original/encoded/decoded with copy buttons
+>   * urlencoding: triple output (original/encoded/decoded) with copyable boxes
+>   * string_tools: purple gradient panel, organized tool buttons, copy output
+>   * serialization: cyan/blue gradient, textarea inputs, JSON focus, detected format label
+>   * markdown: live preview with purple gradient, HTML code block copy button, debounced auto-render
+>   * minify: amber/orange gradient, compression stats display (original size, minified size, bytes saved, %)
+>   * metaphone: teal gradient output, copyable phonetic key
+>   * datetime: removed WIP time calculator, simplified current time display with timezone selector, modern time unit converter
+> * all module outputs now use consistent copyableOutput() styling with dark theme optimization
+> * all modules updated with split input/output layouts (col-12 col-lg-6 responsive grid)
+> * all module outputs include gradient backgrounds themed by module purpose
+> * all form controls upgraded to form-select-lg/form-control-lg for better visibility
+> * all outputs include empty state with centered icon and placeholder text
+> * all info alerts now have consistent ℹ️ icon styling
+> ### fixed
+> * rot: bruteforce toggle now properly syncs with form submission
+> * minify: backend now calls .minify() method on minifier objects (was returning objects)
+> * datetime: unit key inconsistency fixed (months now use "M" consistently)
+> * markdown: alert text alignment fixed with inline-block display
+> * copy-to-clipboard: now works on both HTTP and HTTPS origins with fallback support
+> * output visibility: improved contrast on dark theme with #0f172a backgrounds and #e9ecef text
+
 ## **v1.1.1**
 > ### new
 > * module: metaphone
