@@ -197,7 +197,7 @@
           [
             "name"    => "LF to CRLF",
             "icon"    => "text-wrap",
-            "value"   => "crlf2lf",
+            "value"   => "lf2crlf",
             "tooltip" => "Convert to LF (\\n) line endings DOS-like (\\r\\n) line endings"
           ],
           [
@@ -254,49 +254,49 @@
           [
             "name"    => "Non-ASCII",
             "icon"    => "code-square",
-            "value"   => "removebackslashes",
+            "value"   => "removenonascii",
             "tooltip" => "Remove non-ASCII characters"
           ],
           [
             "name" => "Non-printable",
             "icon" => "code-square",
-            "value"   => "removebackslashes",
+            "value"   => "removenonprintable",
             "tooltip" => "Remove non-printable characters"
           ],
           [
             "name"    => "Whitespace",
             "icon"    => "code-square",
-            "value"   => "removebackslashes",
+            "value"   => "removewhitespaceext",
             "tooltip" => "Remove whitespace characters"
           ],
           [
             "name"    => "Numbers",
             "icon"    => "code-square",
-            "value"   => "removebackslashes",
+            "value"   => "removenumbers",
             "tooltip" => "Remove numbers"
           ],
           [
             "name"    => "Letters",
             "icon"    => "code-square",
-            "value"   => "removebackslashes",
+            "value"   => "removeletters",
             "tooltip" => "Remove letters"
           ],
           [
             "name"    => "Symbols",
             "icon"    => "code-square",
-            "value"   => "removebackslashes",
+            "value"   => "removesymbols",
             "tooltip" => "Remove symbols"
           ],
           [
             "name"    => "Extended symbols",
             "icon"    => "code-square",
-            "value"   => "removebackslashes",
+            "value"   => "removeextendedsymbols",
             "tooltip" => "Remove extended symbols"
           ],
           [
             "name"    => "Custom characters",
             "icon"    => "code-square",
-            "value"   => "removebackslashes",
+            "value"   => "removecustomcharacters",
             "tooltip" => "Remove custom characters"
           ],
         ],
