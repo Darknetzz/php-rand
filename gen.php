@@ -419,9 +419,9 @@ do {
 /*                          MODULE: Serialization                        */
 /* ===================================================================== */
   if ($action == "serialization") {
-    $type          = $_POST['type'];
-    $input         = $_POST['input'];
-    $stripcomments = $_POST['stripcomments'];
+    $type          = $_POST['type'] ?? 'JSON';
+    $input         = $_POST['input'] ?? '';
+    $stripcomments = $_POST['stripcomments'] ?? 0;
     if (empty($type) || empty($input)) {
       echo formatOutput("You must select a type and enter data.", type: "danger");
       break;
@@ -433,34 +433,37 @@ do {
     }
 
     $xmlparser = xml_parser_create();
+    $detected  = null;
+
     # Detect input
     if (json_validate($input)) {
-      $input = json_decode($input, True);
+      $input    = json_decode($input, True);
+      $detected = 'JSON';
     }
-    # REVIEW: yaml_parse is undefined.
     // elseif (yaml_parse($input)) {
-    //   $input = yaml_parse($input);
+    //   $input    = yaml_parse($input);
+    //   $detected = 'YAML';
     // }
     elseif (xml_parse($xmlparser, $input)) {
-      $input = xml_parse($xmlparser, $input);
+      // NOTE: xml_parse returns bool; full XML conversion not implemented in this build
+      $input    = $input;
+      $detected = 'XML';
     } else {
       echo formatOutput("Invalid input. It must valid JSON, XML or YAML.", type: "danger");
       break;
     }
 
     # Convert to desired type
+    $output = "";
     if ($type == "JSON") {
-      $output = json_encode($input, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+      $output = is_string($input) ? $input : json_encode($input, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+    } elseif ($type == "XML") {
+      $output = "[XML output is not available in this build]";
+    } elseif ($type == "YAML") {
+      $output = "[YAML output is not available in this build]";
     }
-    # REVIEW: array2xml is undefined.
-    // elseif ($type == "XML") {
-    //   $output = array2xml($input);
-    // }
-    # REVIEW: yaml_emit is undefined.
-    // elseif ($type == "YAML") {
-    //   $output = yaml_emit($input);
-    // }
-    echo formatOutput($output, responsetype: "text");
+
+    echo copyableOutput($output, "Detected: " . ($detected ?? 'Unknown'));
   }
 
 /* ===================================================================== */
