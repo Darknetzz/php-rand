@@ -940,6 +940,96 @@ if ($action == "htmlentities") {
   }
 
   # ─────────────────────────────────────────────────────────────────────────── //
+  #                             MODULE: currency                               //
+  # ─────────────────────────────────────────────────────────────────────────── //
+  if ($action == "currency") {
+    $currency_amount = (!empty($_POST['currency_amount']) ? floatval($_POST['currency_amount']) : Null);
+    $currency_from   = (!empty($_POST['currency_from']) ? strtoupper($_POST['currency_from']) : Null);
+    $currency_to     = (!empty($_POST['currency_to']) ? strtoupper($_POST['currency_to']) : Null);
+    $custom_rate     = (!empty($_POST['currency_rate']) ? floatval($_POST['currency_rate']) : Null);
+
+    if (empty($currency_amount) || empty($currency_from) || empty($currency_to)) {
+      echo formatOutput("You must enter an amount and select both source and target currencies.", type: "danger");
+      break;
+    }
+
+    if ($currency_amount < 0) {
+      echo formatOutput("Amount must be a positive number.", type: "danger");
+      break;
+    }
+
+    // Handle same currency conversion
+    if ($currency_from == $currency_to) {
+      $result = $currency_amount;
+      $output = "<b>$currency_amount $currency_from = <span class='text-success'>$result $currency_to</span></b>";
+      echo formatOutput($output);
+      break;
+    }
+
+    // If custom rate provided, use it
+    if ($custom_rate !== null && $custom_rate > 0) {
+      $result = $currency_amount * $custom_rate;
+      $output = "<div class='conversion-result'>";
+      $output .= "<div style='font-size: 1.5em; margin: 15px 0;'>";
+      $output .= "<b>" . number_format($currency_amount, 2) . " $currency_from</b> = <span class='text-success'><b>" . number_format($result, 2) . " $currency_to</b></span>";
+      $output .= "</div>";
+      $output .= "<hr>";
+      $output .= "<div><small class='text-muted'>";
+      $output .= "Custom Rate Used: 1 $currency_from = " . number_format($custom_rate, 4) . " $currency_to";
+      $output .= "</small></div>";
+      $output .= "</div>";
+      echo formatOutput($output);
+      break;
+    }
+
+    // Fetch live exchange rate from API
+    $rate = null;
+    $api_url = "https://api.exchangerate-api.com/v4/latest/" . urlencode($currency_from);
+    
+    // Fetch the exchange rates
+    $context = stream_context_create(['http' => ['timeout' => 5]]);
+    $response = @file_get_contents($api_url, false, $context);
+    
+    if ($response === false) {
+      echo formatOutput("Unable to fetch exchange rates. Please check your internet connection or try again later.", type: "danger");
+      break;
+    }
+
+    $data = json_decode($response, true);
+
+    if (!$data || json_last_error() !== JSON_ERROR_NONE || !isset($data['rates'])) {
+      echo formatOutput("Invalid response from exchange rate API. Please try again.", type: "danger");
+      break;
+    }
+
+    if (!isset($data['rates'][$currency_to])) {
+      echo formatOutput("Currency $currency_to not found in API database. Please select a valid currency.", type: "danger");
+      break;
+    }
+
+    $rate = $data['rates'][$currency_to];
+    $result = $currency_amount * $rate;
+    $timestamp = $data['time_last_updated'] ?? '';
+
+    $output = "<div class='conversion-result'>";
+    $output .= "<h4 class='text-success'>Conversion Result</h4>";
+    $output .= "<div style='font-size: 1.5em; margin: 15px 0;'>";
+    $output .= "<b>" . number_format($currency_amount, 2) . " $currency_from</b> = <span class='text-success'><b>" . number_format($result, 2) . " $currency_to</b></span>";
+    $output .= "</div>";
+    $output .= "<hr>";
+    $output .= "<div><small class='text-muted'>";
+    $output .= "Live Exchange Rate: 1 $currency_from = " . number_format($rate, 4) . " $currency_to<br>";
+    if ($timestamp) {
+      $output .= "Last Updated: " . htmlspecialchars($timestamp) . "<br>";
+    }
+    $output .= "<em>Rates provided by exchangerate-api.com</em>";
+    $output .= "</small></div>";
+    $output .= "</div>";
+
+    echo formatOutput($output);
+  }
+
+  # ─────────────────────────────────────────────────────────────────────────── //
 
 
   if ($responsetype != "html") {
