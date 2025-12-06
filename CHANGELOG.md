@@ -20,6 +20,7 @@
 >   * minify: amber/orange gradient, compression stats display (original size, minified size, bytes saved, %)
 >   * metaphone: teal gradient output, copyable phonetic key
 >   * datetime: removed WIP time calculator, simplified current time display with timezone selector, modern time unit converter
+>   * networking: complete redesign with split input/output layouts, 5 modernized tools (DNS lookup, CIDR to range, range to CIDR, subnet calculator, IP/hex converter) with gradient backgrounds and responsive grids
 > * all module outputs now use consistent copyableOutput() styling with dark theme optimization
 > * all modules updated with split input/output layouts (col-12 col-lg-6 responsive grid)
 > * all module outputs include gradient backgrounds themed by module purpose

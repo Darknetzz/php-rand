@@ -771,12 +771,14 @@ if ($tool == "dnslookup") {
   $hostname = (!empty($_POST['hostname']) ? $_POST['hostname'] : Null);
   if ($hostname !== null) {
     if (is_ip($hostname)) {
-      echo formatOutput(gethostbyaddr($hostname));
+      $result = gethostbyaddr($hostname);
     } elseif (is_hostname($hostname)) {
-      echo formatOutput(gethostbyname($hostname));
+      $result = gethostbyname($hostname);
     } else {
-      echo formatOutput("Invalid hostname/IP");
+      echo formatOutput("Invalid hostname/IP", type: "danger");
+      break;
     }
+    echo "<div style='margin-bottom: 15px;'>" . copyableOutput($result, $hostname) . "</div>";
   }
 }
 
@@ -798,30 +800,15 @@ if ($tool == "dnslookup") {
         if (is_array($range['cidr'])) {
           $range['cidr'] = implode("<br>", $range['cidr']);
         }
-        echo formatOutput("
-          <table class='table table-bordered'>
-            <tr class='table table-primary'>
-              <th>Property</th>
-              <th>Value</th>
-            </tr>
-            <tr>
-              <td>CIDR range</td>
-              <td>". $range['cidr'] ."</td>
-            </tr>
-            <tr>
-              <td>Start IP</td>
-              <td>". $range['start'] ."</td>
-            </tr>
-            <tr>
-              <td>End IP</td>
-              <td>". $range['end'] ."</td>
-            </tr>
-            <tr>
-              <td>Total IPs</td>
-              <td>". $range['total'] ."</td>
-            </tr>
-          </table>
-        ");
+        $output = "
+          <div style='display: grid; grid-template-columns: 1fr 1fr; gap: 12px;'>
+            <div><strong>CIDR:</strong><br><code style='font-size: 0.95rem;'>" . $range['cidr'] . "</code></div>
+            <div><strong>Start IP:</strong><br><code style='font-size: 0.95rem;'>" . $range['start'] . "</code></div>
+            <div><strong>End IP:</strong><br><code style='font-size: 0.95rem;'>" . $range['end'] . "</code></div>
+            <div><strong>Total IPs:</strong><br><code style='font-size: 0.95rem;'>" . $range['total'] . "</code></div>
+          </div>
+        ";
+        echo "<div style='margin-bottom: 15px;'>" . copyableOutput($output, "CIDR Range Info") . "</div>";
     }
 /* ===================================================================== */
 /*                            NOTE: range2cidr                           */
@@ -843,30 +830,15 @@ if ($tool == "dnslookup") {
       if (is_array($cidr["cidrs"])) {
         $cidr["cidrs"] = implode("<br>", $cidr["cidrs"]);
       }
-      echo formatOutput("
-        <table class='table table-bordered'>
-          <tr class='table table-primary'>
-            <th>Property</th>
-            <th>Value</th>
-          </tr>
-          <tr>
-            <td>CIDR range(s)</td>
-            <td>". $cidr["cidrs"] ."</td>
-          </tr>
-          <tr>
-            <td>Start</td>
-            <td>". $cidr["start"] ."</td>
-          </tr>
-          <tr>
-            <td>End</td>
-            <td>". $cidr["end"] ."</td>
-          </tr>
-          <tr>
-            <td>Total IPs</td>
-            <td>". $cidr["total_ips"] ."</td>
-          </tr>
-        </table>
-      ");
+      $output = "
+        <div style='display: grid; grid-template-columns: 1fr 1fr; gap: 12px;'>
+          <div><strong>CIDR Range(s):</strong><br><code style='font-size: 0.95rem;'>" . $cidr["cidrs"] . "</code></div>
+          <div><strong>Start:</strong><br><code style='font-size: 0.95rem;'>" . $cidr["start"] . "</code></div>
+          <div><strong>End:</strong><br><code style='font-size: 0.95rem;'>" . $cidr["end"] . "</code></div>
+          <div><strong>Total IPs:</strong><br><code style='font-size: 0.95rem;'>" . $cidr["total_ips"] . "</code></div>
+        </div>
+      ";
+      echo "<div style='margin-bottom: 15px;'>" . copyableOutput($output, "IP Range to CIDR") . "</div>";
     }
 /* ===================================================================== */
 /*                            NOTE: subnetmask                           */
@@ -890,41 +862,18 @@ if ($tool == "dnslookup") {
         $subnetmask["cidrs"] = implode("<br>", $subnetmask["cidrs"]);
       }
 
-      echo formatOutput("
-        <table class='table table-bordered'>
-          <tr class='table table-primary'>
-            <th>Property</th>
-            <th>Value</th>
-          </tr>
-          <tr>
-            <td>Network</td>
-            <td>". $subnetmask["network"] ."</td>
-          </tr>
-          <tr>
-            <td>First IP</td>
-            <td>". $subnetmask["start"] ."</td>
-          </tr>
-          <tr>
-            <td>Last IP</td>
-            <td>". $subnetmask["end"] ."</td>
-          </tr>
-          <tr>
-            <td>Broadcast</td>
-            <td>". $subnetmask["broadcast"] ."</td>
-          </tr>
-          <tr>
-            <td>Subnet mask</td>
-            <td>". $subnetmask["subnet"] ."</td>
-          </tr>
-          <tr>
-            <td>CIDR</td>
-            <td>". $subnetmask["cidr"] ."</td>
-          </tr>
-          <tr>
-            <td>Usable IPs</td>
-            <td>". $subnetmask["usable_ips"] ."</td>
-          </tr>
-      ");
+      $output = "
+        <div style='display: grid; grid-template-columns: 1fr 1fr; gap: 12px;'>
+          <div><strong>Network:</strong><br><code style='font-size: 0.95rem;'>" . $subnetmask["network"] . "</code></div>
+          <div><strong>First IP:</strong><br><code style='font-size: 0.95rem;'>" . $subnetmask["start"] . "</code></div>
+          <div><strong>Last IP:</strong><br><code style='font-size: 0.95rem;'>" . $subnetmask["end"] . "</code></div>
+          <div><strong>Broadcast:</strong><br><code style='font-size: 0.95rem;'>" . $subnetmask["broadcast"] . "</code></div>
+          <div><strong>Subnet Mask:</strong><br><code style='font-size: 0.95rem;'>" . $subnetmask["subnet"] . "</code></div>
+          <div><strong>CIDR:</strong><br><code style='font-size: 0.95rem;'>" . $subnetmask["cidr"] . "</code></div>
+          <div><strong>Usable IPs:</strong><br><code style='font-size: 0.95rem;'>" . $subnetmask["usable_ips"] . "</code></div>
+        </div>
+      ";
+      echo "<div style='margin-bottom: 15px;'>" . copyableOutput($output, "Subnet Information") . "</div>";
     }
 
   }
