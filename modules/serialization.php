@@ -16,14 +16,16 @@
 
             <form class="form" action="gen.php" method="POST" id="serializationForm" data-action="serialization"
                 data-responsetype="text">
-                <div class="d-flex justify-content-evenly mb-2">
-                    <div style="width:50%">
+                <div class="row g-3">
+                    <div class="col-12 col-lg-6">
+                        <label class="form-label"><strong>Input</strong></label>
                         <code-input name="input" template="default" class="code code-input_registered" id="rotInput"
-                            placeholder="Input your valid JSON, YAML or XML here"></code-input>
+                            placeholder="Input your valid JSON, YAML or XML here" style="min-height: 300px;"></code-input>
                     </div>
-                    <div style="width:50%">
-                        <code-input name="output" template="default" class="code code-input_registered responseDiv"
-                            placeholder="Output will show here" readonly></code-input>
+                    <div class="col-12 col-lg-6 d-flex flex-column">
+                        <label class="form-label"><strong>Output</strong></label>
+                        <code-input name="output" template="default" class="code code-input_registered responseDiv flex-grow-1"
+                            placeholder="Output will show here" readonly style="min-height: 300px;"></code-input>
                         <button type="button" class="copyText btn btn-primary"
                             data-clipboard-target=".responseDiv"><?= icon("clipboard") ?> Copy</button>
                     </div>

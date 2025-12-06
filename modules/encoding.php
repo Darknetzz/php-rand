@@ -6,7 +6,7 @@
         <div class="card-body">
             <span class="description">Input any text or base encoded string below, and this tool will convert it to all other base formats.</span>
             <form class="form" action="gen.php" method="POST" id="base" data-action="base">
-                <textarea name="base" class="form-control mb-2"
+                <textarea name="base" class="form-control mb-2" style="min-height: 150px; resize: vertical; font-family: monospace;"
                     placeholder="Enter text or base encoded string to convert..." value="" required></textarea>
                 <select name="from" class="form-select mb-2">
                     <option value="text" disabled selected>Please choose input type [default: text/base36]...</option>
@@ -22,7 +22,7 @@
     ?>
                 </select>
                 <?= submitBtn("base", "action", "Convert", "arrow-repeat") ?>
-                <div class="responseDiv" id="baseresponse"></div>
+                <div class="responseDiv" id="baseresponse" style="margin-top: 15px; border: 1px solid #dee2e6; padding: 15px; min-height: 100px; max-height: 400px; overflow-y: auto; background-color: rgba(0,0,0,0.1); border-radius: 0.25rem; font-family: monospace; white-space: pre-wrap; word-break: break-word;"></div>
             </form>
         </div>
     </div>
