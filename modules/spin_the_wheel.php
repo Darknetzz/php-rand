@@ -71,24 +71,23 @@
                     <div class="col-12 col-lg-6 d-flex flex-column">
                         <h4 class="mb-3"><strong>Wheel Items</strong></h4>
                         
-                        <div class="wheelitems flex-grow-1" style="overflow-y: auto; max-height: 600px; padding-right: 10px;">
-                            <div class="input-group mb-3 wheelitem">
-                                <span class="input-group-text" style="width: 40px;"><strong>1</strong></span>
-                                <input type="text" name="wheelitem[0]" class="form-control wheelitem-input" placeholder="Item #1" value="Item #1">
-                                <button type="button" class="btn btn-outline-danger remove-item" title="Remove item"><?= icon("trash") ?></button>
+                        <div class="wheelitems flex-grow-1" style="overflow-y: auto; max-height: 600px; padding-right: 10px; border: 1px solid #dee2e6; border-radius: 0.25rem; padding: 15px; background-color: rgba(0,0,0,0.05);">
+                            <div class="input-group mb-3 wheelitem" style="gap: 8px;">
+                                <span class="badge bg-primary" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;"><strong>1</strong></span>
+                                <input type="text" name="wheelitem[0]" class="form-control wheelitem-input" placeholder="Item #1" value="Item #1" style="flex: 1;">
+                                <button type="button" class="btn btn-sm btn-outline-danger remove-item" title="Remove item"><?= icon("trash") ?></button>
                             </div>
-                            <div class="input-group mb-3 wheelitem">
-                                <span class="input-group-text" style="width: 40px;"><strong>2</strong></span>
-                                <input type="text" name="wheelitem[1]" class="form-control wheelitem-input" placeholder="Item #2" value="Item #2">
-                                <button type="button" class="btn btn-outline-danger remove-item" title="Remove item"><?= icon("trash") ?></button>
+                            <div class="input-group mb-3 wheelitem" style="gap: 8px;">
+                                <span class="badge bg-primary" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;"><strong>2</strong></span>
+                                <input type="text" name="wheelitem[1]" class="form-control wheelitem-input" placeholder="Item #2" value="Item #2" style="flex: 1;">
+                                <button type="button" class="btn btn-sm btn-outline-danger remove-item" title="Remove item"><?= icon("trash") ?></button>
                             </div>
                         </div>
 
                         <!-- Action Buttons -->
-                        <hr>
-                        <div class="d-grid gap-2 mb-3">
-                            <button type="button" class="btn btn-success" id="addtowheel"><?= icon("plus-circle") ?> Add Item</button>
-                            <button type="button" class="btn btn-danger clear"><?= icon("trash") ?> Clear All</button>
+                        <div class="d-grid gap-2 mt-3">
+                            <button type="button" class="btn btn-success btn-lg" id="addtowheel"><?= icon("plus-circle") ?> Add Item</button>
+                            <button type="button" class="btn btn-danger btn-lg clear"><?= icon("trash") ?> Clear All</button>
                         </div>
                     </div>
                 </div>
