@@ -8,14 +8,18 @@
     position: relative;
     overflow: hidden;
     width: 100%;
-    max-width: 600px;
-    padding: 20px;
+    max-width: 500px;
+    padding: 0;
+    border: none;
+    outline: none;
 }
 
 .spin_the_wheel_wheel {
     display: block;
     width: 100%;
     height: auto;
+    border: none;
+    outline: none;
 }
 
 .spin_the_wheel_spinbtn {
@@ -65,9 +69,9 @@
 
                 <div class="row g-4">
                     <!-- Canvas Section -->
-                    <div class="col-12 col-lg-6 d-flex justify-content-center">
+                    <div class="col-12 col-lg-6 d-flex justify-content-center align-items-center" style="min-height: 500px;">
                         <div class="spin_the_wheel_canvas">
-                            <canvas class="spin_the_wheel_wheel" width="800" height="800"></canvas>
+                            <canvas class="spin_the_wheel_wheel" width="500" height="500" style="display: block; max-width: 100%; height: auto;"></canvas>
                             <button type="button" class="btn btn-success spin_the_wheel_spinbtn">SPIN</button>
                         </div>
                     </div>
@@ -76,7 +80,7 @@
                     <div class="col-12 col-lg-6 d-flex flex-column">
                         <h4 class="mb-3"><strong>Wheel Items</strong></h4>
                         
-                        <div class="wheelitems flex-grow-1" style="overflow-y: auto; max-height: 600px; padding-right: 10px; border: 1px solid #dee2e6; border-radius: 0.25rem; padding: 15px; background-color: rgba(0,0,0,0.05);">
+                        <div class="wheelitems mb-3" style="overflow-y: auto; max-height: 400px; min-height: 400px; padding-right: 10px; border: 1px solid #dee2e6; border-radius: 0.25rem; padding: 15px; background-color: rgba(0,0,0,0.05);">
                             <div class="input-group mb-3 wheelitem" style="gap: 8px;">
                                 <span class="badge bg-primary" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;"><strong>1</strong></span>
                                 <input type="text" name="wheelitem[0]" class="form-control wheelitem-input" placeholder="Item #1" value="Item #1" style="flex: 1;">
@@ -90,7 +94,7 @@
                         </div>
 
                         <!-- Action Buttons -->
-                        <div class="d-grid gap-2 mt-3">
+                        <div class="d-grid gap-2">
                             <button type="button" class="btn btn-success btn-lg" id="addtowheel"><?= icon("plus-circle") ?> Add Item</button>
                             <button type="button" class="btn btn-danger btn-lg clear"><?= icon("trash") ?> Clear All</button>
                         </div>
@@ -197,8 +201,25 @@ function drawSector(sector, i) {
     ctx.rotate(ang + arc / 2);
     ctx.textAlign = "right";
     ctx.fillStyle = sector.text;
-    ctx.font = "bold 30px 'Lato', sans-serif";
-    ctx.fillText(sector.label, rad - 10, 10);
+    
+    // Adjust font size based on number of sectors
+    let fontSize = 28;
+    let displayText = sector.label;
+    
+    if (tot <= 4) {
+        fontSize = 28;
+    } else if (tot <= 6) {
+        fontSize = 22;
+    } else if (tot <= 10) {
+        fontSize = 16;
+    } else if (tot <= 16) {
+        fontSize = 12;
+    } else {
+        fontSize = 10;
+    }
+    
+    ctx.font = `bold ${fontSize}px 'Lato', sans-serif`;
+    ctx.fillText(displayText, rad - 15, 8);
 
     ctx.restore();
 }
