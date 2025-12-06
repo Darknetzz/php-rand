@@ -221,7 +221,9 @@ function frame() {
     }
 
     angVel *= friction;
-    if (angVel < 0.002) angVel = 0;
+    if (angVel < 0.002) {
+        angVel = 0;
+    }
     ang += angVel;
     ang %= TAU;
     rotate();
