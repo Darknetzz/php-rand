@@ -15,16 +15,16 @@
 >   - 13+ functions documented in includes/handlers_functional.php
 >   - Each docblock now includes description, @param, @return, and @example tags
 > - **Context-aware random input generator** that picks better samples per field
->   - Calculator: math expressions (e.g., "25+8*3")
+>   - Calculator: math expressions (e.g., `25+8*3`)
 >   - Networking tools: IPs, CIDR, domains (aware of start/end fields)
 >   - Diff viewer: multi-line text for comparison
 >   - Serialization: JSON objects and related formats
->   - New helpers: randomCalculation(), randomCIDR(), randomIPRange(), randomSubnetMask(), randomDomain(), randomYAML(), randomXML(), randomIPv6()
+>   - New helpers: `randomCalculation()`, `randomCIDR()`, `randomIPRange()`, `randomSubnetMask()`, `randomDomain()`, `randomYAML()`, `randomXML()`, `randomIPv6()`
 >
 > **Changed**
-> - random data generator now passes the $input element into generateRandomData() for accurate context detection
+> - random data generator now passes the $input element into `generateRandomData()` for accurate context detection
 > - includes/config.php adds UTF-8 directives
-> - js/rand.js updates generateRandomData() signature to accept $input
+> - js/rand.js updates `generateRandomData()` signature to accept `$input`
 > - networking outputs render clean HTML
 >   - CIDR to Range: formatted grid
 >   - Range to CIDR: flexbox with copy button
