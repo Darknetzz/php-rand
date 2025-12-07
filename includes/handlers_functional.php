@@ -1,10 +1,18 @@
 <?php
 
 /**
- * Handler Registry - Functional approach
- * Maps actions to their handler functions
+ * Handler Registry - Functional approach to mapping actions to handler functions
+ * 
+ * Maintains a centralized registry of all available tool handlers.
+ * Each action key maps to a handler function name that processes that specific tool.
+ * Simplifies adding new tools by just registering them here.
+ *
+ * @return array Associative array where keys are action names and values are handler function names
+ * 
+ * @example
+ * $registry = getHandlerRegistry();
+ * $handler = $registry['hash']; // Returns: 'handle_hash'
  */
-
 function getHandlerRegistry(): array {
     return [
         'stringgen' => 'handle_stringgen',
@@ -31,7 +39,19 @@ function getHandlerRegistry(): array {
 }
 
 /**
- * Execute handler for given action
+ * Execute a handler function based on the request action
+ * 
+ * Looks up and executes the appropriate handler function for a given action.
+ * Falls back to special case checks for handlers that use non-standard request keys.
+ * Returns the handler's output or null if no matching handler found.
+ *
+ * @param array $request The request data, typically from $_POST
+ *                       Should contain an 'action' key for normal routing
+ * @return string|null The handler's output HTML/text, or null if no handler matched
+ * 
+ * @example
+ * $request = ['action' => 'hash', 'hash' => 'md5', 'input' => 'hello'];
+ * echo executeHandler($request); // Calls handle_hash() and returns its output
  */
 function executeHandler(array $request): ?string {
     $action = $request['action'] ?? '';
@@ -57,33 +77,80 @@ function executeHandler(array $request): ?string {
 }
 
 // ============================================================================
-// Helper Functions
+// Request Helper Functions
 // ============================================================================
 
+/**
+ * Get a value from the request array with a default fallback
+ *
+ * @param array $request The request array (typically $_POST)
+ * @param string $key The key to retrieve
+ * @param mixed $default The value to return if key doesn't exist. Default: null
+ * @return mixed The requested value or default
+ */
 function req_get(array $request, string $key, $default = null) {
     return $request[$key] ?? $default;
 }
 
+/**
+ * Get and cast an integer value from the request array
+ *
+ * @param array $request The request array (typically $_POST)
+ * @param string $key The key to retrieve
+ * @param int $default The value to return if key doesn't exist. Default: 0
+ * @return int The integer value or default
+ */
 function req_int(array $request, string $key, int $default = 0): int {
     return isset($request[$key]) ? intval($request[$key]) : $default;
 }
 
+/**
+ * Get and cast a float value from the request array
+ *
+ * @param array $request The request array (typically $_POST)
+ * @param string $key The key to retrieve
+ * @param float $default The value to return if key doesn't exist. Default: 0.0
+ * @return float The float value or default
+ */
 function req_float(array $request, string $key, float $default = 0.0): float {
     return isset($request[$key]) ? floatval($request[$key]) : $default;
 }
 
+/**
+ * Check if a boolean value exists and equals 1 in the request array
+ *
+ * @param array $request The request array (typically $_POST)
+ * @param string $key The key to check
+ * @return bool True if key exists and equals 1, false otherwise
+ */
 function req_bool(array $request, string $key): bool {
     return isset($request[$key]) && $request[$key] == 1;
 }
 
+/**
+ * Wrap content in a copyable output container
+ *
+ * @param string $content The content to display and copy
+ * @param string $label Optional label for the output section. Default: ""
+ * @return string HTML formatted copyable output element
+ */
 function output_copyable(string $content, string $label = ""): string {
     return "<div style='margin-bottom: 15px;'>" . copyableOutput($content, $label) . "</div>";
 }
 
 // ============================================================================
-// Handler Functions
+// Handler Functions - Tool-specific request processors
 // ============================================================================
 
+/**
+ * Handle random string generation requests
+ *
+ * Processes requests to generate random strings with specified character sets
+ * and options. Returns formatted output with generated strings and statistics.
+ *
+ * @param array $req Request array containing: 'digits', 'strings', 'l', 'u', 'n', 's', 'e', 'c', 'cchars'
+ * @return string Formatted HTML output with generated strings or error message
+ */
 function handle_stringgen(array $req): string {
     $length = req_int($req, 'digits');
     if ($length < 1 || $length > 1000000) {
@@ -136,6 +203,15 @@ function handle_stringgen(array $req): string {
     return $output;
 }
 
+/**
+ * Handle cryptographic hashing requests
+ *
+ * Generates hash values for input text using specified or all available
+ * algorithms (MD5, SHA1, SHA256, SHA512, etc.).
+ *
+ * @param array $req Request array containing: 'hash' (input), 'hashalgo' (optional algorithm)
+ * @return string Formatted HTML with hash values for each algorithm
+ */
 function handle_hash(array $req): string {
     $input = req_get($req, 'hash');
     $hashalgo = req_get($req, 'hashalgo');
@@ -153,6 +229,15 @@ function handle_hash(array $req): string {
     return formatOutput($output);
 }
 
+/**
+ * Handle random number generation requests
+ *
+ * Generates a random integer between two values with optional seed support
+ * for reproducible results.
+ *
+ * @param array $req Request array containing: 'numgenfrom', 'numgento', 'seed', 'numgenseed'
+ * @return string Formatted HTML with generated number and seed info if provided
+ */
 function handle_numgen(array $req): string {
     $from = req_int($req, 'numgenfrom');
     $to = req_int($req, 'numgento');
@@ -168,6 +253,15 @@ function handle_numgen(array $req): string {
     return $output;
 }
 
+/**
+ * Handle base conversion requests
+ *
+ * Converts data between different encoding formats (text, base64, base32, hex, etc.)
+ * Supports bidirectional conversion between any supported base formats.
+ *
+ * @param array $req Request array containing: 'base' (input), 'from' (source format), 'to' (target format)
+ * @return string Formatted HTML with conversion result or error message
+ */
 function handle_base(array $req): string {
     $input = req_get($req, 'base');
     $from = req_get($req, 'from', 'text');
@@ -185,6 +279,16 @@ function handle_base(array $req): string {
     }
 }
 
+/**
+ * Handle binary/hex conversion and IP/hex conversion requests
+ *
+ * Processes requests for bin2hex, hex2bin, ip2hex, and hex2ip conversions.
+ * Handles multiple IPs with comma separation for ip2hex conversion.
+ *
+ * @param array $req Request array containing: 'tool' (bin2hex|hex2bin|ip2hex|hex2ip), 'binhex'|'iphex' (input),
+ *                   'split' (optional), 'delimiter', 'chunklength'
+ * @return string Formatted HTML with conversion result or error message
+ */
 function handle_hex(array $req): string {
     $tool = req_get($req, 'tool');
     $input = trim(req_get($req, 'binhex', '') ?: req_get($req, 'iphex', ''));
@@ -229,6 +333,16 @@ function handle_hex(array $req): string {
     return output_copyable($output);
 }
 
+/**
+ * Handle ROT cipher requests
+ *
+ * Performs ROT (rotate cipher) transformation on text. Can apply a single
+ * rotation amount or brute force all 26 possible rotations.
+ *
+ * @param array $req Request array containing: 'rot' (input), 'rotations' (shift amount),
+ *                   'bruteforce' (optional, shows all 26 rotations)
+ * @return string Formatted HTML with rotated text or all brute force options
+ */
 function handle_rot(array $req): string {
     $input = req_get($req, 'rot');
     $bruteforce = req_bool($req, 'bruteforce');
@@ -247,6 +361,16 @@ function handle_rot(array $req): string {
     return output_copyable($result);
 }
 
+/**
+ * Handle OpenSSL encryption/decryption requests
+ *
+ * Encrypts or decrypts data using OpenSSL ciphers. Supports automatic IV generation
+ * if not provided, with warning about security implications.
+ *
+ * @param array $req Request array containing: 'tool' (encrypt|decrypt), 'openssl' (input data),
+ *                   'cipher' (algorithm), 'key', 'iv' (initialization vector)
+ * @return string Formatted HTML with result, warnings, and encryption details
+ */
 function handle_openssl(array $req): string {
     $tool = req_get($req, 'tool');
     $string = req_get($req, 'openssl', '');
@@ -292,6 +416,16 @@ function handle_openssl(array $req): string {
     return $output;
 }
 
+/**
+ * Handle datetime unit conversion requests
+ *
+ * Converts time values between different units (seconds, minutes, hours, days, weeks, etc.)
+ * Displays both decimal and integer results.
+ *
+ * @param array $req Request array containing: 'time' (value), 'timefrom_unit' (source unit),
+ *                   'timeto_unit' (target unit)
+ * @return string Formatted HTML with conversion results or error message
+ */
 function handle_datetime(array $req): string {
     $fromUnit = req_get($req, 'timefrom_unit');
     $toUnit = req_get($req, 'timeto_unit');
@@ -316,6 +450,16 @@ function handle_datetime(array $req): string {
     return output_copyable($converted . " " . $units[$toUnit][0], "$time " . $units[$fromUnit][0]);
 }
 
+/**
+ * Handle string transformation requests
+ *
+ * Applies various text transformations such as case conversion, whitespace handling,
+ * URL encoding, etc. Supports 30+ different string manipulation tools.
+ *
+ * @param array $req Request array containing: 'string' (input text), 'tool' (transformation type),
+ *                   'outputToTextbox' (optional, for direct output)
+ * @return string Formatted HTML with transformed string or plain text
+ */
 function handle_stringtools(array $req): string {
     $string = req_get($req, 'string', '');
     $tool = req_get($req, 'tool', '');

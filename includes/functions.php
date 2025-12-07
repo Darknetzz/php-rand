@@ -1,8 +1,20 @@
 <?php
 
-/* ===================================================================== */
-/*                             FUNCTION: icon                            */
-/* ===================================================================== */
+/**
+ * Generate a Bootstrap Icon HTML element
+ * 
+ * Creates a styled icon element using Bootstrap Icons CSS classes with optional
+ * color, size, and margin customization.
+ *
+ * @param string $icon The Bootstrap icon name (without 'bi-' prefix). Default: "question-circle"
+ * @param float $rem Font size in rem units. Default: 1
+ * @param string|null $color CSS color value to apply to the icon. Default: null
+ * @param int $margin Bootstrap margin class value (1-5). Default: 1
+ * @return string HTML string containing the styled icon element
+ * 
+ * @example
+ * echo icon('check-circle', 1.5, '#51cf66', 2); // Green check icon, 1.5rem, margin-2
+ */
 function icon($icon = "question-circle", $rem = 1, $color = Null, $margin = 1) {
   $style = "";
   if ($color !== Null) {
@@ -14,9 +26,20 @@ function icon($icon = "question-circle", $rem = 1, $color = Null, $margin = 1) {
   return "<i class='bi bi-{$icon} m-{$margin}' style='{$style}'></i>";
 }
 
-/* ===================================================================== */
-/*                            FUNCTION: alert                            */
-/* ===================================================================== */
+/**
+ * Generate a Bootstrap Alert component
+ * 
+ * Creates a dismissible Bootstrap alert box with contextual styling and icons.
+ * Automatically selects appropriate icon based on alert type (danger, warning, success, info).
+ *
+ * @param string $message The message text to display in the alert
+ * @param string $type The alert type: 'success', 'danger', 'warning', or 'info'. Default: 'success'
+ * @return string HTML string containing a complete alert component
+ * 
+ * @example
+ * echo alert('Operation completed!', 'success');
+ * echo alert('An error occurred!', 'danger');
+ */
 function alert($message, $type = 'success') {
   $icon = "";
   if ($type == "danger") {
@@ -39,9 +62,21 @@ function alert($message, $type = 'success') {
   ";
 }
 
-/* ───────────────────────────────────────────────────────────────────── */
-/*                   FUNCTION:    spinner                                */
-/* ───────────────────────────────────────────────────────────────────── */
+/**
+ * Generate a loading spinner component
+ * 
+ * Creates a styled spinner animation with accompanying text for loading states.
+ * Supports different spinner types (border, grow) and Bootstrap color classes.
+ *
+ * @param string $text The text to display below the spinner
+ * @param string $type The spinner type: 'border' or 'grow'. Default: 'border'
+ * @param string $color Bootstrap color class: 'primary', 'success', 'danger', etc. Default: 'primary'
+ * @return string HTML string containing the spinner component
+ * 
+ * @example
+ * echo spinner('Loading...', 'border', 'primary');
+ * echo spinner('Processing', 'grow', 'success');
+ */
 function spinner(string $text, string $type = "border", string $color = "primary") {
   return '
       <div class="spinner-container">
@@ -53,14 +88,19 @@ function spinner(string $text, string $type = "border", string $color = "primary
   ';
 }
 
-/* ===================================================================== */
-/*                        FUNCTION: sanitizeString                       */
-/* ===================================================================== */
 /**
- * Cleans a string.
+ * Sanitize a string for URL-friendly slugs
+ * 
+ * Converts spaces to hyphens, removes special characters, and collapses multiple
+ * consecutive hyphens into single hyphens. Useful for creating URL slugs and 
+ * valid HTML identifiers.
  *
- * @param string $string The string to clean.
- * @return string The cleaned string.
+ * @param string $string The string to sanitize
+ * @return string The sanitized string with only alphanumeric characters and hyphens
+ * 
+ * @example
+ * sanitizeString('Hello World!');      // Returns: 'hello-world'
+ * sanitizeString('Test--String');      // Returns: 'test-string'
  */
 function sanitizeString($string) {
   $string = str_replace(' ', '-', $string);                 // Replaces all spaces with hyphens.
@@ -69,15 +109,18 @@ function sanitizeString($string) {
   return $string;
 }
 
-/* ===================================================================== */
-/*                         FUNCTION: cleanString                         */
-/* ===================================================================== */
 /**
- * Cleans the random string and displays it.
+ * Display a cleaned and trimmed random string
+ * 
+ * Outputs an HTML h4 heading containing a random string with its length.
+ * Primarily used for displaying generated random strings to users.
  *
- * @param string $randomString The random string to clean and display.
- * @param int $digitsint The number of characters in the random string.
- * @return void
+ * @param string $randomString The random string to clean and display
+ * @param int|null $digitsint The length/digit count to display in the output
+ * @return void Echoes the formatted output directly
+ * 
+ * @example
+ * cleanString('abc123xyz', 9); // Outputs: "Your 9 character string: abc123xyz"
  */
 function cleanString($randomString, $digitsint = null) {
   $randomString = $randomString;
@@ -87,14 +130,17 @@ function cleanString($randomString, $digitsint = null) {
   echo "</h4>";
 }
 
-/* ===================================================================== */
-/*                         FUNCTION: returnClean                         */
-/* ===================================================================== */
 /**
- * Cleans the random string and returns it.
+ * Clean and return a trimmed string
+ * 
+ * Trims whitespace from a string and returns it. Useful as a simple string
+ * cleaning function for preprocessing user input or generated strings.
  *
- * @param string $randomString The random string to clean and return.
- * @return string The cleaned random string.
+ * @param string $randomString The string to clean and return
+ * @return string The cleaned and trimmed string
+ * 
+ * @example
+ * $clean = returnClean('  hello world  '); // Returns: 'hello world'
  */
 function returnClean($randomString) {
   $randomString = $randomString;
@@ -102,14 +148,24 @@ function returnClean($randomString) {
   return print_r($randomString, True);
 }
 
-/* ===================================================================== */
-/*                         FUNCTION: formatOutput                        */
-/* ===================================================================== */
 /**
- * Formats the output.
+ * Format output content with styling and optional response type handling
+ * 
+ * Converts various content types into formatted HTML output with Bootstrap
+ * styling. Handles arrays (JSON encoding), optional HTML escaping, and line
+ * break conversion for text responses.
  *
- * @param string $response The response to print.
- * @return void
+ * @param string|array $response The response content to format. Arrays are JSON-encoded
+ * @param int $size The heading size (1-6) for HTML response format. Default: 4
+ * @param string $type Bootstrap color type for styling: 'success', 'danger', 'warning', 'info'. Default: 'success'
+ * @param string $responsetype Response format type: 'html' or 'text'. Default: 'html'
+ *                              'text' adds HTML escaping and nl2br conversion
+ * @return string Formatted HTML output, or trimmed text response
+ * 
+ * @example
+ * echo formatOutput("Success!", 4, "success");
+ * echo formatOutput(['key' => 'value'], 5, "info", "html");
+ * echo formatOutput("<b>Error</b>", 4, "danger", "text");
  */
 function formatOutput($response, $size = 4, $type = "success", $responsetype = "html") {
 
@@ -150,11 +206,21 @@ function formatOutput($response, $size = 4, $type = "success", $responsetype = "
 /*                           FUNCTION: str_rot                           */
 /* ===================================================================== */
 /**
- * Performs the ROT (rotate) operation on a string.
+ * Perform ROT (rotate cipher) transformation on a string
+ * 
+ * Rotates each letter in a string by n positions in the alphabet. Handles both
+ * uppercase and lowercase letters independently. ROT13 is a special case that
+ * uses PHP's built-in str_rot13() for efficiency.
  *
- * @param string $s The string to rotate.
- * @param int $n The number of rotations to perform.
- * @return string The rotated string.
+ * @param string $s The string to rotate
+ * @param int $n The number of positions to rotate (0-25). Default: 13 (ROT13)
+ *              Negative values wrap around. Values > 25 are modulo 26
+ * @return string The rotated string with non-letter characters unchanged
+ * 
+ * @example
+ * str_rot('hello', 13);  // Returns: 'uryyb' (ROT13)
+ * str_rot('hello', 1);   // Returns: 'ifmmp' (ROT1)
+ * str_rot('ABC', 3);     // Returns: 'DEF'
  */
 function str_rot($s, $n = 13) {
   static $letters = 'AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz';
@@ -167,15 +233,28 @@ function str_rot($s, $n = 13) {
 }
 
 
-/* ===================================================================== */
-/*                            FUNCTION: genStr                           */
-/* ===================================================================== */
 /**
- * Generates a random string.
+ * Generate a random string from specified character sets
+ * 
+ * Creates a random string of specified length using selected character sets:
+ * lowercase (l), uppercase (u), numbers (n), symbols (s), extended Unicode (e),
+ * and custom characters (c). Can combine multiple sets.
  *
- * @param string $charsets The character sets to use.
- * @param int $length The length of the string to generate.
- * @return string The generated string.
+ * @param string $charsets Flags for character sets to include:
+ *                         'l' = lowercase a-z
+ *                         'u' = uppercase A-Z
+ *                         'n' = numbers 0-9
+ *                         's' = symbols: !#¤%&/() = ?;: -_.,'\"*^<>{}[]@~+´`
+ *                         'e' = extended: ƒ†‡™•
+ *                         'c' = custom characters (requires $cchars parameter)
+ * @param int|null $length The length of the string to generate. Required
+ * @param string|null $cchars Custom characters to include when 'c' is in $charsets
+ * @return string Random string of specified length, or "[empty]" if no valid character sets
+ * 
+ * @example
+ * genStr('lun', 12);           // 12 chars: lowercase, uppercase, numbers
+ * genStr('luns', 20);          // 20 chars: lowercase, uppercase, numbers, symbols
+ * genStr('lunc', 15, '!@#');   // 15 chars: lowercase, uppercase, numbers, custom
  */
 function genStr(string $charsets, int $length = Null, $cchars = Null) {
     $charsets = str_split($charsets);
@@ -198,8 +277,22 @@ function genStr(string $charsets, int $length = Null, $cchars = Null) {
 
 
 /* ───────────────────────────────────────────────────────────────────── */
-/*                FUNCTION:      spinWheel                               */
-/* ───────────────────────────────────────────────────────────────────── */
+/**
+ * Spin a wheel and randomly select items
+ * 
+ * Simulates spinning a wheel by randomly selecting items from a list.
+ * Can return unique selections or allow duplicates. Useful for games,
+ * raffles, or random selections.
+ *
+ * @param array|null $wheelItems Array of items to select from. Default: empty
+ * @param int $spins Number of times to spin (1-100). Default: 1
+ * @param bool $unique If true, ensure each spin selects a unique item. Default: false
+ * @return string|array Formatted HTML output containing selected items, or error message
+ * 
+ * @example
+ * spinWheel(['Item1', 'Item2', 'Item3'], 1);     // Single spin
+ * spinWheel(['A', 'B', 'C'], 3, true);           // 3 spins, all unique
+ */
 function spinWheel(?array $wheelItems = [], int $spins = 1, bool $unique = False) {
 
   if (empty($wheelItems)) {
@@ -245,9 +338,23 @@ function spinWheel(?array $wheelItems = [], int $spins = 1, bool $unique = False
   return formatOutput($output);
 }
 
-/* ───────────────────────────────────────────────────────────────────── */
-/*                   FUNCTION:   submitBtn                               */
-/* ───────────────────────────────────────────────────────────────────── */
+/**
+ * Generate an HTML submit button element
+ * 
+ * Creates a styled Bootstrap submit button with icon and text. Commonly used
+ * for tool action buttons in forms.
+ *
+ * @param string $value The value attribute sent with form submission. Default: ""
+ * @param string $name The name attribute of the button. Default: "action"
+ * @param string $text The button text/label to display. Default: "Generate"
+ * @param string $icon Bootstrap icon name (without 'bi-' prefix), or 'dice' for special styling. Default: "dice"
+ * @param string $size Bootstrap button size class: 'sm', 'lg'. Default: "lg"
+ * @return string HTML submit button element
+ * 
+ * @example
+ * echo submitBtn('hash', 'action', 'Generate Hash', 'key-fill');
+ * echo submitBtn('spin', 'action', 'Spin', 'dice', 'lg');
+ */
 function submitBtn(string $value = "", string $name = "action", string $text = "Generate", string $icon = "dice", string $size = "lg") {
   $icon = ($icon == "dice") ? "<span class='dice'></span> " : icon($icon);
   return '
@@ -322,8 +429,24 @@ function submitBtn(string $value = "", string $name = "action", string $text = "
 
 
 /* ───────────────────────────────────────────────────────────────────── */
-/*                     FUNCTION:   numGen                                */
-/* ───────────────────────────────────────────────────────────────────── */
+/**
+ * Generate a random number within a range
+ * 
+ * Generates a cryptographically secure random integer between two values.
+ * Optionally accepts a seed for reproducible random numbers. Validates input
+ * to ensure numeric values and reasonable limits.
+ *
+ * @param int $from Starting value of the range (lower bound)
+ * @param int $to Ending value of the range (upper bound)
+ * @param string|null $seed Optional seed for mt_srand() for reproducibility. 
+ *                           Must be a valid digit string ≤ 17 chars. Default: null
+ * @return int|string Random integer within range, or alert string on error
+ * @throws void Dies if numbers exceed 20 digits or aren't numeric
+ * 
+ * @example
+ * numGen(1, 100);           // Random number between 1-100
+ * numGen(1, 1000, '12345'); // Random number with specific seed
+ */
 function numGen(int $from, int $to, string $seed = Null) {
   $from = (int)$from;
   $to   = (int)$to;
@@ -349,9 +472,20 @@ function numGen(int $from, int $to, string $seed = Null) {
   return $num;
 }
 
-/* ===================================================================== */
-/*                             FUNCTION: calc                            */
-/* ===================================================================== */
+/**
+ * Simple mathematical expression calculator
+ * 
+ * Evaluates basic arithmetic expressions with +, -, *, and / operators.
+ * Sanitizes input to prevent injection attacks, handles errors gracefully.
+ *
+ * @param string $input Mathematical expression to evaluate (e.g., "2+3*4")
+ * @return string|array Formatted result or alert message on error
+ * 
+ * @example
+ * calc('2+3');        // Returns formatted output: 5
+ * calc('100/2');      // Returns formatted output: 50
+ * calc('(2+3)*4');    // Non-evaluable, returns error alert
+ */
 function calc($input) {
   $input = trim($input);
   if (empty($input)) {
@@ -373,16 +507,40 @@ function calc($input) {
   }
 }
 
-# =========================================================================== //
-#                                FUNCTION: is_ip                              //
-# =========================================================================== //
+/**
+ * Validate if a string is a valid IPv4 or IPv6 address
+ * 
+ * Uses PHP's FILTER_VALIDATE_IP to check for valid IP addresses.
+ * Supports both IPv4 (192.168.1.1) and IPv6 (2001:db8::1) formats.
+ *
+ * @param string $s String to validate as IP address
+ * @return bool True if valid IP address, false otherwise
+ * 
+ * @example
+ * is_ip('192.168.1.1');       // Returns: true
+ * is_ip('2001:db8::1');       // Returns: true
+ * is_ip('invalid.text');      // Returns: false
+ */
 function is_ip(string $s): bool {
   return filter_var($s, FILTER_VALIDATE_IP) !== false; // v4 or v6
 }
 
-# =========================================================================== //
-#                             FUNCTION: is_hostname                           //
-# =========================================================================== //
+/**
+ * Validate if a string is a valid hostname or domain name
+ * 
+ * Validates hostnames according to RFC specifications. Handles internationalized
+ * domain names (IDN) if the intl PHP extension is available. Allows FQDN with
+ * trailing dot.
+ *
+ * @param string $s Hostname or domain name to validate (e.g., 'example.com' or 'host.example.com.')
+ * @return bool True if valid hostname, false otherwise
+ * 
+ * @example
+ * is_hostname('example.com');        // Returns: true
+ * is_hostname('subdomain.example.com'); // Returns: true
+ * is_hostname('invalid_host');       // Returns: false (contains underscore)
+ * is_hostname('münchen.de');         // Returns: true (IDN support)
+ */
 function is_hostname(string $s): bool {
   // allow a trailing dot (FQDN style) for validation purposes
   $s = rtrim($s, '.');
@@ -398,9 +556,22 @@ function is_hostname(string $s): bool {
   return filter_var($ascii, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME) !== false;
 }
 
-/* ────────────────────────────────────────────────────────────────────────── */
-/*                       FUNCTION:   ip2hex                                   */
-/* ────────────────────────────────────────────────────────────────────────── */
+/**
+ * Convert an IPv4 or IPv6 address to hexadecimal format
+ * 
+ * Converts an IP address to its hexadecimal representation. Can optionally
+ * split the hex output into byte pairs with a custom delimiter.
+ *
+ * @param string $ip IPv4 (192.168.1.1) or IPv6 (2001:db8::1) address
+ * @param bool $split If true, split hex into byte pairs. Default: false
+ * @param string $delimiter Separator for split hex pairs (e.g., ':', '-'). Default: ":"
+ * @return string Hexadecimal representation of the IP address
+ * 
+ * @example
+ * ip2hex('192.168.1.1');                   // Returns: 'c0a80101'
+ * ip2hex('192.168.1.1', true);             // Returns: 'c0:a8:01:01'
+ * ip2hex('192.168.1.1', true, '-');        // Returns: 'c0-a8-01-01'
+ */
 function ip2hex ($ip, $split = False, $delimiter = ":") {
   $hex = bin2hex(inet_pton($ip));
   if ($split) {
@@ -410,18 +581,42 @@ function ip2hex ($ip, $split = False, $delimiter = ":") {
   return $hex;
 }
 
-/* ────────────────────────────────────────────────────────────────────────── */
-/*                       FUNCTION:   hex2ip                                   */
-/* ────────────────────────────────────────────────────────────────────────── */
+/**
+ * Convert hexadecimal format back to an IPv4 or IPv6 address
+ * 
+ * Reverses the ip2hex conversion by taking a hex string and converting it
+ * back to IP address notation. Removes any non-hex characters for flexibility.
+ *
+ * @param string $hex Hexadecimal representation of an IP (e.g., 'c0a80101' or 'c0:a8:01:01')
+ * @return string IPv4 or IPv6 address in standard notation
+ * 
+ * @example
+ * hex2ip('c0a80101');        // Returns: '192.168.1.1'
+ * hex2ip('c0:a8:01:01');     // Returns: '192.168.1.1'
+ */
 function hex2ip ($hex) {
   $hex = preg_replace('/[^a-f0-9]/i', '', $hex);  // Remove non-hex characters
   $ip  = inet_ntop(hex2bin($hex));
   return $ip;
 }
 
-/* ────────────────────────────────────────────────────────────────────────── */
-/*                   FUNCTION:   cidr2range                                   */
-/* ────────────────────────────────────────────────────────────────────────── */
+/**
+ * Convert CIDR notation to a range of IP addresses
+ * 
+ * Expands CIDR notation (e.g., '192.168.1.0/24') to the starting and ending
+ * IP addresses it represents. Handles both IPv4 and IPv6 notation.
+ *
+ * @param string $cidr IP address in CIDR notation (e.g., '10.0.0.0/8' or '2001:db8::/32')
+ * @return array|false Array with keys: 'start', 'end', 'cidr', 'total' IP count, or false on invalid input
+ * 
+ * @example
+ * cidr2range('192.168.1.0/24');  // Returns: [
+ *                                //   'start' => '192.168.1.0',
+ *                                //   'end' => '192.168.1.255',
+ *                                //   'cidr' => '192.168.1.0/24',
+ *                                //   'total' => 256
+ *                                // ]
+ */
 function cidr2range($cidr) {
   if (strpos($cidr, '/') === False) {
     return False;
@@ -450,15 +645,20 @@ function cidr2range($cidr) {
 }
 
 
-/* ────────────────────────────────────────────────────────────────────────── */
-/*                       FUNCTION: range2cidr                                 */
-/* ────────────────────────────────────────────────────────────────────────── */
 /**
- * Converts an IP range to multiple CIDR notations if necessary.
+ * Convert an IP address range to CIDR notation
+ * 
+ * Takes a start and end IP address and calculates the smallest set of CIDR
+ * blocks that cover that entire range. Useful for network planning and
+ * allocation.
  *
- * @param string $start The starting IP address of the range.
- * @param string $end The ending IP address of the range.
- * @return array An array of CIDR notations covering the IP range.
+ * @param string $start Starting IPv4 address of the range (e.g., '192.168.1.0')
+ * @param string $end Ending IPv4 address of the range (e.g., '192.168.1.255')
+ * @return array|false Array of CIDR notations covering the range, or false on invalid input
+ * 
+ * @example
+ * range2cidr('192.168.1.0', '192.168.1.255');  // Returns: ['192.168.1.0/24']
+ * range2cidr('10.0.0.0', '10.255.255.255');    // Returns: ['10.0.0.0/8']
  */
 function range2cidr($start, $end) {
   if (
@@ -501,9 +701,30 @@ function range2cidr($start, $end) {
   return $ip;
 }
 
-/* ────────────────────────────────────────────────────────────────────────── */
-/*                       FUNCTION: subnetmask                                 */
-/* ────────────────────────────────────────────────────────────────────────── */
+/**
+ * Calculate subnet information from an IP address and subnet mask
+ * 
+ * Given an IPv4 address and subnet mask, calculates network information including
+ * network address, broadcast address, usable IP range, CIDR notation, and total
+ * usable addresses.
+ *
+ * @param string $ip IPv4 address within the subnet (e.g., '192.168.1.100')
+ * @param string $subnet Subnet mask in IPv4 notation (e.g., '255.255.255.0')
+ * @return array|false Array with keys: 'network', 'broadcast', 'start', 'end', 'total', 'total_ips', 'subnet', 'cidr', 'usable_ips'
+ *                     or false if invalid IP or subnet
+ * 
+ * @example
+ * subnetmask('192.168.1.100', '255.255.255.0');  // Returns: [
+ *                                                  //   'network' => '192.168.1.0',
+ *                                                  //   'broadcast' => '192.168.1.255',
+ *                                                  //   'start' => '192.168.1.1',
+ *                                                  //   'end' => '192.168.1.254',
+ *                                                  //   'total' => 254,
+ *                                                  //   'subnet' => '255.255.255.0',
+ *                                                  //   'cidr' => '/24',
+ *                                                  //   'usable_ips' => 254
+ *                                                  // ]
+ */
 function subnetmask($ip, $subnet) {
   if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === False || filter_var($subnet, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === False) {
     return False;
