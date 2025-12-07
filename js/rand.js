@@ -316,23 +316,28 @@ $(document).ready(function() {
     /*                            Changelog modal                            */
     /* ===================================================================== */
     var changelog = $("#changelogMarkdown");
-    // Configure marked to allow HTML and use a custom renderer for blockquotes
-    const renderer = new marked.Renderer();
-    const originalBlockquote = renderer.blockquote;
     
+    // Get the raw markdown text
+    let markdownText = changelog.text();
+    
+    // Pre-process: protect <details> tags by converting to a safe marker
+    markdownText = markdownText.replace(/<details>/g, '___DETAILS_OPEN___');
+    markdownText = markdownText.replace(/<\/details>/g, '___DETAILS_CLOSE___');
+    markdownText = markdownText.replace(/<summary>/g, '___SUMMARY_OPEN___');
+    markdownText = markdownText.replace(/<\/summary>/g, '___SUMMARY_CLOSE___');
+    
+    // Parse with marked
     marked.setOptions({
         breaks: true,
-        gfm: true,
-        renderer: renderer
+        gfm: true
     });
+    let html = marked.parse(markdownText);
     
-    let html = marked.parse(changelog.text());
-    
-    // Post-process to handle <details> tags that might have been escaped
-    html = html.replace(/&lt;details&gt;/g, '<details>');
-    html = html.replace(/&lt;\/details&gt;/g, '</details>');
-    html = html.replace(/&lt;summary&gt;/g, '<summary>');
-    html = html.replace(/&lt;\/summary&gt;/g, '</summary>');
+    // Post-process: restore the <details> tags
+    html = html.replace(/___DETAILS_OPEN___/g, '<details>');
+    html = html.replace(/___DETAILS_CLOSE___/g, '</details>');
+    html = html.replace(/___SUMMARY_OPEN___/g, '<summary>');
+    html = html.replace(/___SUMMARY_CLOSE___/g, '</summary>');
     
     changelog.html(html);
 
