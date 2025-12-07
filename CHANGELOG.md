@@ -37,6 +37,8 @@
 
 </details>
 
+---
+
 ## **v1.2.1**
 
 ### 🎉 Major Features

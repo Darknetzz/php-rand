@@ -316,6 +316,11 @@ $(document).ready(function() {
     /*                            Changelog modal                            */
     /* ===================================================================== */
     var changelog = $("#changelogMarkdown");
+    // Configure marked to allow HTML for collapsible details
+    marked.setOptions({
+        breaks: true,
+        gfm: true
+    });
     changelog.html(marked.parse(changelog.text()));
 
     /* ===================================================================== */
