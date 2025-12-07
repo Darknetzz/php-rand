@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Random Button Feature Test</title>
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/css/tabler.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="style.css">
+    
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/js/tabler.min.js"></script>
+</head>
+<body class="theme-dark">
+    <div class="container mt-5">
+        <h1 class="mb-4">🎲 Random Data Button Feature Test</h1>
+        
+        <div class="alert alert-info">
+            <strong>ℹ️ How it works:</strong> Click the shuffle button (🔀) next to any input field to generate random data!
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <h3>Test Various Input Types</h3>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label"><strong>Text Input</strong></label>
+                        <input type="text" class="form-control" placeholder="Enter text...">
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label class="form-label"><strong>Number Input</strong></label>
+                        <input type="number" class="form-control" placeholder="Enter number...">
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label class="form-label"><strong>Email Input</strong></label>
+                        <input type="text" class="form-control" placeholder="Enter email address...">
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label class="form-label"><strong>URL Input</strong></label>
+                        <input type="text" class="form-control" placeholder="Enter URL link...">
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label class="form-label"><strong>IP Address</strong></label>
+                        <input type="text" class="form-control" placeholder="Enter IP address...">
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label class="form-label"><strong>Hex Hash</strong></label>
+                        <input type="text" class="form-control" placeholder="Enter hex hash value...">
+                    </div>
+                    
+                    <div class="col-12">
+                        <label class="form-label"><strong>Textarea (JSON)</strong></label>
+                        <textarea class="form-control" rows="8" placeholder="Enter JSON data..."></textarea>
+                    </div>
+                    
+                    <div class="col-12">
+                        <label class="form-label"><strong>Textarea (Code)</strong></label>
+                        <textarea class="form-control" rows="8" placeholder="Enter code snippet..."></textarea>
+                    </div>
+                    
+                    <div class="col-12">
+                        <label class="form-label"><strong>Textarea (General Text)</strong></label>
+                        <textarea class="form-control" rows="6" placeholder="Enter your text here..."></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <h3>Feature Highlights</h3>
+            </div>
+            <div class="card-body">
+                <ul>
+                    <li>✅ <strong>Smart Detection:</strong> Automatically determines data type based on placeholder text</li>
+                    <li>✅ <strong>Visual Feedback:</strong> Button changes to checkmark on click</li>
+                    <li>✅ <strong>Flexible Layout:</strong> Works with both inline inputs and textareas</li>
+                    <li>✅ <strong>No Configuration:</strong> Automatically applies to all eligible inputs</li>
+                    <li>✅ <strong>Context-Aware:</strong> Generates appropriate data (emails, URLs, IPs, JSON, code, etc.)</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/rand.js"></script>
+    <script>
+        $(document).ready(function() {
+            // Initialize random buttons
+            addRandomDataButtons();
+            
+            console.log('Random data buttons initialized!');
+        });
+    </script>
+</body>
+</html>

@@ -1,2 +1,5 @@
+# .env
 .history
 .archive
+debug.log
+settings.json

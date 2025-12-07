@@ -103,6 +103,21 @@ $navbarItems = [
                 "formalName" => "Markdown",
                 "icon"       => icon('markdown')
             ],
+            "minify" => [
+                "name"       => "minify",
+                "formalName" => "Minify",
+                "icon"       => icon('file-earmark-code')
+            ],
+            "metaphone" => [
+                "name"       => "metaphone",
+                "formalName" => "Metaphone",
+                "icon"       => icon("soundwave")
+            ],
+            "currency" => [
+                "name"       => "currency",
+                "formalName" => "Currency Converter",
+                "icon"       => icon('currency-exchange')
+            ],
         ],
     ],
     "misc" => [
@@ -122,13 +137,18 @@ $navbarItems = [
             ],
             "networking" => [
                 "name"       => "networking",
-                "formalName" => "IP Tools",
+                "formalName" => "Network Tools",
                 "icon"       => icon('globe')
             ],
-            "minify" => [
-                "name"       => "minify",
-                "formalName" => "Minify",
-                "icon"       => icon('file-earmark-code')
+            "levenshtein" => [
+                "name"       => "levenshtein",
+                "formalName" => "Levenshtein",
+                "icon"       => icon("intersect")
+            ],
+            "diff" => [
+                "name"       => "diff",
+                "formalName" => "Diff",
+                "icon"       => icon("file-earmark-diff"),
             ],
         ],
     ],

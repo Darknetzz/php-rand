@@ -1,53 +1,47 @@
 <div id="gen_string" class="content">
 
-    <!--
-    /* ───────────────────────────────────────────────────────────────────── */
-    /*                                 GENERATOR                             */
-    /* ───────────────────────────────────────────────────────────────────── */
-    -->
     <div class="card">
         <h1 class="card-header">String Generator</h1>
         <div class="card-body">
-            <span class="description">This will generate a string with the charset defined.</span>
+            <span class="description">Generate random strings with customizable character sets.</span>
             <hr>
             <form class="form" action="gen.php" method="POST" id="stringgen" data-action="stringgen">
 
-                <div class="input-group mb-3">
-                    <!-- <span class="input-group-text">Length</span> -->
-                    <div class="form-floating">
-                        <input type="number" name="digits" class="form-control" id="stringgenLength" value="10">
-                        <label for="stringgenLength">Length</label>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label for="stringgenLength" class="form-label"><strong>String Length</strong></label>
+                        <input type="number" name="digits" class="form-control form-control-lg" id="stringgenLength" value="10" min="1" style="font-family: monospace; font-size: 1.5rem;">
                     </div>
-                    <div class="form-floating">
-                        <input type="number" name="strings" class="form-control" id="strings" value="1">
-                        <label for="strings">Amount of strings to generate</label>
+                    <div class="col-md-6">
+                        <label for="strings" class="form-label"><strong>Number of Strings</strong></label>
+                        <input type="number" name="strings" class="form-control form-control-lg" id="strings" value="1" min="1" style="font-family: monospace; font-size: 1.5rem;">
                     </div>
                 </div>
 
                 <?php
                 $opts = [
                   "n" => [
-                    "desc" =>"Contain numbers",
+                    "desc" =>"Numbers",
                     "checked" => "checked",
                     "chars" => "0-9",
                   ],
                   "l" => [
-                    "desc" =>"Contain lowercase letters",
+                    "desc" =>"Lowercase letters",
                     "checked" => "checked",
                     "chars" => "a-z",
                   ],
                   "u" => [
-                    "desc" =>"Contain uppercase letters",
+                    "desc" =>"Uppercase letters",
                     "checked" => "checked",
                     "chars" => "A-Z",
                   ],
                   "s" => [
-                    "desc" =>"Contain symbols",
+                    "desc" =>"Symbols",
                     "checked" => "",
                     "chars" => "!#¤%&\/() = ?;: -_.,'\"*^<>{}[]@~+´`",
                   ],
                   "e" => [
-                    "desc" =>"Contain extended symbols",
+                    "desc" =>"Extended symbols",
                     "checked" => "",
                     "chars" => "ƒ†‡™•",
                   ],
@@ -59,9 +53,9 @@
                 ];
 
                 echo '
-                <div class="card border-secondary">
-                <h5 class="card-header text-bg-secondary">Options</h5>
-                <div class="card-body">
+                <div class="card border-primary mb-3">
+                <h5 class="card-header bg-primary text-white">Character Set Options</h5>
+                <div class="card-body" style="padding: 20px;">
                 ';
                 foreach ($opts as $opt => $data) {
                   $checked  = $data["checked"];
@@ -70,35 +64,45 @@
 
                   echo '<input type="hidden" name="'.$opt.'" value="0">';
                   echo '
-                  <div class="d-flex justify-content-between">
-                    <div>
-                      <label><input type="checkbox" id="'.$opt.'" name="'.$opt.'" value="1" '.$checked.'> '.$desc.'</label>
+                  <div class="d-flex justify-content-between align-items-center mb-3 p-2" style="background-color: rgba(0,0,0,0.03); border-radius: 0.25rem;">
+                    <div class="form-check form-switch">
+                      <input type="checkbox" class="form-check-input" id="'.$opt.'" name="'.$opt.'" value="1" '.$checked.'>
+                      <label class="form-check-label" for="'.$opt.'"><strong>'.$desc.'</strong></label>
                     </div>
                     <div>
-                      '.(!empty($chars) ? "<span class='badge text-bg-secondary'>".$chars."</span>" : "").'
+                      '.(!empty($chars) ? "<code class='px-3 py-2' style='font-size: 1rem; background-color: #e9ecef; color: #212529; border-radius: 0.25rem;'>".$chars."</code>" : "").'
                     </div>
-                  </div>
-                  <br>';
+                  </div>';
                 }
                 echo '
                 <div id="cchars" style="display:none;">
-                <textarea class="form-control border-secondary" name="cchars" placeholder="Input custom characters here"></textarea>
-                <span class="form-text">
-                  Your custom characters will be appended to the character set.<br>
-                  If you want to generate a string that contains only your custom characters,
-                  uncheck all other options.
-                </span>
+                <label class="form-label mt-2"><strong>Custom Characters</strong></label>
+                <textarea class="form-control" name="cchars" placeholder="Enter your custom characters here" rows="3" style="font-family: monospace;"></textarea>
+                <div class="form-text mt-2">
+                  <small>Your custom characters will be added to the character set. To use only custom characters, uncheck all other options above.</small>
+                </div>
                 </div>
                 </div>
                 </div>
                 ';
                 ?>
 
-
                 <?= submitBtn("stringgen") ?>
-                <div class="responseDiv" id="stringgenresponse"></div>
+                
+                <div class="responseDiv mt-3" id="stringgenresponse" style="border: 1px solid #dee2e6; padding: 20px; min-height: 100px; background-color: rgba(0,0,0,0.1); border-radius: 0.25rem; font-family: monospace; word-break: break-all;"></div>
             </form>
         </div>
     </div>
 
 </div>
+
+<script>
+    // Toggle custom characters textarea
+    $("#c").change(function() {
+        if ($(this).is(":checked")) {
+            $("#cchars").slideDown();
+        } else {
+            $("#cchars").slideUp();
+        }
+    });
+</script>

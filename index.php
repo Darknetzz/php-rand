@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en" data-bs-theme="dark">
-<?php header('Content-Type: text/html; charset=utf-8'); ?>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <meta http-equiv="Content-type" content="text/html; charset=utf-8" />
 
@@ -30,8 +29,10 @@
 <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/go.min.js"></script> -->
 
 
-<script src="https://cdn.jsdelivr.net/gh/WebCoder49/code-input@2.2/code-input.min.js"></script>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/WebCoder49/code-input@2.2/code-input.min.css">
+<!-- <script src="https://cdn.jsdelivr.net/gh/WebCoder49/code-input@2.2/code-input.min.js"></script> -->
+<!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/WebCoder49/code-input@2.2/code-input.min.css"> -->
+<script src="https://cdn.jsdelivr.net/npm/@webcoder49/code-input@2.7.1/code-input.min.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/@webcoder49/code-input@2.7.1/code-input.min.css" rel="stylesheet">
 
 <!-- Plugins -->
 <script src="js/hljs_autodetect.js"></script>
@@ -53,7 +54,7 @@
         require_once("includes/navbar.php");
     ?>
     <br>
-    <div class="container">
+    <div class="container pt-5">
 
 
 
@@ -71,10 +72,10 @@ foreach (glob("modules/*.php") as $module) {
     </div> <!-- CONTAINER END -->
 
     <div class="modal fade" tabindex="-1" id="changelogModal">
-        <div class="modal-dialog" role="document">
+        <div class="modal-dialog modal-xl" role="document">
             <div class="modal-content" data-backdrop="static">
                 <h1 class="modal-header">Changelog</h1>
-                <div class="modal-body" id="changelogMarkdown"><?= file_get_contents("CHANGELOG.md") ?></div>
+                <div class="modal-body" id="changelogMarkdown" style="max-height: 70vh; overflow-y: auto;"><?= htmlspecialchars(file_get_contents("CHANGELOG.md")) ?></div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 </div>
@@ -91,6 +92,63 @@ foreach (glob("modules/*.php") as $module) {
 
 <script src="js/rand.js"></script>
 
+<script>
+// Copy to clipboard function with fallback and explicit button target
+function copyToClipboard(elementId, btnEl) {
+    const element = document.getElementById(elementId);
+    if (!element) return;
+    const text = element.textContent || "";
+    const btn = btnEl || (document.activeElement?.closest && document.activeElement.closest('button')) || null;
 
+    const setFeedback = (ok) => {
+        if (!btn) return;
+        const originalText = btn.getAttribute('data-original-text') || btn.innerHTML;
+        btn.setAttribute('data-original-text', originalText);
+        if (ok) {
+            btn.innerHTML = '<i class="bi bi-check"></i> Copied!';
+            btn.classList.add('btn-success');
+            btn.classList.remove('btn-outline-light');
+        } else {
+            btn.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Failed';
+            btn.classList.add('btn-danger');
+            btn.classList.remove('btn-outline-light');
+        }
+        setTimeout(() => {
+            btn.innerHTML = originalText;
+            btn.classList.remove('btn-success', 'btn-danger');
+            btn.classList.add('btn-outline-light');
+        }, 1600);
+    };
+
+    // Modern API path
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => setFeedback(true)).catch(() => {
+            // Fallback if HTTPS or permissions blocked
+            fallbackCopy(text, setFeedback);
+        });
+        return;
+    }
+
+    // Fallback for older browsers or non-secure origins
+    fallbackCopy(text, setFeedback);
+}
+
+function fallbackCopy(text, setFeedback) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.top = '-1000px';
+    ta.style.left = '-1000px';
+    document.body.appendChild(ta);
+    ta.select();
+    try {
+        const ok = document.execCommand('copy');
+        setFeedback(ok);
+    } catch (e) {
+        setFeedback(false);
+    }
+    document.body.removeChild(ta);
+}
+</script>
 
 </html>

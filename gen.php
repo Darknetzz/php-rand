@@ -2,12 +2,12 @@
 header('Content-Type: text/html; charset=utf-8');
 
 require_once("includes/_includes.php");
+require_once("includes/handlers_functional.php");
 
 do {
-
-/* ===================================================================== */
-/*                            NOTE: Debug info                           */
-/* ===================================================================== */
+  /* ===================================================================== */
+  /*                            NOTE: Debug info                           */
+  /* ===================================================================== */
   $rVars = trim(json_encode($_REQUEST, JSON_PRETTY_PRINT));
   $debug = "
     <a class='btn btn-warning' data-bs-toggle='collapse' data-bs-target='#debugCard' aria-expanded='false' aria-controls='debugCard'>".icon('bug-fill')."</a>
@@ -23,20 +23,27 @@ do {
     </div>
   ";
 
-  // echo "<hr>";
   if (!isset($_POST['action'])) {
-    die("No action specified.");
+    break;
   }
 
-  # Return type (html / text)
-  $responsetype = "html";
-  if (!empty($_POST['responsetype'])) {
-    $responsetype = $_POST['responsetype'];
+  $responsetype = $_POST['responsetype'] ?? 'html';
+  
+  // Try to execute handler
+  $output = executeHandler($_POST);
+  
+  if ($output !== null) {
+    echo $output;
+    if ($responsetype === 'html') {
+      echo $debug;
+    }
+    break;
   }
 
+  // Fall back to legacy inline handlers if no handler found
   $action = $_POST['action'];
-  $tool   = ($_POST['tool'] ?? Null);
-  $input  = ($_POST['input'] ?? Null);
+  $tool   = $_POST['tool'] ?? null;
+  $input  = $_POST['input'] ?? null;
 
 
 /* ===================================================================== */
@@ -69,9 +76,9 @@ do {
 
     $from_unit_name = $units[$timefrom_unit][0];
     $to_unit_name   = $units[$timeto_unit][0];
-    $converted      = ($time * $timefrom) / $timeto;
-    $converted      = "$time $from_unit_name is equal to <b>$converted $to_unit_name</b>";
-    echo formatOutput($converted);
+    $converted      = round(($time * $timefrom) / $timeto, 6);
+    
+    echo "<div style='margin-bottom: 15px;'>" . copyableOutput($converted . " " . $to_unit_name, "$time $from_unit_name") . "</div>";
   }
 
 
@@ -102,21 +109,44 @@ do {
     for ($i = 0; $i < $strings; $i++) {
       $thisRandomString = $randomString[] = genStr($charsets, $length, $_POST['cchars']);
       $collapsibleText .= "
-              <b>String: $thisRandomString
-              <b>SHA1:</b> ".hash('sha1', $thisRandomString)."<br>
-              <b>SHA256:</b> ".hash('sha256', $thisRandomString)."<br>
-              <b>SHA512:</b> ".hash('sha512', $thisRandomString)."<br>
-              <b>MD5:</b> ".md5($thisRandomString)."<br>
-              <b>Possible combinations:</b> ".number_format(strlen($charsets)**$length)." (".strlen($charsets)."^$length)
-              <hr>
-              ";
+
+            <table class='table table-default'>
+
+              <tr>
+                <td>String</td>
+                <td><pre>$thisRandomString</pre></td>
+              </tr>
+
+              <tr>
+                <td>MD5</td>
+                <td><pre>".hash('md5', $thisRandomString)."</pre></td>
+              </tr>
+              <tr>
+                <td>SHA1</td>
+                <td><pre>".hash('sha1', $thisRandomString)."</pre></td>
+              </tr>
+              <tr>
+                <td>SHA256</td>
+                <td><pre>".hash('sha256', $thisRandomString)."</pre></td>
+              </tr>
+              <tr>
+                <td>SHA512</td>
+                <td><pre>".hash('sha512', $thisRandomString)."</pre></td>
+              </tr>
+
+              <tr>
+                <td>Possible combinations</td>
+                <td><pre>".number_format(strlen($charsets)**$length)." (".strlen($charsets)."^$length)</pre></td>
+              </tr>
+
+            </table>";
     }
 
     $charactersLength = strlen($charsets);
 
     echo "<hr>";
     foreach ($randomString as $string) {
-      echo formatOutput($string);
+      echo "<div style='margin-bottom: 15px;'>" . copyableOutput($string) . "</div>";
     }
     // echo formatOutput($randomString);
     echo "
@@ -147,28 +177,17 @@ do {
 /*                               MODULE: Base                            */
 /* ===================================================================== */
   if ($action == 'base64encode' || $action == 'base64decode' || $action == 'base') {
-    $from = (!isset($_POST['from']) || empty($_POST['from'])) ? 36 : intval($_POST['from']);
-    $to   = (!isset($_POST['to']) || empty($_POST['to'])) ? Null : intval($_POST['to']);
+    // die(formatOutput($_POST));
+    $input = (!empty($_POST['base']) ? $_POST['base'] : Null);
+    $from  = (!empty($_POST['from']) ? ($_POST['from']) : "text");
+    $to    = (!empty($_POST['to']) ? ($_POST['to']) : 64);
 
-    $allBasesAreBelongToUs = "";
-
-    $allBasesAreBelongToUs .= "<b>Input (Base $from):</b> <code>$_POST[base]</code><br><br>";
-    // $allBasesAreBelongToUs .= "Base64 encode: <code>".base64_encode($_POST['base'])."</code><br>";
-    // $allBasesAreBelongToUs .= "Base64 decode: <code>".base64_decode($_POST['base'])."</code><br>";
-    $allBasesAreBelongToUs .= "<hr>";
-    if (!empty($to) && is_numeric($to) && $to >= 1 && $to <= 36) {
-      $allBasesAreBelongToUs .= "<b>Base $from to Base $to:</b><br>
-      <pre><code>".base_convert($_POST['base'], $from, $to)."</code></pre>
-      <br>";
-    } else {
-      for ($i = 2; $i <= 36; $i++) {
-        $allBasesAreBelongToUs .= "<b>Base$i:</b><br>
-        <pre><code>".base_convert($_POST['base'], $from, $i)."</code></pre>
-        <br>";
-      }
-    }
-
-    echo formatOutput($allBasesAreBelongToUs);
+    $result = convert_any($input, $from, $to);
+    
+    echo "<div style='margin-bottom: 20px;'>";
+    echo "<div style='margin-bottom: 15px;'><strong>Base $from → Base $to</strong></div>";
+    echo copyableOutput($result);
+    echo "</div>";
   }
 
 
@@ -176,13 +195,17 @@ do {
 /*                               MODULE: Hash                            */
 /* ===================================================================== */
   if (isset($_POST['hash'])) {
-    $types  = ["SHA512", "SHA256", "SHA1", "MD5"];
-    $output = "<table class='table border border-success'>";
-    foreach ($types as $type) {
-      $output .= "<tr><td><b>$type:</b></td> <td class='text-break'>".hash($type, $_POST['hash'])."</td></tr>";
+    $hashalgo = (!empty($_POST['hashalgo']) ? $_POST['hashalgo'] : Null);
+    $types = hash_algos();
+    if (!empty($hashalgo) && in_array($hashalgo, hash_algos())) {
+      $types = [$hashalgo];
     }
-    $output .= "</table>";
-    echo formatOutput("Input: $_POST[hash]<hr>".$output);
+    $output = "";
+    foreach ($types as $type) {
+      $hashValue = hash($type, $_POST['hash']);
+      $output .= "<div style='margin-bottom: 20px;'>" . copyableOutput($hashValue, $type) . "</div>";
+    }
+    echo formatOutput($output);
   }
 
 /* ===================================================================== */
@@ -257,7 +280,7 @@ do {
     }
 
 
-    echo formatOutput($output, type: $type);
+    echo "<div style='margin-bottom: 15px;'>" . copyableOutput($output) . "</div>";
   }
 
 
@@ -273,12 +296,10 @@ do {
         $seed = $_POST['numgenseed'];
       }
       $gen = numGen($numgenfrom, $numgento, $seed);
-      echo formatOutput(
-        "
-        $gen
-        <hr>
-        Seed: $seed"
-      );
+      echo "<div style='margin-bottom: 15px;'>" . copyableOutput($gen) . "</div>";
+      if ($seed) {
+        echo "<div style='margin-top: 15px; opacity: 0.7;'><small><strong>Seed used:</strong> $seed</small></div>";
+      }
   }
 
 
@@ -305,20 +326,22 @@ do {
   if (isset($_POST['rot'])) {
     if ($_POST['bruteforce'] == 1) {
       $alphabet = 26;
-      $strrot = "<table>";
+      $output = "";
       for ($i = 0; $i < $alphabet; $i++) {
-          $strrot .= "<tr><td><b>$i</b></td> <td>:</td> <td>".str_rot($_POST['rot'], $i)."</td></tr>";
+          $rotated = str_rot($_POST['rot'], $i);
+          $output .= "<div style='margin-bottom: 15px;'>" . copyableOutput($rotated, "ROT" . $i) . "</div>";
       }
-      $strrot .= "</table>";
+      echo $output;
     }
     elseif (!empty($_POST['rotations'])) {
-      $rotations = $_POST['rotations']+26;
+      $rotations = $_POST['rotations'];
       $strrot = str_rot($_POST['rot'], $rotations);
+      echo "<div style='margin-bottom: 15px;'>" . copyableOutput($strrot) . "</div>";
     } else {
       $rotations = 13;
       $strrot = str_rot($_POST['rot'], $rotations);
+      echo "<div style='margin-bottom: 15px;'>" . copyableOutput($strrot) . "</div>";
     }
-    echo formatOutput($strrot);
   }
 
 /* ===================================================================== */
@@ -370,11 +393,15 @@ do {
         if (empty($string)) {
           $string = "[empty]";
         }
-        echo formatOutput("
-          <b>".$string."</b>
-          <hr>
-          <b>Encryption key:</b> $key<br>
-          <b>Initialization vector (Hex representation):</b> ".$iv);
+        echo "<div style='margin-bottom: 20px;'>";
+        echo copyableOutput($string);
+        echo "</div>";
+        echo "<div style='margin-top: 20px; padding: 15px; background-color: rgba(255, 193, 7, 0.1); border-radius: 0.5rem;'>";
+        echo "<strong>Encryption Details:</strong><br>";
+        echo "🔑 <strong>Cipher:</strong> <code>$cipher</code><br>";
+        echo "🔓 <strong>Key:</strong> <code>" . htmlspecialchars($key) . "</code><br>";
+        echo "📍 <strong>IV (Hex):</strong> <code>$iv</code>";
+        echo "</div>";
   }
 
 /* ===================================================================== */
@@ -399,9 +426,9 @@ do {
 /*                          MODULE: Serialization                        */
 /* ===================================================================== */
   if ($action == "serialization") {
-    $type          = $_POST['type'];
-    $input         = $_POST['input'];
-    $stripcomments = $_POST['stripcomments'];
+    $type          = $_POST['type'] ?? 'JSON';
+    $input         = $_POST['input'] ?? '';
+    $stripcomments = $_POST['stripcomments'] ?? 0;
     if (empty($type) || empty($input)) {
       echo formatOutput("You must select a type and enter data.", type: "danger");
       break;
@@ -413,34 +440,37 @@ do {
     }
 
     $xmlparser = xml_parser_create();
+    $detected  = null;
+
     # Detect input
     if (json_validate($input)) {
-      $input = json_decode($input, True);
+      $input    = json_decode($input, True);
+      $detected = 'JSON';
     }
-    # REVIEW: yaml_parse is undefined.
     // elseif (yaml_parse($input)) {
-    //   $input = yaml_parse($input);
+    //   $input    = yaml_parse($input);
+    //   $detected = 'YAML';
     // }
     elseif (xml_parse($xmlparser, $input)) {
-      $input = xml_parse($xmlparser, $input);
+      // NOTE: xml_parse returns bool; full XML conversion not implemented in this build
+      $input    = $input;
+      $detected = 'XML';
     } else {
       echo formatOutput("Invalid input. It must valid JSON, XML or YAML.", type: "danger");
       break;
     }
 
     # Convert to desired type
+    $output = "";
     if ($type == "JSON") {
-      $output = json_encode($input, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+      $output = is_string($input) ? $input : json_encode($input, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+    } elseif ($type == "XML") {
+      $output = "[XML output is not available in this build]";
+    } elseif ($type == "YAML") {
+      $output = "[YAML output is not available in this build]";
     }
-    # REVIEW: array2xml is undefined.
-    // elseif ($type == "XML") {
-    //   $output = array2xml($input);
-    // }
-    # REVIEW: yaml_emit is undefined.
-    // elseif ($type == "YAML") {
-    //   $output = yaml_emit($input);
-    // }
-    echo formatOutput($output, responsetype: "text");
+
+    echo copyableOutput($output, "Detected: " . ($detected ?? 'Unknown'));
   }
 
 /* ===================================================================== */
@@ -602,6 +632,132 @@ do {
       $string = str_replace(["\\"], "", $string);
     }
 
+/* ===================================================================== */
+/*                        NOTE: invertedcase                             */
+/* ===================================================================== */
+    if ($tool == "invertedcase") {
+      $string = strtr($string, 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ', 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz');
+    }
+
+/* ===================================================================== */
+/*                        NOTE: camelcase                                */
+/* ===================================================================== */
+    if ($tool == "camelcase") {
+      $string = lcfirst(str_replace(' ', '', ucwords($string)));
+    }
+
+/* ===================================================================== */
+/*                        NOTE: removehtmltags                           */
+/* ===================================================================== */
+    if ($tool == "removehtmltags") {
+      $string = strip_tags($string);
+    }
+
+/* ===================================================================== */
+/*                        NOTE: removepunctuation                        */
+/* ===================================================================== */
+    if ($tool == "removepunctuation") {
+      $string = preg_replace('/[^\w\s]/', '', $string);
+    }
+
+/* ===================================================================== */
+/*                        NOTE: removenewlines                           */
+/* ===================================================================== */
+    if ($tool == "removenewlines") {
+      $string = str_replace(["\r\n", "\r", "\n"], '', $string);
+    }
+
+/* ===================================================================== */
+/*                        NOTE: removetabs                               */
+/* ===================================================================== */
+    if ($tool == "removetabs") {
+      $string = str_replace("\t", '', $string);
+    }
+
+/* ===================================================================== */
+/*                        NOTE: removespaces                             */
+/* ===================================================================== */
+    if ($tool == "removespaces") {
+      $string = str_replace(" ", '', $string);
+    }
+
+/* ===================================================================== */
+/*                        NOTE: removeslashes                            */
+/* ===================================================================== */
+    if ($tool == "removeslashes") {
+      $string = str_replace(["/", "\\"], '', $string);
+    }
+
+/* ===================================================================== */
+/*                        NOTE: removenonascii                           */
+/* ===================================================================== */
+    if ($tool == "removenonascii") {
+      $string = preg_replace('/[^\x00-\x7F]/', '', $string);
+    }
+
+/* ===================================================================== */
+/*                        NOTE: removenonprintable                       */
+/* ===================================================================== */
+    if ($tool == "removenonprintable") {
+      $string = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', $string);
+    }
+
+/* ===================================================================== */
+/*                        NOTE: removewhitespaceext                      */
+/* ===================================================================== */
+    if ($tool == "removewhitespaceext") {
+      $string = preg_replace('/\s+/', '', $string);
+    }
+
+/* ===================================================================== */
+/*                        NOTE: removenumbers                            */
+/* ===================================================================== */
+    if ($tool == "removenumbers") {
+      $string = preg_replace('/\d/', '', $string);
+    }
+
+/* ===================================================================== */
+/*                        NOTE: removeletters                            */
+/* ===================================================================== */
+    if ($tool == "removeletters") {
+      $string = preg_replace('/[a-zA-Z]/', '', $string);
+    }
+
+/* ===================================================================== */
+/*                        NOTE: removesymbols                            */
+/* ===================================================================== */
+    if ($tool == "removesymbols") {
+      $string = preg_replace('/[^a-zA-Z0-9\s]/', '', $string);
+    }
+
+/* ===================================================================== */
+/*                        NOTE: removeextendedsymbols                    */
+/* ===================================================================== */
+    if ($tool == "removeextendedsymbols") {
+      $string = preg_replace('/[^a-zA-Z0-9\s\-_.]/', '', $string);
+    }
+
+/* ===================================================================== */
+/*                        NOTE: removecustomcharacters                   */
+/* ===================================================================== */
+    if ($tool == "removecustomcharacters") {
+      $custom = (!empty($_POST['customchars']) ? $_POST['customchars'] : '');
+      if (!empty($custom)) {
+        $string = str_replace(str_split($custom), '', $string);
+      }
+    }
+
+/* ===================================================================== */
+/*                        NOTE: regex                                    */
+/* ===================================================================== */
+    if ($tool == "regex") {
+      $pattern = (!empty($_POST['pattern']) ? $_POST['pattern'] : '');
+      $replacement = (!empty($_POST['replacement']) ? $_POST['replacement'] : '');
+      if (!empty($pattern)) {
+        $string = preg_replace($pattern, $replacement, $string);
+      }
+    }
+
 
     if ($outputToTextbox) {
       echo $string;
@@ -614,6 +770,32 @@ do {
 /*                             MODULE: IP tools                          */
 /* ===================================================================== */
   if ($action == "ip") {
+
+# =========================================================================== //
+#                                NOTE: dnslookup                              //
+# =========================================================================== //
+if ($tool == "dnslookup") {
+  $hostname = (!empty($_POST['hostname']) ? $_POST['hostname'] : Null);
+  if (!empty($hostname)) {
+    $result = null;
+    
+    if (is_ip($hostname)) {
+      $result = gethostbyaddr($hostname);
+    } elseif (is_hostname($hostname)) {
+      $result = gethostbyname($hostname);
+    } else {
+      echo formatOutput("Invalid hostname/IP format.", type: "danger");
+      break;
+    }
+    
+    if ($result && $result !== $hostname) {
+      echo "<div style='margin-bottom: 15px;'>" . copyableOutput($result, $hostname) . "</div>";
+    } else if ($result === $hostname) {
+      echo formatOutput("Could not resolve: " . htmlspecialchars($hostname), type: "warning");
+    }
+  }
+}
+
 /* ===================================================================== */
 /*                            NOTE: cidr2range                           */
 /* ===================================================================== */
@@ -632,30 +814,21 @@ do {
         if (is_array($range['cidr'])) {
           $range['cidr'] = implode("<br>", $range['cidr']);
         }
-        echo formatOutput("
-          <table class='table table-bordered'>
-            <tr class='table table-primary'>
-              <th>Property</th>
-              <th>Value</th>
-            </tr>
-            <tr>
-              <td>CIDR range</td>
-              <td>". $range['cidr'] ."</td>
-            </tr>
-            <tr>
-              <td>Start IP</td>
-              <td>". $range['start'] ."</td>
-            </tr>
-            <tr>
-              <td>End IP</td>
-              <td>". $range['end'] ."</td>
-            </tr>
-            <tr>
-              <td>Total IPs</td>
-              <td>". $range['total'] ."</td>
-            </tr>
-          </table>
-        ");
+        $output = "
+          <div style='display: grid; grid-template-columns: 1fr 1fr; gap: 12px;'>
+            <div><strong>CIDR:</strong><br><code style='font-size: 0.95rem;'>" . $range['cidr'] . "</code></div>
+            <div><strong>Start IP:</strong><br><code style='font-size: 0.95rem;'>" . $range['start'] . "</code></div>
+            <div><strong>End IP:</strong><br><code style='font-size: 0.95rem;'>" . $range['end'] . "</code></div>
+            <div><strong>Total IPs:</strong><br><code style='font-size: 0.95rem;'>" . $range['total'] . "</code></div>
+          </div>
+        ";
+        
+        echo "<div style='margin-bottom: 15px; display: flex; align-items: center; justify-content: space-between; background: #0f172a; color: #e9ecef; padding: 15px 20px; border-radius: 0.5rem; border: 2px solid #495057; box-shadow: 0 6px 16px rgba(0,0,0,0.25);'>";
+        echo "<div style='flex: 1;'>" . $output . "</div>";
+        echo "<button onclick='copyToClipboard(\"CIDR: " . addslashes(strip_tags($range['cidr'])) . "\\nStart: " . addslashes($range['start']) . "\\nEnd: " . addslashes($range['end']) . "\\nTotal IPs: " . addslashes($range['total']) . "\", this)' class='btn btn-outline-light' style='margin-left: 15px; border: 1px solid #e9ecef; white-space: nowrap;'>";
+        echo "<i class='ti ti-copy'></i> Copy";
+        echo "</button>";
+        echo "</div>";
     }
 /* ===================================================================== */
 /*                            NOTE: range2cidr                           */
@@ -677,30 +850,21 @@ do {
       if (is_array($cidr["cidrs"])) {
         $cidr["cidrs"] = implode("<br>", $cidr["cidrs"]);
       }
-      echo formatOutput("
-        <table class='table table-bordered'>
-          <tr class='table table-primary'>
-            <th>Property</th>
-            <th>Value</th>
-          </tr>
-          <tr>
-            <td>CIDR range(s)</td>
-            <td>". $cidr["cidrs"] ."</td>
-          </tr>
-          <tr>
-            <td>Start</td>
-            <td>". $cidr["start"] ."</td>
-          </tr>
-          <tr>
-            <td>End</td>
-            <td>". $cidr["end"] ."</td>
-          </tr>
-          <tr>
-            <td>Total IPs</td>
-            <td>". $cidr["total_ips"] ."</td>
-          </tr>
-        </table>
-      ");
+      $output = "
+        <div style='display: grid; grid-template-columns: 1fr 1fr; gap: 12px;'>
+          <div><strong>CIDR Range(s):</strong><br><code style='font-size: 0.95rem;'>" . $cidr["cidrs"] . "</code></div>
+          <div><strong>Start:</strong><br><code style='font-size: 0.95rem;'>" . $cidr["start"] . "</code></div>
+          <div><strong>End:</strong><br><code style='font-size: 0.95rem;'>" . $cidr["end"] . "</code></div>
+          <div><strong>Total IPs:</strong><br><code style='font-size: 0.95rem;'>" . $cidr["total_ips"] . "</code></div>
+        </div>
+      ";
+      
+      echo "<div style='margin-bottom: 15px; display: flex; align-items: center; justify-content: space-between; background: #0f172a; color: #e9ecef; padding: 15px 20px; border-radius: 0.5rem; border: 2px solid #495057; box-shadow: 0 6px 16px rgba(0,0,0,0.25);'>";
+      echo "<div style='flex: 1;'>" . $output . "</div>";
+      echo "<button onclick='copyToClipboard(\"CIDR: " . addslashes(strip_tags($cidr["cidrs"])) . "\\nStart: " . addslashes($cidr["start"]) . "\\nEnd: " . addslashes($cidr["end"]) . "\\nTotal IPs: " . addslashes($cidr["total_ips"]) . "\", this)' class='btn btn-outline-light' style='margin-left: 15px; border: 1px solid #e9ecef; white-space: nowrap;'>";
+      echo "<i class='ti ti-copy'></i> Copy";
+      echo "</button>";
+      echo "</div>";
     }
 /* ===================================================================== */
 /*                            NOTE: subnetmask                           */
@@ -724,41 +888,24 @@ do {
         $subnetmask["cidrs"] = implode("<br>", $subnetmask["cidrs"]);
       }
 
-      echo formatOutput("
-        <table class='table table-bordered'>
-          <tr class='table table-primary'>
-            <th>Property</th>
-            <th>Value</th>
-          </tr>
-          <tr>
-            <td>Network</td>
-            <td>". $subnetmask["network"] ."</td>
-          </tr>
-          <tr>
-            <td>First IP</td>
-            <td>". $subnetmask["start"] ."</td>
-          </tr>
-          <tr>
-            <td>Last IP</td>
-            <td>". $subnetmask["end"] ."</td>
-          </tr>
-          <tr>
-            <td>Broadcast</td>
-            <td>". $subnetmask["broadcast"] ."</td>
-          </tr>
-          <tr>
-            <td>Subnet mask</td>
-            <td>". $subnetmask["subnet"] ."</td>
-          </tr>
-          <tr>
-            <td>CIDR</td>
-            <td>". $subnetmask["cidr"] ."</td>
-          </tr>
-          <tr>
-            <td>Usable IPs</td>
-            <td>". $subnetmask["usable_ips"] ."</td>
-          </tr>
-      ");
+      $output = "
+        <div style='display: grid; grid-template-columns: 1fr 1fr; gap: 12px;'>
+          <div><strong>Network:</strong><br><code style='font-size: 0.95rem;'>" . $subnetmask["network"] . "</code></div>
+          <div><strong>First IP:</strong><br><code style='font-size: 0.95rem;'>" . $subnetmask["start"] . "</code></div>
+          <div><strong>Last IP:</strong><br><code style='font-size: 0.95rem;'>" . $subnetmask["end"] . "</code></div>
+          <div><strong>Broadcast:</strong><br><code style='font-size: 0.95rem;'>" . $subnetmask["broadcast"] . "</code></div>
+          <div><strong>Subnet Mask:</strong><br><code style='font-size: 0.95rem;'>" . $subnetmask["subnet"] . "</code></div>
+          <div><strong>CIDR:</strong><br><code style='font-size: 0.95rem;'>" . $subnetmask["cidr"] . "</code></div>
+          <div><strong>Usable IPs:</strong><br><code style='font-size: 0.95rem;'>" . $subnetmask["usable_ips"] . "</code></div>
+        </div>
+      ";
+      
+      echo "<div style='margin-bottom: 15px; display: flex; align-items: center; justify-content: space-between; background: #0f172a; color: #e9ecef; padding: 15px 20px; border-radius: 0.5rem; border: 2px solid #495057; box-shadow: 0 6px 16px rgba(0,0,0,0.25);'>";
+      echo "<div style='flex: 1;'>" . $output . "</div>";
+      echo "<button onclick='copyToClipboard(\"Network: " . addslashes($subnetmask["network"]) . "\\nFirst IP: " . addslashes($subnetmask["start"]) . "\\nLast IP: " . addslashes($subnetmask["end"]) . "\\nBroadcast: " . addslashes($subnetmask["broadcast"]) . "\\nSubnet Mask: " . addslashes($subnetmask["subnet"]) . "\\nCIDR: " . addslashes($subnetmask["cidr"]) . "\\nUsable IPs: " . addslashes($subnetmask["usable_ips"]) . "\", this)' class='btn btn-outline-light' style='margin-left: 15px; border: 1px solid #e9ecef; white-space: nowrap;'>";
+      echo "<i class='ti ti-copy'></i> Copy";
+      echo "</button>";
+      echo "</div>";
     }
 
   }
@@ -774,11 +921,14 @@ do {
       break;
     }
 
-    $output = "<b>URL:</b> <code>".htmlspecialchars($url)."</code><br>";
-    $output .= "<b>URL encoded:</b> <code>".urlencode($url)."</code><br>";
-    $output .= "<b>URL decoded:</b> <code>".urldecode($url)."</code><br>";
+    $encoded = urlencode($url);
+    $decoded = urldecode($url);
 
-    echo formatOutput($output);
+    $output  = "<div style='margin-bottom: 16px;'>" . copyableOutput($url, "Original Input") . "</div>";
+    $output .= "<div style='margin-bottom: 16px;'>" . copyableOutput($encoded, "URL Encoded") . "</div>";
+    $output .= "<div style='margin-bottom: 16px;'>" . copyableOutput($decoded, "URL Decoded") . "</div>";
+
+    echo $output;
   }
 
 /* ===================================================================== */
@@ -792,14 +942,11 @@ if ($action == "htmlentities") {
       break;
     }
 
-    $output = "<b>Input:</b> <br>
-      <pre><code>".htmlspecialchars($input)."</code></pre><br>";
-    $output .= "<b>HTML entities:</b> <br>
-      <pre><code>".htmlentities($input)."</code></pre><br>";
-    $output .= "<b>HTML decoded:</b> <br>
-      <pre><code>".html_entity_decode($input)."</code></pre><br>";
+    $output  = "<div style='margin-bottom: 16px;'>" . copyableOutput($input, "Original Input") . "</div>";
+    $output .= "<div style='margin-bottom: 16px;'>" . copyableOutput(htmlentities($input), "HTML Entities") . "</div>";
+    $output .= "<div style='margin-bottom: 16px;'>" . copyableOutput(html_entity_decode($input), "HTML Decoded") . "</div>";
 
-    echo formatOutput($output);
+    echo $output;
   }
 
 
@@ -807,31 +954,275 @@ if ($action == "htmlentities") {
   # ─────────────────────────────────────────────────────────────────────────── //
   #                                MODULE: minify                               //
   # ─────────────────────────────────────────────────────────────────────────── //
-  // if ($action == "minify") {
-  //   $tool  = (!empty($_POST['tool']) ? $_POST['tool'] : Null);
-  //   $input = (!empty($_POST['input']) ? $_POST['input'] : Null);
+  if ($tool == "minify") {
+    $type  = (!empty($_POST['type']) ? $_POST['type'] : Null);
+    $input = (!empty($_POST['input']) ? $_POST['input'] : Null);
 
-  //   if (empty($tool) || empty($input)) {
-  //     echo formatOutput("You must select a tool and enter data.", type: "danger");
-  //     break;
-  //   }
+    if (empty($type) || empty($input)) {
+      echo formatOutput("You must select a tool and enter data.", type: "danger");
+      break;
+    }
 
-  //   if ($tool == "cssmin") {
-  //     require_once("includes/cssmin.php");
-  //     $output = CssMin::minify($input);
-  //   }
-  //   if ($tool == "jsmin") {
-  //     require_once("includes/jsmin.php");
-  //     $output = JSMin::minify($input);
-  //   }
-  //   if ($tool == "htmlmin") {
-  //     require_once("includes/htmlmin.php");
-  //     $htmlMin = new \voku\helper\HtmlMin();
-  //     $output  = $htmlMin->minify($input);
-  //   }
+    $output = "";
 
-  //   echo formatOutput($output, responsetype: "text");
-  // }
+    if ($type == "css") {
+      if (!class_exists(\MatthiasMullie\Minify\CSS::class)) {
+        echo formatOutput("CSS minifier class not available (install matthiasmullie/minify).", type: "danger");
+        break;
+      }
+      $minifier = new Minify\CSS($input);
+      $output = $minifier->minify();
+    } elseif ($type == "js") {
+      if (!class_exists(\MatthiasMullie\Minify\JS::class)) {
+        echo formatOutput("JS minifier class not available (install matthiasmullie/minify).", type: "danger");
+        break;
+      }
+      $minifier = new Minify\JS($input);
+      $output = $minifier->minify();
+    } elseif ($type == "html") {
+      // Fallback simple HTML minifier (MatthiasMullie library does not provide HTML)
+      $output = $input;
+      // Remove HTML comments (except IE conditionals)
+      $output = preg_replace('/<!--(?!\[if).*?-->/s', '', $output);
+      // Collapse whitespace between tags
+      $output = preg_replace('/>\s+</', '><', $output);
+      // Collapse multiple spaces/newlines
+      $output = preg_replace('/\s{2,}/', ' ', $output);
+      $output = trim($output);
+    } else {
+      echo formatOutput("Invalid type selected '$type'.", type: "danger");
+      break;
+    }
+
+    $originalSize = strlen($input);
+    $minifiedSize = strlen($output);
+    $savings = $originalSize > 0 ? round((($originalSize - $minifiedSize) / $originalSize) * 100, 2) : 0;
+
+    echo "<div style='margin-bottom: 20px;'>" . copyableOutput($output, strtoupper($type) . " Minified") . "</div>";
+    echo "<div style='margin-top: 15px; padding: 12px; background-color: rgba(255, 193, 7, 0.15); border-radius: 0.5rem;'>";
+    echo "<strong>📊 Compression Stats:</strong><br>";
+    echo "Original: <code>" . number_format($originalSize) . " bytes</code> | ";
+    echo "Minified: <code>" . number_format($minifiedSize) . " bytes</code> | ";
+    echo "Saved: <code>" . number_format($originalSize - $minifiedSize) . " bytes</code> (<strong>" . $savings . "%</strong>)";
+    echo "</div>";
+  }
+
+  # =========================================================================== //
+  #                               MODULE: metaphone                             //
+  # =========================================================================== //
+  if ($action == "metaphone") {
+    $input = $_POST['metaphone'] ?? '';
+    if (empty($input)) {
+      echo formatOutput("You must enter a string.", type: "danger");
+    } else {
+      $output = metaphone($input);
+      echo "<div style='margin-bottom: 15px;'>" . copyableOutput($output, "Metaphone Key") . "</div>";
+    }
+  }
+
+  # =========================================================================== //
+  #                               MODULE: levenshtein                           //
+  # =========================================================================== //
+  if ($action == "levenshtein") {
+
+    $insertion_cost   = (!empty($_POST['insertion_cost']) ? $_POST['insertion_cost'] : 1);
+    $replacement_cost = (!empty($_POST['replacement_cost']) ? $_POST['replacement_cost'] : 1);
+    $deletion_cost    = (!empty($_POST['deletion_cost']) ? $_POST['deletion_cost'] : 1);
+
+    $string1 = $_POST['levenshtein1'];
+    $string2 = $_POST['levenshtein2'];
+    
+    $distance = levenshtein($string1, $string2, $insertion_cost, $replacement_cost, $deletion_cost);
+    
+    echo "
+      <div style='margin-bottom: 15px;'>
+        <div style='display: flex; align-items: center; justify-content: space-between; background: #0f172a; color: #e9ecef; padding: 15px 20px; border-radius: 0.5rem; border: 1px solid #334155; box-shadow: 0 6px 16px rgba(0,0,0,0.25);'>
+          <div style='flex: 1;'>
+            <div style='text-align: center; padding: 30px;'>
+              <div style='font-size: 4rem; font-weight: bold; color: #ff5722; margin-bottom: 20px;'>$distance</div>
+              <div style='font-size: 1.2rem; margin-bottom: 30px;'>
+                <strong>Levenshtein Distance</strong>
+              </div>
+              <div style='display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; text-align: center; margin-top: 20px;'>
+                <div>
+                  <small style='opacity: 0.7;'><strong>Insertion Cost</strong></small><br>
+                  <code style='font-size: 1.1rem;'>$insertion_cost</code>
+                </div>
+                <div>
+                  <small style='opacity: 0.7;'><strong>Replacement Cost</strong></small><br>
+                  <code style='font-size: 1.1rem;'>$replacement_cost</code>
+                </div>
+                <div>
+                  <small style='opacity: 0.7;'><strong>Deletion Cost</strong></small><br>
+                  <code style='font-size: 1.1rem;'>$deletion_cost</code>
+                </div>
+              </div>
+            </div>
+          </div>
+          <button onclick='copyToClipboard(\"$distance\", this)' class='btn btn-outline-light' style='margin-left: 15px; border: 1px solid #e9ecef; white-space: nowrap;'>
+            <i class='ti ti-copy'></i> Copy
+          </button>
+        </div>
+      </div>
+    ";
+  }
+
+
+  # =========================================================================== //
+  #                                 MODULE: diff                                //
+  # =========================================================================== //
+  if ($action == "diff") {
+    $diff1 = (!empty($_POST['diff1']) ? $_POST['diff1'] : Null);
+    $diff2 = (!empty($_POST['diff2']) ? $_POST['diff2'] : Null);
+    
+    if (empty($diff1) && empty($diff2)) {
+      echo formatOutput("Please enter text in both fields to compare.", type: "danger");
+      break;
+    }
+    
+    // Split by lines
+    $lines1 = explode("\n", $diff1);
+    $lines2 = explode("\n", $diff2);
+    
+    // Use built-in array_diff_assoc to find differences
+    $added = array_diff($lines2, $lines1);
+    $removed = array_diff($lines1, $lines2);
+    
+    // Create unified diff output with HTML for coloring
+    $output = "<span style='color: #999;'>--- Old</span>\n<span style='color: #999;'>+++ New</span>\n";
+    
+    // Track position in both arrays
+    $i = 0;
+    $j = 0;
+    
+    while ($i < count($lines1) || $j < count($lines2)) {
+      if ($i < count($lines1) && $j < count($lines2) && $lines1[$i] === $lines2[$j]) {
+        // Line is the same - gray
+        $output .= "<span style='color: #888;'> " . htmlspecialchars($lines1[$i]) . "</span>\n";
+        $i++;
+        $j++;
+      } else if ($i < count($lines1) && in_array($lines1[$i], $removed)) {
+        // Line was removed - red
+        $output .= "<span style='color: #ff6b6b;'>-" . htmlspecialchars($lines1[$i]) . "</span>\n";
+        $i++;
+      } else if ($j < count($lines2) && in_array($lines2[$j], $added)) {
+        // Line was added - green
+        $output .= "<span style='color: #51cf66;'>+" . htmlspecialchars($lines2[$j]) . "</span>\n";
+        $j++;
+      } else {
+        // Handle case where lines don't match
+        if ($i < count($lines1)) {
+          $output .= "<span style='color: #ff6b6b;'>-" . htmlspecialchars($lines1[$i]) . "</span>\n";
+          $i++;
+        }
+        if ($j < count($lines2)) {
+          $output .= "<span style='color: #51cf66;'>+" . htmlspecialchars($lines2[$j]) . "</span>\n";
+          $j++;
+        }
+      }
+    }
+    
+    if (trim(strip_tags($output)) === "--- Old\n+++ New") {
+      echo "<div style='margin-bottom: 15px;'>" . copyableOutput("No differences found - texts are identical.", "Diff Result") . "</div>";
+    } else {
+      echo "<div style='margin-bottom: 15px; display: flex; align-items: center; justify-content: space-between; background: #0f172a; color: #e9ecef; padding: 15px 20px; border-radius: 0.5rem; border: 2px solid #495057; box-shadow: 0 6px 16px rgba(0,0,0,0.25);'>";
+      echo "<div style='flex: 1; white-space: pre-wrap; word-break: break-word; font-family: monospace; font-size: 0.9rem;'>" . $output . "</div>";
+      echo "<button onclick='copyToClipboard(\"" . addslashes(strip_tags($output)) . "\", this)' class='btn btn-outline-light' style='margin-left: 15px; border: 1px solid #e9ecef; white-space: nowrap;'>";
+      echo "<i class='ti ti-copy'></i> Copy";
+      echo "</button>";
+      echo "</div>";
+    }
+  }
+
+  # ─────────────────────────────────────────────────────────────────────────── //
+  #                             MODULE: currency                               //
+  # ─────────────────────────────────────────────────────────────────────────── //
+  if ($action == "currency") {
+    $currency_amount = (!empty($_POST['currency_amount']) ? floatval($_POST['currency_amount']) : Null);
+    $currency_from   = (!empty($_POST['currency_from']) ? strtoupper($_POST['currency_from']) : Null);
+    $currency_to     = (!empty($_POST['currency_to']) ? strtoupper($_POST['currency_to']) : Null);
+    $custom_rate     = (!empty($_POST['currency_rate']) ? floatval($_POST['currency_rate']) : Null);
+
+    if (empty($currency_amount) || empty($currency_from) || empty($currency_to)) {
+      echo formatOutput("You must enter an amount and select both source and target currencies.", type: "danger");
+      break;
+    }
+
+    if ($currency_amount < 0) {
+      echo formatOutput("Amount must be a positive number.", type: "danger");
+      break;
+    }
+
+    // Handle same currency conversion
+    if ($currency_from == $currency_to) {
+      $result = $currency_amount;
+      $output = "<b>$currency_amount $currency_from = <span class='text-success'>$result $currency_to</span></b>";
+      echo formatOutput($output);
+      break;
+    }
+
+    // If custom rate provided, use it
+    if ($custom_rate !== null && $custom_rate > 0) {
+      $result = $currency_amount * $custom_rate;
+      $output = "<div class='conversion-result'>";
+      $output .= "<div style='font-size: 1.5em; margin: 15px 0;'>";
+      $output .= "<b>" . number_format($currency_amount, 2) . " $currency_from</b> = <span class='text-success'><b>" . number_format($result, 2) . " $currency_to</b></span>";
+      $output .= "</div>";
+      $output .= "<hr>";
+      $output .= "<div><small class='text-muted'>";
+      $output .= "Custom Rate Used: 1 $currency_from = " . number_format($custom_rate, 4) . " $currency_to";
+      $output .= "</small></div>";
+      $output .= "</div>";
+      echo formatOutput($output);
+      break;
+    }
+
+    // Fetch live exchange rate from API
+    $rate = null;
+    $api_url = "https://api.exchangerate-api.com/v4/latest/" . urlencode($currency_from);
+    
+    // Fetch the exchange rates
+    $context = stream_context_create(['http' => ['timeout' => 5]]);
+    $response = @file_get_contents($api_url, false, $context);
+    
+    if ($response === false) {
+      echo formatOutput("Unable to fetch exchange rates. Please check your internet connection or try again later.", type: "danger");
+      break;
+    }
+
+    $data = json_decode($response, true);
+
+    if (!$data || json_last_error() !== JSON_ERROR_NONE || !isset($data['rates'])) {
+      echo formatOutput("Invalid response from exchange rate API. Please try again.", type: "danger");
+      break;
+    }
+
+    if (!isset($data['rates'][$currency_to])) {
+      echo formatOutput("Currency $currency_to not found in API database. Please select a valid currency.", type: "danger");
+      break;
+    }
+
+    $rate = $data['rates'][$currency_to];
+    $result = $currency_amount * $rate;
+    $timestamp = $data['time_last_updated'] ?? '';
+
+    $output = "<div class='conversion-result'>";
+    $output .= "<h4 class='text-success'>Conversion Result</h4>";
+    $output .= "<div style='font-size: 1.5em; margin: 15px 0;'>";
+    $output .= "<b>" . number_format($currency_amount, 2) . " $currency_from</b> = <span class='text-success'><b>" . number_format($result, 2) . " $currency_to</b></span>";
+    $output .= "</div>";
+    $output .= "<hr>";
+    $output .= "<div><small class='text-muted'>";
+    $output .= "Live Exchange Rate: 1 $currency_from = " . number_format($rate, 4) . " $currency_to<br>";
+    if ($timestamp) {
+      $output .= "Last Updated: " . htmlspecialchars($timestamp) . "<br>";
+    }
+    $output .= "<em>Rates provided by exchangerate-api.com</em>";
+    $output .= "</small></div>";
+    $output .= "</div>";
+
+    echo formatOutput($output);
+  }
 
   # ─────────────────────────────────────────────────────────────────────────── //
 
