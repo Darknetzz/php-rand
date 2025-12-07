@@ -1085,5 +1085,131 @@ function copyableOutput($content, $label = "") {
   return $html;
 }
 
+/**
+ * Comprehensive input validation helper
+ * 
+ * Validates input against various criteria including length, type, format,
+ * and custom patterns. Returns detailed validation results.
+ *
+ * @param mixed $value The value to validate
+ * @param array $rules Validation rules array with keys:
+ *                     'required' => bool (default: true)
+ *                     'minLength' => int
+ *                     'maxLength' => int
+ *                     'type' => 'string'|'number'|'email'|'url'|'ip'|'hostname'|'hex'|'json'|'base64'
+ *                     'pattern' => regex pattern string
+ *                     'allowedValues' => array of allowed values
+ * @return array ['valid' => bool, 'error' => string|null, 'value' => mixed]
+ * 
+ * @example
+ * $result = validateInput('test@example.com', ['type' => 'email']);
+ * $result = validateInput(42, ['minLength' => 1, 'maxLength' => 1000]);
+ * $result = validateInput('192.168.1.1', ['type' => 'ip']);
+ */
+function validateInput($value, $rules = []) {
+  // Default rules
+  $required = $rules['required'] ?? true;
+  $minLength = $rules['minLength'] ?? null;
+  $maxLength = $rules['maxLength'] ?? null;
+  $type = $rules['type'] ?? null;
+  $pattern = $rules['pattern'] ?? null;
+  $allowedValues = $rules['allowedValues'] ?? null;
+  
+  // Check if required but empty
+  if ($required && (empty($value) || (is_string($value) && trim($value) === ''))) {
+    return ['valid' => false, 'error' => 'This field is required', 'value' => $value];
+  }
+  
+  // Skip further validation if empty and not required
+  if (!$required && (empty($value) || (is_string($value) && trim($value) === ''))) {
+    return ['valid' => true, 'error' => null, 'value' => $value];
+  }
+  
+  // Sanitize string input
+  if (is_string($value)) {
+    $value = trim($value);
+  }
+  
+  // Check length constraints
+  if ($minLength !== null && strlen((string)$value) < $minLength) {
+    return ['valid' => false, 'error' => "Minimum length is {$minLength} characters", 'value' => $value];
+  }
+  
+  if ($maxLength !== null && strlen((string)$value) > $maxLength) {
+    return ['valid' => false, 'error' => "Maximum length is {$maxLength} characters", 'value' => $value];
+  }
+  
+  // Type-specific validation
+  if ($type !== null) {
+    switch (strtolower($type)) {
+      case 'number':
+        if (!is_numeric($value)) {
+          return ['valid' => false, 'error' => 'Must be a valid number', 'value' => $value];
+        }
+        break;
+      
+      case 'email':
+        if (!filter_var($value, FILTER_VALIDATE_EMAIL)) {
+          return ['valid' => false, 'error' => 'Must be a valid email address', 'value' => $value];
+        }
+        break;
+      
+      case 'url':
+        if (!filter_var($value, FILTER_VALIDATE_URL)) {
+          return ['valid' => false, 'error' => 'Must be a valid URL', 'value' => $value];
+        }
+        break;
+      
+      case 'ip':
+        if (!filter_var($value, FILTER_VALIDATE_IP)) {
+          return ['valid' => false, 'error' => 'Must be a valid IPv4 or IPv6 address', 'value' => $value];
+        }
+        break;
+      
+      case 'hostname':
+        if (!is_hostname($value)) {
+          return ['valid' => false, 'error' => 'Must be a valid hostname or domain', 'value' => $value];
+        }
+        break;
+      
+      case 'hex':
+        if (!preg_match('/^[a-fA-F0-9]+$/', $value)) {
+          return ['valid' => false, 'error' => 'Must contain only hexadecimal characters (0-9, a-f, A-F)', 'value' => $value];
+        }
+        break;
+      
+      case 'json':
+        if (json_decode($value) === null && $value !== 'null') {
+          return ['valid' => false, 'error' => 'Must be valid JSON', 'value' => $value];
+        }
+        break;
+      
+      case 'base64':
+        if (!preg_match('/^[A-Za-z0-9+\/=]+$/', $value) || strlen($value) % 4 !== 0) {
+          return ['valid' => false, 'error' => 'Must be valid base64 encoding', 'value' => $value];
+        }
+        break;
+      
+      case 'string':
+        if (!is_string($value)) {
+          return ['valid' => false, 'error' => 'Must be a string', 'value' => $value];
+        }
+        break;
+    }
+  }
+  
+  // Pattern validation
+  if ($pattern !== null && !preg_match($pattern, $value)) {
+    return ['valid' => false, 'error' => 'Format is invalid', 'value' => $value];
+  }
+  
+  // Allowed values validation
+  if ($allowedValues !== null && !in_array($value, $allowedValues, true)) {
+    return ['valid' => false, 'error' => 'Value not in allowed list', 'value' => $value];
+  }
+  
+  return ['valid' => true, 'error' => null, 'value' => $value];
+}
+
 ?>
 

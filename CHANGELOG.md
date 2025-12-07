@@ -3,6 +3,7 @@
 > - Global UTF-8 defaults applied app-wide
 > - Full PHPDoc coverage on helpers
 > - Smarter random data that adapts to field context
+> - Comprehensive input validation framework
 >
 > **New**
 > - **Global UTF-8 encoding configuration** to keep every module consistent
@@ -20,6 +21,22 @@
 >   - Diff viewer: multi-line text for comparison
 >   - Serialization: JSON objects and related formats
 >   - New helpers: `randomCalculation()`, `randomCIDR()`, `randomIPRange()`, `randomSubnetMask()`, `randomDomain()`, `randomYAML()`, `randomXML()`, `randomIPv6()`
+> - **Input validation framework** for robust security and error handling
+>   - Master `validateInput()` function in includes/functions.php with 10+ validation types
+>   - Type validation: string, number, email, URL, IP, hostname, hex, JSON, base64
+>   - Request helpers: `req_validate()`, `req_string()`, `req_int_validated()`
+>   - All 9 handler functions updated with validation:
+>     - `handle_stringgen()`: digit count (1-1M), strings count (1-10K), charset selection
+>     - `handle_hash()`: input length (0-100K), algorithm whitelist
+>     - `handle_numgen()`: from/to range validation (-1B to +1B), seed validation (1-100 chars)
+>     - `handle_base()`: input length (0-1MB), format whitelist validation
+>     - `handle_hex()`: tool selection, input length, chunk length (1-100)
+>     - `handle_rot()`: input length (1-100K), rotation amount (0-25)
+>     - `handle_openssl()`: tool/cipher/key validation, input length (0-1MB)
+>     - `handle_datetime()`: numeric time value, unit whitelist validation
+>     - `handle_stringtools()`: input length (0-1MB), tool selection from 30+ options
+>   - Consistent error format with descriptive user-friendly messages
+>   - DOS prevention through length constraints on all text inputs
 >
 > **Changed**
 > - random data generator now passes the $input element into `generateRandomData()` for accurate context detection
@@ -30,6 +47,7 @@
 >   - Range to CIDR: flexbox with copy button
 >   - Subnet Mask: styled container
 > - README.md refreshed to note DNS lookup and enhanced Levenshtein/Diff tools
+> - All handlers now validate input early before processing to prevent logic errors
 
 ## **v1.2.1**
 > ### new

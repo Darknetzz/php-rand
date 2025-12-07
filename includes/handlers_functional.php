@@ -128,6 +128,58 @@ function req_bool(array $request, string $key): bool {
 }
 
 /**
+ * Validate a request value with specified rules
+ *
+ * @param array $request The request array (typically $_POST)
+ * @param string $key The key to validate
+ * @param array $rules Validation rules (see validateInput() for format)
+ * @return array ['valid' => bool, 'error' => string|null, 'value' => mixed]
+ */
+function req_validate(array $request, string $key, array $rules = []): array {
+    $value = $request[$key] ?? null;
+    return validateInput($value, $rules);
+}
+
+/**
+ * Get and validate a string from request with rules
+ *
+ * @param array $request The request array
+ * @param string $key The key to retrieve
+ * @param int|null $minLength Minimum string length
+ * @param int|null $maxLength Maximum string length
+ * @return array ['valid' => bool, 'error' => string|null, 'value' => string]
+ */
+function req_string(array $request, string $key, ?int $minLength = null, ?int $maxLength = null): array {
+    $rules = ['type' => 'string', 'required' => true];
+    if ($minLength !== null) $rules['minLength'] = $minLength;
+    if ($maxLength !== null) $rules['maxLength'] = $maxLength;
+    return req_validate($request, $key, $rules);
+}
+
+/**
+ * Get and validate an integer from request with range
+ *
+ * @param array $request The request array
+ * @param string $key The key to retrieve
+ * @param int|null $min Minimum value
+ * @param int|null $max Maximum value
+ * @return array ['valid' => bool, 'error' => string|null, 'value' => int]
+ */
+function req_int_validated(array $request, string $key, ?int $min = null, ?int $max = null): array {
+    $value = req_int($request, $key, 0);
+    
+    if ($min !== null && $value < $min) {
+        return ['valid' => false, 'error' => "Value must be at least {$min}", 'value' => $value];
+    }
+    
+    if ($max !== null && $value > $max) {
+        return ['valid' => false, 'error' => "Value must be at most {$max}", 'value' => $value];
+    }
+    
+    return ['valid' => true, 'error' => null, 'value' => $value];
+}
+
+/**
  * Wrap content in a copyable output container
  *
  * @param string $content The content to display and copy
@@ -152,18 +204,31 @@ function output_copyable(string $content, string $label = ""): string {
  * @return string Formatted HTML output with generated strings or error message
  */
 function handle_stringgen(array $req): string {
-    $length = req_int($req, 'digits');
-    if ($length < 1 || $length > 1000000) {
-        return formatOutput("Invalid number of characters.", type: "danger");
+    // Validate digits input
+    $digitValidation = req_int_validated($req, 'digits', 1, 1000000);
+    if (!$digitValidation['valid']) {
+        return formatOutput($digitValidation['error'], type: "danger");
     }
+    $length = $digitValidation['value'];
 
-    $strings = req_int($req, 'strings', 1);
+    // Validate strings count
+    $stringsValidation = req_int_validated($req, 'strings', 1, 10000);
+    if (!$stringsValidation['valid']) {
+        return formatOutput($stringsValidation['error'], type: "danger");
+    }
+    $strings = $stringsValidation['value'];
+    
     $charsets = '';
     foreach (['l', 'u', 'n', 's', 'e', 'c'] as $opt) {
         if (req_bool($req, $opt)) {
             $charsets .= $opt;
         }
     }
+    
+    if (empty($charsets)) {
+        return formatOutput("You must select at least one character set.", type: "danger");
+    }
+    
     $cchars = req_get($req, 'cchars', '');
 
     $results = [];
@@ -213,8 +278,23 @@ function handle_stringgen(array $req): string {
  * @return string Formatted HTML with hash values for each algorithm
  */
 function handle_hash(array $req): string {
-    $input = req_get($req, 'hash');
+    // Validate input exists
+    $inputValidation = req_string($req, 'hash', 0, 100000);
+    if (!$inputValidation['valid']) {
+        return formatOutput($inputValidation['error'], type: "danger");
+    }
+    $input = $inputValidation['value'];
+    
+    if (empty($input)) {
+        return formatOutput("Input text is required for hashing.", type: "danger");
+    }
+    
     $hashalgo = req_get($req, 'hashalgo');
+    
+    // Validate algorithm if provided
+    if (!empty($hashalgo) && !in_array($hashalgo, hash_algos())) {
+        return formatOutput("Invalid hash algorithm selected.", type: "danger");
+    }
     
     $types = (!empty($hashalgo) && in_array($hashalgo, hash_algos())) 
         ? [$hashalgo] 
@@ -239,15 +319,40 @@ function handle_hash(array $req): string {
  * @return string Formatted HTML with generated number and seed info if provided
  */
 function handle_numgen(array $req): string {
-    $from = req_int($req, 'numgenfrom');
-    $to = req_int($req, 'numgento');
-    $seed = req_bool($req, 'seed') ? req_get($req, 'numgenseed') : null;
+    // Validate 'from' parameter
+    $fromValidation = req_int_validated($req, 'numgenfrom', -1000000000, 1000000000);
+    if (!$fromValidation['valid']) {
+        return formatOutput($fromValidation['error'], type: "danger");
+    }
+    $from = $fromValidation['value'];
+
+    // Validate 'to' parameter
+    $toValidation = req_int_validated($req, 'numgento', -1000000000, 1000000000);
+    if (!$toValidation['valid']) {
+        return formatOutput($toValidation['error'], type: "danger");
+    }
+    $to = $toValidation['value'];
+
+    // Ensure 'from' is not greater than 'to'
+    if ($from > $to) {
+        return formatOutput("'From' value must be less than or equal to 'To' value.", type: "danger");
+    }
+
+    // Validate seed if provided
+    $seed = null;
+    if (req_bool($req, 'seed')) {
+        $seedValidation = req_string($req, 'numgenseed', 1, 100);
+        if (!$seedValidation['valid']) {
+            return formatOutput($seedValidation['error'], type: "danger");
+        }
+        $seed = $seedValidation['value'];
+    }
 
     $result = numGen($from, $to, $seed);
     $output = output_copyable($result);
 
     if ($seed) {
-        $output .= "<div style='margin-top: 15px; opacity: 0.7;'><small><strong>Seed used:</strong> $seed</small></div>";
+        $output .= "<div style='margin-top: 15px; opacity: 0.7;'><small><strong>Seed used:</strong> " . htmlspecialchars($seed) . "</small></div>";
     }
 
     return $output;
@@ -263,9 +368,24 @@ function handle_numgen(array $req): string {
  * @return string Formatted HTML with conversion result or error message
  */
 function handle_base(array $req): string {
-    $input = req_get($req, 'base');
+    // Validate input length (up to 1MB encoded)
+    $inputValidation = req_string($req, 'base', 0, 1000000);
+    if (!$inputValidation['valid']) {
+        return formatOutput($inputValidation['error'], type: "danger");
+    }
+    $input = $inputValidation['value'];
+
+    // Validate source and target formats (whitelist allowed formats)
+    $allowedFormats = ['text', 'base64', 'base32', 'hex', 64, 32, 16, 2];
     $from = req_get($req, 'from', 'text');
     $to = req_get($req, 'to', 64);
+
+    if (!in_array($from, $allowedFormats, true)) {
+        return formatOutput("Invalid source format specified.", type: "danger");
+    }
+    if (!in_array($to, $allowedFormats, true)) {
+        return formatOutput("Invalid target format specified.", type: "danger");
+    }
 
     try {
         $result = convert_any($input, $from, $to);
@@ -290,16 +410,32 @@ function handle_base(array $req): string {
  * @return string Formatted HTML with conversion result or error message
  */
 function handle_hex(array $req): string {
+    // Validate tool selection
+    $allowedTools = ['bin2hex', 'hex2bin', 'ip2hex', 'hex2ip'];
     $tool = req_get($req, 'tool');
-    $input = trim(req_get($req, 'binhex', '') ?: req_get($req, 'iphex', ''));
-
-    if (empty($input)) {
-        return formatOutput("Empty input", type: "danger");
+    if (!in_array($tool, $allowedTools)) {
+        return formatOutput("Invalid tool selected.", type: "danger");
     }
+
+    // Validate input - try binhex first, then iphex
+    $inputValidation = req_string($req, 'binhex', 1, 100000);
+    if (!$inputValidation['valid']) {
+        $inputValidation = req_string($req, 'iphex', 1, 100000);
+        if (!$inputValidation['valid']) {
+            return formatOutput("Input is required.", type: "danger");
+        }
+    }
+    $input = trim($inputValidation['value']);
+
+    // Validate chunk length for split output
+    $chunkValidation = req_int_validated($req, 'chunklength', 1, 100);
+    if (!$chunkValidation['valid']) {
+        return formatOutput($chunkValidation['error'], type: "danger");
+    }
+    $chunkLength = $chunkValidation['value'];
 
     $split = req_bool($req, 'split');
     $delimiter = req_get($req, 'delimiter', ':');
-    $chunkLength = req_int($req, 'chunklength', 2);
 
     $output = '';
     
@@ -344,7 +480,13 @@ function handle_hex(array $req): string {
  * @return string Formatted HTML with rotated text or all brute force options
  */
 function handle_rot(array $req): string {
-    $input = req_get($req, 'rot');
+    // Validate input
+    $inputValidation = req_string($req, 'rot', 1, 100000);
+    if (!$inputValidation['valid']) {
+        return formatOutput($inputValidation['error'], type: "danger");
+    }
+    $input = $inputValidation['value'];
+
     $bruteforce = req_bool($req, 'bruteforce');
 
     if ($bruteforce) {
@@ -356,7 +498,13 @@ function handle_rot(array $req): string {
         return $output;
     }
 
-    $rotations = req_int($req, 'rotations', 13);
+    // Validate rotation amount (0-25)
+    $rotationsValidation = req_int_validated($req, 'rotations', 0, 25);
+    if (!$rotationsValidation['valid']) {
+        return formatOutput($rotationsValidation['error'], type: "danger");
+    }
+    $rotations = $rotationsValidation['value'];
+
     $result = str_rot($input, $rotations);
     return output_copyable($result);
 }
@@ -372,14 +520,33 @@ function handle_rot(array $req): string {
  * @return string Formatted HTML with result, warnings, and encryption details
  */
 function handle_openssl(array $req): string {
+    // Validate tool selection
+    $allowedTools = ['encrypt', 'decrypt'];
     $tool = req_get($req, 'tool');
-    $string = req_get($req, 'openssl', '');
-    $key = req_get($req, 'key', '');
+    if (!in_array($tool, $allowedTools)) {
+        return formatOutput("Invalid tool selected.", type: "danger");
+    }
+
+    // Validate input data
+    $inputValidation = req_string($req, 'openssl', 0, 1000000);
+    if (!$inputValidation['valid']) {
+        return formatOutput($inputValidation['error'], type: "danger");
+    }
+    $string = $inputValidation['value'];
+
+    // Validate key
+    $keyValidation = req_string($req, 'key', 0, 1000);
+    if (!$keyValidation['valid']) {
+        return formatOutput($keyValidation['error'], type: "danger");
+    }
+    $key = $keyValidation['value'];
+
+    // Validate cipher and IV
     $cipher = req_get($req, 'cipher', 'aes-256-cbc');
     $iv = req_get($req, 'iv', '');
 
     if (!in_array($cipher, openssl_get_cipher_methods())) {
-        return formatOutput("Cipher `$cipher` is not supported.", type: "danger");
+        return formatOutput("Cipher `" . htmlspecialchars($cipher) . "` is not supported.", type: "danger");
     }
 
     $warnings = '';
@@ -408,9 +575,9 @@ function handle_openssl(array $req): string {
     $output .= output_copyable($result);
     $output .= "<div style='margin-top: 20px; padding: 15px; background-color: rgba(255, 193, 7, 0.1); border-radius: 0.5rem;'>
         <strong>Encryption Details:</strong><br>
-        🔑 <strong>Cipher:</strong> <code>$cipher</code><br>
+        🔑 <strong>Cipher:</strong> <code>" . htmlspecialchars($cipher) . "</code><br>
         🔓 <strong>Key:</strong> <code>" . htmlspecialchars($key) . "</code><br>
-        📍 <strong>IV (Hex):</strong> <code>$iv</code>
+        📍 <strong>IV (Hex):</strong> <code>" . htmlspecialchars($iv) . "</code>
     </div>";
 
     return $output;
@@ -427,15 +594,30 @@ function handle_openssl(array $req): string {
  * @return string Formatted HTML with conversion results or error message
  */
 function handle_datetime(array $req): string {
+    // Validate time value is numeric
+    $timeValidation = req_int_validated($req, 'time', -2147483648, 2147483647);
+    if (!$timeValidation['valid']) {
+        return formatOutput("Time value must be a valid number.", type: "danger");
+    }
+    $time = $timeValidation['value'];
+
+    // Validate source and target units
+    $validUnits = ['s', 'i', 'h', 'd', 'w', 'M', 'y'];
     $fromUnit = req_get($req, 'timefrom_unit');
     $toUnit = req_get($req, 'timeto_unit');
-    $time = req_get($req, 'time');
 
-    if (empty($time) || empty($fromUnit) || empty($toUnit)) {
-        return formatOutput("You must enter a value and select units.", type: "danger");
+    if (empty($fromUnit) || empty($toUnit)) {
+        return formatOutput("You must select both source and target units.", type: "danger");
     }
 
-    $time = intval($time);
+    if (!in_array($fromUnit, $validUnits)) {
+        return formatOutput("Invalid source time unit.", type: "danger");
+    }
+
+    if (!in_array($toUnit, $validUnits)) {
+        return formatOutput("Invalid target time unit.", type: "danger");
+    }
+
     $units = [
         "s" => ["seconds", 1],
         "i" => ["minutes", 60],
@@ -461,14 +643,26 @@ function handle_datetime(array $req): string {
  * @return string Formatted HTML with transformed string or plain text
  */
 function handle_stringtools(array $req): string {
-    $string = req_get($req, 'string', '');
+    // Validate input string
+    $stringValidation = req_string($req, 'string', 0, 1000000);
+    if (!$stringValidation['valid']) {
+        return formatOutput($stringValidation['error'], type: "danger");
+    }
+    $string = $stringValidation['value'];
+
+    // Validate tool selection
+    $allowedTools = [
+        'trim', 'removewhitespace', 'reverse', 'repeat', 'shuffle', 'uppercase', 'lowercase',
+        'titlecase', 'camelcase', 'slugify', 'kebabcase', 'randomcase', 'invertedcase',
+        'l33t5p34k', 'crlf2lf', 'lf2crlf', 'formatlineendings', 'removehtmltags',
+        'removepunctuation', 'removenewlines', 'removetabs', 'removespaces', 'removeslashes',
+        'removebackslashes', 'removenonascii', 'removenonprintable', 'removewhitespaceext',
+        'removenumbers', 'removeletters', 'removesymbols', 'removeextendedsymbols'
+    ];
     $tool = req_get($req, 'tool', '');
 
-    if (empty($string)) {
-        return formatOutput("You must enter a string.", type: "danger");
-    }
-    if (empty($tool)) {
-        return formatOutput("You must select a tool.", type: "danger");
+    if (empty($tool) || !in_array($tool, $allowedTools)) {
+        return formatOutput("Invalid tool selected.", type: "danger");
     }
 
     // Apply string transformations
