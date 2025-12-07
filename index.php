@@ -75,7 +75,7 @@ foreach (glob("modules/*.php") as $module) {
         <div class="modal-dialog modal-xl" role="document">
             <div class="modal-content" data-backdrop="static">
                 <h1 class="modal-header">Changelog</h1>
-                <div class="modal-body" id="changelogMarkdown" style="max-height: 70vh; overflow-y: auto;"><?= file_get_contents("CHANGELOG.md") ?></div>
+                <div class="modal-body" id="changelogMarkdown" style="max-height: 70vh; overflow-y: auto;"><?= htmlspecialchars(file_get_contents("CHANGELOG.md")) ?></div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                 </div>
