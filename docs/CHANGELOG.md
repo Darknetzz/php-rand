@@ -1,3 +1,31 @@
+## **v1.2.2**
+> ### new
+> * **Global UTF-8 encoding configuration** - ensures all modules run with proper UTF-8 character encoding
+>   * ini_set('default_charset', 'UTF-8')
+>   * mb_internal_encoding('UTF-8')
+>   * mb_http_output('UTF-8')
+>   * mb_regex_encoding('UTF-8')
+> * **Comprehensive PHPDoc documentation** - all functions now have full docblocks
+>   * 20+ functions documented in includes/functions.php
+>   * 13+ functions documented in includes/handlers_functional.php
+>   * Each docblock includes: description, @param, @return, @example tags
+> * **Context-aware random input generator** - smart detection for appropriate sample data
+>   * Calculator module: generates math expressions (e.g., "25+8*3")
+>   * Networking tools: generates IPs, CIDR notation, domain names (form-context aware)
+>   * Diff viewer: multi-line text content for comparison
+>   * Serialization: JSON objects
+>   * Supports field detection for multi-input forms (start/end IP detection)
+>   * New generators: randomCalculation(), randomCIDR(), randomIPRange(), randomSubnetMask(), randomDomain(), randomYAML(), randomXML(), randomIPv6()
+> ### changed
+> * random data generator: now passes $input element to generateRandomData() for better context detection
+> * includes/config.php: added UTF-8 configuration directives
+> * js/rand.js: enhanced generateRandomData() function signature to accept $input parameter
+> * networking module outputs: fixed HTML rendering issues
+>   * CIDR to Range: now displays formatted grid instead of raw HTML tags
+>   * Range to CIDR: direct HTML output with flexbox container and copy button
+>   * Subnet Mask: direct HTML output with styled container
+> * README.md: updated features list to reflect DNS lookup and improved Levenshtein/Diff tools
+
 ## **v1.2.1**
 > ### new
 > * **Random Data Buttons** - automatic random data generation buttons for all input fields

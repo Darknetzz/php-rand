@@ -328,7 +328,22 @@ $(document).ready(function() {
 /* ===================================================================== */
 /*                    FUNCTION: generateRandomData                       */
 /* ===================================================================== */
-function generateRandomData(type, placeholder = '') {
+/**
+ * Generate contextually appropriate random data for input fields
+ * 
+ * Detects the form/module context and generates relevant sample data:
+ * - Calculator: Math expressions (e.g., "25+8*3")
+ * - Networking: IP addresses, CIDR notations, domain names
+ * - Hashing/Encoding: Text, JSON, code snippets
+ * - String tools: Lorem ipsum text, emails
+ * And many more context-specific generators
+ * 
+ * @param {string} type - Input type ('text', 'textarea', 'number', etc.)
+ * @param {string} placeholder - Input placeholder text for context detection
+ * @param {jQuery|string} $input - The input element or container form for additional context
+ * @returns {string} Randomly generated data appropriate for the context
+ */
+function generateRandomData(type, placeholder = '', $input = null) {
     const randomStr = (len) => {
         const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
         let result = '';
@@ -381,6 +396,18 @@ function generateRandomData(type, placeholder = '') {
         return randomInt(1, 255) + '.' + randomInt(0, 255) + '.' + randomInt(0, 255) + '.' + randomInt(1, 254);
     };
 
+    const randomIPv6 = () => {
+        const hex = '0123456789abcdef';
+        let result = '';
+        for (let i = 0; i < 8; i++) {
+            if (i > 0) result += ':';
+            for (let j = 0; j < 4; j++) {
+                result += hex.charAt(randomInt(0, 15));
+            }
+        }
+        return result;
+    };
+
     const randomHex = () => {
         const hex = '0123456789abcdef';
         let result = '';
@@ -404,9 +431,129 @@ function generateRandomData(type, placeholder = '') {
         }, null, 2);
     };
 
+    const randomCalculation = () => {
+        const operations = ['+', '-', '*', '/'];
+        const nums = [randomInt(1, 100), randomInt(1, 100), randomInt(1, 100)];
+        const ops = [operations[randomInt(0, 3)], operations[randomInt(0, 3)]];
+        return `${nums[0]}${ops[0]}${nums[1]}${ops[1]}${nums[2]}`;
+    };
+
+    const randomCIDR = () => {
+        return randomInt(10, 172) + '.' + randomInt(0, 255) + '.' + randomInt(0, 255) + '.0/' + randomInt(16, 30);
+    };
+
+    const randomIPRange = () => {
+        const start = randomInt(10, 172) + '.' + randomInt(0, 255) + '.' + randomInt(0, 255) + '.' + randomInt(1, 200);
+        const end = randomInt(10, 172) + '.' + randomInt(0, 255) + '.' + randomInt(0, 255) + '.' + randomInt(200, 254);
+        return start + ' to ' + end;
+    };
+
+    const randomSubnetMask = () => {
+        const masks = ['255.255.255.0', '255.255.255.128', '255.255.255.192', '255.255.255.224', 
+                      '255.255.0.0', '255.255.128.0', '255.255.192.0', '255.0.0.0'];
+        return masks[randomInt(0, masks.length - 1)];
+    };
+
+    const randomDomain = () => {
+        const domains = ['example.com', 'test.org', 'sample.net', 'demo.io', 'localhost', 'google.com'];
+        return domains[randomInt(0, domains.length - 1)];
+    };
+
+    const randomYAML = () => {
+        return 'name: ' + randomStr(8) + '\nversion: 1.0.0\nauthor: ' + randomStr(6) + '\ndescription: Sample configuration';
+    };
+
+    const randomXML = () => {
+        return '<?xml version="1.0" encoding="UTF-8"?>\n<root>\n  <item id="' + randomInt(1, 100) + '">' + randomStr(8) + '</item>\n</root>';
+    };
+
+    // Detect form context via $input element
+    let formAction = '';
+    let formId = '';
+    if ($input && $input.length) {
+        const $form = $input.closest('form');
+        if ($form.length) {
+            formAction = ($form.attr('data-action') || '').toLowerCase();
+            formId = ($form.attr('id') || '').toLowerCase();
+        }
+    }
+
     // Detect what type of data to generate based on context
     const placeholderLower = placeholder.toLowerCase();
     const typeLower = type.toLowerCase();
+
+    // =====================================================================
+    // CONTEXT-AWARE DETECTION BY FORM/MODULE
+    // =====================================================================
+
+    // Calculator module - generate math expressions
+    if (formAction === 'calc' || formId === 'calc' || placeholderLower.includes('calculation')) {
+        return randomCalculation();
+    }
+
+    // Networking/IP tools
+    if (formAction === 'ip' || formId.includes('ip') || formId.includes('dns') || formId.includes('cidr') || formId.includes('subnet')) {
+        // CIDR to Range
+        if (formId.includes('cidr2range')) {
+            return randomCIDR();
+        }
+        // Range to CIDR
+        if (formId.includes('range2cidr')) {
+            // For range2cidr, alternate between start and end IP fields
+            const inputName = $input ? $input.attr('name') : '';
+            if (inputName.includes('end') || inputName.includes('to')) {
+                return randomInt(10, 172) + '.' + randomInt(0, 255) + '.' + randomInt(0, 255) + '.' + randomInt(200, 254);
+            }
+            return randomInt(10, 172) + '.' + randomInt(0, 255) + '.' + randomInt(0, 255) + '.' + randomInt(1, 100);
+        }
+        // Subnet calculator
+        if (formId.includes('subnet')) {
+            const inputName = $input ? $input.attr('name') : '';
+            if (inputName.includes('subnet')) {
+                return randomSubnetMask();
+            }
+            return randomIP();
+        }
+        // DNS lookup
+        if (formId.includes('dns')) {
+            return Math.random() > 0.5 ? randomDomain() : randomIP();
+        }
+        // IP/Hex converter
+        if (formId.includes('iphex')) {
+            const inputName = $input ? $input.attr('name') : '';
+            if (inputName === 'iphex') {
+                return Math.random() > 0.5 ? randomIP() : randomHex();
+            }
+        }
+        // Default for IP context
+        return randomIP();
+    }
+
+    // Serialization/Encoding modules
+    if (formAction === 'serialization' || formId.includes('serial')) {
+        return randomJSON();
+    }
+
+    // Base/Encoding conversion
+    if (formAction === 'base' || formId === 'base') {
+        return randomStr(20);
+    }
+
+    // Diff viewer - generate multi-line text
+    if (formAction === 'diff' || formId === 'diff') {
+        const inputName = $input ? $input.attr('name') : '';
+        if (inputName.includes('old') || inputName === 'diff1') {
+            return randomText(3) + '\n' + randomText(2) + '\nOriginal line that stays';
+        }
+        if (inputName.includes('new') || inputName === 'diff2') {
+            return randomText(3) + '\n' + randomText(2) + '\nModified line that changes';
+        }
+        return randomText(4);
+    }
+
+    // =====================================================================
+    // PLACEHOLDER-BASED DETECTION (Fallback)
+    // =====================================================================
 
     if (typeLower === 'number') {
         return randomInt(1, 1000).toString();
@@ -416,12 +563,26 @@ function generateRandomData(type, placeholder = '') {
         return randomEmail();
     }
 
+    if (placeholderLower.includes('calculation')) {
+        return randomCalculation();
+    }
+
     if (placeholderLower.includes('url') || placeholderLower.includes('link')) {
         return randomUrl();
     }
 
     if (placeholderLower.includes('ip') || placeholderLower.includes('address')) {
+        if (placeholderLower.includes('ipv6')) {
+            return randomIPv6();
+        }
         return randomIP();
+    }
+
+    if (placeholderLower.includes('cidr') || placeholderLower.includes('subnet')) {
+        if (placeholderLower.includes('range')) {
+            return randomCIDR();
+        }
+        return randomSubnetMask();
     }
 
     if (placeholderLower.includes('hex') || placeholderLower.includes('hash')) {
@@ -436,14 +597,32 @@ function generateRandomData(type, placeholder = '') {
         return randomJSON();
     }
 
+    if (placeholderLower.includes('yaml')) {
+        return randomYAML();
+    }
+
+    if (placeholderLower.includes('xml')) {
+        return randomXML();
+    }
+
     if (placeholderLower.includes('code')) {
         return randomCode();
     }
 
+    if (placeholderLower.includes('domain')) {
+        return randomDomain();
+    }
+
     // For textareas or text inputs, generate appropriate content
     if (type === 'textarea') {
-        if (placeholderLower.includes('yaml') || placeholderLower.includes('xml')) {
-            return randomJSON(); // Close enough for demo purposes
+        if (placeholderLower.includes('yaml')) {
+            return randomYAML();
+        }
+        if (placeholderLower.includes('xml')) {
+            return randomXML();
+        }
+        if (placeholderLower.includes('json')) {
+            return randomJSON();
         }
         return randomText(5) + '\n\n' + randomText(4);
     }
@@ -516,7 +695,7 @@ function addRandomDataButtons() {
 
         // Add click handler
         $btn.on('click', function() {
-            const randomData = generateRandomData(inputType, placeholder);
+            const randomData = generateRandomData(inputType, placeholder, $input);
             $input.val(randomData).trigger('change').trigger('input');
             
             // Visual feedback
