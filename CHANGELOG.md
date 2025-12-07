@@ -27,7 +27,7 @@
 >   - Request helpers: `req_validate()`, `req_string()`, `req_int_validated()`
 >   - All 9 handler functions updated with validation:
 >     - `handle_stringgen()`: digit count (1-1M), strings count (1-10K), charset selection
->     - `handle_hash()`: input length (0-100K), algorithm whitelist
+>     - `handle_hash()`: input length (0-100K), algorithm whitelist (includes 'all' option)
 >     - `handle_numgen()`: from/to range validation (-1B to +1B), seed validation (1-100 chars)
 >     - `handle_base()`: input length (0-1MB), format whitelist validation
 >     - `handle_hex()`: tool selection, input length, chunk length (1-100)
@@ -37,6 +37,7 @@
 >     - `handle_stringtools()`: input length (0-1MB), tool selection from 30+ options
 >   - Consistent error format with descriptive user-friendly messages
 >   - DOS prevention through length constraints on all text inputs
+>   - Simplified validation to avoid false positives on optional fields
 >
 > **Changed**
 > - random data generator now passes the $input element into `generateRandomData()` for accurate context detection
@@ -48,6 +49,7 @@
 >   - Subnet Mask: styled container
 > - README.md refreshed to note DNS lookup and enhanced Levenshtein/Diff tools
 > - All handlers now validate input early before processing to prevent logic errors
+> - Validation uses direct checks instead of strict helper functions to allow optional fields and default values
 
 ## **v1.2.1**
 > ### new

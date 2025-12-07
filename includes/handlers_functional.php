@@ -279,24 +279,25 @@ function handle_stringgen(array $req): string {
  */
 function handle_hash(array $req): string {
     // Validate input exists
-    $inputValidation = req_string($req, 'hash', 0, 100000);
-    if (!$inputValidation['valid']) {
-        return formatOutput($inputValidation['error'], type: "danger");
-    }
-    $input = $inputValidation['value'];
+    $input = req_get($req, 'hash', '');
     
     if (empty($input)) {
         return formatOutput("Input text is required for hashing.", type: "danger");
     }
     
-    $hashalgo = req_get($req, 'hashalgo');
+    // Validate input length
+    if (strlen($input) > 100000) {
+        return formatOutput("Input text must be at most 100,000 characters.", type: "danger");
+    }
     
-    // Validate algorithm if provided
-    if (!empty($hashalgo) && !in_array($hashalgo, hash_algos())) {
+    $hashalgo = req_get($req, 'hashalgo', 'all');
+    
+    // Validate algorithm if provided and not 'all'
+    if ($hashalgo !== 'all' && !in_array($hashalgo, hash_algos())) {
         return formatOutput("Invalid hash algorithm selected.", type: "danger");
     }
     
-    $types = (!empty($hashalgo) && in_array($hashalgo, hash_algos())) 
+    $types = ($hashalgo !== 'all' && in_array($hashalgo, hash_algos())) 
         ? [$hashalgo] 
         : hash_algos();
 
@@ -368,15 +369,16 @@ function handle_numgen(array $req): string {
  * @return string Formatted HTML with conversion result or error message
  */
 function handle_base(array $req): string {
+    // Get and validate input
+    $input = req_get($req, 'base', '');
+    
     // Validate input length (up to 1MB encoded)
-    $inputValidation = req_string($req, 'base', 0, 1000000);
-    if (!$inputValidation['valid']) {
-        return formatOutput($inputValidation['error'], type: "danger");
+    if (strlen($input) > 1000000) {
+        return formatOutput("Input must be at most 1,000,000 characters.", type: "danger");
     }
-    $input = $inputValidation['value'];
 
     // Validate source and target formats (whitelist allowed formats)
-    $allowedFormats = ['text', 'base64', 'base32', 'hex', 64, 32, 16, 2];
+    $allowedFormats = ['text', 'base64', 'base32', 'hex', '64', '32', '16', '2', 64, 32, 16, 2];
     $from = req_get($req, 'from', 'text');
     $to = req_get($req, 'to', 64);
 
@@ -417,22 +419,23 @@ function handle_hex(array $req): string {
         return formatOutput("Invalid tool selected.", type: "danger");
     }
 
-    // Validate input - try binhex first, then iphex
-    $inputValidation = req_string($req, 'binhex', 1, 100000);
-    if (!$inputValidation['valid']) {
-        $inputValidation = req_string($req, 'iphex', 1, 100000);
-        if (!$inputValidation['valid']) {
-            return formatOutput("Input is required.", type: "danger");
-        }
+    // Get input - try binhex first, then iphex
+    $input = trim(req_get($req, 'binhex', '') ?: req_get($req, 'iphex', ''));
+    
+    if (empty($input)) {
+        return formatOutput("Input is required.", type: "danger");
     }
-    $input = trim($inputValidation['value']);
+    
+    // Validate input length
+    if (strlen($input) > 100000) {
+        return formatOutput("Input must be at most 100,000 characters.", type: "danger");
+    }
 
     // Validate chunk length for split output
-    $chunkValidation = req_int_validated($req, 'chunklength', 1, 100);
-    if (!$chunkValidation['valid']) {
-        return formatOutput($chunkValidation['error'], type: "danger");
+    $chunkLength = req_int($req, 'chunklength', 2);
+    if ($chunkLength < 1 || $chunkLength > 100) {
+        return formatOutput("Chunk length must be between 1 and 100.", type: "danger");
     }
-    $chunkLength = $chunkValidation['value'];
 
     $split = req_bool($req, 'split');
     $delimiter = req_get($req, 'delimiter', ':');
@@ -480,12 +483,16 @@ function handle_hex(array $req): string {
  * @return string Formatted HTML with rotated text or all brute force options
  */
 function handle_rot(array $req): string {
-    // Validate input
-    $inputValidation = req_string($req, 'rot', 1, 100000);
-    if (!$inputValidation['valid']) {
-        return formatOutput($inputValidation['error'], type: "danger");
+    // Get and validate input
+    $input = req_get($req, 'rot', '');
+    
+    if (empty($input)) {
+        return formatOutput("Input text is required.", type: "danger");
     }
-    $input = $inputValidation['value'];
+    
+    if (strlen($input) > 100000) {
+        return formatOutput("Input must be at most 100,000 characters.", type: "danger");
+    }
 
     $bruteforce = req_bool($req, 'bruteforce');
 
@@ -499,11 +506,10 @@ function handle_rot(array $req): string {
     }
 
     // Validate rotation amount (0-25)
-    $rotationsValidation = req_int_validated($req, 'rotations', 0, 25);
-    if (!$rotationsValidation['valid']) {
-        return formatOutput($rotationsValidation['error'], type: "danger");
+    $rotations = req_int($req, 'rotations', 13);
+    if ($rotations < 0 || $rotations > 25) {
+        return formatOutput("Rotation amount must be between 0 and 25.", type: "danger");
     }
-    $rotations = $rotationsValidation['value'];
 
     $result = str_rot($input, $rotations);
     return output_copyable($result);
@@ -527,19 +533,17 @@ function handle_openssl(array $req): string {
         return formatOutput("Invalid tool selected.", type: "danger");
     }
 
-    // Validate input data
-    $inputValidation = req_string($req, 'openssl', 0, 1000000);
-    if (!$inputValidation['valid']) {
-        return formatOutput($inputValidation['error'], type: "danger");
+    // Get and validate input data
+    $string = req_get($req, 'openssl', '');
+    if (strlen($string) > 1000000) {
+        return formatOutput("Input must be at most 1,000,000 characters.", type: "danger");
     }
-    $string = $inputValidation['value'];
 
-    // Validate key
-    $keyValidation = req_string($req, 'key', 0, 1000);
-    if (!$keyValidation['valid']) {
-        return formatOutput($keyValidation['error'], type: "danger");
+    // Get and validate key
+    $key = req_get($req, 'key', '');
+    if (strlen($key) > 1000) {
+        return formatOutput("Key must be at most 1,000 characters.", type: "danger");
     }
-    $key = $keyValidation['value'];
 
     // Validate cipher and IV
     $cipher = req_get($req, 'cipher', 'aes-256-cbc');
@@ -643,12 +647,12 @@ function handle_datetime(array $req): string {
  * @return string Formatted HTML with transformed string or plain text
  */
 function handle_stringtools(array $req): string {
-    // Validate input string
-    $stringValidation = req_string($req, 'string', 0, 1000000);
-    if (!$stringValidation['valid']) {
-        return formatOutput($stringValidation['error'], type: "danger");
+    // Get and validate input string
+    $string = req_get($req, 'string', '');
+    
+    if (strlen($string) > 1000000) {
+        return formatOutput("Input must be at most 1,000,000 characters.", type: "danger");
     }
-    $string = $stringValidation['value'];
 
     // Validate tool selection
     $allowedTools = [
