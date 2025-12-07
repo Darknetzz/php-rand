@@ -316,12 +316,25 @@ $(document).ready(function() {
     /*                            Changelog modal                            */
     /* ===================================================================== */
     var changelog = $("#changelogMarkdown");
-    // Configure marked to allow HTML for collapsible details
+    // Configure marked to allow HTML and use a custom renderer for blockquotes
+    const renderer = new marked.Renderer();
+    const originalBlockquote = renderer.blockquote;
+    
     marked.setOptions({
         breaks: true,
-        gfm: true
+        gfm: true,
+        renderer: renderer
     });
-    changelog.html(marked.parse(changelog.text()));
+    
+    let html = marked.parse(changelog.text());
+    
+    // Post-process to handle <details> tags that might have been escaped
+    html = html.replace(/&lt;details&gt;/g, '<details>');
+    html = html.replace(/&lt;\/details&gt;/g, '</details>');
+    html = html.replace(/&lt;summary&gt;/g, '<summary>');
+    html = html.replace(/&lt;\/summary&gt;/g, '</summary>');
+    
+    changelog.html(html);
 
     /* ===================================================================== */
     /*                      Add Random Data Buttons                          */
