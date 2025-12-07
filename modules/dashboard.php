@@ -29,7 +29,7 @@
             <?= icon("stars", 2, "#0dcaf0") ?>
         </div>
         <div class="ms-3">
-            <h4 class="alert-heading mb-2">✨ New in v1.2.1: Random Data Buttons!</h4>
+            <h4 class="alert-heading mb-2">✨ New in v1.2.2: Random Data Buttons!</h4>
             <p class="mb-0">
                 Click the shuffle button (<?= icon("shuffle") ?>) next to any input field to instantly generate contextual random data. 
                 Smart detection for emails, URLs, IPs, JSON, and more!
