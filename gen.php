@@ -2,12 +2,12 @@
 header('Content-Type: text/html; charset=utf-8');
 
 require_once("includes/_includes.php");
+require_once("includes/handlers_functional.php");
 
 do {
-
-/* ===================================================================== */
-/*                            NOTE: Debug info                           */
-/* ===================================================================== */
+  /* ===================================================================== */
+  /*                            NOTE: Debug info                           */
+  /* ===================================================================== */
   $rVars = trim(json_encode($_REQUEST, JSON_PRETTY_PRINT));
   $debug = "
     <a class='btn btn-warning' data-bs-toggle='collapse' data-bs-target='#debugCard' aria-expanded='false' aria-controls='debugCard'>".icon('bug-fill')."</a>
@@ -23,20 +23,27 @@ do {
     </div>
   ";
 
-  // echo "<hr>";
   if (!isset($_POST['action'])) {
     break;
   }
 
-  # Return type (html / text)
-  $responsetype = "html";
-  if (!empty($_POST['responsetype'])) {
-    $responsetype = $_POST['responsetype'];
+  $responsetype = $_POST['responsetype'] ?? 'html';
+  
+  // Try to execute handler
+  $output = executeHandler($_POST);
+  
+  if ($output !== null) {
+    echo $output;
+    if ($responsetype === 'html') {
+      echo $debug;
+    }
+    break;
   }
 
+  // Fall back to legacy inline handlers if no handler found
   $action = $_POST['action'];
-  $tool   = ($_POST['tool'] ?? Null);
-  $input  = ($_POST['input'] ?? Null);
+  $tool   = $_POST['tool'] ?? null;
+  $input  = $_POST['input'] ?? null;
 
 
 /* ===================================================================== */
