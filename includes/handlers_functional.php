@@ -505,14 +505,18 @@ function handle_rot(array $req): string {
         return $output;
     }
 
-    // Validate rotation amount (0-25)
-    $rotations = req_int($req, 'rotations', 13);
-    if ($rotations < 0 || $rotations > 25) {
-        return formatOutput("Rotation amount must be between 0 and 25.", type: "danger");
-    }
+    // Normalize rotation amount to 0-25 so larger/negative inputs still work
+    $rotationsRaw = req_int($req, 'rotations', 13);
+    $rotations = (($rotationsRaw % 26) + 26) % 26;
 
     $result = str_rot($input, $rotations);
-    return output_copyable($result);
+
+    $note = '';
+    if ($rotationsRaw !== $rotations) {
+        $note = formatOutput("Rotation normalized to $rotations (input: $rotationsRaw).", type: "info");
+    }
+
+    return $note . output_copyable($result);
 }
 
 /**
