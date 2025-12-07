@@ -6,10 +6,10 @@
 >
 > **New**
 > - **Global UTF-8 encoding configuration** to keep every module consistent
->   - ini_set('default_charset', 'UTF-8')
->   - mb_internal_encoding('UTF-8')
->   - mb_http_output('UTF-8')
->   - mb_regex_encoding('UTF-8')
+>   - `ini_set('default_charset', 'UTF-8')`
+>   - `mb_internal_encoding('UTF-8')`
+>   - `mb_http_output('UTF-8')`
+>   - `mb_regex_encoding('UTF-8')`
 > - **Comprehensive PHPDoc documentation** across core helpers
 >   - 20+ functions documented in includes/functions.php
 >   - 13+ functions documented in includes/handlers_functional.php
