@@ -317,29 +317,18 @@ $(document).ready(function() {
     /* ===================================================================== */
     var changelog = $("#changelogMarkdown");
     
-    // Get the raw markdown text
+    // Get the raw markdown text and decode HTML entities so raw <details> tags are visible to marked
     let markdownText = changelog.text();
-    
-    // Pre-process: protect <details> tags by converting to a safe marker
-    markdownText = markdownText.replace(/<details>/g, '___DETAILS_OPEN___');
-    markdownText = markdownText.replace(/<\/details>/g, '___DETAILS_CLOSE___');
-    markdownText = markdownText.replace(/<summary>/g, '___SUMMARY_OPEN___');
-    markdownText = markdownText.replace(/<\/summary>/g, '___SUMMARY_CLOSE___');
-    
-    // Parse with marked
+    const decodeHtml = (str) => $('<textarea/>').html(str).text();
+    markdownText = decodeHtml(markdownText);
+
+    // Parse with marked (GFM with line breaks)
     marked.setOptions({
         breaks: true,
         gfm: true
     });
-    let html = marked.parse(markdownText);
-    
-    // Post-process: restore the <details> tags
-    html = html.replace(/___DETAILS_OPEN___/g, '<details>');
-    html = html.replace(/___DETAILS_CLOSE___/g, '</details>');
-    html = html.replace(/___SUMMARY_OPEN___/g, '<summary>');
-    html = html.replace(/___SUMMARY_CLOSE___/g, '</summary>');
-    
-    changelog.html(html);
+
+    changelog.html(marked.parse(markdownText));
 
     /* ===================================================================== */
     /*                      Add Random Data Buttons                          */

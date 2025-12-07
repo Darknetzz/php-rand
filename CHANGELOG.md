@@ -6,8 +6,9 @@
 - **Context-aware random data** - Smart sample data based on field type
 - **Input validation framework** - Security hardening with DOS prevention
 
-<details>
+<details class="changelog-details">
 <summary><strong>📋 Detailed Changes</strong> (click to expand)</summary>
+<div class="changelog-panel">
 
 #### UTF-8 Configuration
 - Added `ini_set('default_charset', 'UTF-8')` and `mb_*` function defaults
@@ -35,6 +36,7 @@
 - README updated with DNS lookup and enhanced tools
 - Validation simplified to support optional fields
 
+</div>
 </details>
 
 ---
@@ -45,8 +47,9 @@
 - **Random Data Buttons** - Auto-generate contextual sample data for all inputs
 - **Dashboard redesign** - Modern UI with stats, categories, and feature highlights
 
-<details>
+<details class="changelog-details">
 <summary><strong>📋 Detailed Changes</strong> (click to expand)</summary>
+<div class="changelog-panel">
 
 #### Random Data Buttons
 - Smart context detection (email, URL, IP, hex, JSON, etc.)
@@ -59,7 +62,10 @@
 - Color-coded categories (generators: teal, cryptography: blue, encoding: purple, convert: orange, misc: pink)
 - Fun facts section with educational content
 
+</div>
 </details>
+
+---
 
 ## **v1.2.0**
 
@@ -68,8 +74,9 @@
 - **Pure PHP diff** - No xdiff extension required
 - **Copyable outputs** - Consistent styled output boxes everywhere
 
-<details>
+<details class="changelog-details">
 <summary><strong>📋 Detailed Changes</strong> (click to expand)</summary>
+<div class="changelog-panel">
 
 #### New Features
 - Global `copyableOutput()` function for styled output boxes
@@ -102,7 +109,10 @@ Specific updates:
 - Copy-to-clipboard HTTP/HTTPS support
 - Dark theme contrast improvements
 
+</div>
 </details>
+
+---
 
 ## **v1.1.1**
 
@@ -110,8 +120,9 @@ Specific updates:
 - **New modules**: Metaphone, Levenshtein, Diff, Currency converter
 - **Networking**: DNS lookup tool
 
-<details>
+<details class="changelog-details">
 <summary><strong>📋 Detailed Changes</strong> (click to expand)</summary>
+<div class="changelog-panel">
 
 - Module: metaphone (phonetic key generation)
 - Module: levenshtein (string distance)
@@ -121,7 +132,10 @@ Specific updates:
 - String generator: info output now in table format
 - String tools: output to textbox disabled by default
 
+</div>
 </details>
+
+---
 
 ## **v1.1.0**
 
@@ -130,8 +144,9 @@ Specific updates:
 - **New converters**: Markdown, Minify
 - **Spin the wheel** - Now an actual wheel animation
 
-<details>
+<details class="changelog-details">
 <summary><strong>📋 Detailed Changes</strong> (click to expand)</summary>
+<div class="changelog-panel">
 
 #### New Modules
 - Encoding: urlencoding
@@ -149,17 +164,24 @@ Specific updates:
 #### Fixes
 - Navbar: removed duplicate hash
 
+</div>
 </details>
+
+---
 
 ## **v1.0.2**
 
 ### 🎉 Major Features
 - **Calculator module** added
 
+---
+
 ## **v1.0.1**
 
 ### 🎉 Major Features
 - **Logogen submodule** added
+
+---
 
 ## **v1.0.0**
 
@@ -167,8 +189,9 @@ Specific updates:
 - **Changelog modal** with marked.js
 - **Updated dependencies**: Tabler v1.4.0, Highlight.js v11.11.1
 
-<details>
+<details class="changelog-details">
 <summary><strong>📋 Detailed Changes</strong> (click to expand)</summary>
+<div class="changelog-panel">
 
 - Changelog modal implementation
 - Marked.js for markdown rendering
@@ -177,4 +200,5 @@ Specific updates:
 - Modal background opacity and color adjusted
 - Fixed href on nav changelog button
 
+</div>
 </details>
