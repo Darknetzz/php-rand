@@ -230,12 +230,17 @@ function handle_stringgen(array $req): string {
     }
     
     $cchars = req_get($req, 'cchars', '');
+    $cryptoSafe = req_bool($req, 'cryptoSafe');
 
     $results = [];
     $infoTables = [];
 
     for ($i = 0; $i < $strings; $i++) {
-        $string = genStr($charsets, $length, $cchars);
+        if ($cryptoSafe) {
+            $string = genStrCrypto($charsets, $length, $cchars);
+        } else {
+            $string = genStr($charsets, $length, $cchars);
+        }
         $results[] = $string;
         
         $table = "<table class='table table-default'>";
@@ -251,6 +256,9 @@ function handle_stringgen(array $req): string {
     }
 
     $output = "<hr>";
+    if ($cryptoSafe) {
+        $output .= "<div class='alert alert-success mb-3'>" . icon('shield-check') . " <strong>Cryptographically Secure Random</strong> - Generated using random_bytes()</div>";
+    }
     foreach ($results as $string) {
         $output .= output_copyable($string);
     }

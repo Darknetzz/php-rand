@@ -275,6 +275,38 @@ function genStr(string $charsets, int $length = Null, $cchars = Null) {
     return $str;
 }
 
+/**
+ * Generate a random string using cryptographically secure random_bytes()
+ * 
+ * Uses random_bytes() for cryptographically secure randomness, suitable for
+ * security-critical applications like tokens, passwords, and keys.
+ *
+ * @param string $charsets Character set flags (l=lowercase, u=uppercase, n=numbers, s=symbols, e=extended, c=custom)
+ * @param int $length Length of the generated string
+ * @param string|null $cchars Custom characters if 'c' is in charsets
+ * @return string Randomly generated string
+ */
+function genStrCrypto(string $charsets, int $length = Null, $cchars = Null) {
+    $charsets = str_split($charsets);
+    $l        = (in_array('l', $charsets)                    ? range('a', 'z')                                   : []);
+    $u        = (in_array('u', $charsets)                    ? range('A', 'Z')                                   : []);
+    $n        = (in_array('n', $charsets)                    ? range(0, 9)                                       : []);
+    $s        = (in_array('s', $charsets)                    ? str_split("!#¤%&\/() = ?;: -_.,'\"*^<>{}[]@~+´`") : []);
+    $e        = (in_array('e', $charsets)                    ? str_split("ƒ†‡™•")                                : []);
+    $c        = (in_array('c', $charsets) && !empty($cchars) ? str_split($cchars)                                : []);
+    $all      = array_merge($l, $u, $n, $s, $e, $c);
+    $str      = '';
+    if (empty($all)) {
+      return "[empty]";
+    }
+    $max = count($all) - 1;
+    for ($i = 0; $i < $length; $i++) {
+      $randomIndex = ord(random_bytes(1)) % (count($all));
+      $str .= $all[$randomIndex];
+    }
+    return $str;
+}
+
 
 /* ───────────────────────────────────────────────────────────────────── */
 /**
