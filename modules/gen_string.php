@@ -21,7 +21,7 @@
                 <div class="row g-3 mb-4">
                     <div class="col-12">
                         <div class="form-check form-switch">
-                            <input type="checkbox" class="form-check-input" id="cryptoSafe" name="cryptoSafe" value="1">
+                            <input type="checkbox" class="form-check-input" id="cryptoSafe" name="cryptoSafe" value="1" checked>
                             <label class="form-check-label" for="cryptoSafe">
                                 <strong>🔐 Cryptographically Secure</strong>
                                 <small class="text-muted d-block">Use random_bytes() for security-critical applications</small>
