@@ -256,7 +256,7 @@ function str_rot($s, $n = 13) {
  * genStr('luns', 20);          // 20 chars: lowercase, uppercase, numbers, symbols
  * genStr('lunc', 15, '!@#');   // 15 chars: lowercase, uppercase, numbers, custom
  */
-function genStr(string $charsets, int $length = Null, $cchars = Null) {
+function genStr(string $charsets, ?int $length = null, $cchars = null) {
     $charsets = str_split($charsets);
     $l        = (in_array('l', $charsets)                    ? range('a', 'z')                                   : []);
     $u        = (in_array('u', $charsets)                    ? range('A', 'Z')                                   : []);
@@ -286,7 +286,7 @@ function genStr(string $charsets, int $length = Null, $cchars = Null) {
  * @param string|null $cchars Custom characters if 'c' is in charsets
  * @return string Randomly generated string
  */
-function genStrCrypto(string $charsets, int $length = Null, $cchars = Null) {
+function genStrCrypto(string $charsets, ?int $length = null, $cchars = null) {
     $charsets = str_split($charsets);
     $l        = (in_array('l', $charsets)                    ? range('a', 'z')                                   : []);
     $u        = (in_array('u', $charsets)                    ? range('A', 'Z')                                   : []);
@@ -479,7 +479,7 @@ function submitBtn(string $value = "", string $name = "action", string $text = "
  * numGen(1, 100);           // Random number between 1-100
  * numGen(1, 1000, '12345'); // Random number with specific seed
  */
-function numGen(int $from, int $to, string $seed = Null) {
+function numGen(int $from, int $to, ?string $seed = null) {
   $from = (int)$from;
   $to   = (int)$to;
 
