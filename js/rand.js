@@ -678,6 +678,11 @@ function addRandomDataButtons() {
             return;
         }
 
+        // Skip wheel item inputs (they have their own custom handler)
+        if ($input.hasClass('wheelitem-input') || $input.closest('.wheelitem').length > 0) {
+            return;
+        }
+
         // Get input details
         const inputType = $input.is('textarea') ? 'textarea' : $input.attr('type');
         const placeholder = $input.attr('placeholder') || '';
