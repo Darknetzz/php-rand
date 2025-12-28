@@ -142,10 +142,13 @@ const PI = Math.PI;
 const TAU = 2 * PI;
 let arc = TAU / spinthewheel_sectors.length;
 
-document.addEventListener("DOMContentLoaded", () => {
+// Initialize on DOM ready
+$(document).ready(function() {
     // Populate sectors from the form inputs
     updateWheelFromInputs();
     init();
+    // Add random buttons to existing wheel items
+    addRandomButtonsToWheelItems();
 });
 
 function updateWheelFromInputs() {
@@ -293,6 +296,74 @@ function updateItemNumbers() {
 }
 
 /* ===================================================================== */
+/*                      Add random buttons to wheel items                */
+/* ===================================================================== */
+function addRandomButtonsToWheelItems() {
+    // Check if jQuery is available
+    if (typeof jQuery === 'undefined' || typeof $ === 'undefined') {
+        console.warn('jQuery not available for random buttons');
+        return;
+    }
+    
+    var inputs = $(".wheelitem-input");
+    if (inputs.length === 0) {
+        console.log('No wheelitem-input elements found');
+        return;
+    }
+    
+    inputs.each(function() {
+        const $input = $(this);
+        
+        // Skip if already has a random button
+        if ($input.next(".random-data-btn").length > 0 || $input.siblings(".random-data-btn").length > 0) {
+            return;
+        }
+        
+        // Create the random button
+        const $btn = $('<button>', {
+            type: 'button',
+            class: 'btn btn-sm btn-outline-secondary random-data-btn',
+            title: 'Generate random data',
+            html: '<i class="bi bi-shuffle"></i>',
+            css: {
+                'flex-shrink': '0'
+            }
+        });
+        
+        // Add click handler
+        $btn.on("click", function() {
+            const placeholder = $input.attr("placeholder") || "";
+            let randomData;
+            
+            // Use the global generateRandomData function if available
+            if (typeof generateRandomData === 'function') {
+                randomData = generateRandomData('text', placeholder, $input);
+            } else {
+                // Fallback: simple random string
+                const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+                let result = '';
+                for (let i = 0; i < 12; i++) {
+                    result += chars.charAt(Math.floor(Math.random() * chars.length));
+                }
+                randomData = result;
+            }
+            
+            $input.val(randomData).trigger('input').trigger('change');
+            
+            // Visual feedback
+            const originalHtml = $btn.html();
+            $btn.html('<i class="bi bi-check"></i>').removeClass('btn-outline-secondary').addClass('btn-success');
+            setTimeout(function() {
+                $btn.html(originalHtml).removeClass('btn-success').addClass('btn-outline-secondary');
+            }, 1000);
+        });
+        
+        // Insert button after the input (before the remove button)
+        $input.after($btn);
+    });
+}
+
+/* ===================================================================== */
 /*                            Add new item                               */
 /* ===================================================================== */
 $("#addtowheel").on("click", function(e) {
@@ -308,6 +379,11 @@ $("#addtowheel").on("click", function(e) {
     `;
     $(".wheelitems").append(input);
     updateWheelFromInputs();
+    updateItemNumbers();
+    // Add random data button to the newly added input
+    setTimeout(function() {
+        addRandomButtonsToWheelItems();
+    }, 50);
 });
 
 /* ===================================================================== */
