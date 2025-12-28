@@ -310,7 +310,12 @@ $("#addtowheel").on("click", function(e) {
     $(".wheelitems").append(input);
     updateWheelFromInputs();
     updateItemNumbers();
-    // Random button will be added automatically by the global addRandomDataButtons function
+    // Add random button to the newly added input (small delay to ensure DOM is ready)
+    setTimeout(function() {
+        if (typeof addRandomDataButtons === 'function') {
+            addRandomDataButtons();
+        }
+    }, 10);
 });
 
 /* ===================================================================== */
