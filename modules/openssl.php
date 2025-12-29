@@ -5,9 +5,11 @@
 -->
 <div id="openssl" class="content">
     <?php
+  $selectedCipher = $_POST['cipher'] ?? 'aes-256-cbc';
   $ciphers = "";
   foreach (openssl_get_cipher_methods() as $thiscipher) {
-    $ciphers .= "<option value='$thiscipher'>$thiscipher</option>";
+    $selected = ($thiscipher === $selectedCipher) ? 'selected' : '';
+    $ciphers .= "<option value='$thiscipher' $selected>$thiscipher</option>";
   }
 ?>
 

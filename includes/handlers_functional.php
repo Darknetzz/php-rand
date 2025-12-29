@@ -561,8 +561,14 @@ function handle_openssl(array $req): string {
     $cipher = req_get($req, 'cipher', 'aes-256-cbc');
     $iv = req_get($req, 'iv', '');
 
-    if (!in_array($cipher, openssl_get_cipher_methods())) {
-        return formatOutput("Cipher `" . htmlspecialchars($cipher) . "` is not supported.", type: "danger");
+    // Ensure cipher is not empty or null
+    if (empty($cipher) || $cipher === 'null' || $cipher === null) {
+        $cipher = 'aes-256-cbc';
+    }
+
+    $validCiphers = openssl_get_cipher_methods();
+    if (!in_array($cipher, $validCiphers)) {
+        return formatOutput("Cipher `" . htmlspecialchars($cipher ?? 'null') . "` is not supported.", type: "danger");
     }
 
     $warnings = '';
@@ -571,8 +577,8 @@ function handle_openssl(array $req): string {
     $ivHex = $iv;
     if (empty($iv)) {
         $ivlen = openssl_cipher_iv_length($cipher);
-        if ($ivlen === false) {
-            return formatOutput("Failed to determine IV length for cipher.", type: "danger");
+        if ($ivlen === false || $ivlen <= 0) {
+            return formatOutput("Failed to determine IV length for cipher `" . htmlspecialchars($cipher) . "`.", type: "danger");
         }
         $ivHex = bin2hex(openssl_random_pseudo_bytes($ivlen));
         $warnings .= formatOutput("No IV specified, using random IV: $ivHex", type: "warning");
