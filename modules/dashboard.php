@@ -24,18 +24,38 @@
     </div>
 
     <!-- New Feature Alert -->
+    <?php
+    $latestVersion = getLatestChangelogVersion();
+    if ($latestVersion && !empty($latestVersion['features'])) {
+        // Use the first feature as the main highlight
+        $firstFeature = $latestVersion['features'][0];
+        $featureTitle = $firstFeature['title'];
+        $featureDesc = !empty($firstFeature['description']) ? $firstFeature['description'] : '';
+        
+        // If description is empty or we want to show multiple features, create a summary
+        if (empty($featureDesc) || count($latestVersion['features']) > 1) {
+            $featureTitles = array_column($latestVersion['features'], 'title');
+            if (count($featureTitles) <= 3) {
+                // Show all features if 3 or fewer
+                $featureDesc = implode(', ', $featureTitles);
+            } else {
+                // Show first 2-3 and "and more"
+                $featureDesc = implode(', ', array_slice($featureTitles, 0, 2)) . ', and more!';
+            }
+        }
+    ?>
     <div class="alert alert-info d-flex align-items-center mb-4" style="border-left: 4px solid #0dcaf0;">
         <div class="flex-shrink-0">
             <?= icon("stars", 2, "#0dcaf0") ?>
         </div>
         <div class="ms-3">
-            <h4 class="alert-heading mb-2">✨ New in v1.2.2: Random Data Buttons!</h4>
+            <h4 class="alert-heading mb-2">✨ New in <?= htmlspecialchars($latestVersion['version']) ?>: <?= htmlspecialchars($featureTitle) ?>!</h4>
             <p class="mb-0">
-                Click the shuffle button (<?= icon("shuffle") ?>) next to any input field to instantly generate contextual random data. 
-                Smart detection for emails, URLs, IPs, JSON, and more!
+                <?= htmlspecialchars($featureDesc) ?>
             </p>
         </div>
     </div>
+    <?php } ?>
 
     <!-- Stats Row -->
     <div class="row g-3 mb-4">

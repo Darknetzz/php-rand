@@ -1376,5 +1376,74 @@ function validateInput($value, $rules = []) {
   return ['valid' => true, 'error' => null, 'value' => $value];
 }
 
+/**
+ * Parse the latest version information from CHANGELOG.md
+ *
+ * Extracts the most recent version number, date, and major features
+ * from the changelog file to dynamically display in the dashboard.
+ *
+ * @return array|null Associative array with 'version', 'date', and 'features', or null on error
+ * 
+ * @example
+ * $latest = getLatestChangelogVersion();
+ * // Returns: ['version' => 'v1.2.3', 'date' => '2025-12-29', 'features' => [...]]
+ */
+function getLatestChangelogVersion(): ?array {
+    $changelogPath = __DIR__ . '/../CHANGELOG.md';
+    
+    if (!file_exists($changelogPath)) {
+        return null;
+    }
+    
+    $content = file_get_contents($changelogPath);
+    if ($content === false) {
+        return null;
+    }
+    
+    // Match the first version header: ## **v1.2.3** (2025-12-29)
+    if (!preg_match('/^## \*\*v([\d.]+)\*\* \((.+?)\)$/m', $content, $versionMatches)) {
+        return null;
+    }
+    
+    $version = 'v' . $versionMatches[1];
+    $date = $versionMatches[2];
+    
+    // Extract major features section (everything between "### 🎉 Major Features" and next section or end)
+    $features = [];
+    
+    // Find the Major Features section after the version header
+    if (preg_match('/### 🎉 Major Features\s*\n((?:- .+?\n?)+)/', $content, $featuresMatch)) {
+        $featuresText = $featuresMatch[1];
+        
+        // Extract each bullet point with format: - **Title** - Description
+        if (preg_match_all('/- \*\*(.+?)\*\* - (.+?)(?:\n|$)/', $featuresText, $featureMatches, PREG_SET_ORDER)) {
+            foreach ($featureMatches as $match) {
+                $features[] = [
+                    'title' => trim($match[1]),
+                    'description' => trim($match[2])
+                ];
+            }
+        } else {
+            // Fallback: try to extract lines starting with - (without the ** format)
+            preg_match_all('/- (.+?)(?:\n|$)/', $featuresText, $simpleMatches);
+            foreach ($simpleMatches[1] as $feature) {
+                $feature = trim($feature);
+                if (!empty($feature)) {
+                    $features[] = [
+                        'title' => $feature,
+                        'description' => ''
+                    ];
+                }
+            }
+        }
+    }
+    
+    return [
+        'version' => $version,
+        'date' => $date,
+        'features' => $features
+    ];
+}
+
 ?>
 
