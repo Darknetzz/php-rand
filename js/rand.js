@@ -498,6 +498,14 @@ function generateRandomData(type, placeholder = '', $input = null) {
     // CONTEXT-AWARE DETECTION BY FORM/MODULE
     // =====================================================================
 
+    // OpenSSL encryption module - generate hex strings for IV and key
+    if (formAction === 'openssl' || formId === 'openssl') {
+        const inputName = $input ? $input.attr('name') : '';
+        if (inputName === 'iv' || inputName === 'key') {
+            return randomHex();
+        }
+    }
+
     // Calculator module - generate math expressions
     if (formAction === 'calc' || formId === 'calc' || placeholderLower.includes('calculation')) {
         return randomCalculation();
