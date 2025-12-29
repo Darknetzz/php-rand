@@ -145,7 +145,7 @@ function cleanString($randomString, $digitsint = null) {
 function returnClean($randomString) {
   $randomString = $randomString;
   $randomString = trim($randomString);
-  return print_r($randomString, True);
+  return print_r($randomString, true);
 }
 
 /**
@@ -325,7 +325,7 @@ function genStrCrypto(string $charsets, ?int $length = null, $cchars = null) {
  * spinWheel(['Item1', 'Item2', 'Item3'], 1);     // Single spin
  * spinWheel(['A', 'B', 'C'], 3, true);           // 3 spins, all unique
  */
-function spinWheel(?array $wheelItems = [], int $spins = 1, bool $unique = False) {
+function spinWheel(?array $wheelItems = [], int $spins = 1, bool $unique = false) {
 
   if (empty($wheelItems)) {
     return alert("You must enter at least one item.", "danger");
@@ -336,14 +336,14 @@ function spinWheel(?array $wheelItems = [], int $spins = 1, bool $unique = False
   }
 
   $countItems = count($wheelItems);
-  $moreSpins  = (isset($spins) && $spins > 1 ? True : False);
+  $moreSpins  = (isset($spins) && $spins > 1 ? true : false);
   $spins      = ($moreSpins) ? $spins : 1;
 
   if ($countItems < 2) {
     return alert("You must enter at least two items.", "danger");
   }
 
-  if (($spins > $countItems) && $unique !== False) {
+  if (($spins > $countItems) && $unique !== false) {
     return alert("You can't spin more than the number of items in the wheel if you want unique results.", "danger");
   }
 
@@ -351,7 +351,7 @@ function spinWheel(?array $wheelItems = [], int $spins = 1, bool $unique = False
   for ($i = 0; $i < $spins; $i++) {
       $dice = mt_rand(0, $countItems-1);
 
-      if ($unique !== False) {
+      if ($unique !== false) {
           while (in_array($dice, $excludes)) {
               $dice = mt_rand(0, $countItems-1);
           }
@@ -530,7 +530,7 @@ function calc($input) {
   // Evaluate the expression
   try {
     $result = eval("return {$input};");
-    if ($result === False) {
+    if ($result === false) {
       return alert("Invalid calculation.", "danger");
     }
     return formatOutput($result, 4, "success");
@@ -604,7 +604,7 @@ function is_hostname(string $s): bool {
  * ip2hex('192.168.1.1', true);             // Returns: 'c0:a8:01:01'
  * ip2hex('192.168.1.1', true, '-');        // Returns: 'c0-a8-01-01'
  */
-function ip2hex ($ip, $split = False, $delimiter = ":") {
+function ip2hex ($ip, $split = false, $delimiter = ":") {
   $hex = bin2hex(inet_pton($ip));
   if ($split) {
     $hex = str_split($hex, 2);
@@ -650,8 +650,8 @@ function hex2ip ($hex) {
  *                                // ]
  */
 function cidr2range($cidr) {
-  if (strpos($cidr, '/') === False) {
-    return False;
+  if (strpos($cidr, '/') === false) {
+    return false;
   }
   $range = [];
   $cidr = explode('/', $cidr);
@@ -667,7 +667,7 @@ function cidr2range($cidr) {
     $range["start"] = inet_ntop($ip & inet_pton($mask));
     $range["end"] = inet_ntop($ip | ~inet_pton($mask));
   } else {
-    return False;
+    return false;
   }
 
   $range["cidr"]  = $cidr[0] . "/" . $prefix;
@@ -694,9 +694,9 @@ function cidr2range($cidr) {
  */
 function range2cidr($start, $end) {
   if (
-    filter_var($start, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === False ||
-    filter_var($end, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === False) {
-    return False;
+    filter_var($start, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === false ||
+    filter_var($end, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === false) {
+    return false;
   }
   $start_long = ip2long($start);
   $end_long   = ip2long($end);
@@ -758,8 +758,8 @@ function range2cidr($start, $end) {
  *                                                  // ]
  */
 function subnetmask($ip, $subnet) {
-  if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === False || filter_var($subnet, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === False) {
-    return False;
+  if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === false || filter_var($subnet, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === false) {
+    return false;
   }
   $ip         = ip2long($ip);
   $subnet     = ip2long($subnet);
@@ -788,7 +788,7 @@ function subnetmask($ip, $subnet) {
     "total_ips"  => ($end - $start) + 1,
     "subnet"     => long2ip($subnet),
     "cidr"       => long2ip($network) . "/" . (32 - (int)log(~$subnet & 0xFFFFFFFF, 2)),
-    "usable_ips" => cidr2range(long2ip($network) . "/" . (32 - (int)log(~$subnet & 0xFFFFFFFF, 2)), True)["total"]
+    "usable_ips" => cidr2range(long2ip($network) . "/" . (32 - (int)log(~$subnet & 0xFFFFFFFF, 2)), true)["total"]
   ];
   return $range;
 }

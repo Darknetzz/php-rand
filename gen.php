@@ -214,7 +214,7 @@ do {
   if ($action == 'hex') {
     $tool         = $_POST['tool'];
     $type         = "success";
-    $split        = (!empty($_POST['split']) ? True : False);
+    $split        = (!empty($_POST['split']) ? true : false);
     $delimiter    = (!empty($_POST['delimiter']) ? $_POST['delimiter'] : ":");
     $chunk_length = (!empty($_POST['chunklength']) ? $_POST['chunklength'] : 2);
     $linebreak    = (!empty($_POST['linebreak']) ? $_POST['linebreak'] : null);
@@ -238,7 +238,7 @@ do {
       $output = bin2hex($input);
 
       # Split
-      if ($split == True) {
+      if ($split == true) {
         $output = chunk_split($output, $chunk_length, $delimiter);
         $output = rtrim($output, $delimiter);
       }
@@ -260,7 +260,7 @@ do {
       $input = str_replace(" ", "", $input);
 
       # More than one IP given
-      if (strpos($input, ",") !== False) {
+      if (strpos($input, ",") !== false) {
         $ip_array = explode(",", $input);
         $output = "";
         foreach ($ip_array as $ip) {
@@ -290,9 +290,9 @@ do {
   if (isset($_POST['numgenfrom']) && isset($_POST['numgento'])) {
       $numgenfrom = $_POST['numgenfrom'];
       $numgento   = $_POST['numgento'];
-      $enableSeed = (isset($_POST['seed']) ? True : False);
+      $enableSeed = (isset($_POST['seed']) ? true : false);
       $seed       = null;
-      if ($enableSeed !== False) {
+      if ($enableSeed !== false) {
         $seed = $_POST['numgenseed'];
       }
       $gen = numGen($numgenfrom, $numgento, $seed);
@@ -313,7 +313,7 @@ do {
       break;
     }
     $result = calc($calcinput);
-    if ($result === False) {
+    if ($result === false) {
       echo formatOutput("Invalid calculation.", type: "danger");
     } else {
       echo formatOutput("Result: <b>$result</b>");
@@ -444,7 +444,7 @@ do {
 
     # Detect input
     if (json_validate($input)) {
-      $input    = json_decode($input, True);
+      $input    = json_decode($input, true);
       $detected = 'JSON';
     }
     // elseif (yaml_parse($input)) {
@@ -479,7 +479,7 @@ do {
   if ($action == "stringtools") {
     $string          = (!empty($_POST['string']) ? $_POST['string']: "");
     $tool            = (!empty($_POST['tool'])  ? $_POST['tool']   : "");
-    $outputToTextbox = (isset($_POST['outputToTextbox']) ? True    :  False);
+    $outputToTextbox = (isset($_POST['outputToTextbox']) ? true    :  false);
 
     if (empty($string)) {
       echo formatOutput("You must enter a string.", type: "danger");
@@ -1232,5 +1232,5 @@ if ($action == "htmlentities") {
   }
 
   echo $debug;
-} while (False);
+} while (false);
 ?>

@@ -15,7 +15,7 @@
                         <i class="fa fa-arrow-left"></i> Open Image Generator
                     </a>
                     ';
-                } while (False);
+                } while (false);
             ?>
         </div>
     </div>
