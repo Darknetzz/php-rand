@@ -1412,28 +1412,18 @@ function getLatestChangelogVersion(): ?array {
     $features = [];
     
     // Find the Major Features section after the version header
-    if (preg_match('/### 🎉 Major Features\s*\n((?:- .+?\n?)+)/', $content, $featuresMatch)) {
+    // Stop at <details>, ---, another ###, or end of string
+    if (preg_match('/### 🎉 Major Features\s*\n((?:- .+?\n?)+?)(?=\n<details|\n---|\n###|$)/s', $content, $featuresMatch)) {
         $featuresText = $featuresMatch[1];
         
         // Extract each bullet point with format: - **Title** - Description
+        // Match pattern: - **Title** - Description\n (only from Major Features section)
         if (preg_match_all('/- \*\*(.+?)\*\* - (.+?)(?:\n|$)/', $featuresText, $featureMatches, PREG_SET_ORDER)) {
             foreach ($featureMatches as $match) {
                 $features[] = [
                     'title' => trim($match[1]),
                     'description' => trim($match[2])
                 ];
-            }
-        } else {
-            // Fallback: try to extract lines starting with - (without the ** format)
-            preg_match_all('/- (.+?)(?:\n|$)/', $featuresText, $simpleMatches);
-            foreach ($simpleMatches[1] as $feature) {
-                $feature = trim($feature);
-                if (!empty($feature)) {
-                    $features[] = [
-                        'title' => $feature,
-                        'description' => ''
-                    ];
-                }
             }
         }
     }

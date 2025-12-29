@@ -27,22 +27,26 @@
     <?php
     $latestVersion = getLatestChangelogVersion();
     if ($latestVersion && !empty($latestVersion['features'])) {
-        // Use the first feature as the main highlight
         $firstFeature = $latestVersion['features'][0];
-        $featureTitle = $firstFeature['title'];
-        $featureDesc = !empty($firstFeature['description']) ? $firstFeature['description'] : '';
+        $featureTitle = isset($firstFeature['title']) ? trim($firstFeature['title']) : '';
         
-        // If description is empty or we want to show multiple features, create a summary
-        if (empty($featureDesc) || count($latestVersion['features']) > 1) {
-            $featureTitles = array_column($latestVersion['features'], 'title');
+        // Build description - if multiple features, list them
+        if (count($latestVersion['features']) > 1) {
+            $featureTitles = array_filter(array_column($latestVersion['features'], 'title'));
             if (count($featureTitles) <= 3) {
-                // Show all features if 3 or fewer
                 $featureDesc = implode(', ', $featureTitles);
             } else {
-                // Show first 2-3 and "and more"
                 $featureDesc = implode(', ', array_slice($featureTitles, 0, 2)) . ', and more!';
             }
+        } else {
+            // Single feature - use its description or title
+            $featureDesc = !empty($firstFeature['description']) 
+                ? trim($firstFeature['description']) 
+                : $featureTitle;
         }
+        
+        // Only show if we have a valid title
+        if (!empty($featureTitle)) {
     ?>
     <div class="alert alert-info d-flex align-items-center mb-4" style="border-left: 4px solid #0dcaf0;">
         <div class="flex-shrink-0">
@@ -55,7 +59,10 @@
             </p>
         </div>
     </div>
-    <?php } ?>
+    <?php 
+        }
+    } 
+    ?>
 
     <!-- Stats Row -->
     <div class="row g-3 mb-4">
