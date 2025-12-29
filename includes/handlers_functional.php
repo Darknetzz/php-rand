@@ -35,6 +35,8 @@ function getHandlerRegistry(): array {
         'spinwheel' => 'handle_spinwheel',
         'calc' => 'handle_calculator',
         'currency' => 'handle_currency',
+        'qrcode' => 'handle_qrcode',
+        'regex' => 'handle_regex',
     ];
 }
 
@@ -749,6 +751,216 @@ function handle_stringtools(array $req): string {
     }
 
     return formatOutput(nl2br($string));
+}
+
+/**
+ * Handle QR code generation requests
+ *
+ * Generates QR codes from input text/URL/data using a free QR code API service.
+ * Supports customizable size and error correction levels.
+ *
+ * @param array $req Request array containing: 'qrcode' (input data), 'size', 'ecc'
+ * @return string Formatted HTML with QR code image and download option
+ */
+function handle_qrcode(array $req): string {
+    // Get and validate input
+    $data = req_get($req, 'qrcode', '');
+    
+    if (empty($data)) {
+        return formatOutput("Input data is required to generate a QR code.", type: "danger");
+    }
+    
+    // Validate input length (QR codes have data capacity limits)
+    if (strlen($data) > 3000) {
+        return formatOutput("Input data is too long. Maximum 3000 characters allowed.", type: "danger");
+    }
+    
+    // Get size (validate and ensure it's in allowed range)
+    $size = req_int($req, 'size', 200);
+    if (!in_array($size, [200, 300, 400, 500])) {
+        $size = 200;
+    }
+    
+    // Get error correction level (validate)
+    $ecc = req_get($req, 'ecc', 'L');
+    if (!in_array($ecc, ['L', 'M', 'Q', 'H'])) {
+        $ecc = 'L';
+    }
+    
+    // URL encode the data for the API
+    $encodedData = urlencode($data);
+    
+    // Use qr-server.com API (free, no authentication required)
+    $qrApiUrl = "https://api.qrserver.com/v1/create-qr-code/?size={$size}x{$size}&data={$encodedData}&ecc={$ecc}&margin=1";
+    
+    // Generate the QR code HTML
+    $output = "<div style='text-align: center; padding: 20px;'>";
+    $output .= "<img src='" . htmlspecialchars($qrApiUrl, ENT_QUOTES, 'UTF-8') . "' alt='QR Code' style='max-width: 100%; height: auto; border: 2px solid #495057; border-radius: 0.5rem; background: white; padding: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);' />";
+    $output .= "<div style='margin-top: 20px;'>";
+    $output .= "<p><strong>Encoded Data:</strong> <code style='word-break: break-all;'>" . htmlspecialchars($data) . "</code></p>";
+    $output .= "<p><strong>Size:</strong> {$size}x{$size}px | <strong>Error Correction:</strong> {$ecc}</p>";
+    $output .= "<a href='" . htmlspecialchars($qrApiUrl, ENT_QUOTES, 'UTF-8') . "' download='qrcode.png' class='btn btn-primary' style='margin-top: 10px;'>";
+    $output .= icon('download') . " Download QR Code";
+    $output .= "</a>";
+    $output .= "</div>";
+    $output .= "</div>";
+    
+    return $output;
+}
+
+/**
+ * Handle regex testing requests
+ *
+ * Tests regular expressions against input text, showing matches, groups,
+ * and optional replacements. Supports common regex flags.
+ *
+ * @param array $req Request array containing: 'pattern', 'teststring', 'replacement', flags
+ * @return string Formatted HTML with regex test results
+ */
+function handle_regex(array $req): string {
+    // Get and validate input
+    $pattern = req_get($req, 'pattern', '');
+    $testString = req_get($req, 'teststring', '');
+    $replacement = req_get($req, 'replacement', '');
+    
+    if (empty($pattern)) {
+        return formatOutput("Regular expression pattern is required.", type: "danger");
+    }
+    
+    if (empty($testString)) {
+        return formatOutput("Test string is required.", type: "danger");
+    }
+    
+    // Validate pattern length
+    if (strlen($pattern) > 5000) {
+        return formatOutput("Pattern is too long. Maximum 5000 characters allowed.", type: "danger");
+    }
+    
+    // Validate test string length
+    if (strlen($testString) > 100000) {
+        return formatOutput("Test string is too long. Maximum 100,000 characters allowed.", type: "danger");
+    }
+    
+    // Build regex flags
+    $flags = '';
+    if (req_bool($req, 'caseless')) {
+        $flags .= 'i';
+    }
+    if (req_bool($req, 'multiline')) {
+        $flags .= 'm';
+    }
+    
+    // Remove delimiters if present (e.g., /pattern/ or #pattern#)
+    $pattern = trim($pattern);
+    $delimiter = '';
+    if (preg_match('/^([^\w\s\\\\])(.*)\\1([gimsxADSUXu]*)$/', $pattern, $matches)) {
+        $delimiter = $matches[1];
+        $pattern = $matches[2];
+        // Merge flags if provided in pattern
+        if (!empty($matches[3])) {
+            $existingFlags = str_replace('g', '', $matches[3]); // Remove 'g' as PHP doesn't use it
+            $flags = implode('', array_unique(str_split($flags . $existingFlags)));
+        }
+    }
+    
+    // Add flags to pattern (PHP style: add flags at the end)
+    $delim = $delimiter ?: '/';
+    // Escape delimiter in pattern if it matches
+    if (strpos($pattern, $delim) !== false && $delim !== '/') {
+        $pattern = str_replace($delim, '\\' . $delim, $pattern);
+    }
+    $fullPattern = $delim . $pattern . $delim . $flags;
+    
+    $output = "<div style='font-family: monospace; font-size: 0.9rem;'>";
+    
+    // Test the regex
+    $matchCount = 0;
+    $allMatches = [];
+    
+    try {
+        // Use preg_match_all for global matching (always get all matches)
+        $matchCount = preg_match_all($fullPattern, $testString, $allMatches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE);
+        
+        if ($matchCount === false) {
+            // Invalid regex
+            $error = error_get_last();
+            return formatOutput("Invalid regular expression pattern. Error: " . htmlspecialchars($error['message'] ?? 'Unknown error'), type: "danger");
+        }
+        
+        // Display results
+        $output .= "<div style='margin-bottom: 20px; padding: 15px; background: rgba(32, 201, 151, 0.1); border-radius: 0.5rem; border-left: 4px solid #20c997;'>";
+        $output .= "<strong>" . icon('check-circle', 1, '#20c997') . " Pattern Valid</strong><br>";
+        $output .= "<code style='word-break: break-all;'>" . htmlspecialchars($fullPattern) . "</code><br>";
+        $output .= "<strong>Matches Found:</strong> " . ($matchCount > 0 ? "<span style='color: #20c997; font-weight: bold;'>{$matchCount}</span>" : "<span style='color: #dc3545;'>0</span>");
+        $output .= "</div>";
+        
+        if ($matchCount > 0) {
+            // Display matches
+            $output .= "<div style='margin-bottom: 20px;'>";
+            $output .= "<h5 style='margin-bottom: 15px;'>Match Details:</h5>";
+            
+            foreach ($allMatches as $matchIndex => $matchSet) {
+                $output .= "<div style='margin-bottom: 15px; padding: 15px; background: rgba(13, 110, 253, 0.1); border-radius: 0.5rem; border-left: 4px solid #0d6efd;'>";
+                $output .= "<strong>Match #" . ($matchIndex + 1) . ":</strong><br>";
+                
+                if (isset($matchSet[0]) && is_array($matchSet[0])) {
+                    $fullMatch = $matchSet[0][0];
+                    $offset = $matchSet[0][1];
+                    $output .= "<div style='margin: 10px 0; padding: 10px; background: #0f172a; color: #e9ecef; border-radius: 0.25rem;'>";
+                    $output .= "<strong>Full Match:</strong> <code style='color: #51cf66;'>" . htmlspecialchars($fullMatch) . "</code><br>";
+                    $output .= "<strong>Position:</strong> {$offset}";
+                    $output .= "</div>";
+                }
+                
+                // Display capture groups
+                if (count($matchSet) > 1) {
+                    $output .= "<strong>Capture Groups:</strong><br>";
+                    for ($i = 1; $i < count($matchSet); $i++) {
+                        if (isset($matchSet[$i]) && is_array($matchSet[$i])) {
+                            $group = $matchSet[$i][0];
+                            $groupOffset = $matchSet[$i][1];
+                            $output .= "<div style='margin: 5px 0; padding: 8px; background: rgba(255,255,255,0.1); border-radius: 0.25rem;'>";
+                            $output .= "<strong>Group {$i}:</strong> <code style='color: #ffc107;'>" . htmlspecialchars($group) . "</code> (position: {$groupOffset})";
+                            $output .= "</div>";
+                        }
+                    }
+                }
+                
+                $output .= "</div>";
+            }
+            
+            $output .= "</div>";
+            
+            // Show replacement if provided
+            if (!empty($replacement)) {
+                try {
+                    $replaced = preg_replace($fullPattern, $replacement, $testString);
+                    if ($replaced !== null) {
+                        $output .= "<div style='margin-bottom: 20px; padding: 15px; background: rgba(255, 193, 7, 0.1); border-radius: 0.5rem; border-left: 4px solid #ffc107;'>";
+                        $output .= "<h5 style='margin-bottom: 10px;'>Replacement Result:</h5>";
+                        $output .= "<div style='padding: 10px; background: #0f172a; color: #e9ecef; border-radius: 0.25rem; white-space: pre-wrap; word-break: break-word;'>";
+                        $output .= htmlspecialchars($replaced);
+                        $output .= "</div>";
+                        $output .= "</div>";
+                    }
+                } catch (Throwable $e) {
+                    $output .= formatOutput("Error during replacement: " . htmlspecialchars($e->getMessage()), type: "warning");
+                }
+            }
+        } else {
+            $output .= "<div style='padding: 15px; background: rgba(220, 53, 69, 0.1); border-radius: 0.5rem; border-left: 4px solid #dc3545;'>";
+            $output .= "<strong>" . icon('x-circle', 1, '#dc3545') . " No matches found</strong><br>";
+            $output .= "The pattern does not match the test string.";
+            $output .= "</div>";
+        }
+        
+    } catch (Throwable $e) {
+        return formatOutput("Error testing regex: " . htmlspecialchars($e->getMessage()), type: "danger");
+    }
+    
+    $output .= "</div>";
+    
+    return $output;
 }
 
 // Additional handlers can be added here following the same pattern...

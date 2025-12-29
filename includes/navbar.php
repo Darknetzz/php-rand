@@ -27,6 +27,11 @@ $navbarItems = [
                 "formalName" => "Image Generator",
                 "icon"       => icon('image')
             ],
+            "qrcode" => [
+                "name"       => "qrcode",
+                "formalName" => "QR Code Generator",
+                "icon"       => icon('qr-code')
+            ],
             "spin_the_wheel" => [
                 "name"       => "spin_the_wheel",
                 "formalName" => "Spin Wheel",
@@ -149,6 +154,11 @@ $navbarItems = [
                 "name"       => "diff",
                 "formalName" => "Diff",
                 "icon"       => icon("file-earmark-diff"),
+            ],
+            "regex" => [
+                "name"       => "regex",
+                "formalName" => "Regex Tester",
+                "icon"       => icon("regex"),
             ],
         ],
     ],
