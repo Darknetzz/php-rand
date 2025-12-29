@@ -67,13 +67,13 @@
 
                             <div class="col-12 col-md-6">
                                 <label for="keyInput" class="form-label"><strong>Encryption Key</strong></label>
-                                <input type="text" name="key" class="form-control form-control-lg" id="keyInput" value="<?= htmlspecialchars($key) ?>" placeholder="Leave empty for random key" style="font-family: monospace;">
+                                <input type="text" name="key" class="form-control form-control-lg" id="keyInput" value="<?= htmlspecialchars($key ?? '') ?>" placeholder="Leave empty for random key" style="font-family: monospace;">
                                 <div class="form-text">Optional: Custom encryption key (auto-generated if empty)</div>
                             </div>
 
                             <div class="col-12 col-md-6">
                                 <label for="ivInput" class="form-label"><strong>Initialization Vector (IV)</strong></label>
-                                <input type="text" name="iv" class="form-control form-control-lg" id="ivInput" value="<?= htmlspecialchars($iv) ?>" placeholder="Leave empty for random IV" style="font-family: monospace;">
+                                <input type="text" name="iv" class="form-control form-control-lg" id="ivInput" value="<?= htmlspecialchars($iv ?? '') ?>" placeholder="Leave empty for random IV" style="font-family: monospace;">
                                 <div class="form-text">Optional: Custom IV (auto-generated if empty)</div>
                             </div>
                         </div>
