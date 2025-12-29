@@ -1,3 +1,65 @@
+## **v1.2.3** (2025-12-29)
+
+### 🎉 Major Features
+- **QR Code Generator** - Generate QR codes from any text, URL, or data
+- **Regex Tester** - Test and debug regular expressions with match highlighting and capture groups
+- **Security Hardening** - Fixed critical code injection vulnerability in calculator
+- **Improved IV Generation** - Fixed OpenSSL IV length and format validation
+
+<details class="changelog-details">
+<summary><strong>📋 Detailed Changes</strong> (click to expand)</summary>
+<div class="changelog-panel">
+
+#### New Modules
+- **QR Code Generator** (Generators menu)
+  - Generate QR codes with customizable size (200-500px)
+  - Error correction levels (L, M, Q, H)
+  - Download QR codes as PNG images
+  - Uses qr-server.com API (no dependencies required)
+- **Regex Tester** (Miscellaneous menu)
+  - Test regular expressions in real-time
+  - Display all matches with positions
+  - Show capture groups
+  - Regex replacement support (with $1, $2 for groups)
+  - Support for common flags (case-insensitive, multiline)
+  - Pattern validation with error messages
+
+#### Security Fixes
+- **CRITICAL: Code Injection Fix** - Replaced dangerous `eval()` in calculator with safe math parser
+  - Created `safeMathEval()` function using tokenization and operator precedence
+  - Eliminates arbitrary code execution vulnerability
+  - Maintains full calculator functionality
+- **Information Disclosure Fix** - Debug mode now disabled by default
+  - Requires `DEBUG_MODE` constant to enable
+  - Prevents exposure of sensitive `$_REQUEST` data
+- **Input Validation** - Added comprehensive validation to calculator function
+
+#### Bug Fixes
+- **OpenSSL IV Generation** - Fixed IV length calculation and hex validation
+  - Removed incorrect division by 2 in IV length calculation
+  - Added hex format validation before conversion
+  - Properly converts hex IV to binary for OpenSSL functions
+  - Improved error messages for invalid IV formats
+- **Cipher Selection** - Fixed null cipher selection in dropdown
+  - Added default selected cipher (aes-256-cbc)
+  - Validates cipher before use to prevent errors
+- **Random Data Generation** - Fixed IV/Key random generation to use hex strings
+  - Context-aware detection for OpenSSL form
+  - Generates valid hexadecimal strings for IV and Key fields
+
+#### Code Quality
+- **Code Standardization** - Converted all `Null`, `True`, `False` to lowercase
+  - Updated throughout codebase for consistency
+  - Follows PHP coding standards
+- **Null Safety** - Added null coalescing operators to prevent deprecation warnings
+  - Fixed `htmlspecialchars()` null parameter warnings
+  - Applied across all modules and handlers
+
+</div>
+</details>
+
+---
+
 ## **v1.2.2** (2025-12-07)
 
 ### 🎉 Major Features
