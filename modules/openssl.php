@@ -26,10 +26,10 @@
                   $iv        = Null;
                   $stringVal = '';
                   if (isset($_POST['openssl'])) {
-                    $openssl   = $_POST['openssl'];
-                    $key       = $_POST['key'];
-                    $iv        = $_POST['iv'];
-                    $stringVal = htmlspecialchars($openssl);
+                    $openssl   = $_POST['openssl'] ?? '';
+                    $key       = $_POST['key'] ?? '';
+                    $iv        = $_POST['iv'] ?? '';
+                    $stringVal = htmlspecialchars($openssl ?? '');
                   }
                 ?>
 

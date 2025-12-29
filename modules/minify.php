@@ -1,6 +1,6 @@
 <div id="minify" class="content">
-    <?php $minifyInputVal = isset($_POST['input']) ? htmlspecialchars($_POST['input']) : ""; ?>
-    <?php $minifyTypeVal = isset($_POST['type']) ? htmlspecialchars($_POST['type']) : "js"; ?>
+    <?php $minifyInputVal = isset($_POST['input']) ? htmlspecialchars($_POST['input'] ?? '') : ""; ?>
+    <?php $minifyTypeVal = isset($_POST['type']) ? htmlspecialchars($_POST['type'] ?? 'js') : "js"; ?>
 
     <div class="card card-primary">
         <h1 class="card-header">⚡ Minify</h1>

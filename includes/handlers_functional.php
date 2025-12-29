@@ -567,10 +567,21 @@ function handle_openssl(array $req): string {
 
     $warnings = '';
 
+    // Generate IV if not provided (store as hex for display)
+    $ivHex = $iv;
     if (empty($iv)) {
-        $ivlen = openssl_cipher_iv_length($cipher) / 2;
-        $iv = bin2hex(openssl_random_pseudo_bytes($ivlen));
-        $warnings .= formatOutput("No IV specified, using random IV: $iv", type: "warning");
+        $ivlen = openssl_cipher_iv_length($cipher);
+        if ($ivlen === false) {
+            return formatOutput("Failed to determine IV length for cipher.", type: "danger");
+        }
+        $ivHex = bin2hex(openssl_random_pseudo_bytes($ivlen));
+        $warnings .= formatOutput("No IV specified, using random IV: $ivHex", type: "warning");
+    }
+
+    // Convert hex IV to binary for openssl functions
+    $ivBinary = hex2bin($ivHex);
+    if ($ivBinary === false) {
+        return formatOutput("Invalid IV format. IV must be a valid hex string.", type: "danger");
     }
 
     if (empty($key)) {
@@ -578,8 +589,8 @@ function handle_openssl(array $req): string {
     }
 
     $result = match($tool) {
-        'encrypt' => openssl_encrypt($string, $cipher, $key, iv: $iv),
-        'decrypt' => openssl_decrypt($string, $cipher, $key, iv: $iv),
+        'encrypt' => openssl_encrypt($string, $cipher, $key, iv: $ivBinary),
+        'decrypt' => openssl_decrypt($string, $cipher, $key, iv: $ivBinary),
         default => ''
     };
 
@@ -591,9 +602,9 @@ function handle_openssl(array $req): string {
     $output .= output_copyable($result);
     $output .= "<div style='margin-top: 20px; padding: 15px; background-color: rgba(255, 193, 7, 0.1); border-radius: 0.5rem;'>
         <strong>Encryption Details:</strong><br>
-        🔑 <strong>Cipher:</strong> <code>" . htmlspecialchars($cipher) . "</code><br>
-        🔓 <strong>Key:</strong> <code>" . htmlspecialchars($key) . "</code><br>
-        📍 <strong>IV (Hex):</strong> <code>" . htmlspecialchars($iv) . "</code>
+        🔑 <strong>Cipher:</strong> <code>" . htmlspecialchars($cipher ?? '') . "</code><br>
+        🔓 <strong>Key:</strong> <code>" . htmlspecialchars($key ?? '') . "</code><br>
+        📍 <strong>IV (Hex):</strong> <code>" . htmlspecialchars($ivHex ?? '') . "</code>
     </div>";
 
     return $output;
