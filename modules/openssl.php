@@ -21,9 +21,9 @@
 
             <form class="form" action="gen.php" method="POST" id="openssl" data-action="openssl">
                 <?php
-                  $openssl   = Null;
-                  $key       = Null;
-                  $iv        = Null;
+                  $openssl   = null;
+                  $key       = null;
+                  $iv        = null;
                   $stringVal = '';
                   if (isset($_POST['openssl'])) {
                     $openssl   = $_POST['openssl'] ?? '';

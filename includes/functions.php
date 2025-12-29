@@ -15,9 +15,9 @@
  * @example
  * echo icon('check-circle', 1.5, '#51cf66', 2); // Green check icon, 1.5rem, margin-2
  */
-function icon($icon = "question-circle", $rem = 1, $color = Null, $margin = 1) {
+function icon($icon = "question-circle", $rem = 1, $color = null, $margin = 1) {
   $style = "";
-  if ($color !== Null) {
+  if ($color !== null) {
     $style .= "color: {$color};";
   }
   if ($rem !== 1) {

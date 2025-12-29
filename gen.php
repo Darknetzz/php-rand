@@ -178,7 +178,7 @@ do {
 /* ===================================================================== */
   if ($action == 'base64encode' || $action == 'base64decode' || $action == 'base') {
     // die(formatOutput($_POST));
-    $input = (!empty($_POST['base']) ? $_POST['base'] : Null);
+    $input = (!empty($_POST['base']) ? $_POST['base'] : null);
     $from  = (!empty($_POST['from']) ? ($_POST['from']) : "text");
     $to    = (!empty($_POST['to']) ? ($_POST['to']) : 64);
 
@@ -195,7 +195,7 @@ do {
 /*                               MODULE: Hash                            */
 /* ===================================================================== */
   if (isset($_POST['hash'])) {
-    $hashalgo = (!empty($_POST['hashalgo']) ? $_POST['hashalgo'] : Null);
+    $hashalgo = (!empty($_POST['hashalgo']) ? $_POST['hashalgo'] : null);
     $types = hash_algos();
     if (!empty($hashalgo) && in_array($hashalgo, hash_algos())) {
       $types = [$hashalgo];
@@ -217,7 +217,7 @@ do {
     $split        = (!empty($_POST['split']) ? True : False);
     $delimiter    = (!empty($_POST['delimiter']) ? $_POST['delimiter'] : ":");
     $chunk_length = (!empty($_POST['chunklength']) ? $_POST['chunklength'] : 2);
-    $linebreak    = (!empty($_POST['linebreak']) ? $_POST['linebreak'] : Null);
+    $linebreak    = (!empty($_POST['linebreak']) ? $_POST['linebreak'] : null);
 
     if ($tool == "hex2bin" || $tool == "bin2hex") {
       $input = $_POST['binhex'];
@@ -265,7 +265,7 @@ do {
         $output = "";
         foreach ($ip_array as $ip) {
           $output .= ip2hex($ip, $split, $delimiter);
-          if ($linebreak !== Null) {
+          if ($linebreak !== null) {
             $output .= "<br>";
           }
         }
@@ -291,7 +291,7 @@ do {
       $numgenfrom = $_POST['numgenfrom'];
       $numgento   = $_POST['numgento'];
       $enableSeed = (isset($_POST['seed']) ? True : False);
-      $seed       = Null;
+      $seed       = null;
       if ($enableSeed !== False) {
         $seed = $_POST['numgenseed'];
       }
@@ -775,7 +775,7 @@ do {
 #                                NOTE: dnslookup                              //
 # =========================================================================== //
 if ($tool == "dnslookup") {
-  $hostname = (!empty($_POST['hostname']) ? $_POST['hostname'] : Null);
+  $hostname = (!empty($_POST['hostname']) ? $_POST['hostname'] : null);
   if (!empty($hostname)) {
     $result = null;
     
@@ -800,7 +800,7 @@ if ($tool == "dnslookup") {
 /*                            NOTE: cidr2range                           */
 /* ===================================================================== */
     if ($tool == "cidr2range") {
-        $cidr = (!empty($_POST['cidr']) ? $_POST['cidr'] : Null);
+        $cidr = (!empty($_POST['cidr']) ? $_POST['cidr'] : null);
         if (empty($cidr)) {
           echo formatOutput("You must enter a CIDR range.", type: "danger");
           break;
@@ -834,8 +834,8 @@ if ($tool == "dnslookup") {
 /*                            NOTE: range2cidr                           */
 /* ===================================================================== */
     if ($tool == "range2cidr") {
-      $startip = (!empty($_POST['startip']) ? $_POST['startip'] : Null);
-      $endip   = (!empty($_POST['endip'])   ? $_POST['endip']   : Null);
+      $startip = (!empty($_POST['startip']) ? $_POST['startip'] : null);
+      $endip   = (!empty($_POST['endip'])   ? $_POST['endip']   : null);
 
       if (empty($startip) || empty($endip)) {
         echo formatOutput("You must enter a start and end IP.", type: "danger");
@@ -870,8 +870,8 @@ if ($tool == "dnslookup") {
 /*                            NOTE: subnetmask                           */
 /* ===================================================================== */
     if ($tool == "subnetmask") {
-      $ip     = (!empty($_POST['ip'])     ? $_POST['ip']     : Null);
-      $subnet = (!empty($_POST['subnet']) ? $_POST['subnet'] : Null);
+      $ip     = (!empty($_POST['ip'])     ? $_POST['ip']     : null);
+      $subnet = (!empty($_POST['subnet']) ? $_POST['subnet'] : null);
 
       if (empty($ip) || empty($subnet)) {
         echo formatOutput("You must enter an IP and subnet mask.", type: "danger");
@@ -914,7 +914,7 @@ if ($tool == "dnslookup") {
 /*                             MODULE: URL tools                          */
 /* ===================================================================== */
   if ($action == "urlencode") {
-    $url = (!empty($_POST['urlencode']) ? $_POST['urlencode'] : Null);
+    $url = (!empty($_POST['urlencode']) ? $_POST['urlencode'] : null);
 
     if (empty($url)) {
       echo formatOutput("You must enter a URL.", type: "danger");
@@ -935,7 +935,7 @@ if ($tool == "dnslookup") {
 /*                         MODULE: HTML Entities                         */
 /* ===================================================================== */
 if ($action == "htmlentities") {
-    $input = (!empty($_POST['htmlentities']) ? $_POST['htmlentities'] : Null);
+    $input = (!empty($_POST['htmlentities']) ? $_POST['htmlentities'] : null);
 
     if (empty($input)) {
       echo formatOutput("You must enter a string.", type: "danger");
@@ -955,8 +955,8 @@ if ($action == "htmlentities") {
   #                                MODULE: minify                               //
   # ─────────────────────────────────────────────────────────────────────────── //
   if ($tool == "minify") {
-    $type  = (!empty($_POST['type']) ? $_POST['type'] : Null);
-    $input = (!empty($_POST['input']) ? $_POST['input'] : Null);
+    $type  = (!empty($_POST['type']) ? $_POST['type'] : null);
+    $input = (!empty($_POST['input']) ? $_POST['input'] : null);
 
     if (empty($type) || empty($input)) {
       echo formatOutput("You must select a tool and enter data.", type: "danger");
@@ -1072,8 +1072,8 @@ if ($action == "htmlentities") {
   #                                 MODULE: diff                                //
   # =========================================================================== //
   if ($action == "diff") {
-    $diff1 = (!empty($_POST['diff1']) ? $_POST['diff1'] : Null);
-    $diff2 = (!empty($_POST['diff2']) ? $_POST['diff2'] : Null);
+    $diff1 = (!empty($_POST['diff1']) ? $_POST['diff1'] : null);
+    $diff2 = (!empty($_POST['diff2']) ? $_POST['diff2'] : null);
     
     if (empty($diff1) && empty($diff2)) {
       echo formatOutput("Please enter text in both fields to compare.", type: "danger");
@@ -1138,10 +1138,10 @@ if ($action == "htmlentities") {
   #                             MODULE: currency                               //
   # ─────────────────────────────────────────────────────────────────────────── //
   if ($action == "currency") {
-    $currency_amount = (!empty($_POST['currency_amount']) ? floatval($_POST['currency_amount']) : Null);
-    $currency_from   = (!empty($_POST['currency_from']) ? strtoupper($_POST['currency_from']) : Null);
-    $currency_to     = (!empty($_POST['currency_to']) ? strtoupper($_POST['currency_to']) : Null);
-    $custom_rate     = (!empty($_POST['currency_rate']) ? floatval($_POST['currency_rate']) : Null);
+    $currency_amount = (!empty($_POST['currency_amount']) ? floatval($_POST['currency_amount']) : null);
+    $currency_from   = (!empty($_POST['currency_from']) ? strtoupper($_POST['currency_from']) : null);
+    $currency_to     = (!empty($_POST['currency_to']) ? strtoupper($_POST['currency_to']) : null);
+    $custom_rate     = (!empty($_POST['currency_rate']) ? floatval($_POST['currency_rate']) : null);
 
     if (empty($currency_amount) || empty($currency_from) || empty($currency_to)) {
       echo formatOutput("You must enter an amount and select both source and target currencies.", type: "danger");
