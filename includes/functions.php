@@ -524,19 +524,152 @@ function calc($input) {
     return alert("You must enter a calculation.", "danger");
   }
 
-  // Remove any non-numeric characters except for +, -, *, /, and spaces
-  $input = preg_replace('/[^0-9+\-*\/\s]/', '', $input);
+  // Validate input: only allow numbers, spaces, decimal points, and basic operators
+  if (!preg_match('/^[\d+\-*\/\s.]+$/', $input)) {
+    return alert("Invalid characters in calculation. Only numbers and operators (+, -, *, /) are allowed.", "danger");
+  }
 
-  // Evaluate the expression
+  // Remove spaces
+  $input = preg_replace('/\s+/', '', $input);
+  
+  // Limit input length to prevent DoS
+  if (strlen($input) > 1000) {
+    return alert("Calculation too long. Maximum 1000 characters allowed.", "danger");
+  }
+
+  // Safe evaluation using a simple recursive descent parser
   try {
-    $result = eval("return {$input};");
-    if ($result === false) {
-      return alert("Invalid calculation.", "danger");
+    $result = safeMathEval($input);
+    if ($result === null) {
+      return alert("Invalid calculation syntax.", "danger");
     }
     return formatOutput($result, 4, "success");
   } catch (Throwable $e) {
-    return alert("Error in calculation: " . $e->getMessage(), "danger");
+    return alert("Error in calculation: " . htmlspecialchars($e->getMessage()), "danger");
   }
+}
+
+/**
+ * Safely evaluates a mathematical expression without using eval().
+ * Supports +, -, *, / operations with proper operator precedence.
+ *
+ * @param string $expr Mathematical expression to evaluate
+ * @return float|null Result of the calculation or null on error
+ */
+function safeMathEval($expr) {
+  // Remove whitespace
+  $expr = preg_replace('/\s+/', '', $expr);
+  
+  if (empty($expr)) {
+    return null;
+  }
+
+  // Tokenize: split into numbers and operators
+  $tokens = [];
+  $number = '';
+  
+  for ($i = 0; $i < strlen($expr); $i++) {
+    $char = $expr[$i];
+    
+    if (ctype_digit($char) || $char === '.') {
+      $number .= $char;
+    } elseif (in_array($char, ['+', '-', '*', '/'])) {
+      if ($number !== '') {
+        if (!is_numeric($number)) {
+          return null; // Invalid number
+        }
+        $tokens[] = (float)$number;
+        $number = '';
+      }
+      $tokens[] = $char;
+    } else {
+      return null; // Invalid character
+    }
+  }
+  
+  // Add last number
+  if ($number !== '') {
+    if (!is_numeric($number)) {
+      return null;
+    }
+    $tokens[] = (float)$number;
+  }
+  
+  if (empty($tokens)) {
+    return null;
+  }
+
+  // Handle unary minus/plus at the start
+  if ($tokens[0] === '-' || $tokens[0] === '+') {
+    if (count($tokens) < 2 || !is_numeric($tokens[1])) {
+      return null;
+    }
+    if ($tokens[0] === '-') {
+      $tokens[1] = -$tokens[1];
+    }
+    array_shift($tokens);
+  }
+
+  // Process multiplication and division first (higher precedence)
+  $processed = [];
+  $i = 0;
+  while ($i < count($tokens)) {
+    if (is_numeric($tokens[$i])) {
+      $processed[] = $tokens[$i];
+      $i++;
+    } elseif (in_array($tokens[$i], ['*', '/'])) {
+      // Get left operand from processed stack
+      if (empty($processed) || !is_numeric(end($processed))) {
+        return null;
+      }
+      $left = array_pop($processed);
+      
+      // Get right operand
+      if ($i + 1 >= count($tokens) || !is_numeric($tokens[$i + 1])) {
+        return null;
+      }
+      $right = $tokens[$i + 1];
+      
+      // Perform operation
+      if ($tokens[$i] === '*') {
+        $processed[] = $left * $right;
+      } else {
+        if ($right == 0) {
+          return null; // Division by zero
+        }
+        $processed[] = $left / $right;
+      }
+      $i += 2; // Skip operator and right operand
+    } else {
+      // Addition or subtraction - keep for later
+      $processed[] = $tokens[$i];
+      $i++;
+    }
+  }
+
+  // Process addition and subtraction (left to right)
+  if (empty($processed) || !is_numeric($processed[0])) {
+    return null;
+  }
+  
+  $result = $processed[0];
+  for ($i = 1; $i < count($processed); $i += 2) {
+    if (!isset($processed[$i]) || !isset($processed[$i + 1])) {
+      return null;
+    }
+    $op = $processed[$i];
+    $val = $processed[$i + 1];
+    
+    if ($op === '+') {
+      $result += $val;
+    } elseif ($op === '-') {
+      $result -= $val;
+    } else {
+      return null; // Unexpected operator
+    }
+  }
+
+  return $result;
 }
 
 /**

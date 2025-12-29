@@ -8,20 +8,28 @@ do {
   /* ===================================================================== */
   /*                            NOTE: Debug info                           */
   /* ===================================================================== */
-  $rVars = trim(json_encode($_REQUEST, JSON_PRETTY_PRINT));
-  $debug = "
-    <a class='btn btn-warning' data-bs-toggle='collapse' data-bs-target='#debugCard' aria-expanded='false' aria-controls='debugCard'>".icon('bug-fill')."</a>
-    <div class='collapse' id='debugCard' style='margin:15px;'>
-      <div class='card border-warning'>
-        <h4 class='card-header text-bg-warning'>
-          ".icon('bug-fill')." Debug
-        </h4>
-        <div class='card-body'>
-            <pre>$rVars</pre>
+  // SECURITY: Only enable debug mode in development environments
+  // Debug mode is disabled by default to prevent information disclosure
+  $debugEnabled = defined('DEBUG_MODE') && DEBUG_MODE === true;
+  $debug = '';
+  
+  if ($debugEnabled) {
+    // Sanitize debug output to prevent XSS
+    $rVars = htmlspecialchars(trim(json_encode($_REQUEST, JSON_PRETTY_PRINT | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT)), ENT_QUOTES, 'UTF-8');
+    $debug = "
+      <a class='btn btn-warning' data-bs-toggle='collapse' data-bs-target='#debugCard' aria-expanded='false' aria-controls='debugCard'>".icon('bug-fill')."</a>
+      <div class='collapse' id='debugCard' style='margin:15px;'>
+        <div class='card border-warning'>
+          <h4 class='card-header text-bg-warning'>
+            ".icon('bug-fill')." Debug
+          </h4>
+          <div class='card-body'>
+              <pre>$rVars</pre>
+          </div>
         </div>
       </div>
-    </div>
-  ";
+    ";
+  }
 
   if (!isset($_POST['action'])) {
     break;
@@ -34,7 +42,7 @@ do {
   
   if ($output !== null) {
     echo $output;
-    if ($responsetype === 'html') {
+    if ($responsetype === 'html' && $debugEnabled) {
       echo $debug;
     }
     break;
