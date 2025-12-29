@@ -576,6 +576,16 @@ function handle_openssl(array $req): string {
         }
         $ivHex = bin2hex(openssl_random_pseudo_bytes($ivlen));
         $warnings .= formatOutput("No IV specified, using random IV: $ivHex", type: "warning");
+    } else {
+        // Validate that provided IV is a valid hex string
+        if (!ctype_xdigit($ivHex)) {
+            return formatOutput("Invalid IV format. IV must be a valid hexadecimal string (0-9, a-f, A-F).", type: "danger");
+        }
+        // Validate IV length matches cipher requirement
+        $ivlen = openssl_cipher_iv_length($cipher);
+        if ($ivlen !== false && strlen($ivHex) !== ($ivlen * 2)) {
+            return formatOutput("Invalid IV length. For cipher '$cipher', IV must be exactly " . ($ivlen * 2) . " hexadecimal characters (" . $ivlen . " bytes).", type: "danger");
+        }
     }
 
     // Convert hex IV to binary for openssl functions
