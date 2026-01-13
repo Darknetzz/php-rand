@@ -123,6 +123,11 @@ $navbarItems = [
                 "formalName" => "Currency Converter",
                 "icon"       => icon('currency-exchange')
             ],
+            "brainfuck" => [
+                "name"       => "brainfuck",
+                "formalName" => "Brainfuck Converter",
+                "icon"       => icon('code-slash')
+            ],
         ],
     ],
     "misc" => [

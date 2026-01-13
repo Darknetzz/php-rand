@@ -37,6 +37,7 @@ function getHandlerRegistry(): array {
         'currency' => 'handle_currency',
         'qrcode' => 'handle_qrcode',
         'regex' => 'handle_regex',
+        'brainfuck' => 'handle_brainfuck',
     ];
 }
 
@@ -961,6 +962,248 @@ function handle_regex(array $req): string {
     $output .= "</div>";
     
     return $output;
+}
+
+/**
+ * Handle Brainfuck conversion requests
+ *
+ * Converts text to Brainfuck code or executes Brainfuck code to produce text output.
+ * Supports two modes:
+ * - text2bf: Converts text to Brainfuck code that outputs that text
+ * - bf2text: Executes Brainfuck code and captures the output
+ *
+ * @param array $req Request array containing: 'brainfuck' (input), 'mode' (text2bf|bf2text)
+ * @return string Formatted HTML with conversion result or error message
+ */
+function handle_brainfuck(array $req): string {
+    $input = req_get($req, 'brainfuck', '');
+    $mode = req_get($req, 'mode', 'text2bf');
+    
+    if (empty($input)) {
+        return formatOutput("Input cannot be empty.", type: "danger");
+    }
+    
+    // Validate input length
+    if (strlen($input) > 100000) {
+        return formatOutput("Input must be at most 100,000 characters.", type: "danger");
+    }
+    
+    try {
+        if ($mode === 'text2bf') {
+            // Convert text to Brainfuck code
+            $bfCode = textToBrainfuck($input);
+            $output = "<div style='margin-bottom: 20px;'>";
+            $output .= "<div style='margin-bottom: 15px;'><strong>Text → Brainfuck</strong></div>";
+            $output .= copyableOutput($bfCode);
+            $output .= "<div style='margin-top: 15px; padding: 12px; background-color: rgba(255, 193, 7, 0.15); border-radius: 0.5rem;'>";
+            $output .= "<strong>📊 Stats:</strong><br>";
+            $output .= "Input length: <code>" . strlen($input) . " characters</code><br>";
+            $output .= "Brainfuck code length: <code>" . strlen($bfCode) . " characters</code><br>";
+            $output .= "Ratio: <code>" . number_format(strlen($bfCode) / strlen($input), 2) . "x</code>";
+            $output .= "</div>";
+            $output .= "</div>";
+            return $output;
+        } elseif ($mode === 'bf2text') {
+            // Execute Brainfuck code
+            $result = executeBrainfuck($input);
+            if ($result['success']) {
+                $output = "<div style='margin-bottom: 20px;'>";
+                $output .= "<div style='margin-bottom: 15px;'><strong>Brainfuck → Text</strong></div>";
+                $output .= copyableOutput($result['output']);
+                if (!empty($result['warnings'])) {
+                    $output .= "<div style='margin-top: 15px; padding: 12px; background-color: rgba(255, 193, 7, 0.15); border-radius: 0.5rem;'>";
+                    $output .= "<strong>⚠️ Warnings:</strong><br>";
+                    $output .= htmlspecialchars($result['warnings']);
+                    $output .= "</div>";
+                }
+                $output .= "</div>";
+                return $output;
+            } else {
+                return formatOutput("Brainfuck execution error: " . htmlspecialchars($result['error']), type: "danger");
+            }
+        } else {
+            return formatOutput("Invalid mode specified.", type: "danger");
+        }
+    } catch (Exception $e) {
+        return formatOutput("Error: " . htmlspecialchars($e->getMessage()), type: "danger");
+    }
+}
+
+/**
+ * Convert text to Brainfuck code
+ *
+ * Generates Brainfuck code that outputs the given text by setting each cell
+ * to the ASCII value of each character and outputting it.
+ *
+ * @param string $text The text to convert
+ * @return string Brainfuck code that outputs the text
+ */
+function textToBrainfuck(string $text): string {
+    $bfCode = '';
+    $currentValue = 0;
+    
+    for ($i = 0; $i < strlen($text); $i++) {
+        $targetValue = ord($text[$i]);
+        $diff = $targetValue - $currentValue;
+        
+        if ($diff == 0) {
+            // Already at target value, just output
+            $bfCode .= '.';
+        } else {
+            // Calculate the most efficient way to reach target
+            // Use absolute value and determine direction
+            if (abs($diff) <= 10) {
+                // Small difference: just increment/decrement
+                if ($diff > 0) {
+                    $bfCode .= str_repeat('+', $diff);
+                } else {
+                    $bfCode .= str_repeat('-', -$diff);
+                }
+            } else {
+                // Large difference: reset to 0 and build up
+                // Reset current value to 0
+                if ($currentValue > 0) {
+                    $bfCode .= str_repeat('-', $currentValue);
+                }
+                $currentValue = 0;
+                
+                // Build up to target
+                $bfCode .= str_repeat('+', $targetValue);
+            }
+            
+            $bfCode .= '.';
+            $currentValue = $targetValue;
+        }
+        
+        // Move to next cell for next character (optional optimization)
+        // For simplicity, we'll reuse the same cell
+    }
+    
+    return $bfCode;
+}
+
+/**
+ * Execute Brainfuck code and capture output
+ *
+ * Implements a Brainfuck interpreter with:
+ * - 30,000 cell tape (standard Brainfuck)
+ * - Cell values 0-255 (wrapping)
+ * - Input support (reads from empty string if not provided)
+ * - Loop support with bracket matching
+ *
+ * @param string $code The Brainfuck code to execute
+ * @param string $input Optional input string for ',' commands
+ * @return array ['success' => bool, 'output' => string, 'error' => string|null, 'warnings' => string]
+ */
+function executeBrainfuck(string $code, string $input = ''): array {
+    $tape = array_fill(0, 30000, 0);
+    $pointer = 0;
+    $output = '';
+    $inputIndex = 0;
+    $codeIndex = 0;
+    $codeLength = strlen($code);
+    $maxSteps = 10000000; // Safety limit to prevent infinite loops
+    $stepCount = 0;
+    $warnings = '';
+    
+    // Validate brackets are balanced
+    $bracketCount = 0;
+    for ($i = 0; $i < $codeLength; $i++) {
+        if ($code[$i] === '[') $bracketCount++;
+        if ($code[$i] === ']') $bracketCount--;
+        if ($bracketCount < 0) {
+            return ['success' => false, 'output' => '', 'error' => 'Unmatched closing bracket at position ' . $i, 'warnings' => ''];
+        }
+    }
+    if ($bracketCount !== 0) {
+        return ['success' => false, 'output' => '', 'error' => 'Unmatched opening brackets', 'warnings' => ''];
+    }
+    
+    // Precompute bracket pairs for efficient loop handling
+    $bracketPairs = [];
+    $stack = [];
+    for ($i = 0; $i < $codeLength; $i++) {
+        if ($code[$i] === '[') {
+            $stack[] = $i;
+        } elseif ($code[$i] === ']') {
+            if (empty($stack)) {
+                return ['success' => false, 'output' => '', 'error' => 'Unmatched closing bracket at position ' . $i, 'warnings' => ''];
+            }
+            $start = array_pop($stack);
+            $bracketPairs[$start] = $i;
+            $bracketPairs[$i] = $start;
+        }
+    }
+    
+    // Execute the code
+    while ($codeIndex < $codeLength && $stepCount < $maxSteps) {
+        $stepCount++;
+        $command = $code[$codeIndex];
+        
+        switch ($command) {
+            case '>':
+                $pointer++;
+                if ($pointer >= 30000) {
+                    $pointer = 0; // Wrap around
+                }
+                break;
+                
+            case '<':
+                $pointer--;
+                if ($pointer < 0) {
+                    $pointer = 29999; // Wrap around
+                }
+                break;
+                
+            case '+':
+                $tape[$pointer] = ($tape[$pointer] + 1) % 256;
+                break;
+                
+            case '-':
+                $tape[$pointer] = ($tape[$pointer] - 1 + 256) % 256;
+                break;
+                
+            case '.':
+                $output .= chr($tape[$pointer]);
+                break;
+                
+            case ',':
+                if ($inputIndex < strlen($input)) {
+                    $tape[$pointer] = ord($input[$inputIndex]);
+                    $inputIndex++;
+                } else {
+                    $tape[$pointer] = 0; // EOF: set to 0
+                }
+                break;
+                
+            case '[':
+                if ($tape[$pointer] == 0) {
+                    // Jump to matching ']'
+                    $codeIndex = $bracketPairs[$codeIndex];
+                }
+                break;
+                
+            case ']':
+                if ($tape[$pointer] != 0) {
+                    // Jump back to matching '['
+                    $codeIndex = $bracketPairs[$codeIndex];
+                }
+                break;
+        }
+        
+        $codeIndex++;
+    }
+    
+    if ($stepCount >= $maxSteps) {
+        $warnings = "Execution stopped after {$maxSteps} steps (possible infinite loop).";
+    }
+    
+    return [
+        'success' => true,
+        'output' => $output,
+        'error' => null,
+        'warnings' => $warnings
+    ];
 }
 
 // Additional handlers can be added here following the same pattern...

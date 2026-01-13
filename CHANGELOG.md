@@ -1,3 +1,32 @@
+## **v1.2.4** (2025-12-29)
+
+### 🎉 Major Features
+- **Brainfuck Converter** - Convert text to Brainfuck code or execute Brainfuck programs
+- **Copy Button Fix** - Fixed trailing whitespace issue when copying strings
+
+<details class="changelog-details">
+<summary><strong>📋 Detailed Changes</strong> (click to expand)</summary>
+<div class="changelog-panel">
+
+#### New Modules
+- **Brainfuck Converter** (Convert menu)
+  - Text → Brainfuck: Convert any text to Brainfuck code that outputs that text
+  - Brainfuck → Text: Execute Brainfuck code and capture the output
+  - Full Brainfuck interpreter with 30,000 cell tape
+  - Bracket matching validation
+  - Safety limits to prevent infinite loops
+  - Statistics display (code length, compression ratio)
+
+#### Bug Fixes
+- **Copy to Clipboard** - Fixed trailing whitespace being copied
+  - Added `.trim()` to `copyToClipboard()` function
+  - Ensures clean text copying without extra spaces
+
+</div>
+</details>
+
+---
+
 ## **v1.2.3** (2025-12-29)
 
 ### 🎉 Major Features
