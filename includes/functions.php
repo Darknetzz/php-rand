@@ -1400,25 +1400,19 @@ function getLatestChangelogVersion(): ?array {
         return null;
     }
     
-    // Match the first version header: ## **v1.2.3** (2025-12-29)
-    if (!preg_match('/^## \*\*v([\d.]+)\*\* \((.+?)\)$/m', $content, $versionMatches)) {
+    // Match the first version header: ## **v1.2.3** (date) or ## [v1.2.3] (date)
+    if (!preg_match('/^## (?:\*\*v([\d.]+)\*\*|\[v([\d.]+)\])\s*\((.+?)\)$/m', $content, $versionMatches)) {
         return null;
     }
-    
-    $version = 'v' . $versionMatches[1];
-    $date = $versionMatches[2];
-    
-    // Extract major features section (everything between "### 🎉 Major Features" and next section or end)
+    $version = 'v' . ($versionMatches[1] ?: $versionMatches[2]);
+    $date = $versionMatches[3];
+
+    // Extract major features section (### Major Features or ### 🎉 Major Features)
     $features = [];
-    
-    // Find the Major Features section after the version header
-    // Stop at <details>, ---, another ###, or end of string
-    if (preg_match('/### 🎉 Major Features\s*\n((?:- .+?\n?)+?)(?=\n<details|\n---|\n###|$)/s', $content, $featuresMatch)) {
+    if (preg_match('/### (?:🎉\s*)?Major Features\s*\n((?:- .+?\n?)+?)(?=\n<details|\n---|\n###|$)/s', $content, $featuresMatch)) {
         $featuresText = $featuresMatch[1];
-        
-        // Extract each bullet point with format: - **Title** - Description
-        // Match pattern: - **Title** - Description\n (only from Major Features section)
-        if (preg_match_all('/- \*\*(.+?)\*\* - (.+?)(?:\n|$)/', $featuresText, $featureMatches, PREG_SET_ORDER)) {
+        // Bullet format: - **Title** - Description or - **Title** – Description
+        if (preg_match_all('/- \*\*(.+?)\*\* [\-–] (.+?)(?:\n|$)/u', $featuresText, $featureMatches, PREG_SET_ORDER)) {
             foreach ($featureMatches as $match) {
                 $features[] = [
                     'title' => trim($match[1]),

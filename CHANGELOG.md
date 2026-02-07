@@ -1,39 +1,18 @@
-## **v1.2.4** (2025-12-29)
+# Changelog
 
-### 🎉 Major Features
-- **Brainfuck Converter** - Convert text to Brainfuck code or execute Brainfuck programs
-- **Copy Button Fix** - Fixed trailing whitespace issue when copying strings
-
-<details class="changelog-details">
-<summary><strong>📋 Detailed Changes</strong> (click to expand)</summary>
-<div class="changelog-panel">
-
-#### New Modules
-- **Brainfuck Converter** (Convert menu)
-  - Text → Brainfuck: Convert any text to Brainfuck code that outputs that text
-  - Brainfuck → Text: Execute Brainfuck code and capture the output
-  - Full Brainfuck interpreter with 30,000 cell tape
-  - Bracket matching validation
-  - Safety limits to prevent infinite loops
-  - Statistics display (code length, compression ratio)
-
-#### Bug Fixes
-- **Copy to Clipboard** - Fixed trailing whitespace being copied
-  - Added `.trim()` to `copyToClipboard()` function
-  - Ensures clean text copying without extra spaces
-
-</div>
-</details>
+All notable changes to this project are documented in this file.
 
 ---
 
-## **v1.2.3** (2025-12-29)
+## [v1.2.3] (2025-12-29)
 
-### 🎉 Major Features
-- **QR Code Generator** - Generate QR codes from any text, URL, or data
-- **Regex Tester** - Test and debug regular expressions with match highlighting and capture groups
-- **Security Hardening** - Fixed critical code injection vulnerability in calculator
-- **Improved IV Generation** - Fixed OpenSSL IV length and format validation
+### Major Features
+- **QR Code Generator** – Generate QR codes from any text, URL, or data
+- **Regex Tester** – Test and debug regular expressions with match highlighting and capture groups
+- **Brainfuck Converter** – Convert text to Brainfuck code or execute Brainfuck programs
+- **Security Hardening** – Fixed critical code injection vulnerability in calculator
+- **Improved IV Generation** – Fixed OpenSSL IV length and format validation
+- **Copy Button Fix** – Fixed trailing whitespace issue when copying strings
 
 <details class="changelog-details">
 <summary><strong>📋 Detailed Changes</strong> (click to expand)</summary>
@@ -41,7 +20,7 @@
 
 #### New Modules
 - **QR Code Generator** (Generators menu)
-  - Generate QR codes with customizable size (200-500px)
+  - Generate QR codes with customizable size (200–500px)
   - Error correction levels (L, M, Q, H)
   - Download QR codes as PNG images
   - Uses qr-server.com API (no dependencies required)
@@ -52,35 +31,45 @@
   - Regex replacement support (with $1, $2 for groups)
   - Support for common flags (case-insensitive, multiline)
   - Pattern validation with error messages
+- **Brainfuck Converter** (Convert menu)
+  - Text → Brainfuck: Convert any text to Brainfuck code that outputs that text
+  - Brainfuck → Text: Execute Brainfuck code and capture the output
+  - Full Brainfuck interpreter with 30,000 cell tape
+  - Bracket matching validation
+  - Safety limits to prevent infinite loops
+  - Statistics display (code length, compression ratio)
 
 #### Security Fixes
-- **CRITICAL: Code Injection Fix** - Replaced dangerous `eval()` in calculator with safe math parser
+- **CRITICAL: Code Injection Fix** – Replaced dangerous `eval()` in calculator with safe math parser
   - Created `safeMathEval()` function using tokenization and operator precedence
   - Eliminates arbitrary code execution vulnerability
   - Maintains full calculator functionality
-- **Information Disclosure Fix** - Debug mode now disabled by default
+- **Information Disclosure Fix** – Debug mode now disabled by default
   - Requires `DEBUG_MODE` constant to enable
   - Prevents exposure of sensitive `$_REQUEST` data
-- **Input Validation** - Added comprehensive validation to calculator function
+- **Input Validation** – Added comprehensive validation to calculator function
 
 #### Bug Fixes
-- **OpenSSL IV Generation** - Fixed IV length calculation and hex validation
+- **OpenSSL IV Generation** – Fixed IV length calculation and hex validation
   - Removed incorrect division by 2 in IV length calculation
   - Added hex format validation before conversion
   - Properly converts hex IV to binary for OpenSSL functions
   - Improved error messages for invalid IV formats
-- **Cipher Selection** - Fixed null cipher selection in dropdown
+- **Cipher Selection** – Fixed null cipher selection in dropdown
   - Added default selected cipher (aes-256-cbc)
   - Validates cipher before use to prevent errors
-- **Random Data Generation** - Fixed IV/Key random generation to use hex strings
+- **Random Data Generation** – Fixed IV/Key random generation to use hex strings
   - Context-aware detection for OpenSSL form
   - Generates valid hexadecimal strings for IV and Key fields
+- **Copy to Clipboard** – Fixed trailing whitespace being copied
+  - Added `.trim()` to `copyToClipboard()` function
+  - Ensures clean text copying without extra spaces
 
 #### Code Quality
-- **Code Standardization** - Converted all `Null`, `True`, `False` to lowercase
+- **Code Standardization** – Converted all `Null`, `True`, `False` to lowercase
   - Updated throughout codebase for consistency
   - Follows PHP coding standards
-- **Null Safety** - Added null coalescing operators to prevent deprecation warnings
+- **Null Safety** – Added null coalescing operators to prevent deprecation warnings
   - Fixed `htmlspecialchars()` null parameter warnings
   - Applied across all modules and handlers
 
@@ -89,13 +78,13 @@
 
 ---
 
-## **v1.2.2** (2025-12-07)
+## [v1.2.2] (2025-12-07)
 
-### 🎉 Major Features
-- **Global UTF-8 encoding** - Consistent UTF-8 across all modules
-- **Complete PHPDoc documentation** - 30+ functions fully documented
-- **Context-aware random data** - Smart sample data based on field type
-- **Input validation framework** - Security hardening with DOS prevention
+### Major Features
+- **Global UTF-8 encoding** – Consistent UTF-8 across all modules
+- **Complete PHPDoc documentation** – 30+ functions fully documented
+- **Context-aware random data** – Smart sample data based on field type
+- **Input validation framework** – Security hardening with DOS prevention
 
 <details class="changelog-details">
 <summary><strong>📋 Detailed Changes</strong> (click to expand)</summary>
@@ -119,7 +108,7 @@
 #### Input Validation
 - Master `validateInput()` function with 10+ types (string, number, email, URL, IP, hostname, hex, JSON, base64)
 - All 9 handlers validated: stringgen, hash, numgen, base, hex, rot, openssl, datetime, stringtools
-- Length limits: 100K-1M chars depending on handler
+- Length limits: 100K–1M chars depending on handler
 - Range validation, whitelist checking, consistent error messages
 
 #### Other Changes
@@ -132,11 +121,11 @@
 
 ---
 
-## **v1.2.1**
+## [v1.2.1]
 
-### 🎉 Major Features
-- **Random Data Buttons** - Auto-generate contextual sample data for all inputs
-- **Dashboard redesign** - Modern UI with stats, categories, and feature highlights
+### Major Features
+- **Random Data Buttons** – Auto-generate contextual sample data for all inputs
+- **Dashboard redesign** – Modern UI with stats, categories, and feature highlights
 
 <details class="changelog-details">
 <summary><strong>📋 Detailed Changes</strong> (click to expand)</summary>
@@ -158,12 +147,12 @@
 
 ---
 
-## **v1.2.0**
+## [v1.2.0]
 
-### 🎉 Major Features
-- **UI/UX Modernization** - Complete redesign of all 15+ modules
-- **Pure PHP diff** - No xdiff extension required
-- **Copyable outputs** - Consistent styled output boxes everywhere
+### Major Features
+- **UI/UX Modernization** – Complete redesign of all 15+ modules
+- **Pure PHP diff** – No xdiff extension required
+- **Copyable outputs** – Consistent styled output boxes everywhere
 
 <details class="changelog-details">
 <summary><strong>📋 Detailed Changes</strong> (click to expand)</summary>
@@ -205,9 +194,9 @@ Specific updates:
 
 ---
 
-## **v1.1.1**
+## [v1.1.1]
 
-### 🎉 Major Features
+### Major Features
 - **New modules**: Metaphone, Levenshtein, Diff, Currency converter
 - **Networking**: DNS lookup tool
 
@@ -228,12 +217,12 @@ Specific updates:
 
 ---
 
-## **v1.1.0**
+## [v1.1.0]
 
-### 🎉 Major Features
+### Major Features
 - **New encoding tools**: URL encoding, HTML entities
 - **New converters**: Markdown, Minify
-- **Spin the wheel** - Now an actual wheel animation
+- **Spin the wheel** – Now an actual wheel animation
 
 <details class="changelog-details">
 <summary><strong>📋 Detailed Changes</strong> (click to expand)</summary>
@@ -260,23 +249,23 @@ Specific updates:
 
 ---
 
-## **v1.0.2**
+## [v1.0.2]
 
-### 🎉 Major Features
+### Major Features
 - **Calculator module** added
 
 ---
 
-## **v1.0.1**
+## [v1.0.1]
 
-### 🎉 Major Features
+### Major Features
 - **Logogen submodule** added
 
 ---
 
-## **v1.0.0**
+## [v1.0.0]
 
-### 🎉 Major Features
+### Major Features
 - **Changelog modal** with marked.js
 - **Updated dependencies**: Tabler v1.4.0, Highlight.js v11.11.1
 
