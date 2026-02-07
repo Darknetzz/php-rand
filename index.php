@@ -97,7 +97,7 @@ foreach (glob("modules/*.php") as $module) {
 function copyToClipboard(elementId, btnEl) {
     const element = document.getElementById(elementId);
     if (!element) return;
-    const text = element.textContent || "";
+    const text = (element.textContent || "").trim();
     const btn = btnEl || (document.activeElement?.closest && document.activeElement.closest('button')) || null;
 
     const setFeedback = (ok) => {

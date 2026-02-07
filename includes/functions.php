@@ -15,9 +15,9 @@
  * @example
  * echo icon('check-circle', 1.5, '#51cf66', 2); // Green check icon, 1.5rem, margin-2
  */
-function icon($icon = "question-circle", $rem = 1, $color = Null, $margin = 1) {
+function icon($icon = "question-circle", $rem = 1, $color = null, $margin = 1) {
   $style = "";
-  if ($color !== Null) {
+  if ($color !== null) {
     $style .= "color: {$color};";
   }
   if ($rem !== 1) {
@@ -145,7 +145,7 @@ function cleanString($randomString, $digitsint = null) {
 function returnClean($randomString) {
   $randomString = $randomString;
   $randomString = trim($randomString);
-  return print_r($randomString, True);
+  return print_r($randomString, true);
 }
 
 /**
@@ -256,7 +256,7 @@ function str_rot($s, $n = 13) {
  * genStr('luns', 20);          // 20 chars: lowercase, uppercase, numbers, symbols
  * genStr('lunc', 15, '!@#');   // 15 chars: lowercase, uppercase, numbers, custom
  */
-function genStr(string $charsets, int $length = Null, $cchars = Null) {
+function genStr(string $charsets, ?int $length = null, $cchars = null) {
     $charsets = str_split($charsets);
     $l        = (in_array('l', $charsets)                    ? range('a', 'z')                                   : []);
     $u        = (in_array('u', $charsets)                    ? range('A', 'Z')                                   : []);
@@ -271,6 +271,38 @@ function genStr(string $charsets, int $length = Null, $cchars = Null) {
     }
     for ($i = 0; $i < $length; $i++) {
       $str .= $all[array_rand($all)];
+    }
+    return $str;
+}
+
+/**
+ * Generate a random string using cryptographically secure random_bytes()
+ * 
+ * Uses random_bytes() for cryptographically secure randomness, suitable for
+ * security-critical applications like tokens, passwords, and keys.
+ *
+ * @param string $charsets Character set flags (l=lowercase, u=uppercase, n=numbers, s=symbols, e=extended, c=custom)
+ * @param int $length Length of the generated string
+ * @param string|null $cchars Custom characters if 'c' is in charsets
+ * @return string Randomly generated string
+ */
+function genStrCrypto(string $charsets, ?int $length = null, $cchars = null) {
+    $charsets = str_split($charsets);
+    $l        = (in_array('l', $charsets)                    ? range('a', 'z')                                   : []);
+    $u        = (in_array('u', $charsets)                    ? range('A', 'Z')                                   : []);
+    $n        = (in_array('n', $charsets)                    ? range(0, 9)                                       : []);
+    $s        = (in_array('s', $charsets)                    ? str_split("!#¤%&\/() = ?;: -_.,'\"*^<>{}[]@~+´`") : []);
+    $e        = (in_array('e', $charsets)                    ? str_split("ƒ†‡™•")                                : []);
+    $c        = (in_array('c', $charsets) && !empty($cchars) ? str_split($cchars)                                : []);
+    $all      = array_merge($l, $u, $n, $s, $e, $c);
+    $str      = '';
+    if (empty($all)) {
+      return "[empty]";
+    }
+    $max = count($all) - 1;
+    for ($i = 0; $i < $length; $i++) {
+      $randomIndex = ord(random_bytes(1)) % (count($all));
+      $str .= $all[$randomIndex];
     }
     return $str;
 }
@@ -293,7 +325,7 @@ function genStr(string $charsets, int $length = Null, $cchars = Null) {
  * spinWheel(['Item1', 'Item2', 'Item3'], 1);     // Single spin
  * spinWheel(['A', 'B', 'C'], 3, true);           // 3 spins, all unique
  */
-function spinWheel(?array $wheelItems = [], int $spins = 1, bool $unique = False) {
+function spinWheel(?array $wheelItems = [], int $spins = 1, bool $unique = false) {
 
   if (empty($wheelItems)) {
     return alert("You must enter at least one item.", "danger");
@@ -304,14 +336,14 @@ function spinWheel(?array $wheelItems = [], int $spins = 1, bool $unique = False
   }
 
   $countItems = count($wheelItems);
-  $moreSpins  = (isset($spins) && $spins > 1 ? True : False);
+  $moreSpins  = (isset($spins) && $spins > 1 ? true : false);
   $spins      = ($moreSpins) ? $spins : 1;
 
   if ($countItems < 2) {
     return alert("You must enter at least two items.", "danger");
   }
 
-  if (($spins > $countItems) && $unique !== False) {
+  if (($spins > $countItems) && $unique !== false) {
     return alert("You can't spin more than the number of items in the wheel if you want unique results.", "danger");
   }
 
@@ -319,7 +351,7 @@ function spinWheel(?array $wheelItems = [], int $spins = 1, bool $unique = False
   for ($i = 0; $i < $spins; $i++) {
       $dice = mt_rand(0, $countItems-1);
 
-      if ($unique !== False) {
+      if ($unique !== false) {
           while (in_array($dice, $excludes)) {
               $dice = mt_rand(0, $countItems-1);
           }
@@ -447,7 +479,7 @@ function submitBtn(string $value = "", string $name = "action", string $text = "
  * numGen(1, 100);           // Random number between 1-100
  * numGen(1, 1000, '12345'); // Random number with specific seed
  */
-function numGen(int $from, int $to, string $seed = Null) {
+function numGen(int $from, int $to, ?string $seed = null) {
   $from = (int)$from;
   $to   = (int)$to;
 
@@ -492,19 +524,152 @@ function calc($input) {
     return alert("You must enter a calculation.", "danger");
   }
 
-  // Remove any non-numeric characters except for +, -, *, /, and spaces
-  $input = preg_replace('/[^0-9+\-*\/\s]/', '', $input);
+  // Validate input: only allow numbers, spaces, decimal points, and basic operators
+  if (!preg_match('/^[\d+\-*\/\s.]+$/', $input)) {
+    return alert("Invalid characters in calculation. Only numbers and operators (+, -, *, /) are allowed.", "danger");
+  }
 
-  // Evaluate the expression
+  // Remove spaces
+  $input = preg_replace('/\s+/', '', $input);
+  
+  // Limit input length to prevent DoS
+  if (strlen($input) > 1000) {
+    return alert("Calculation too long. Maximum 1000 characters allowed.", "danger");
+  }
+
+  // Safe evaluation using a simple recursive descent parser
   try {
-    $result = eval("return {$input};");
-    if ($result === False) {
-      return alert("Invalid calculation.", "danger");
+    $result = safeMathEval($input);
+    if ($result === null) {
+      return alert("Invalid calculation syntax.", "danger");
     }
     return formatOutput($result, 4, "success");
   } catch (Throwable $e) {
-    return alert("Error in calculation: " . $e->getMessage(), "danger");
+    return alert("Error in calculation: " . htmlspecialchars($e->getMessage()), "danger");
   }
+}
+
+/**
+ * Safely evaluates a mathematical expression without using eval().
+ * Supports +, -, *, / operations with proper operator precedence.
+ *
+ * @param string $expr Mathematical expression to evaluate
+ * @return float|null Result of the calculation or null on error
+ */
+function safeMathEval($expr) {
+  // Remove whitespace
+  $expr = preg_replace('/\s+/', '', $expr);
+  
+  if (empty($expr)) {
+    return null;
+  }
+
+  // Tokenize: split into numbers and operators
+  $tokens = [];
+  $number = '';
+  
+  for ($i = 0; $i < strlen($expr); $i++) {
+    $char = $expr[$i];
+    
+    if (ctype_digit($char) || $char === '.') {
+      $number .= $char;
+    } elseif (in_array($char, ['+', '-', '*', '/'])) {
+      if ($number !== '') {
+        if (!is_numeric($number)) {
+          return null; // Invalid number
+        }
+        $tokens[] = (float)$number;
+        $number = '';
+      }
+      $tokens[] = $char;
+    } else {
+      return null; // Invalid character
+    }
+  }
+  
+  // Add last number
+  if ($number !== '') {
+    if (!is_numeric($number)) {
+      return null;
+    }
+    $tokens[] = (float)$number;
+  }
+  
+  if (empty($tokens)) {
+    return null;
+  }
+
+  // Handle unary minus/plus at the start
+  if ($tokens[0] === '-' || $tokens[0] === '+') {
+    if (count($tokens) < 2 || !is_numeric($tokens[1])) {
+      return null;
+    }
+    if ($tokens[0] === '-') {
+      $tokens[1] = -$tokens[1];
+    }
+    array_shift($tokens);
+  }
+
+  // Process multiplication and division first (higher precedence)
+  $processed = [];
+  $i = 0;
+  while ($i < count($tokens)) {
+    if (is_numeric($tokens[$i])) {
+      $processed[] = $tokens[$i];
+      $i++;
+    } elseif (in_array($tokens[$i], ['*', '/'])) {
+      // Get left operand from processed stack
+      if (empty($processed) || !is_numeric(end($processed))) {
+        return null;
+      }
+      $left = array_pop($processed);
+      
+      // Get right operand
+      if ($i + 1 >= count($tokens) || !is_numeric($tokens[$i + 1])) {
+        return null;
+      }
+      $right = $tokens[$i + 1];
+      
+      // Perform operation
+      if ($tokens[$i] === '*') {
+        $processed[] = $left * $right;
+      } else {
+        if ($right == 0) {
+          return null; // Division by zero
+        }
+        $processed[] = $left / $right;
+      }
+      $i += 2; // Skip operator and right operand
+    } else {
+      // Addition or subtraction - keep for later
+      $processed[] = $tokens[$i];
+      $i++;
+    }
+  }
+
+  // Process addition and subtraction (left to right)
+  if (empty($processed) || !is_numeric($processed[0])) {
+    return null;
+  }
+  
+  $result = $processed[0];
+  for ($i = 1; $i < count($processed); $i += 2) {
+    if (!isset($processed[$i]) || !isset($processed[$i + 1])) {
+      return null;
+    }
+    $op = $processed[$i];
+    $val = $processed[$i + 1];
+    
+    if ($op === '+') {
+      $result += $val;
+    } elseif ($op === '-') {
+      $result -= $val;
+    } else {
+      return null; // Unexpected operator
+    }
+  }
+
+  return $result;
 }
 
 /**
@@ -572,7 +737,7 @@ function is_hostname(string $s): bool {
  * ip2hex('192.168.1.1', true);             // Returns: 'c0:a8:01:01'
  * ip2hex('192.168.1.1', true, '-');        // Returns: 'c0-a8-01-01'
  */
-function ip2hex ($ip, $split = False, $delimiter = ":") {
+function ip2hex ($ip, $split = false, $delimiter = ":") {
   $hex = bin2hex(inet_pton($ip));
   if ($split) {
     $hex = str_split($hex, 2);
@@ -618,8 +783,8 @@ function hex2ip ($hex) {
  *                                // ]
  */
 function cidr2range($cidr) {
-  if (strpos($cidr, '/') === False) {
-    return False;
+  if (strpos($cidr, '/') === false) {
+    return false;
   }
   $range = [];
   $cidr = explode('/', $cidr);
@@ -635,7 +800,7 @@ function cidr2range($cidr) {
     $range["start"] = inet_ntop($ip & inet_pton($mask));
     $range["end"] = inet_ntop($ip | ~inet_pton($mask));
   } else {
-    return False;
+    return false;
   }
 
   $range["cidr"]  = $cidr[0] . "/" . $prefix;
@@ -662,9 +827,9 @@ function cidr2range($cidr) {
  */
 function range2cidr($start, $end) {
   if (
-    filter_var($start, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === False ||
-    filter_var($end, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === False) {
-    return False;
+    filter_var($start, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === false ||
+    filter_var($end, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === false) {
+    return false;
   }
   $start_long = ip2long($start);
   $end_long   = ip2long($end);
@@ -726,8 +891,8 @@ function range2cidr($start, $end) {
  *                                                  // ]
  */
 function subnetmask($ip, $subnet) {
-  if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === False || filter_var($subnet, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === False) {
-    return False;
+  if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === false || filter_var($subnet, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === false) {
+    return false;
   }
   $ip         = ip2long($ip);
   $subnet     = ip2long($subnet);
@@ -756,7 +921,7 @@ function subnetmask($ip, $subnet) {
     "total_ips"  => ($end - $start) + 1,
     "subnet"     => long2ip($subnet),
     "cidr"       => long2ip($network) . "/" . (32 - (int)log(~$subnet & 0xFFFFFFFF, 2)),
-    "usable_ips" => cidr2range(long2ip($network) . "/" . (32 - (int)log(~$subnet & 0xFFFFFFFF, 2)), True)["total"]
+    "usable_ips" => cidr2range(long2ip($network) . "/" . (32 - (int)log(~$subnet & 0xFFFFFFFF, 2)), true)["total"]
   ];
   return $range;
 }
@@ -1075,7 +1240,7 @@ function copyableOutput($content, $label = "") {
   
   $html .= "<div style='display: flex; gap: 10px; align-items: stretch;'>";
   $html .= "  <div style='flex: 1; background-color: #0f172a; color: #e9ecef; padding: 14px; border-radius: 0.4rem; font-family: monospace; font-size: 0.95rem; word-break: break-all; user-select: all; overflow-y: auto; max-height: 320px; border: 1px solid #334155; box-shadow: 0 6px 14px rgba(0,0,0,0.25);' id='$uniqueId'>";
-  $html .= htmlspecialchars($content);
+  $html .= htmlspecialchars($content ?? '');
   $html .= "  </div>";
   $html .= "  <button type='button' class='btn btn-sm btn-outline-light' onclick=\"copyToClipboard('$uniqueId', this)\" style='height: fit-content; white-space: nowrap; align-self: flex-start; border: 1px solid #e9ecef;'>";
   $html .= "    <i class='bi bi-files'></i> Copy";
@@ -1209,6 +1374,59 @@ function validateInput($value, $rules = []) {
   }
   
   return ['valid' => true, 'error' => null, 'value' => $value];
+}
+
+/**
+ * Parse the latest version information from CHANGELOG.md
+ *
+ * Extracts the most recent version number, date, and major features
+ * from the changelog file to dynamically display in the dashboard.
+ *
+ * @return array|null Associative array with 'version', 'date', and 'features', or null on error
+ * 
+ * @example
+ * $latest = getLatestChangelogVersion();
+ * // Returns: ['version' => 'v1.2.3', 'date' => '2025-12-29', 'features' => [...]]
+ */
+function getLatestChangelogVersion(): ?array {
+    $changelogPath = __DIR__ . '/../CHANGELOG.md';
+    
+    if (!file_exists($changelogPath)) {
+        return null;
+    }
+    
+    $content = file_get_contents($changelogPath);
+    if ($content === false) {
+        return null;
+    }
+    
+    // Match the first version header: ## **v1.2.3** (date) or ## [v1.2.3] (date)
+    if (!preg_match('/^## (?:\*\*v([\d.]+)\*\*|\[v([\d.]+)\])\s*\((.+?)\)$/m', $content, $versionMatches)) {
+        return null;
+    }
+    $version = 'v' . ($versionMatches[1] ?: $versionMatches[2]);
+    $date = $versionMatches[3];
+
+    // Extract major features section (### Major Features or ### 🎉 Major Features)
+    $features = [];
+    if (preg_match('/### (?:🎉\s*)?Major Features\s*\n((?:- .+?\n?)+?)(?=\n<details|\n---|\n###|$)/s', $content, $featuresMatch)) {
+        $featuresText = $featuresMatch[1];
+        // Bullet format: - **Title** - Description or - **Title** – Description
+        if (preg_match_all('/- \*\*(.+?)\*\* [\-–] (.+?)(?:\n|$)/u', $featuresText, $featureMatches, PREG_SET_ORDER)) {
+            foreach ($featureMatches as $match) {
+                $features[] = [
+                    'title' => trim($match[1]),
+                    'description' => trim($match[2])
+                ];
+            }
+        }
+    }
+    
+    return [
+        'version' => $version,
+        'date' => $date,
+        'features' => $features
+    ];
 }
 
 ?>

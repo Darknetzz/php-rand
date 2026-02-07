@@ -142,7 +142,8 @@ const PI = Math.PI;
 const TAU = 2 * PI;
 let arc = TAU / spinthewheel_sectors.length;
 
-document.addEventListener("DOMContentLoaded", () => {
+// Initialize on DOM ready
+$(document).ready(function() {
     // Populate sectors from the form inputs
     updateWheelFromInputs();
     init();
@@ -308,6 +309,13 @@ $("#addtowheel").on("click", function(e) {
     `;
     $(".wheelitems").append(input);
     updateWheelFromInputs();
+    updateItemNumbers();
+    // Add random button to the newly added input (small delay to ensure DOM is ready)
+    setTimeout(function() {
+        if (typeof addRandomDataButtons === 'function') {
+            addRandomDataButtons();
+        }
+    }, 10);
 });
 
 /* ===================================================================== */

@@ -8,20 +8,28 @@ do {
   /* ===================================================================== */
   /*                            NOTE: Debug info                           */
   /* ===================================================================== */
-  $rVars = trim(json_encode($_REQUEST, JSON_PRETTY_PRINT));
-  $debug = "
-    <a class='btn btn-warning' data-bs-toggle='collapse' data-bs-target='#debugCard' aria-expanded='false' aria-controls='debugCard'>".icon('bug-fill')."</a>
-    <div class='collapse' id='debugCard' style='margin:15px;'>
-      <div class='card border-warning'>
-        <h4 class='card-header text-bg-warning'>
-          ".icon('bug-fill')." Debug
-        </h4>
-        <div class='card-body'>
-            <pre>$rVars</pre>
+  // SECURITY: Only enable debug mode in development environments
+  // Debug mode is disabled by default to prevent information disclosure
+  $debugEnabled = defined('DEBUG_MODE') && DEBUG_MODE === true;
+  $debug = '';
+  
+  if ($debugEnabled) {
+    // Sanitize debug output to prevent XSS
+    $rVars = htmlspecialchars(trim(json_encode($_REQUEST, JSON_PRETTY_PRINT | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT)), ENT_QUOTES, 'UTF-8');
+    $debug = "
+      <a class='btn btn-warning' data-bs-toggle='collapse' data-bs-target='#debugCard' aria-expanded='false' aria-controls='debugCard'>".icon('bug-fill')."</a>
+      <div class='collapse' id='debugCard' style='margin:15px;'>
+        <div class='card border-warning'>
+          <h4 class='card-header text-bg-warning'>
+            ".icon('bug-fill')." Debug
+          </h4>
+          <div class='card-body'>
+              <pre>$rVars</pre>
+          </div>
         </div>
       </div>
-    </div>
-  ";
+    ";
+  }
 
   if (!isset($_POST['action'])) {
     break;
@@ -34,7 +42,7 @@ do {
   
   if ($output !== null) {
     echo $output;
-    if ($responsetype === 'html') {
+    if ($responsetype === 'html' && $debugEnabled) {
       echo $debug;
     }
     break;
@@ -178,14 +186,16 @@ do {
 /* ===================================================================== */
   if ($action == 'base64encode' || $action == 'base64decode' || $action == 'base') {
     // die(formatOutput($_POST));
-    $input = (!empty($_POST['base']) ? $_POST['base'] : Null);
+    $input = (!empty($_POST['base']) ? $_POST['base'] : null);
     $from  = (!empty($_POST['from']) ? ($_POST['from']) : "text");
-    $to    = (!empty($_POST['to']) ? ($_POST['to']) : 64);
+    $to    = (!empty($_POST['to']) ? ($_POST['to']) : "base64");
 
     $result = convert_any($input, $from, $to);
     
+    $fromLabel = (is_numeric($from) ? "Base $from" : ucfirst($from));
+    $toLabel   = (is_numeric($to) ? "Base $to" : ucfirst($to));
     echo "<div style='margin-bottom: 20px;'>";
-    echo "<div style='margin-bottom: 15px;'><strong>Base $from → Base $to</strong></div>";
+    echo "<div style='margin-bottom: 15px;'><strong>$fromLabel → $toLabel</strong></div>";
     echo copyableOutput($result);
     echo "</div>";
   }
@@ -195,7 +205,7 @@ do {
 /*                               MODULE: Hash                            */
 /* ===================================================================== */
   if (isset($_POST['hash'])) {
-    $hashalgo = (!empty($_POST['hashalgo']) ? $_POST['hashalgo'] : Null);
+    $hashalgo = (!empty($_POST['hashalgo']) ? $_POST['hashalgo'] : null);
     $types = hash_algos();
     if (!empty($hashalgo) && in_array($hashalgo, hash_algos())) {
       $types = [$hashalgo];
@@ -214,10 +224,10 @@ do {
   if ($action == 'hex') {
     $tool         = $_POST['tool'];
     $type         = "success";
-    $split        = (!empty($_POST['split']) ? True : False);
+    $split        = (!empty($_POST['split']) ? true : false);
     $delimiter    = (!empty($_POST['delimiter']) ? $_POST['delimiter'] : ":");
     $chunk_length = (!empty($_POST['chunklength']) ? $_POST['chunklength'] : 2);
-    $linebreak    = (!empty($_POST['linebreak']) ? $_POST['linebreak'] : Null);
+    $linebreak    = (!empty($_POST['linebreak']) ? $_POST['linebreak'] : null);
 
     if ($tool == "hex2bin" || $tool == "bin2hex") {
       $input = $_POST['binhex'];
@@ -238,7 +248,7 @@ do {
       $output = bin2hex($input);
 
       # Split
-      if ($split == True) {
+      if ($split == true) {
         $output = chunk_split($output, $chunk_length, $delimiter);
         $output = rtrim($output, $delimiter);
       }
@@ -260,12 +270,12 @@ do {
       $input = str_replace(" ", "", $input);
 
       # More than one IP given
-      if (strpos($input, ",") !== False) {
+      if (strpos($input, ",") !== false) {
         $ip_array = explode(",", $input);
         $output = "";
         foreach ($ip_array as $ip) {
           $output .= ip2hex($ip, $split, $delimiter);
-          if ($linebreak !== Null) {
+          if ($linebreak !== null) {
             $output .= "<br>";
           }
         }
@@ -290,9 +300,9 @@ do {
   if (isset($_POST['numgenfrom']) && isset($_POST['numgento'])) {
       $numgenfrom = $_POST['numgenfrom'];
       $numgento   = $_POST['numgento'];
-      $enableSeed = (isset($_POST['seed']) ? True : False);
-      $seed       = Null;
-      if ($enableSeed !== False) {
+      $enableSeed = (isset($_POST['seed']) ? true : false);
+      $seed       = null;
+      if ($enableSeed !== false) {
         $seed = $_POST['numgenseed'];
       }
       $gen = numGen($numgenfrom, $numgento, $seed);
@@ -313,7 +323,7 @@ do {
       break;
     }
     $result = calc($calcinput);
-    if ($result === False) {
+    if ($result === false) {
       echo formatOutput("Invalid calculation.", type: "danger");
     } else {
       echo formatOutput("Result: <b>$result</b>");
@@ -444,7 +454,7 @@ do {
 
     # Detect input
     if (json_validate($input)) {
-      $input    = json_decode($input, True);
+      $input    = json_decode($input, true);
       $detected = 'JSON';
     }
     // elseif (yaml_parse($input)) {
@@ -479,7 +489,7 @@ do {
   if ($action == "stringtools") {
     $string          = (!empty($_POST['string']) ? $_POST['string']: "");
     $tool            = (!empty($_POST['tool'])  ? $_POST['tool']   : "");
-    $outputToTextbox = (isset($_POST['outputToTextbox']) ? True    :  False);
+    $outputToTextbox = (isset($_POST['outputToTextbox']) ? true    :  false);
 
     if (empty($string)) {
       echo formatOutput("You must enter a string.", type: "danger");
@@ -775,7 +785,7 @@ do {
 #                                NOTE: dnslookup                              //
 # =========================================================================== //
 if ($tool == "dnslookup") {
-  $hostname = (!empty($_POST['hostname']) ? $_POST['hostname'] : Null);
+  $hostname = (!empty($_POST['hostname']) ? $_POST['hostname'] : null);
   if (!empty($hostname)) {
     $result = null;
     
@@ -800,7 +810,7 @@ if ($tool == "dnslookup") {
 /*                            NOTE: cidr2range                           */
 /* ===================================================================== */
     if ($tool == "cidr2range") {
-        $cidr = (!empty($_POST['cidr']) ? $_POST['cidr'] : Null);
+        $cidr = (!empty($_POST['cidr']) ? $_POST['cidr'] : null);
         if (empty($cidr)) {
           echo formatOutput("You must enter a CIDR range.", type: "danger");
           break;
@@ -834,8 +844,8 @@ if ($tool == "dnslookup") {
 /*                            NOTE: range2cidr                           */
 /* ===================================================================== */
     if ($tool == "range2cidr") {
-      $startip = (!empty($_POST['startip']) ? $_POST['startip'] : Null);
-      $endip   = (!empty($_POST['endip'])   ? $_POST['endip']   : Null);
+      $startip = (!empty($_POST['startip']) ? $_POST['startip'] : null);
+      $endip   = (!empty($_POST['endip'])   ? $_POST['endip']   : null);
 
       if (empty($startip) || empty($endip)) {
         echo formatOutput("You must enter a start and end IP.", type: "danger");
@@ -870,8 +880,8 @@ if ($tool == "dnslookup") {
 /*                            NOTE: subnetmask                           */
 /* ===================================================================== */
     if ($tool == "subnetmask") {
-      $ip     = (!empty($_POST['ip'])     ? $_POST['ip']     : Null);
-      $subnet = (!empty($_POST['subnet']) ? $_POST['subnet'] : Null);
+      $ip     = (!empty($_POST['ip'])     ? $_POST['ip']     : null);
+      $subnet = (!empty($_POST['subnet']) ? $_POST['subnet'] : null);
 
       if (empty($ip) || empty($subnet)) {
         echo formatOutput("You must enter an IP and subnet mask.", type: "danger");
@@ -914,7 +924,7 @@ if ($tool == "dnslookup") {
 /*                             MODULE: URL tools                          */
 /* ===================================================================== */
   if ($action == "urlencode") {
-    $url = (!empty($_POST['urlencode']) ? $_POST['urlencode'] : Null);
+    $url = (!empty($_POST['urlencode']) ? $_POST['urlencode'] : null);
 
     if (empty($url)) {
       echo formatOutput("You must enter a URL.", type: "danger");
@@ -935,7 +945,7 @@ if ($tool == "dnslookup") {
 /*                         MODULE: HTML Entities                         */
 /* ===================================================================== */
 if ($action == "htmlentities") {
-    $input = (!empty($_POST['htmlentities']) ? $_POST['htmlentities'] : Null);
+    $input = (!empty($_POST['htmlentities']) ? $_POST['htmlentities'] : null);
 
     if (empty($input)) {
       echo formatOutput("You must enter a string.", type: "danger");
@@ -955,8 +965,8 @@ if ($action == "htmlentities") {
   #                                MODULE: minify                               //
   # ─────────────────────────────────────────────────────────────────────────── //
   if ($tool == "minify") {
-    $type  = (!empty($_POST['type']) ? $_POST['type'] : Null);
-    $input = (!empty($_POST['input']) ? $_POST['input'] : Null);
+    $type  = (!empty($_POST['type']) ? $_POST['type'] : null);
+    $input = (!empty($_POST['input']) ? $_POST['input'] : null);
 
     if (empty($type) || empty($input)) {
       echo formatOutput("You must select a tool and enter data.", type: "danger");
@@ -1072,8 +1082,8 @@ if ($action == "htmlentities") {
   #                                 MODULE: diff                                //
   # =========================================================================== //
   if ($action == "diff") {
-    $diff1 = (!empty($_POST['diff1']) ? $_POST['diff1'] : Null);
-    $diff2 = (!empty($_POST['diff2']) ? $_POST['diff2'] : Null);
+    $diff1 = (!empty($_POST['diff1']) ? $_POST['diff1'] : null);
+    $diff2 = (!empty($_POST['diff2']) ? $_POST['diff2'] : null);
     
     if (empty($diff1) && empty($diff2)) {
       echo formatOutput("Please enter text in both fields to compare.", type: "danger");
@@ -1138,10 +1148,10 @@ if ($action == "htmlentities") {
   #                             MODULE: currency                               //
   # ─────────────────────────────────────────────────────────────────────────── //
   if ($action == "currency") {
-    $currency_amount = (!empty($_POST['currency_amount']) ? floatval($_POST['currency_amount']) : Null);
-    $currency_from   = (!empty($_POST['currency_from']) ? strtoupper($_POST['currency_from']) : Null);
-    $currency_to     = (!empty($_POST['currency_to']) ? strtoupper($_POST['currency_to']) : Null);
-    $custom_rate     = (!empty($_POST['currency_rate']) ? floatval($_POST['currency_rate']) : Null);
+    $currency_amount = (!empty($_POST['currency_amount']) ? floatval($_POST['currency_amount']) : null);
+    $currency_from   = (!empty($_POST['currency_from']) ? strtoupper($_POST['currency_from']) : null);
+    $currency_to     = (!empty($_POST['currency_to']) ? strtoupper($_POST['currency_to']) : null);
+    $custom_rate     = (!empty($_POST['currency_rate']) ? floatval($_POST['currency_rate']) : null);
 
     if (empty($currency_amount) || empty($currency_from) || empty($currency_to)) {
       echo formatOutput("You must enter an amount and select both source and target currencies.", type: "danger");
@@ -1232,5 +1242,5 @@ if ($action == "htmlentities") {
   }
 
   echo $debug;
-} while (False);
+} while (false);
 ?>

@@ -35,6 +35,9 @@ function getHandlerRegistry(): array {
         'spinwheel' => 'handle_spinwheel',
         'calc' => 'handle_calculator',
         'currency' => 'handle_currency',
+        'qrcode' => 'handle_qrcode',
+        'regex' => 'handle_regex',
+        'brainfuck' => 'handle_brainfuck',
     ];
 }
 
@@ -230,12 +233,17 @@ function handle_stringgen(array $req): string {
     }
     
     $cchars = req_get($req, 'cchars', '');
+    $cryptoSafe = req_bool($req, 'cryptoSafe');
 
     $results = [];
     $infoTables = [];
 
     for ($i = 0; $i < $strings; $i++) {
-        $string = genStr($charsets, $length, $cchars);
+        if ($cryptoSafe) {
+            $string = genStrCrypto($charsets, $length, $cchars);
+        } else {
+            $string = genStr($charsets, $length, $cchars);
+        }
         $results[] = $string;
         
         $table = "<table class='table table-default'>";
@@ -251,6 +259,9 @@ function handle_stringgen(array $req): string {
     }
 
     $output = "<hr>";
+    if ($cryptoSafe) {
+        $output .= "<div class='alert alert-success mb-3'>" . icon('shield-check') . " <strong>Cryptographically Secure Random</strong> - Generated using random_bytes()</div>";
+    }
     foreach ($results as $string) {
         $output .= output_copyable($string);
     }
@@ -553,16 +564,43 @@ function handle_openssl(array $req): string {
     $cipher = req_get($req, 'cipher', 'aes-256-cbc');
     $iv = req_get($req, 'iv', '');
 
-    if (!in_array($cipher, openssl_get_cipher_methods())) {
-        return formatOutput("Cipher `" . htmlspecialchars($cipher) . "` is not supported.", type: "danger");
+    // Ensure cipher is not empty or null
+    if (empty($cipher) || $cipher === 'null' || $cipher === null) {
+        $cipher = 'aes-256-cbc';
+    }
+
+    $validCiphers = openssl_get_cipher_methods();
+    if (!in_array($cipher, $validCiphers)) {
+        return formatOutput("Cipher `" . htmlspecialchars($cipher ?? 'null') . "` is not supported.", type: "danger");
     }
 
     $warnings = '';
 
+    // Generate IV if not provided (store as hex for display)
+    $ivHex = $iv;
     if (empty($iv)) {
-        $ivlen = openssl_cipher_iv_length($cipher) / 2;
-        $iv = bin2hex(openssl_random_pseudo_bytes($ivlen));
-        $warnings .= formatOutput("No IV specified, using random IV: $iv", type: "warning");
+        $ivlen = openssl_cipher_iv_length($cipher);
+        if ($ivlen === false || $ivlen <= 0) {
+            return formatOutput("Failed to determine IV length for cipher `" . htmlspecialchars($cipher) . "`.", type: "danger");
+        }
+        $ivHex = bin2hex(openssl_random_pseudo_bytes($ivlen));
+        $warnings .= formatOutput("No IV specified, using random IV: $ivHex", type: "warning");
+    } else {
+        // Validate that provided IV is a valid hex string
+        if (!ctype_xdigit($ivHex)) {
+            return formatOutput("Invalid IV format. IV must be a valid hexadecimal string (0-9, a-f, A-F).", type: "danger");
+        }
+        // Validate IV length matches cipher requirement
+        $ivlen = openssl_cipher_iv_length($cipher);
+        if ($ivlen !== false && strlen($ivHex) !== ($ivlen * 2)) {
+            return formatOutput("Invalid IV length. For cipher '$cipher', IV must be exactly " . ($ivlen * 2) . " hexadecimal characters (" . $ivlen . " bytes).", type: "danger");
+        }
+    }
+
+    // Convert hex IV to binary for openssl functions
+    $ivBinary = hex2bin($ivHex);
+    if ($ivBinary === false) {
+        return formatOutput("Invalid IV format. IV must be a valid hex string.", type: "danger");
     }
 
     if (empty($key)) {
@@ -570,8 +608,8 @@ function handle_openssl(array $req): string {
     }
 
     $result = match($tool) {
-        'encrypt' => openssl_encrypt($string, $cipher, $key, iv: $iv),
-        'decrypt' => openssl_decrypt($string, $cipher, $key, iv: $iv),
+        'encrypt' => openssl_encrypt($string, $cipher, $key, iv: $ivBinary),
+        'decrypt' => openssl_decrypt($string, $cipher, $key, iv: $ivBinary),
         default => ''
     };
 
@@ -583,9 +621,9 @@ function handle_openssl(array $req): string {
     $output .= output_copyable($result);
     $output .= "<div style='margin-top: 20px; padding: 15px; background-color: rgba(255, 193, 7, 0.1); border-radius: 0.5rem;'>
         <strong>Encryption Details:</strong><br>
-        🔑 <strong>Cipher:</strong> <code>" . htmlspecialchars($cipher) . "</code><br>
-        🔓 <strong>Key:</strong> <code>" . htmlspecialchars($key) . "</code><br>
-        📍 <strong>IV (Hex):</strong> <code>" . htmlspecialchars($iv) . "</code>
+        🔑 <strong>Cipher:</strong> <code>" . htmlspecialchars($cipher ?? '') . "</code><br>
+        🔓 <strong>Key:</strong> <code>" . htmlspecialchars($key ?? '') . "</code><br>
+        📍 <strong>IV (Hex):</strong> <code>" . htmlspecialchars($ivHex ?? '') . "</code>
     </div>";
 
     return $output;
@@ -714,6 +752,458 @@ function handle_stringtools(array $req): string {
     }
 
     return formatOutput(nl2br($string));
+}
+
+/**
+ * Handle QR code generation requests
+ *
+ * Generates QR codes from input text/URL/data using a free QR code API service.
+ * Supports customizable size and error correction levels.
+ *
+ * @param array $req Request array containing: 'qrcode' (input data), 'size', 'ecc'
+ * @return string Formatted HTML with QR code image and download option
+ */
+function handle_qrcode(array $req): string {
+    // Get and validate input
+    $data = req_get($req, 'qrcode', '');
+    
+    if (empty($data)) {
+        return formatOutput("Input data is required to generate a QR code.", type: "danger");
+    }
+    
+    // Validate input length (QR codes have data capacity limits)
+    if (strlen($data) > 3000) {
+        return formatOutput("Input data is too long. Maximum 3000 characters allowed.", type: "danger");
+    }
+    
+    // Get size (validate and ensure it's in allowed range)
+    $size = req_int($req, 'size', 200);
+    if (!in_array($size, [200, 300, 400, 500])) {
+        $size = 200;
+    }
+    
+    // Get error correction level (validate)
+    $ecc = req_get($req, 'ecc', 'L');
+    if (!in_array($ecc, ['L', 'M', 'Q', 'H'])) {
+        $ecc = 'L';
+    }
+    
+    // URL encode the data for the API
+    $encodedData = urlencode($data);
+    
+    // Use qr-server.com API (free, no authentication required)
+    $qrApiUrl = "https://api.qrserver.com/v1/create-qr-code/?size={$size}x{$size}&data={$encodedData}&ecc={$ecc}&margin=1";
+    
+    // Generate the QR code HTML
+    $output = "<div style='text-align: center; padding: 20px;'>";
+    $output .= "<img src='" . htmlspecialchars($qrApiUrl, ENT_QUOTES, 'UTF-8') . "' alt='QR Code' style='max-width: 100%; height: auto; border: 2px solid #495057; border-radius: 0.5rem; background: white; padding: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);' />";
+    $output .= "<div style='margin-top: 20px;'>";
+    $output .= "<p><strong>Encoded Data:</strong> <code style='word-break: break-all;'>" . htmlspecialchars($data) . "</code></p>";
+    $output .= "<p><strong>Size:</strong> {$size}x{$size}px | <strong>Error Correction:</strong> {$ecc}</p>";
+    $output .= "<a href='" . htmlspecialchars($qrApiUrl, ENT_QUOTES, 'UTF-8') . "' download='qrcode.png' class='btn btn-primary' style='margin-top: 10px;'>";
+    $output .= icon('download') . " Download QR Code";
+    $output .= "</a>";
+    $output .= "</div>";
+    $output .= "</div>";
+    
+    return $output;
+}
+
+/**
+ * Handle regex testing requests
+ *
+ * Tests regular expressions against input text, showing matches, groups,
+ * and optional replacements. Supports common regex flags.
+ *
+ * @param array $req Request array containing: 'pattern', 'teststring', 'replacement', flags
+ * @return string Formatted HTML with regex test results
+ */
+function handle_regex(array $req): string {
+    // Get and validate input
+    $pattern = req_get($req, 'pattern', '');
+    $testString = req_get($req, 'teststring', '');
+    $replacement = req_get($req, 'replacement', '');
+    
+    if (empty($pattern)) {
+        return formatOutput("Regular expression pattern is required.", type: "danger");
+    }
+    
+    if (empty($testString)) {
+        return formatOutput("Test string is required.", type: "danger");
+    }
+    
+    // Validate pattern length
+    if (strlen($pattern) > 5000) {
+        return formatOutput("Pattern is too long. Maximum 5000 characters allowed.", type: "danger");
+    }
+    
+    // Validate test string length
+    if (strlen($testString) > 100000) {
+        return formatOutput("Test string is too long. Maximum 100,000 characters allowed.", type: "danger");
+    }
+    
+    // Build regex flags
+    $flags = '';
+    if (req_bool($req, 'caseless')) {
+        $flags .= 'i';
+    }
+    if (req_bool($req, 'multiline')) {
+        $flags .= 'm';
+    }
+    
+    // Remove delimiters if present (e.g., /pattern/ or #pattern#)
+    $pattern = trim($pattern);
+    $delimiter = '';
+    if (preg_match('/^([^\w\s\\\\])(.*)\\1([gimsxADSUXu]*)$/', $pattern, $matches)) {
+        $delimiter = $matches[1];
+        $pattern = $matches[2];
+        // Merge flags if provided in pattern
+        if (!empty($matches[3])) {
+            $existingFlags = str_replace('g', '', $matches[3]); // Remove 'g' as PHP doesn't use it
+            $flags = implode('', array_unique(str_split($flags . $existingFlags)));
+        }
+    }
+    
+    // Add flags to pattern (PHP style: add flags at the end)
+    $delim = $delimiter ?: '/';
+    // Escape delimiter in pattern if it matches
+    if (strpos($pattern, $delim) !== false && $delim !== '/') {
+        $pattern = str_replace($delim, '\\' . $delim, $pattern);
+    }
+    $fullPattern = $delim . $pattern . $delim . $flags;
+    
+    $output = "<div style='font-family: monospace; font-size: 0.9rem;'>";
+    
+    // Test the regex
+    $matchCount = 0;
+    $allMatches = [];
+    
+    try {
+        // Use preg_match_all for global matching (always get all matches)
+        $matchCount = preg_match_all($fullPattern, $testString, $allMatches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE);
+        
+        if ($matchCount === false) {
+            // Invalid regex
+            $error = error_get_last();
+            return formatOutput("Invalid regular expression pattern. Error: " . htmlspecialchars($error['message'] ?? 'Unknown error'), type: "danger");
+        }
+        
+        // Display results
+        $output .= "<div style='margin-bottom: 20px; padding: 15px; background: rgba(32, 201, 151, 0.1); border-radius: 0.5rem; border-left: 4px solid #20c997;'>";
+        $output .= "<strong>" . icon('check-circle', 1, '#20c997') . " Pattern Valid</strong><br>";
+        $output .= "<code style='word-break: break-all;'>" . htmlspecialchars($fullPattern) . "</code><br>";
+        $output .= "<strong>Matches Found:</strong> " . ($matchCount > 0 ? "<span style='color: #20c997; font-weight: bold;'>{$matchCount}</span>" : "<span style='color: #dc3545;'>0</span>");
+        $output .= "</div>";
+        
+        if ($matchCount > 0) {
+            // Display matches
+            $output .= "<div style='margin-bottom: 20px;'>";
+            $output .= "<h5 style='margin-bottom: 15px;'>Match Details:</h5>";
+            
+            foreach ($allMatches as $matchIndex => $matchSet) {
+                $output .= "<div style='margin-bottom: 15px; padding: 15px; background: rgba(13, 110, 253, 0.1); border-radius: 0.5rem; border-left: 4px solid #0d6efd;'>";
+                $output .= "<strong>Match #" . ($matchIndex + 1) . ":</strong><br>";
+                
+                if (isset($matchSet[0]) && is_array($matchSet[0])) {
+                    $fullMatch = $matchSet[0][0];
+                    $offset = $matchSet[0][1];
+                    $output .= "<div style='margin: 10px 0; padding: 10px; background: #0f172a; color: #e9ecef; border-radius: 0.25rem;'>";
+                    $output .= "<strong>Full Match:</strong> <code style='color: #51cf66;'>" . htmlspecialchars($fullMatch) . "</code><br>";
+                    $output .= "<strong>Position:</strong> {$offset}";
+                    $output .= "</div>";
+                }
+                
+                // Display capture groups
+                if (count($matchSet) > 1) {
+                    $output .= "<strong>Capture Groups:</strong><br>";
+                    for ($i = 1; $i < count($matchSet); $i++) {
+                        if (isset($matchSet[$i]) && is_array($matchSet[$i])) {
+                            $group = $matchSet[$i][0];
+                            $groupOffset = $matchSet[$i][1];
+                            $output .= "<div style='margin: 5px 0; padding: 8px; background: rgba(255,255,255,0.1); border-radius: 0.25rem;'>";
+                            $output .= "<strong>Group {$i}:</strong> <code style='color: #ffc107;'>" . htmlspecialchars($group) . "</code> (position: {$groupOffset})";
+                            $output .= "</div>";
+                        }
+                    }
+                }
+                
+                $output .= "</div>";
+            }
+            
+            $output .= "</div>";
+            
+            // Show replacement if provided
+            if (!empty($replacement)) {
+                try {
+                    $replaced = preg_replace($fullPattern, $replacement, $testString);
+                    if ($replaced !== null) {
+                        $output .= "<div style='margin-bottom: 20px; padding: 15px; background: rgba(255, 193, 7, 0.1); border-radius: 0.5rem; border-left: 4px solid #ffc107;'>";
+                        $output .= "<h5 style='margin-bottom: 10px;'>Replacement Result:</h5>";
+                        $output .= "<div style='padding: 10px; background: #0f172a; color: #e9ecef; border-radius: 0.25rem; white-space: pre-wrap; word-break: break-word;'>";
+                        $output .= htmlspecialchars($replaced);
+                        $output .= "</div>";
+                        $output .= "</div>";
+                    }
+                } catch (Throwable $e) {
+                    $output .= formatOutput("Error during replacement: " . htmlspecialchars($e->getMessage()), type: "warning");
+                }
+            }
+        } else {
+            $output .= "<div style='padding: 15px; background: rgba(220, 53, 69, 0.1); border-radius: 0.5rem; border-left: 4px solid #dc3545;'>";
+            $output .= "<strong>" . icon('x-circle', 1, '#dc3545') . " No matches found</strong><br>";
+            $output .= "The pattern does not match the test string.";
+            $output .= "</div>";
+        }
+        
+    } catch (Throwable $e) {
+        return formatOutput("Error testing regex: " . htmlspecialchars($e->getMessage()), type: "danger");
+    }
+    
+    $output .= "</div>";
+    
+    return $output;
+}
+
+/**
+ * Handle Brainfuck conversion requests
+ *
+ * Converts text to Brainfuck code or executes Brainfuck code to produce text output.
+ * Supports two modes:
+ * - text2bf: Converts text to Brainfuck code that outputs that text
+ * - bf2text: Executes Brainfuck code and captures the output
+ *
+ * @param array $req Request array containing: 'brainfuck' (input), 'mode' (text2bf|bf2text)
+ * @return string Formatted HTML with conversion result or error message
+ */
+function handle_brainfuck(array $req): string {
+    $input = req_get($req, 'brainfuck', '');
+    $mode = req_get($req, 'mode', 'text2bf');
+    
+    if (empty($input)) {
+        return formatOutput("Input cannot be empty.", type: "danger");
+    }
+    
+    // Validate input length
+    if (strlen($input) > 100000) {
+        return formatOutput("Input must be at most 100,000 characters.", type: "danger");
+    }
+    
+    try {
+        if ($mode === 'text2bf') {
+            // Convert text to Brainfuck code
+            $bfCode = textToBrainfuck($input);
+            $output = "<div style='margin-bottom: 20px;'>";
+            $output .= "<div style='margin-bottom: 15px;'><strong>Text → Brainfuck</strong></div>";
+            $output .= copyableOutput($bfCode);
+            $output .= "<div style='margin-top: 15px; padding: 12px; background-color: rgba(255, 193, 7, 0.15); border-radius: 0.5rem;'>";
+            $output .= "<strong>📊 Stats:</strong><br>";
+            $output .= "Input length: <code>" . strlen($input) . " characters</code><br>";
+            $output .= "Brainfuck code length: <code>" . strlen($bfCode) . " characters</code><br>";
+            $output .= "Ratio: <code>" . number_format(strlen($bfCode) / strlen($input), 2) . "x</code>";
+            $output .= "</div>";
+            $output .= "</div>";
+            return $output;
+        } elseif ($mode === 'bf2text') {
+            // Execute Brainfuck code
+            $result = executeBrainfuck($input);
+            if ($result['success']) {
+                $output = "<div style='margin-bottom: 20px;'>";
+                $output .= "<div style='margin-bottom: 15px;'><strong>Brainfuck → Text</strong></div>";
+                $output .= copyableOutput($result['output']);
+                if (!empty($result['warnings'])) {
+                    $output .= "<div style='margin-top: 15px; padding: 12px; background-color: rgba(255, 193, 7, 0.15); border-radius: 0.5rem;'>";
+                    $output .= "<strong>⚠️ Warnings:</strong><br>";
+                    $output .= htmlspecialchars($result['warnings']);
+                    $output .= "</div>";
+                }
+                $output .= "</div>";
+                return $output;
+            } else {
+                return formatOutput("Brainfuck execution error: " . htmlspecialchars($result['error']), type: "danger");
+            }
+        } else {
+            return formatOutput("Invalid mode specified.", type: "danger");
+        }
+    } catch (Exception $e) {
+        return formatOutput("Error: " . htmlspecialchars($e->getMessage()), type: "danger");
+    }
+}
+
+/**
+ * Convert text to Brainfuck code
+ *
+ * Generates Brainfuck code that outputs the given text by setting each cell
+ * to the ASCII value of each character and outputting it.
+ *
+ * @param string $text The text to convert
+ * @return string Brainfuck code that outputs the text
+ */
+function textToBrainfuck(string $text): string {
+    $bfCode = '';
+    $currentValue = 0;
+    
+    for ($i = 0; $i < strlen($text); $i++) {
+        $targetValue = ord($text[$i]);
+        $diff = $targetValue - $currentValue;
+        
+        if ($diff == 0) {
+            // Already at target value, just output
+            $bfCode .= '.';
+        } else {
+            // Calculate the most efficient way to reach target
+            // Use absolute value and determine direction
+            if (abs($diff) <= 10) {
+                // Small difference: just increment/decrement
+                if ($diff > 0) {
+                    $bfCode .= str_repeat('+', $diff);
+                } else {
+                    $bfCode .= str_repeat('-', -$diff);
+                }
+            } else {
+                // Large difference: reset to 0 and build up
+                // Reset current value to 0
+                if ($currentValue > 0) {
+                    $bfCode .= str_repeat('-', $currentValue);
+                }
+                $currentValue = 0;
+                
+                // Build up to target
+                $bfCode .= str_repeat('+', $targetValue);
+            }
+            
+            $bfCode .= '.';
+            $currentValue = $targetValue;
+        }
+        
+        // Move to next cell for next character (optional optimization)
+        // For simplicity, we'll reuse the same cell
+    }
+    
+    return $bfCode;
+}
+
+/**
+ * Execute Brainfuck code and capture output
+ *
+ * Implements a Brainfuck interpreter with:
+ * - 30,000 cell tape (standard Brainfuck)
+ * - Cell values 0-255 (wrapping)
+ * - Input support (reads from empty string if not provided)
+ * - Loop support with bracket matching
+ *
+ * @param string $code The Brainfuck code to execute
+ * @param string $input Optional input string for ',' commands
+ * @return array ['success' => bool, 'output' => string, 'error' => string|null, 'warnings' => string]
+ */
+function executeBrainfuck(string $code, string $input = ''): array {
+    $tape = array_fill(0, 30000, 0);
+    $pointer = 0;
+    $output = '';
+    $inputIndex = 0;
+    $codeIndex = 0;
+    $codeLength = strlen($code);
+    $maxSteps = 10000000; // Safety limit to prevent infinite loops
+    $stepCount = 0;
+    $warnings = '';
+    
+    // Validate brackets are balanced
+    $bracketCount = 0;
+    for ($i = 0; $i < $codeLength; $i++) {
+        if ($code[$i] === '[') $bracketCount++;
+        if ($code[$i] === ']') $bracketCount--;
+        if ($bracketCount < 0) {
+            return ['success' => false, 'output' => '', 'error' => 'Unmatched closing bracket at position ' . $i, 'warnings' => ''];
+        }
+    }
+    if ($bracketCount !== 0) {
+        return ['success' => false, 'output' => '', 'error' => 'Unmatched opening brackets', 'warnings' => ''];
+    }
+    
+    // Precompute bracket pairs for efficient loop handling
+    $bracketPairs = [];
+    $stack = [];
+    for ($i = 0; $i < $codeLength; $i++) {
+        if ($code[$i] === '[') {
+            $stack[] = $i;
+        } elseif ($code[$i] === ']') {
+            if (empty($stack)) {
+                return ['success' => false, 'output' => '', 'error' => 'Unmatched closing bracket at position ' . $i, 'warnings' => ''];
+            }
+            $start = array_pop($stack);
+            $bracketPairs[$start] = $i;
+            $bracketPairs[$i] = $start;
+        }
+    }
+    
+    // Execute the code
+    while ($codeIndex < $codeLength && $stepCount < $maxSteps) {
+        $stepCount++;
+        $command = $code[$codeIndex];
+        
+        switch ($command) {
+            case '>':
+                $pointer++;
+                if ($pointer >= 30000) {
+                    $pointer = 0; // Wrap around
+                }
+                break;
+                
+            case '<':
+                $pointer--;
+                if ($pointer < 0) {
+                    $pointer = 29999; // Wrap around
+                }
+                break;
+                
+            case '+':
+                $tape[$pointer] = ($tape[$pointer] + 1) % 256;
+                break;
+                
+            case '-':
+                $tape[$pointer] = ($tape[$pointer] - 1 + 256) % 256;
+                break;
+                
+            case '.':
+                $output .= chr($tape[$pointer]);
+                break;
+                
+            case ',':
+                if ($inputIndex < strlen($input)) {
+                    $tape[$pointer] = ord($input[$inputIndex]);
+                    $inputIndex++;
+                } else {
+                    $tape[$pointer] = 0; // EOF: set to 0
+                }
+                break;
+                
+            case '[':
+                if ($tape[$pointer] == 0) {
+                    // Jump to matching ']'
+                    $codeIndex = $bracketPairs[$codeIndex];
+                }
+                break;
+                
+            case ']':
+                if ($tape[$pointer] != 0) {
+                    // Jump back to matching '['
+                    $codeIndex = $bracketPairs[$codeIndex];
+                }
+                break;
+        }
+        
+        $codeIndex++;
+    }
+    
+    if ($stepCount >= $maxSteps) {
+        $warnings = "Execution stopped after {$maxSteps} steps (possible infinite loop).";
+    }
+    
+    return [
+        'success' => true,
+        'output' => $output,
+        'error' => null,
+        'warnings' => $warnings
+    ];
 }
 
 // Additional handlers can be added here following the same pattern...

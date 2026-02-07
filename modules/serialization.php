@@ -1,7 +1,7 @@
 <div id="serialization" class="content">
     <?php
-        $serializationInputVal = isset($_POST['input']) ? htmlspecialchars($_POST['input']) : "";
-        $serializationTypeVal  = isset($_POST['type']) ? htmlspecialchars($_POST['type']) : "JSON";
+        $serializationInputVal = isset($_POST['input']) ? htmlspecialchars($_POST['input'] ?? '') : "";
+        $serializationTypeVal  = isset($_POST['type']) ? htmlspecialchars($_POST['type'] ?? 'JSON') : "JSON";
         $stripCommentsChecked  = !empty($_POST['stripcomments']) ? 'checked' : '';
     ?>
 

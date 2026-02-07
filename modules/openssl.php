@@ -5,9 +5,11 @@
 -->
 <div id="openssl" class="content">
     <?php
+  $selectedCipher = $_POST['cipher'] ?? 'aes-256-cbc';
   $ciphers = "";
   foreach (openssl_get_cipher_methods() as $thiscipher) {
-    $ciphers .= "<option value='$thiscipher'>$thiscipher</option>";
+    $selected = ($thiscipher === $selectedCipher) ? 'selected' : '';
+    $ciphers .= "<option value='$thiscipher' $selected>$thiscipher</option>";
   }
 ?>
 
@@ -21,15 +23,15 @@
 
             <form class="form" action="gen.php" method="POST" id="openssl" data-action="openssl">
                 <?php
-                  $openssl   = Null;
-                  $key       = Null;
-                  $iv        = Null;
+                  $openssl   = null;
+                  $key       = null;
+                  $iv        = null;
                   $stringVal = '';
                   if (isset($_POST['openssl'])) {
-                    $openssl   = $_POST['openssl'];
-                    $key       = $_POST['key'];
-                    $iv        = $_POST['iv'];
-                    $stringVal = htmlspecialchars($openssl);
+                    $openssl   = $_POST['openssl'] ?? '';
+                    $key       = $_POST['key'] ?? '';
+                    $iv        = $_POST['iv'] ?? '';
+                    $stringVal = htmlspecialchars($openssl ?? '');
                   }
                 ?>
 
@@ -67,13 +69,13 @@
 
                             <div class="col-12 col-md-6">
                                 <label for="keyInput" class="form-label"><strong>Encryption Key</strong></label>
-                                <input type="text" name="key" class="form-control form-control-lg" id="keyInput" value="<?= htmlspecialchars($key) ?>" placeholder="Leave empty for random key" style="font-family: monospace;">
+                                <input type="text" name="key" class="form-control form-control-lg" id="keyInput" value="<?= htmlspecialchars($key ?? '') ?>" placeholder="Leave empty for random key" style="font-family: monospace;">
                                 <div class="form-text">Optional: Custom encryption key (auto-generated if empty)</div>
                             </div>
 
                             <div class="col-12 col-md-6">
                                 <label for="ivInput" class="form-label"><strong>Initialization Vector (IV)</strong></label>
-                                <input type="text" name="iv" class="form-control form-control-lg" id="ivInput" value="<?= htmlspecialchars($iv) ?>" placeholder="Leave empty for random IV" style="font-family: monospace;">
+                                <input type="text" name="iv" class="form-control form-control-lg" id="ivInput" value="<?= htmlspecialchars($iv ?? '') ?>" placeholder="Leave empty for random IV" style="font-family: monospace;">
                                 <div class="form-text">Optional: Custom IV (auto-generated if empty)</div>
                             </div>
                         </div>

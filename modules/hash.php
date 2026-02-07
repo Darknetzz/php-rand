@@ -12,7 +12,7 @@
                 <div class="row g-4 mb-4">
                     <div class="col-12 col-lg-6">
                         <label for="hashInput" class="form-label mb-3"><strong style="font-size: 1.1rem;">Input Text</strong></label>
-                        <textarea name="hash" class="form-control" id="hashInput" style="min-height: 300px; resize: vertical; font-family: monospace; font-size: 0.95rem; border: 2px solid #495057;" placeholder="Enter text to hash..." required><?php if (isset($_POST['hash'])) echo htmlspecialchars($_POST['hash']); ?></textarea>
+                        <textarea name="hash" class="form-control" id="hashInput" style="min-height: 300px; resize: vertical; font-family: monospace; font-size: 0.95rem; border: 2px solid #495057;" placeholder="Enter text to hash..." required><?php if (isset($_POST['hash'])) echo htmlspecialchars($_POST['hash'] ?? ''); ?></textarea>
                     </div>
                     <div class="col-12 col-lg-6 d-flex flex-column">
                         <label class="form-label mb-3"><strong style="font-size: 1.1rem;">Hash Output</strong></label>

@@ -89,7 +89,7 @@ $timeZoneSelector = function($inputName = "timezone") {
                     <?= submitBtn("datetime", "action", "⏱️ Convert", "shuffle", "lg") ?>
                 </div>
 
-                <div id="datetimeresponse"></div>
+                <div class="responseDiv"></div>
             </form>
         </div>
     </div>

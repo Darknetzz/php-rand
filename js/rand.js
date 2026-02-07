@@ -498,6 +498,14 @@ function generateRandomData(type, placeholder = '', $input = null) {
     // CONTEXT-AWARE DETECTION BY FORM/MODULE
     // =====================================================================
 
+    // OpenSSL encryption module - generate hex strings for IV and key
+    if (formAction === 'openssl' || formId === 'openssl') {
+        const inputName = $input ? $input.attr('name') : '';
+        if (inputName === 'iv' || inputName === 'key') {
+            return randomHex();
+        }
+    }
+
     // Calculator module - generate math expressions
     if (formAction === 'calc' || formId === 'calc' || placeholderLower.includes('calculation')) {
         return randomCalculation();
@@ -678,6 +686,14 @@ function addRandomDataButtons() {
             return;
         }
 
+        // Check if this is a wheel item input (handle without wrapping)
+        const isWheelItemInput = $input.hasClass('wheelitem-input') || $input.closest('.wheelitem').length > 0;
+        
+        // Skip if already has a random button (for wheel items)
+        if (isWheelItemInput && ($input.next(".random-data-btn").length > 0 || $input.siblings(".random-data-btn").length > 0)) {
+            return;
+        }
+
         // Get input details
         const inputType = $input.is('textarea') ? 'textarea' : $input.attr('type');
         const placeholder = $input.attr('placeholder') || '';
@@ -687,8 +703,8 @@ function addRandomDataButtons() {
             $input.attr('id', inputId);
         }
 
-        // Wrap the input if not already wrapped
-        if (!$input.parent().hasClass('input-with-random-btn')) {
+        // Wrap the input if not already wrapped (but not for wheel items - they're already in a flex container)
+        if (!isWheelItemInput && !$input.parent().hasClass('input-with-random-btn')) {
             $input.wrap('<div class="input-with-random-btn" style="position: relative; display: flex; gap: 8px; align-items: flex-start;"></div>');
         }
 

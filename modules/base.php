@@ -5,34 +5,47 @@ $base_options = [
     "text"   => [
       "name" => "Text",
       "attr" => null,
+      "emoji" => "📝",
+    ],
+    "base64" => [
+      "name" => "Base64 (encoding)",
+      "attr" => null,
+      "emoji" => "🔢",
     ],
     2  => [
       "name" => "Base 2 (binary)",
       "attr" => null,
+      "emoji" => "💻",
     ],
     8  => [
       "name" => "Base 8 (octal)",
       "attr" => null,
+      "emoji" => "🔷",
     ],
     10 => [
       "name" => "Base 10 (decimal)",
       "attr" => null,
+      "emoji" => "🔢",
     ],
     16 => [
       "name" => "Base 16 (hexadecimal)",
       "attr" => null,
+      "emoji" => "⬡",
     ],
     32 => [
       "name" => "Base 32",
       "attr" => null,
+      "emoji" => "🔢",
     ],
     64 => [
       "name" => "Base 64",
       "attr" => null,
+      "emoji" => "🔢",
     ],
     0 => [
       "name" => "---",
       "attr" => "disabled",
+      "emoji" => "➖",
     ],
 ];
 
@@ -40,6 +53,7 @@ for ($i = 32; $i <= 64; $i++) {
     $base_options[$i] = [
       "name" => "Base $i",
       "attr" => null,
+      "emoji" => "🔢",
     ];
 }
 
@@ -47,7 +61,8 @@ $base_options_html = "";
 foreach ($base_options as $value => $data) {
     $name               = is_array($data) ? $data['name'] : $data;
     $attr               = is_array($data) && isset($data['attr']) ? $data['attr'] : null;
-    $base_options_html .= "<option value='$value' $attr>$name</option>";
+    $emoji              = is_array($data) && isset($data['emoji']) ? $data['emoji'] : "";
+    $base_options_html .= "<option value='$value' $attr>$emoji $name</option>";
 }
 ?>
 
@@ -80,19 +95,23 @@ foreach ($base_options as $value => $data) {
                 <!-- Conversion Options -->
                 <div class="card border-primary mb-4" style="background-color: rgba(13, 110, 253, 0.05);">
                     <div class="card-body">
-                        <div class="row g-3">
-                            <div class="col-12 col-md-6">
+                        <div class="row g-3 align-items-end">
+                            <div class="col-12 col-md-5">
                                 <label for="fromBase" class="form-label"><strong>Convert From:</strong></label>
                                 <select name="from" id="fromBase" class="form-select form-select-lg" style="font-family: monospace; border: 2px solid #0d6efd;">
                                     <option value="text" selected>📝 Text</option>
                                     <?= $base_options_html ?>
                                 </select>
                             </div>
-
-                            <div class="col-12 col-md-6">
+                            <div class="col-12 col-md-2 d-flex justify-content-center pb-1">
+                                <button type="button" id="baseSwapBtn" class="btn btn-outline-primary btn-lg" title="Swap From and To" aria-label="Swap Convert From and Convert To">
+                                    <?= icon("arrow-left-right") ?>
+                                </button>
+                            </div>
+                            <div class="col-12 col-md-5">
                                 <label for="toBase" class="form-label"><strong>Convert To:</strong></label>
                                 <select name="to" id="toBase" class="form-select form-select-lg" style="font-family: monospace; border: 2px solid #0d6efd;">
-                                    <option value="64" selected>🔢 Base 64</option>
+                                    <option value="base64" selected>🔢 Base64 (encoding)</option>
                                     <?= $base_options_html ?>
                                 </select>
                             </div>
@@ -104,5 +123,18 @@ foreach ($base_options as $value => $data) {
             </form>
         </div>
     </div>
+
+    <script>
+    (function () {
+        var fromEl = document.getElementById('fromBase');
+        var toEl = document.getElementById('toBase');
+        document.getElementById('baseSwapBtn').addEventListener('click', function () {
+            var fromVal = fromEl.value;
+            var toVal = toEl.value;
+            fromEl.value = toVal;
+            toEl.value = fromVal;
+        });
+    })();
+    </script>
 
 </div>
