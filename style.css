@@ -5,19 +5,16 @@ body {
   height: 100%;
 }
 
-/* Changelog styling */
+/* Changelog styling (details/summary; .changelog-panel was only in CHANGELOG.md, now removed for GitHub) */
 #changelogMarkdown details {
   margin-bottom: 16px;
-}
-#changelogMarkdown details summary {
-  cursor: pointer;
-}
-#changelogMarkdown .changelog-panel {
-  margin-top: 8px;
   padding: 12px 14px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.04);
+}
+#changelogMarkdown details summary {
+  cursor: pointer;
 }
 body {
   background-color: #262626;

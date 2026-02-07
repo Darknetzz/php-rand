@@ -14,9 +14,8 @@ All notable changes to this project are documented in this file.
 - **Improved IV Generation** – Fixed OpenSSL IV length and format validation
 - **Copy Button Fix** – Fixed trailing whitespace issue when copying strings
 
-<details class="changelog-details">
-<summary><strong>📋 Detailed Changes</strong> (click to expand)</summary>
-<div class="changelog-panel">
+<details>
+<summary>📋 Detailed Changes (click to expand)</summary>
 
 #### New Modules
 - **QR Code Generator** (Generators menu)
@@ -73,7 +72,6 @@ All notable changes to this project are documented in this file.
   - Fixed `htmlspecialchars()` null parameter warnings
   - Applied across all modules and handlers
 
-</div>
 </details>
 
 ---
@@ -86,9 +84,8 @@ All notable changes to this project are documented in this file.
 - **Context-aware random data** – Smart sample data based on field type
 - **Input validation framework** – Security hardening with DOS prevention
 
-<details class="changelog-details">
-<summary><strong>📋 Detailed Changes</strong> (click to expand)</summary>
-<div class="changelog-panel">
+<details>
+<summary>📋 Detailed Changes (click to expand)</summary>
 
 #### UTF-8 Configuration
 - Added `ini_set('default_charset', 'UTF-8')` and `mb_*` function defaults
@@ -116,7 +113,6 @@ All notable changes to this project are documented in this file.
 - README updated with DNS lookup and enhanced tools
 - Validation simplified to support optional fields
 
-</div>
 </details>
 
 ---
@@ -127,9 +123,8 @@ All notable changes to this project are documented in this file.
 - **Random Data Buttons** – Auto-generate contextual sample data for all inputs
 - **Dashboard redesign** – Modern UI with stats, categories, and feature highlights
 
-<details class="changelog-details">
-<summary><strong>📋 Detailed Changes</strong> (click to expand)</summary>
-<div class="changelog-panel">
+<details>
+<summary>📋 Detailed Changes (click to expand)</summary>
 
 #### Random Data Buttons
 - Smart context detection (email, URL, IP, hex, JSON, etc.)
@@ -142,7 +137,6 @@ All notable changes to this project are documented in this file.
 - Color-coded categories (generators: teal, cryptography: blue, encoding: purple, convert: orange, misc: pink)
 - Fun facts section with educational content
 
-</div>
 </details>
 
 ---
@@ -154,9 +148,8 @@ All notable changes to this project are documented in this file.
 - **Pure PHP diff** – No xdiff extension required
 - **Copyable outputs** – Consistent styled output boxes everywhere
 
-<details class="changelog-details">
-<summary><strong>📋 Detailed Changes</strong> (click to expand)</summary>
-<div class="changelog-panel">
+<details>
+<summary>📋 Detailed Changes (click to expand)</summary>
 
 #### New Features
 - Global `copyableOutput()` function for styled output boxes
@@ -189,7 +182,6 @@ Specific updates:
 - Copy-to-clipboard HTTP/HTTPS support
 - Dark theme contrast improvements
 
-</div>
 </details>
 
 ---
@@ -200,9 +192,8 @@ Specific updates:
 - **New modules**: Metaphone, Levenshtein, Diff, Currency converter
 - **Networking**: DNS lookup tool
 
-<details class="changelog-details">
-<summary><strong>📋 Detailed Changes</strong> (click to expand)</summary>
-<div class="changelog-panel">
+<details>
+<summary>📋 Detailed Changes (click to expand)</summary>
 
 - Module: metaphone (phonetic key generation)
 - Module: levenshtein (string distance)
@@ -212,7 +203,6 @@ Specific updates:
 - String generator: info output now in table format
 - String tools: output to textbox disabled by default
 
-</div>
 </details>
 
 ---
@@ -224,9 +214,8 @@ Specific updates:
 - **New converters**: Markdown, Minify
 - **Spin the wheel** – Now an actual wheel animation
 
-<details class="changelog-details">
-<summary><strong>📋 Detailed Changes</strong> (click to expand)</summary>
-<div class="changelog-panel">
+<details>
+<summary>📋 Detailed Changes (click to expand)</summary>
 
 #### New Modules
 - Encoding: urlencoding
@@ -244,7 +233,6 @@ Specific updates:
 #### Fixes
 - Navbar: removed duplicate hash
 
-</div>
 </details>
 
 ---
@@ -269,9 +257,8 @@ Specific updates:
 - **Changelog modal** with marked.js
 - **Updated dependencies**: Tabler v1.4.0, Highlight.js v11.11.1
 
-<details class="changelog-details">
-<summary><strong>📋 Detailed Changes</strong> (click to expand)</summary>
-<div class="changelog-panel">
+<details>
+<summary>📋 Detailed Changes (click to expand)</summary>
 
 - Changelog modal implementation
 - Marked.js for markdown rendering
@@ -280,5 +267,4 @@ Specific updates:
 - Modal background opacity and color adjusted
 - Fixed href on nav changelog button
 
-</div>
 </details>
