@@ -188,12 +188,14 @@ do {
     // die(formatOutput($_POST));
     $input = (!empty($_POST['base']) ? $_POST['base'] : null);
     $from  = (!empty($_POST['from']) ? ($_POST['from']) : "text");
-    $to    = (!empty($_POST['to']) ? ($_POST['to']) : 64);
+    $to    = (!empty($_POST['to']) ? ($_POST['to']) : "base64");
 
     $result = convert_any($input, $from, $to);
     
+    $fromLabel = (is_numeric($from) ? "Base $from" : ucfirst($from));
+    $toLabel   = (is_numeric($to) ? "Base $to" : ucfirst($to));
     echo "<div style='margin-bottom: 20px;'>";
-    echo "<div style='margin-bottom: 15px;'><strong>Base $from → Base $to</strong></div>";
+    echo "<div style='margin-bottom: 15px;'><strong>$fromLabel → $toLabel</strong></div>";
     echo copyableOutput($result);
     echo "</div>";
   }
