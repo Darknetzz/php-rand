@@ -69,19 +69,14 @@ $timeZoneSelector = function($inputName = "timezone") {
 
             <form class="form" action="gen.php" method="POST" id="datetime" data-action="datetime">
                 <div class="row g-4 mb-4">
-                    <div class="col-12 col-md-5">
+                    <div class="col-12 col-md-6">
                         <label class="form-label mb-3"><strong>From</strong></label>
                         <input type="number" name="time" class="form-control form-control-lg" placeholder="Enter a number" style="font-family: monospace; border: 2px solid #495057;" required>
                     </div>
 
-                    <div class="col-12 col-md-3">
+                    <div class="col-12 col-md-6">
                         <label class="form-label mb-3"><strong>Unit</strong></label>
                         <?= $unitSelector("timefrom_unit") ?>
-                    </div>
-
-                    <div class="col-12 col-md-4">
-                        <label class="form-label mb-3"><strong>To Unit</strong></label>
-                        <?= $unitSelector("timeto_unit") ?>
                     </div>
                 </div>
 

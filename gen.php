@@ -58,18 +58,17 @@ do {
 /*                             NOTE: datetime                            */
 /* ===================================================================== */
   if ($action == "datetime") {
-    $timefrom_unit = $_POST['timefrom_unit'];
-    $timeto_unit   = $_POST['timeto_unit'];
-    $time          = $_POST['time'];
+    $timefrom_unit = $_POST['timefrom_unit'] ?? '';
+    $time          = $_POST['time'] ?? '';
 
-    if (empty($time) || empty($timefrom_unit) || empty($timeto_unit)) {
-      echo formatOutput("You must enter a value and select units.", type: "danger");
+    if ($time === '' || $time === null || empty($timefrom_unit)) {
+      echo formatOutput("You must enter a value and select a unit.", type: "danger");
       break;
     }
 
     $time = intval($time);
 
-    $units    = [
+    $units = [
       "s" => ["seconds", 1],
       "i" => ["minutes", 60],
       "h" => ["hours", 3600],
@@ -79,14 +78,27 @@ do {
       "y" => ["years", 31536000]
     ];
 
-    $timefrom = $units[$timefrom_unit][1];
-    $timeto   = $units[$timeto_unit][1];
+    if (!isset($units[$timefrom_unit])) {
+      echo formatOutput("Invalid source time unit.", type: "danger");
+      break;
+    }
 
+    $fromSeconds    = $time * $units[$timefrom_unit][1];
     $from_unit_name = $units[$timefrom_unit][0];
-    $to_unit_name   = $units[$timeto_unit][0];
-    $converted      = round(($time * $timefrom) / $timeto, 6);
-    
-    echo "<div style='margin-bottom: 15px;'>" . copyableOutput($converted . " " . $to_unit_name, "$time $from_unit_name") . "</div>";
+    $fromLabel      = "$time $from_unit_name";
+
+    echo '<div class="table-responsive"><table class="table table-dark table-striped table-hover align-middle mb-0" style="border: 1px solid #334155;">';
+    echo '<caption class="text-start fw-bold" style="caption-side: top; color: var(--bs-body-color);">' . htmlspecialchars($fromLabel) . '</caption>';
+    echo '<thead><tr><th>Unit</th><th>Value</th></tr></thead><tbody>';
+    foreach ($units as $key => [$to_unit_name, $factor]) {
+      if ($key === $timefrom_unit) {
+        continue;
+      }
+      $converted = round($fromSeconds / $factor, 6);
+      $value     = $converted . " " . $to_unit_name;
+      echo '<tr><td>' . htmlspecialchars($to_unit_name) . '</td><td style="max-width: 280px;">' . copyableOutput($value, "") . '</td></tr>';
+    }
+    echo '</tbody></table></div>';
   }
 
 

@@ -632,11 +632,10 @@ function handle_openssl(array $req): string {
 /**
  * Handle datetime unit conversion requests
  *
- * Converts time values between different units (seconds, minutes, hours, days, weeks, etc.)
- * Displays both decimal and integer results.
+ * Converts time values from the selected source unit to all other units
+ * (seconds, minutes, hours, days, weeks, months, years).
  *
- * @param array $req Request array containing: 'time' (value), 'timefrom_unit' (source unit),
- *                   'timeto_unit' (target unit)
+ * @param array $req Request array containing: 'time' (value), 'timefrom_unit' (source unit)
  * @return string Formatted HTML with conversion results or error message
  */
 function handle_datetime(array $req): string {
@@ -647,21 +646,15 @@ function handle_datetime(array $req): string {
     }
     $time = $timeValidation['value'];
 
-    // Validate source and target units
     $validUnits = ['s', 'i', 'h', 'd', 'w', 'M', 'y'];
     $fromUnit = req_get($req, 'timefrom_unit');
-    $toUnit = req_get($req, 'timeto_unit');
 
-    if (empty($fromUnit) || empty($toUnit)) {
-        return formatOutput("You must select both source and target units.", type: "danger");
+    if (empty($fromUnit)) {
+        return formatOutput("You must select a unit.", type: "danger");
     }
 
     if (!in_array($fromUnit, $validUnits)) {
         return formatOutput("Invalid source time unit.", type: "danger");
-    }
-
-    if (!in_array($toUnit, $validUnits)) {
-        return formatOutput("Invalid target time unit.", type: "danger");
     }
 
     $units = [
@@ -674,8 +667,24 @@ function handle_datetime(array $req): string {
         "y" => ["years", 31536000]
     ];
 
-    $converted = round(($time * $units[$fromUnit][1]) / $units[$toUnit][1], 6);
-    return output_copyable($converted . " " . $units[$toUnit][0], "$time " . $units[$fromUnit][0]);
+    $fromSeconds = $time * $units[$fromUnit][1];
+    $fromLabel = "$time " . $units[$fromUnit][0];
+
+    $output = '<div class="table-responsive"><table class="table table-dark table-striped table-hover align-middle mb-0" style="border: 1px solid #334155;">';
+    $output .= '<caption class="text-start fw-bold" style="caption-side: top; color: var(--bs-body-color);">' . htmlspecialchars($fromLabel) . '</caption>';
+    $output .= '<thead><tr><th>Unit</th><th>Value</th></tr></thead><tbody>';
+
+    foreach ($units as $key => [$name, $factor]) {
+        if ($key === $fromUnit) {
+            continue;
+        }
+        $converted = round($fromSeconds / $factor, 6);
+        $value = $converted . " " . $name;
+        $output .= '<tr><td>' . htmlspecialchars($name) . '</td><td style="max-width: 280px;">' . copyableOutput($value, "") . '</td></tr>';
+    }
+
+    $output .= '</tbody></table></div>';
+    return $output;
 }
 
 /**
