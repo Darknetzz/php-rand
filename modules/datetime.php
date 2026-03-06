@@ -38,26 +38,6 @@ $timeZoneSelector = function($inputName = "timezone") {
 
 <div id="datetime" class="content">
 
-    <!-- TIMEZONE & CURRENT TIME -->
-    <div class="card card-primary">
-        <h1 class="card-header">🌍 Current Time</h1>
-        <div class="card-body">
-            <div class="row g-4">
-                <div class="col-12 col-lg-8">
-                    <label class="form-label mb-3"><strong style="font-size: 1.1rem;">Select Timezone</strong></label>
-                    <?= $timeZoneSelector("timezone") ?>
-                </div>
-                <div class="col-12 col-lg-4 d-flex flex-column">
-                    <label class="form-label mb-3"><strong style="font-size: 1.1rem;">Current Time</strong></label>
-                    <div style="padding: 15px; background: linear-gradient(135deg, rgba(13, 110, 253, 0.1) 0%, rgba(0, 184, 255, 0.08) 100%); border: 2px solid #0dcaf0; border-radius: 0.5rem; font-family: monospace; font-size: 1rem;">
-                        <div class="timezone" style="font-weight: bold; color: #0dcaf0;"></div>
-                        <div class="datetime" style="font-weight: bold; font-size: 1.1rem; margin-top: 8px;"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- TIME CONVERTER -->
     <div class="card card-primary">
         <h1 class="card-header">⏱️ Time Unit Converter</h1>
@@ -86,6 +66,26 @@ $timeZoneSelector = function($inputName = "timezone") {
 
                 <div class="responseDiv"></div>
             </form>
+        </div>
+    </div>
+
+    <!-- TIMEZONE & CURRENT TIME -->
+    <div class="card card-primary">
+        <h1 class="card-header">🌍 Current Time</h1>
+        <div class="card-body">
+            <div class="row g-4">
+                <div class="col-12 col-lg-8">
+                    <label class="form-label mb-3"><strong style="font-size: 1.1rem;">Select Timezone</strong></label>
+                    <?= $timeZoneSelector("timezone") ?>
+                </div>
+                <div class="col-12 col-lg-4 d-flex flex-column">
+                    <label class="form-label mb-3"><strong style="font-size: 1.1rem;">Current Time</strong></label>
+                    <div style="padding: 15px; background: linear-gradient(135deg, rgba(13, 110, 253, 0.1) 0%, rgba(0, 184, 255, 0.08) 100%); border: 2px solid #0dcaf0; border-radius: 0.5rem; font-family: monospace; font-size: 1rem;">
+                        <div class="timezone" style="font-weight: bold; color: #0dcaf0;"></div>
+                        <div class="datetime" style="font-weight: bold; font-size: 1.1rem; margin-top: 8px;"></div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
