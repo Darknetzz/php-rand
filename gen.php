@@ -335,9 +335,12 @@ do {
       if ($numgenfrom !== null && $numgento !== null) {
         $qty = isset($_POST['numgenqty']) ? (int) $_POST['numgenqty'] : 1;
         $qty = max(1, min(500, $qty));
+        if ($seed !== null && $seed !== '' && ctype_digit((string)$seed) && strlen((string)$seed) <= 17) {
+          mt_srand((int) $seed);
+        }
         $results = [];
         for ($i = 0; $i < $qty; $i++) {
-          $gen = numGen($numgenfrom, $numgento, $seed, $numgentype);
+          $gen = numGen($numgenfrom, $numgento, null, $numgentype);
           if (is_string($gen)) {
             echo $gen;
             break;

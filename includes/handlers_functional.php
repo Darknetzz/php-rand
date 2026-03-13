@@ -382,9 +382,14 @@ function handle_numgen(array $req): string {
     $qty = isset($req['numgenqty']) ? (int) $req['numgenqty'] : 1;
     $qty = max(1, min(500, $qty));
 
+    // Apply seed once so the same seed gives a reproducible sequence for multiple numbers
+    if ($seed !== null && ctype_digit($seed) && strlen($seed) <= 17) {
+        mt_srand((int) $seed);
+    }
+
     $results = [];
     for ($i = 0; $i < $qty; $i++) {
-        $result = numGen($from, $to, $seed, $type);
+        $result = numGen($from, $to, null, $type);
         if (is_string($result)) {
             return $result;
         }
