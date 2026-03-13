@@ -1426,6 +1426,29 @@ function bits_to_php_int($bits) {
 // echo convert_any(str_repeat('1', 13), 1, 2), PHP_EOL;    // Unary 13 -> 1101
 
 /* ===================================================================== */
+/*                     FUNCTION: joinNumGenResults                        */
+/* ===================================================================== */
+/**
+ * Joins number generator results with the given separator.
+ * When separator is newline, right-pads numbers so they align in a column.
+ *
+ * @param array $results List of numbers (int or string)
+ * @param string $separator Separator between items (e.g. ", ", "\n", "\t")
+ * @return string Joined string, optionally right-aligned for newline separator
+ */
+function joinNumGenResults(array $results, string $separator): string {
+  if (count($results) === 1) {
+    return (string) $results[0];
+  }
+  $strings = array_map('strval', $results);
+  if ($separator === "\n") {
+    $maxLen = max(array_map('strlen', $strings));
+    $strings = array_map(fn($s) => str_pad($s, $maxLen, ' ', STR_PAD_LEFT), $strings);
+  }
+  return implode($separator, $strings);
+}
+
+/* ===================================================================== */
 /*                       FUNCTION: copyableOutput                        */
 /* ===================================================================== */
 /**

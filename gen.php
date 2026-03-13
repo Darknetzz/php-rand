@@ -355,7 +355,7 @@ do {
           $results[] = $gen;
         }
         if (count($results) > 0) {
-          $joined = $qty === 1 ? (string)$results[0] : implode($separator, $results);
+          $joined = joinNumGenResults($results, $separator);
           echo "<div style='margin-bottom: 15px;'>" . copyableOutput($joined) . "</div>";
           if ($seed) {
             echo "<div style='margin-top: 15px; opacity: 0.7;'><small><strong>Seed used:</strong> $seed</small></div>";

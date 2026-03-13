@@ -405,7 +405,7 @@ function handle_numgen(array $req): string {
         $results[] = $result;
     }
 
-    $joined = $qty === 1 ? (string)$results[0] : implode($separator, $results);
+    $joined = joinNumGenResults($results, $separator);
     $output = output_copyable($joined);
 
     if ($seed) {
