@@ -378,8 +378,20 @@ function handle_numgen(array $req): string {
         $seed = $seedValidation['value'];
     }
 
-    $result = numGen($from, $to, $seed, $type);
-    $output = output_copyable($result);
+    // Validate quantity (1–500)
+    $qty = isset($req['numgenqty']) ? (int) $req['numgenqty'] : 1;
+    $qty = max(1, min(500, $qty));
+
+    $results = [];
+    for ($i = 0; $i < $qty; $i++) {
+        $result = numGen($from, $to, $seed, $type);
+        if (is_string($result)) {
+            return $result;
+        }
+        $results[] = $result;
+    }
+
+    $output = output_copyable(implode(', ', $results));
 
     if ($seed) {
         $output .= "<div style='margin-top: 15px; opacity: 0.7;'><small><strong>Seed used:</strong> " . htmlspecialchars($seed) . "</small></div>";

@@ -333,10 +333,22 @@ do {
         $numgento   = $_POST['numgento'];
       }
       if ($numgenfrom !== null && $numgento !== null) {
-        $gen = numGen($numgenfrom, $numgento, $seed, $numgentype);
-        echo "<div style='margin-bottom: 15px;'>" . copyableOutput($gen) . "</div>";
-        if ($seed) {
-          echo "<div style='margin-top: 15px; opacity: 0.7;'><small><strong>Seed used:</strong> $seed</small></div>";
+        $qty = isset($_POST['numgenqty']) ? (int) $_POST['numgenqty'] : 1;
+        $qty = max(1, min(500, $qty));
+        $results = [];
+        for ($i = 0; $i < $qty; $i++) {
+          $gen = numGen($numgenfrom, $numgento, $seed, $numgentype);
+          if (is_string($gen)) {
+            echo $gen;
+            break;
+          }
+          $results[] = $gen;
+        }
+        if (count($results) > 0) {
+          echo "<div style='margin-bottom: 15px;'>" . copyableOutput(implode(', ', $results)) . "</div>";
+          if ($seed) {
+            echo "<div style='margin-top: 15px; opacity: 0.7;'><small><strong>Seed used:</strong> $seed</small></div>";
+          }
         }
       }
   }

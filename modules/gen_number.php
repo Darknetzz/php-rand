@@ -71,6 +71,12 @@
                             <?php endforeach; ?>
                         </select>
                     </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Quantity</label>
+                        <?php $numgenQty = isset($_POST['numgenqty']) ? (int)$_POST['numgenqty'] : 1; ?>
+                        <input type="number" name="numgenqty" class="form-control form-control-lg" value="<?= max(1, min(500, $numgenQty)) ?>" min="1" max="500" placeholder="1" style="font-family: monospace; font-size: 1.5rem;">
+                        <small class="text-muted">1–500 numbers</small>
+                    </div>
                 </div>
 
                 <div class="mb-3">
