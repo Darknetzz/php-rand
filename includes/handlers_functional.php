@@ -368,14 +368,17 @@ function handle_numgen(array $req): string {
         ? $req['numgentype']
         : 'any';
 
-    // Validate seed if provided
+    // Resolve seed: validate custom seed if provided; invalid → use generated seed + warning
     $seed = null;
+    $seedWarning = null;
     if (req_bool($req, 'numgenuseseed')) {
         $seedValidation = req_string($req, 'numgenseed', 1, 100);
         if (!$seedValidation['valid']) {
             return formatOutput($seedValidation['error'], type: "danger");
         }
-        $seed = $seedValidation['value'];
+        $resolved = resolve_numgen_seed($seedValidation['value']);
+        $seed = $resolved['seed'];
+        $seedWarning = $resolved['warning'];
     }
 
     // Validate quantity (1–500)
@@ -392,7 +395,7 @@ function handle_numgen(array $req): string {
     }
 
     // Apply seed once so the same seed gives a reproducible sequence for multiple numbers
-    if ($seed !== null && ctype_digit($seed) && strlen($seed) <= 17) {
+    if ($seed !== null) {
         mt_srand((int) $seed);
     }
 
@@ -408,6 +411,9 @@ function handle_numgen(array $req): string {
     $joined = joinNumGenResults($results, $separator);
     $output = output_copyable($joined);
 
+    if ($seedWarning) {
+        $output .= formatOutput($seedWarning, 6, "warning");
+    }
     if ($seed) {
         $output .= "<div style='margin-top: 15px; opacity: 0.7;'><small><strong>Seed used:</strong> " . htmlspecialchars($seed) . "</small></div>";
     }

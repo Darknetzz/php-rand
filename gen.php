@@ -315,8 +315,11 @@ do {
           : 'any';
       $enableSeed = !empty($_POST['numgenuseseed']) && $_POST['numgenuseseed'] == 1;
       $seed       = null;
-      if ($enableSeed !== false) {
-        $seed = $_POST['numgenseed'];
+      $seedWarning = null;
+      if ($enableSeed) {
+        $resolved = resolve_numgen_seed(isset($_POST['numgenseed']) ? (string) $_POST['numgenseed'] : null);
+        $seed = $resolved['seed'];
+        $seedWarning = $resolved['warning'];
       }
       $numgenfrom = null;
       $numgento   = null;
@@ -342,7 +345,7 @@ do {
         if ($separator === '') {
           $separator = ', ';
         }
-        if ($seed !== null && $seed !== '' && ctype_digit((string)$seed) && strlen((string)$seed) <= 17) {
+        if ($seed !== null && $seed !== '') {
           mt_srand((int) $seed);
         }
         $results = [];
@@ -357,8 +360,11 @@ do {
         if (count($results) > 0) {
           $joined = joinNumGenResults($results, $separator);
           echo "<div style='margin-bottom: 15px;'>" . copyableOutput($joined) . "</div>";
+          if ($seedWarning) {
+            echo formatOutput($seedWarning, 6, "warning");
+          }
           if ($seed) {
-            echo "<div style='margin-top: 15px; opacity: 0.7;'><small><strong>Seed used:</strong> $seed</small></div>";
+            echo "<div style='margin-top: 15px; opacity: 0.7;'><small><strong>Seed used:</strong> " . htmlspecialchars($seed) . "</small></div>";
           }
         }
       }

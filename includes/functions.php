@@ -1426,6 +1426,31 @@ function bits_to_php_int($bits) {
 // echo convert_any(str_repeat('1', 13), 1, 2), PHP_EOL;    // Unary 13 -> 1101
 
 /* ===================================================================== */
+/*                     FUNCTION: resolve_numgen_seed                       */
+/* ===================================================================== */
+/**
+ * Validates custom seed for the number generator; if invalid, returns a generated seed and warning.
+ * Valid seed: non-empty, digits only, 1–17 characters (mt_srand constraint).
+ *
+ * @param string|null $customSeed Raw seed value from user (e.g. $_POST['numgenseed'])
+ * @return array{seed: string|null, warning: string|null} Effective seed to use; warning message if custom was invalid
+ */
+function resolve_numgen_seed(?string $customSeed): array {
+  $trimmed = $customSeed !== null ? trim($customSeed) : '';
+  if ($trimmed === '') {
+    return ['seed' => null, 'warning' => null];
+  }
+  if (ctype_digit($trimmed) && strlen($trimmed) >= 1 && strlen($trimmed) <= 17) {
+    return ['seed' => $trimmed, 'warning' => null];
+  }
+  $generated = (string) random_int(0, PHP_INT_MAX);
+  return [
+    'seed' => $generated,
+    'warning' => 'Custom seed was invalid (must be digits only, 1–17 digits). Using generated seed: ' . $generated,
+  ];
+}
+
+/* ===================================================================== */
 /*                     FUNCTION: joinNumGenResults                        */
 /* ===================================================================== */
 /**
