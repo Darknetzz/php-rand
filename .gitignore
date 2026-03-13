@@ -1,4 +1,5 @@
 .env
+.env.local
 .history
 .archive
 debug.log
