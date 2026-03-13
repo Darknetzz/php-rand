@@ -102,6 +102,9 @@ $isSelected = static function(string $current, string $expected): string {
                     <?= submitBtn("qrcode", "action", "📱 Generate QR Code", "qr-code", "lg") ?>
                 </div>
             </form>
+            <div class="text-muted text-center">
+                Check out <a href="https://github.com/Darknetzz/php-qrcodegenerator" target="_blank">php-qrcodegenerator</a> on GitHub for more options and features.
+            </div>
         </div>
     </div>
 </div>
