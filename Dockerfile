@@ -6,9 +6,7 @@ ARG PHP_RAND_VERSION=dev
 ENV PHP_RAND_VERSION=${PHP_RAND_VERSION}
 
 # Entrypoint: print version on start, then run the main process
-RUN echo '#!/bin/sh\n\
-echo "php-rand ${PHP_RAND_VERSION}"\n\
-exec "$@"\n' > /usr/local/bin/docker-entrypoint.sh \
+RUN printf '%s\n' '#!/bin/sh' 'echo "php-rand ${PHP_RAND_VERSION:-unknown}"' 'exec "$@"' > /usr/local/bin/docker-entrypoint.sh \
     && chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # Install system dependencies and common PHP extensions (adjust as needed)
