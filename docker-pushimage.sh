@@ -1,26 +1,24 @@
 #!/usr/bin/env bash
 
-# This file is only intended to help automate the docker image build and push process.
-# Make sure you have a .env file in the root of the repo with the following variables:
-#   IMAGE=your-dockerhub-username/php-rand
-#   TAG=latest
-#   VERSION=v1.2.4   <- set to the actual release version; "latest" will point to this
-# Optional (GitHub Container Registry):
-#   GHCR_IMAGE=ghcr.io/owner/php-rand
-#   GITHUB_TOKEN=ghp_xxx   (PAT with write:packages; do not commit)
+# Build and push Docker image. Config (IMAGE, TAG, VERSION, GHCR_IMAGE) is in
+# docker-image.config (tracked). Secrets (GITHUB_TOKEN) go in .env (not tracked).
 
 # from the repo root
 set -e
 
-if [[ ! -f .env ]]; then
-  echo ".env file not found! Please create one with IMAGE, TAG, and VERSION."
+SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+cd "$SCRIPT_DIR"
+
+if [[ ! -f docker-image.config ]]; then
+  echo "docker-image.config not found."
   exit 1
 fi
+source docker-image.config
 
-source .env
+[[ -f .env ]] && source .env
 
 if [[ -z "$IMAGE" || -z "$TAG" || -z "$VERSION" ]]; then
-  echo "IMAGE, TAG, and VERSION variables must be set in the .env file."
+  echo "IMAGE, TAG, and VERSION must be set in docker-image.config."
   exit 1
 fi
 
@@ -42,5 +40,5 @@ if [[ -n "$GHCR_IMAGE" && -n "$GITHUB_TOKEN" ]]; then
   docker push $GHCR_IMAGE:$VERSION
   echo "Pushed $GHCR_IMAGE:$TAG and $GHCR_IMAGE:$VERSION"
 else
-  echo "Skipping GHCR (set GHCR_IMAGE and GITHUB_TOKEN in .env to push to ghcr.io)."
+  echo "Skipping GHCR (set GITHUB_TOKEN in .env to push to ghcr.io)."
 fi
