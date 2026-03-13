@@ -766,55 +766,65 @@ function handle_stringtools(array $req): string {
 /**
  * Handle QR code generation requests
  *
- * Generates QR codes from input text/URL/data using a free QR code API service.
- * Supports customizable size and error correction levels.
+ * Generates QR codes locally using the bundled QR library so the module
+ * does not depend on a third-party API.
  *
- * @param array $req Request array containing: 'qrcode' (input data), 'size', 'ecc'
+ * @param array $req Request array containing: 'qrcode', 'size', 'ecc', 'margin', 'fg', 'bg'
  * @return string Formatted HTML with QR code image and download option
  */
 function handle_qrcode(array $req): string {
-    // Get and validate input
-    $data = req_get($req, 'qrcode', '');
-    
-    if (empty($data)) {
+    $data = trim(req_get($req, 'qrcode', ''));
+
+    if ($data === '') {
         return formatOutput("Input data is required to generate a QR code.", type: "danger");
     }
-    
-    // Validate input length (QR codes have data capacity limits)
-    if (strlen($data) > 3000) {
-        return formatOutput("Input data is too long. Maximum 3000 characters allowed.", type: "danger");
+
+    if (strlen($data) > 4000) {
+        return formatOutput("Input data is too long. Maximum 4000 characters allowed.", type: "danger");
     }
-    
-    // Get size (validate and ensure it's in allowed range)
-    $size = req_int($req, 'size', 200);
-    if (!in_array($size, [200, 300, 400, 500])) {
-        $size = 200;
+
+    $size = req_int($req, 'size', 300);
+    if (!in_array($size, [200, 300, 400, 500], true)) {
+        $size = 300;
     }
-    
-    // Get error correction level (validate)
-    $ecc = req_get($req, 'ecc', 'L');
-    if (!in_array($ecc, ['L', 'M', 'Q', 'H'])) {
-        $ecc = 'L';
+
+    $ecc = strtoupper(req_get($req, 'ecc', 'M'));
+    if (!in_array($ecc, ['L', 'M', 'Q', 'H'], true)) {
+        $ecc = 'M';
     }
-    
-    // URL encode the data for the API
-    $encodedData = urlencode($data);
-    
-    // Use qr-server.com API (free, no authentication required)
-    $qrApiUrl = "https://api.qrserver.com/v1/create-qr-code/?size={$size}x{$size}&data={$encodedData}&ecc={$ecc}&margin=1";
-    
-    // Generate the QR code HTML
+
+    $margin = req_int($req, 'margin', 4);
+    $margin = max(0, min(10, $margin));
+
+    $foreground = qrcode_normalize_hex(req_get($req, 'fg', '#000000'), '#000000');
+    $background = qrcode_normalize_hex(req_get($req, 'bg', '#ffffff'), '#ffffff');
+
+    try {
+        $png = qrcode_generate_png($data, $size, $ecc, $margin, $foreground, $background);
+    } catch (Throwable) {
+        return formatOutput("Unable to generate the QR code locally right now.", type: "danger");
+    }
+
+    $qrDataUri = qrcode_png_data_uri($png);
+    $escapedData = htmlspecialchars($data, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    $escapedQrDataUri = htmlspecialchars($qrDataUri, ENT_QUOTES, 'UTF-8');
+
     $output = "<div style='text-align: center; padding: 20px;'>";
-    $output .= "<img src='" . htmlspecialchars($qrApiUrl, ENT_QUOTES, 'UTF-8') . "' alt='QR Code' style='max-width: 100%; height: auto; border: 2px solid #495057; border-radius: 0.5rem; background: white; padding: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);' />";
-    $output .= "<div style='margin-top: 20px;'>";
-    $output .= "<p><strong>Encoded Data:</strong> <code style='word-break: break-all;'>" . htmlspecialchars($data) . "</code></p>";
-    $output .= "<p><strong>Size:</strong> {$size}x{$size}px | <strong>Error Correction:</strong> {$ecc}</p>";
-    $output .= "<a href='" . htmlspecialchars($qrApiUrl, ENT_QUOTES, 'UTF-8') . "' download='qrcode.png' class='btn btn-primary' style='margin-top: 10px;'>";
-    $output .= icon('download') . " Download QR Code";
+    $output .= "<img src='{$escapedQrDataUri}' alt='QR Code' width='{$size}' height='{$size}' style='max-width: 100%; height: auto; border: 2px solid #495057; border-radius: 0.5rem; background: {$background}; padding: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);' />";
+    $output .= "<div style='margin-top: 20px; display: flex; justify-content: center; gap: 12px; flex-wrap: wrap;'>";
+    $output .= "<a href='{$escapedQrDataUri}' download='qrcode.png' class='btn btn-primary'>";
+    $output .= icon('download') . " Download PNG";
     $output .= "</a>";
     $output .= "</div>";
+    $output .= "<div style='margin-top: 20px; text-align: left; padding: 15px; background: rgba(255,255,255,0.04); border-radius: 0.5rem; border: 1px solid #495057;'>";
+    $output .= "<div style='margin-bottom: 10px;'><strong>Encoded Data</strong></div>";
+    $output .= "<code style='display: block; word-break: break-all; white-space: pre-wrap;'>{$escapedData}</code>";
+    $output .= "<div style='margin-top: 15px; color: #adb5bd;'>";
+    $output .= "<strong>Settings:</strong> {$size}x{$size}px, ECC {$ecc}, margin {$margin}, foreground {$foreground}, background {$background}";
     $output .= "</div>";
-    
+    $output .= "</div>";
+    $output .= "</div>";
+
     return $output;
 }
 
