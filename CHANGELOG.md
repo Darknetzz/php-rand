@@ -4,10 +4,28 @@ All notable changes to this project are documented in this file.
 
 ---
 
+## [v1.2.4] (2026-03-13)
+
+### Major Features
+- **QR Code Generator (local)** – Generate QR codes locally with chillerlan/php-qrcode; no external API, optional margin and foreground/background colors
+
+<details>
+<summary>📋 Detailed Changes (click to expand)</summary>
+
+#### QR Code Module
+- **Local generation** – Replaced qr-server.com API with bundled chillerlan/php-qrcode; no data sent off-site
+- **New options** – Margin (quiet zone), foreground color, background color
+- **PHP 8.5** – Removed deprecated `imagedestroy()` calls (no-op since PHP 8.0)
+- **UI** – Single-line “About QR Codes” alert; form preserves size, ECC, margin, and colors on submit
+
+</details>
+
+---
+
 ## [v1.2.3] (2025-12-29)
 
 ### Major Features
-- **QR Code Generator** – Generate QR codes from any text, URL, or data
+- **QR Code Generator** – Generate QR codes from any text, URL, or data (initial release; v1.2.4 adds local generation)
 - **Regex Tester** – Test and debug regular expressions with match highlighting and capture groups
 - **Brainfuck Converter** – Convert text to Brainfuck code or execute Brainfuck programs
 - **Security Hardening** – Fixed critical code injection vulnerability in calculator
