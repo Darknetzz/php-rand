@@ -9,6 +9,13 @@ set -e
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 cd "$SCRIPT_DIR"
 
+if ! docker info &>/dev/null; then
+  echo "Cannot connect to the Docker daemon (e.g. permission denied on docker.sock)."
+  echo "Run:  sg docker -c './docker-pushimage.sh'"
+  echo "Or:   newgrp docker   then run this script again."
+  exit 1
+fi
+
 if [[ ! -f docker-image.config ]]; then
   echo "docker-image.config not found."
   exit 1
