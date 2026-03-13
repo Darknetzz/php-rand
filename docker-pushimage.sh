@@ -32,7 +32,7 @@ fi
 echo "=== Docker Hub login ==="
 docker login
 
-docker build -t $IMAGE:$TAG -f Dockerfile .
+docker build --build-arg PHP_RAND_VERSION=$VERSION -t $IMAGE:$TAG -f Dockerfile .
 docker tag $IMAGE:$TAG $IMAGE:$VERSION
 docker push $IMAGE:$TAG
 docker push $IMAGE:$VERSION
