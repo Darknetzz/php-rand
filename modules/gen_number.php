@@ -11,6 +11,7 @@
                 $maxDig           = isset($_POST['numgenmaxdig']) ? (int)$_POST['numgenmaxdig'] : 3;
                 $fromValue        = isset($_POST['numgenfrom']) ? $_POST['numgenfrom'] : '1';
                 $toValue          = isset($_POST['numgento']) ? $_POST['numgento'] : '100';
+                $separatorPreset  = isset($_POST['numgensep_preset']) ? $_POST['numgensep_preset'] : (isset($_POST['numgenseparator']) && (string)$_POST['numgenseparator'] !== '' ? 'custom' : 'comma');
                 $separatorValue   = isset($_POST['numgenseparator']) ? $_POST['numgenseparator'] : ', ';
                 ?>
                 <div class="row g-3 mb-3">
@@ -80,11 +81,21 @@
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">Separator</label>
-                        <input type="text" name="numgenseparator" class="form-control form-control-lg"
-                               value="<?= htmlspecialchars(mb_substr((string)$separatorValue, 0, 20)) ?>"
-                               maxlength="20"
-                               placeholder=", "
-                               style="font-family: monospace; font-size: 1.5rem;">
+                        <select name="numgensep_preset" id="numgen_sep_preset" class="form-select form-select-lg" style="font-family: monospace;">
+                            <option value="comma" <?= $separatorPreset === 'comma' ? 'selected' : '' ?>>Comma and space</option>
+                            <option value="newline" <?= $separatorPreset === 'newline' ? 'selected' : '' ?>>Newline</option>
+                            <option value="tab" <?= $separatorPreset === 'tab' ? 'selected' : '' ?>>Tab</option>
+                            <option value="space" <?= $separatorPreset === 'space' ? 'selected' : '' ?>>Space</option>
+                            <option value="pipe" <?= $separatorPreset === 'pipe' ? 'selected' : '' ?>>Pipe ( | )</option>
+                            <option value="custom" <?= $separatorPreset === 'custom' ? 'selected' : '' ?>>Custom…</option>
+                        </select>
+                        <div id="numgen_sep_custom_wrap" class="mt-2" style="display: <?= $separatorPreset === 'custom' ? 'block' : 'none' ?>;">
+                            <input type="text" name="numgenseparator" id="numgen_sep_custom" class="form-control form-control-lg"
+                                   value="<?= htmlspecialchars(mb_substr((string)$separatorValue, 0, 20)) ?>"
+                                   maxlength="20"
+                                   placeholder=", "
+                                   style="font-family: monospace; font-size: 1.5rem;">
+                        </div>
                         <small class="text-muted">Used when more than one number is generated</small>
                     </div>
                 </div>
@@ -128,6 +139,14 @@
     }
     $("input[name='numgenrangemode']").on("change", numgenToggleRangeMode);
     numgenToggleRangeMode();
+
+    // Separator preset: show custom input only when "Custom…" is selected
+    function numgenToggleSepCustom() {
+        var isCustom = $("#numgen_sep_preset").val() === "custom";
+        $("#numgen_sep_custom_wrap").toggle(isCustom);
+    }
+    $("#numgen_sep_preset").on("change", numgenToggleSepCustom);
+    numgenToggleSepCustom();
 
     // Show response div when result comes in
     $("#numgen").on("submit", function() {

@@ -382,8 +382,10 @@ function handle_numgen(array $req): string {
     $qty = isset($req['numgenqty']) ? (int) $req['numgenqty'] : 1;
     $qty = max(1, min(500, $qty));
 
-    // Separator for multiple numbers (max 20 chars, no control chars)
-    $separator = isset($req['numgenseparator']) ? (string)$req['numgenseparator'] : ', ';
+    // Separator for multiple numbers (preset or custom, max 20 chars)
+    $sepPresets = [ 'comma' => ', ', 'newline' => "\n", 'tab' => "\t", 'space' => ' ', 'pipe' => ' | ' ];
+    $preset = isset($req['numgensep_preset']) ? $req['numgensep_preset'] : '';
+    $separator = isset($sepPresets[$preset]) ? $sepPresets[$preset] : (isset($req['numgenseparator']) ? (string)$req['numgenseparator'] : ', ');
     $separator = mb_substr($separator, 0, 20);
     if ($separator === '') {
         $separator = ', ';

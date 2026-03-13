@@ -335,7 +335,9 @@ do {
       if ($numgenfrom !== null && $numgento !== null) {
         $qty = isset($_POST['numgenqty']) ? (int) $_POST['numgenqty'] : 1;
         $qty = max(1, min(500, $qty));
-        $separator = isset($_POST['numgenseparator']) ? (string)$_POST['numgenseparator'] : ', ';
+        $sepPresets = [ 'comma' => ', ', 'newline' => "\n", 'tab' => "\t", 'space' => ' ', 'pipe' => ' | ' ];
+        $preset = isset($_POST['numgensep_preset']) ? $_POST['numgensep_preset'] : '';
+        $separator = isset($sepPresets[$preset]) ? $sepPresets[$preset] : (isset($_POST['numgenseparator']) ? (string)$_POST['numgenseparator'] : ', ');
         $separator = mb_substr($separator, 0, 20);
         if ($separator === '') {
           $separator = ', ';
