@@ -310,7 +310,7 @@ do {
 /*                              MODULE: numgen                           */
 /* ===================================================================== */
   if ((isset($_POST['numgenfrom']) && isset($_POST['numgento'])) || (isset($_POST['numgenrangemode']) && $_POST['numgenrangemode'] === 'digits' && isset($_POST['numgenmindig'], $_POST['numgenmaxdig']))) {
-      $numgentype = isset($_POST['numgentype']) && in_array($_POST['numgentype'], ['any', 'prime', 'odd', 'even'], true)
+      $numgentype = isset($_POST['numgentype']) && in_array($_POST['numgentype'], ['any', 'prime', 'composite', 'odd', 'even', 'square', 'palindromic', 'fibonacci'], true)
           ? $_POST['numgentype']
           : 'any';
       $enableSeed = (isset($_POST['seed']) ? true : false);

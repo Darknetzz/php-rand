@@ -506,15 +506,77 @@ function is_prime(int $n): bool {
 }
 
 /**
+ * Return Fibonacci numbers within a range (in order). Uses iteration; list is small.
+ *
+ * @param int $from Lower bound (inclusive)
+ * @param int $to Upper bound (inclusive)
+ * @return int[]
+ */
+function fibonacci_in_range(int $from, int $to): array {
+  $out = [];
+  $a = 0;
+  $b = 1;
+  while ($b <= $to) {
+    if ($b >= $from) {
+      $out[] = $b;
+    }
+    $next = $a + $b;
+    $a = $b;
+    $b = $next;
+  }
+  return $out;
+}
+
+/**
+ * Check if a positive integer is a perfect square.
+ */
+function is_perfect_square(int $n): bool {
+  if ($n < 0) {
+    return false;
+  }
+  $k = (int) floor(sqrt($n));
+  return $k * $k === $n;
+}
+
+/**
+ * Check if the decimal representation of n is palindromic.
+ */
+function is_palindromic(int $n): bool {
+  if ($n < 0) {
+    return false;
+  }
+  $s = (string) $n;
+  return $s === strrev($s);
+}
+
+/**
+ * Generate a random palindromic number with exactly $numDigits digits (no leading zero).
+ * Even length: half digits + mirror. Odd: (numDigits+1)/2 digits then mirror (middle shared).
+ */
+function random_palindromic_with_digits(int $numDigits): int {
+  if ($numDigits < 1) {
+    return 0;
+  }
+  $half = (int) ceil($numDigits / 2);
+  $s = (string) mt_rand(1, 9);
+  for ($i = 1; $i < $half; $i++) {
+    $s .= (string) mt_rand(0, 9);
+  }
+  $left = $s;
+  $right = strrev($numDigits % 2 === 1 ? substr($s, 0, -1) : $s);
+  return (int) ($left . $right);
+}
+
+/**
  * Generate a random number within a range
  * 
  * Generates a random integer between two values. Optionally restricts to
- * prime, odd, or even numbers. Accepts a seed for reproducible results.
+ * prime, odd, even, square, composite, palindromic, or Fibonacci numbers.
  *
  * @param int $from Starting value of the range (lower bound)
  * @param int $to Ending value of the range (upper bound)
  * @param string|null $seed Optional seed for mt_srand() for reproducibility.
- * @param string $type One of 'any', 'prime', 'odd', 'even'. Default: 'any'
+ * @param string $type One of 'any', 'prime', 'odd', 'even', 'square', 'composite', 'palindromic', 'fibonacci'. Default: 'any'
  * @return int|string Random integer within range, or alert string on error
  * 
  * @example
@@ -587,6 +649,58 @@ function numGen(int $from, int $to, ?string $seed = null, string $type = 'any') 
     }
     $count = (int) (($end - $start) / 2 + 1);
     return $start + 2 * mt_rand(0, $count - 1);
+  } elseif ($type === 'square') {
+    $kMin = max(1, (int) ceil(sqrt($from)));
+    $kMax = (int) floor(sqrt($to));
+    if ($kMin > $kMax) {
+      return alert("No perfect square in the range $from–$to.", "warning");
+    }
+    $k = mt_rand($kMin, $kMax);
+    return $k * $k;
+  } elseif ($type === 'composite') {
+    $rangeSize = $to - $from + 1;
+    $maxAttempts = 50000;
+    if ($rangeSize > 100000) {
+      $from = max(2, $from);
+      if ($from > $to) {
+        return alert("No composite numbers in the range $from–$to.", "warning");
+      }
+      for ($attempt = 0; $attempt < $maxAttempts; $attempt++) {
+        $n = mt_rand($from, $to);
+        if ($n > 1 && !is_prime($n)) {
+          return $n;
+        }
+      }
+      return alert("No composite found after $maxAttempts tries. Try a larger range.", "warning");
+    }
+    for ($n = max(2, $from); $n <= $to; $n++) {
+      if (!is_prime($n)) {
+        $candidates[] = $n;
+      }
+    }
+  } elseif ($type === 'palindromic') {
+    $rangeSize = $to - $from + 1;
+    if ($rangeSize <= 100000) {
+      for ($n = $from; $n <= $to; $n++) {
+        if (is_palindromic($n)) {
+          $candidates[] = $n;
+        }
+      }
+    } else {
+      $maxAttempts = 50000;
+      $lenFrom = strlen((string) $from);
+      $lenTo = strlen((string) $to);
+      for ($attempt = 0; $attempt < $maxAttempts; $attempt++) {
+        $numDig = $lenFrom === $lenTo ? $lenFrom : mt_rand($lenFrom, $lenTo);
+        $n = random_palindromic_with_digits($numDig);
+        if ($n >= $from && $n <= $to) {
+          return $n;
+        }
+      }
+      return alert("No palindromic number found after $maxAttempts tries. Try a different range.", "warning");
+    }
+  } elseif ($type === 'fibonacci') {
+    $candidates = fibonacci_in_range($from, $to);
   }
 
   if (count($candidates) === 0) {

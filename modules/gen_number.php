@@ -54,7 +54,16 @@
                         <label class="form-label">Number type</label>
                         <?php
                         $numgenType = isset($_POST['numgentype']) ? $_POST['numgentype'] : 'any';
-                        $allowedTypes = ['any' => 'Any number', 'prime' => 'Prime only', 'odd' => 'Odd only', 'even' => 'Even only'];
+                        $allowedTypes = [
+                            'any' => 'Any number',
+                            'prime' => 'Prime only',
+                            'composite' => 'Composite only',
+                            'odd' => 'Odd only',
+                            'even' => 'Even only',
+                            'square' => 'Perfect square only',
+                            'palindromic' => 'Palindromic only',
+                            'fibonacci' => 'Fibonacci only',
+                        ];
                         ?>
                         <select name="numgentype" class="form-select form-select-lg" style="font-family: monospace;">
                             <?php foreach ($allowedTypes as $value => $label): ?>

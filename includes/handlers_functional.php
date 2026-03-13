@@ -363,7 +363,7 @@ function handle_numgen(array $req): string {
     }
 
     // Validate number type
-    $allowedTypes = ['any', 'prime', 'odd', 'even'];
+    $allowedTypes = ['any', 'prime', 'composite', 'odd', 'even', 'square', 'palindromic', 'fibonacci'];
     $type = isset($req['numgentype']) && in_array($req['numgentype'], $allowedTypes, true)
         ? $req['numgentype']
         : 'any';
