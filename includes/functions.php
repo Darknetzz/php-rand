@@ -550,6 +550,22 @@ function numGen(int $from, int $to, ?string $seed = null, string $type = 'any') 
     return $num;
   }
   if ($type === 'prime') {
+    $rangeSize = $to - $from + 1;
+    $maxPrimeAttempts = 50000;
+    if ($rangeSize > 100000) {
+      // Large range: sample random numbers and test for primality (avoids building huge list)
+      $from = max(2, $from);
+      if ($from > $to) {
+        return alert("No prime numbers in the range $from–$to.", "warning");
+      }
+      for ($attempt = 0; $attempt < $maxPrimeAttempts; $attempt++) {
+        $n = mt_rand($from, $to);
+        if (is_prime($n)) {
+          return $n;
+        }
+      }
+      return alert("No prime found after $maxPrimeAttempts tries. Try a smaller range or different type.", "warning");
+    }
     for ($n = max(2, $from); $n <= $to; $n++) {
       if (is_prime($n)) {
         $candidates[] = $n;
@@ -557,14 +573,20 @@ function numGen(int $from, int $to, ?string $seed = null, string $type = 'any') 
     }
   } elseif ($type === 'odd') {
     $start = $from % 2 === 1 ? $from : $from + 1;
-    for ($n = $start; $n <= $to; $n += 2) {
-      $candidates[] = $n;
+    $end   = $to % 2 === 1 ? $to : $to - 1;
+    if ($start > $end) {
+      return alert("No odd numbers in the range $from–$to.", "warning");
     }
+    $count = (int) (($end - $start) / 2 + 1);
+    return $start + 2 * mt_rand(0, $count - 1);
   } elseif ($type === 'even') {
     $start = $from % 2 === 0 ? $from : $from + 1;
-    for ($n = $start; $n <= $to; $n += 2) {
-      $candidates[] = $n;
+    $end   = $to % 2 === 0 ? $to : $to - 1;
+    if ($start > $end) {
+      return alert("No even numbers in the range $from–$to.", "warning");
     }
+    $count = (int) (($end - $start) / 2 + 1);
+    return $start + 2 * mt_rand(0, $count - 1);
   }
 
   if (count($candidates) === 0) {
