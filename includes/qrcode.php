@@ -127,7 +127,6 @@ function qrcode_generate_png(
     $resized = imagecreatetruecolor($targetSize, $targetSize);
 
     if ($resized === false) {
-        imagedestroy($source);
         return $png;
     }
 
@@ -153,9 +152,6 @@ function qrcode_generate_png(
     ob_start();
     imagepng($resized);
     $resizedPng = (string)ob_get_clean();
-
-    imagedestroy($resized);
-    imagedestroy($source);
 
     return $resizedPng !== '' ? $resizedPng : $png;
 }
