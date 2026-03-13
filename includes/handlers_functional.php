@@ -382,6 +382,13 @@ function handle_numgen(array $req): string {
     $qty = isset($req['numgenqty']) ? (int) $req['numgenqty'] : 1;
     $qty = max(1, min(500, $qty));
 
+    // Separator for multiple numbers (max 20 chars, no control chars)
+    $separator = isset($req['numgenseparator']) ? (string)$req['numgenseparator'] : ', ';
+    $separator = mb_substr($separator, 0, 20);
+    if ($separator === '') {
+        $separator = ', ';
+    }
+
     // Apply seed once so the same seed gives a reproducible sequence for multiple numbers
     if ($seed !== null && ctype_digit($seed) && strlen($seed) <= 17) {
         mt_srand((int) $seed);
@@ -396,7 +403,8 @@ function handle_numgen(array $req): string {
         $results[] = $result;
     }
 
-    $output = output_copyable(implode(', ', $results));
+    $joined = $qty === 1 ? (string)$results[0] : implode($separator, $results);
+    $output = output_copyable($joined);
 
     if ($seed) {
         $output .= "<div style='margin-top: 15px; opacity: 0.7;'><small><strong>Seed used:</strong> " . htmlspecialchars($seed) . "</small></div>";

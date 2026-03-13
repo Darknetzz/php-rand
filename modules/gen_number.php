@@ -6,11 +6,12 @@
             <form class="form" action="gen.php" method="POST" id="numgen" data-action="numgen">
                 
                 <?php
-                $numgenRangeMode = isset($_POST['numgenrangemode']) ? $_POST['numgenrangemode'] : 'numeric';
-                $minDig = isset($_POST['numgenmindig']) ? (int)$_POST['numgenmindig'] : 1;
-                $maxDig = isset($_POST['numgenmaxdig']) ? (int)$_POST['numgenmaxdig'] : 3;
-                $fromValue = isset($_POST['numgenfrom']) ? $_POST['numgenfrom'] : '1';
-                $toValue = isset($_POST['numgento']) ? $_POST['numgento'] : '100';
+                $numgenRangeMode  = isset($_POST['numgenrangemode']) ? $_POST['numgenrangemode'] : 'numeric';
+                $minDig           = isset($_POST['numgenmindig']) ? (int)$_POST['numgenmindig'] : 1;
+                $maxDig           = isset($_POST['numgenmaxdig']) ? (int)$_POST['numgenmaxdig'] : 3;
+                $fromValue        = isset($_POST['numgenfrom']) ? $_POST['numgenfrom'] : '1';
+                $toValue          = isset($_POST['numgento']) ? $_POST['numgento'] : '100';
+                $separatorValue   = isset($_POST['numgenseparator']) ? $_POST['numgenseparator'] : ', ';
                 ?>
                 <div class="row g-3 mb-3">
                     <div class="col-12">
@@ -76,6 +77,15 @@
                         <?php $numgenQty = isset($_POST['numgenqty']) ? (int)$_POST['numgenqty'] : 1; ?>
                         <input type="number" name="numgenqty" class="form-control form-control-lg" value="<?= max(1, min(500, $numgenQty)) ?>" min="1" max="500" placeholder="1" style="font-family: monospace; font-size: 1.5rem;">
                         <small class="text-muted">1–500 numbers</small>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Separator</label>
+                        <input type="text" name="numgenseparator" class="form-control form-control-lg"
+                               value="<?= htmlspecialchars(mb_substr((string)$separatorValue, 0, 20)) ?>"
+                               maxlength="20"
+                               placeholder=", "
+                               style="font-family: monospace; font-size: 1.5rem;">
+                        <small class="text-muted">Used when more than one number is generated</small>
                     </div>
                 </div>
 

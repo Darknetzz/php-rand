@@ -335,6 +335,11 @@ do {
       if ($numgenfrom !== null && $numgento !== null) {
         $qty = isset($_POST['numgenqty']) ? (int) $_POST['numgenqty'] : 1;
         $qty = max(1, min(500, $qty));
+        $separator = isset($_POST['numgenseparator']) ? (string)$_POST['numgenseparator'] : ', ';
+        $separator = mb_substr($separator, 0, 20);
+        if ($separator === '') {
+          $separator = ', ';
+        }
         if ($seed !== null && $seed !== '' && ctype_digit((string)$seed) && strlen((string)$seed) <= 17) {
           mt_srand((int) $seed);
         }
@@ -348,7 +353,8 @@ do {
           $results[] = $gen;
         }
         if (count($results) > 0) {
-          echo "<div style='margin-bottom: 15px;'>" . copyableOutput(implode(', ', $results)) . "</div>";
+          $joined = $qty === 1 ? (string)$results[0] : implode($separator, $results);
+          echo "<div style='margin-bottom: 15px;'>" . copyableOutput($joined) . "</div>";
           if ($seed) {
             echo "<div style='margin-top: 15px; opacity: 0.7;'><small><strong>Seed used:</strong> $seed</small></div>";
           }
