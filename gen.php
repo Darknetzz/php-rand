@@ -309,9 +309,7 @@ do {
 /* ===================================================================== */
 /*                              MODULE: numgen                           */
 /* ===================================================================== */
-  if (isset($_POST['numgenfrom']) && isset($_POST['numgento'])) {
-      $numgenfrom = $_POST['numgenfrom'];
-      $numgento   = $_POST['numgento'];
+  if ((isset($_POST['numgenfrom']) && isset($_POST['numgento'])) || (isset($_POST['numgenrangemode']) && $_POST['numgenrangemode'] === 'digits' && isset($_POST['numgenmindig'], $_POST['numgenmaxdig']))) {
       $numgentype = isset($_POST['numgentype']) && in_array($_POST['numgentype'], ['any', 'prime', 'odd', 'even'], true)
           ? $_POST['numgentype']
           : 'any';
@@ -320,10 +318,26 @@ do {
       if ($enableSeed !== false) {
         $seed = $_POST['numgenseed'];
       }
-      $gen = numGen($numgenfrom, $numgento, $seed, $numgentype);
-      echo "<div style='margin-bottom: 15px;'>" . copyableOutput($gen) . "</div>";
-      if ($seed) {
-        echo "<div style='margin-top: 15px; opacity: 0.7;'><small><strong>Seed used:</strong> $seed</small></div>";
+      $numgenfrom = null;
+      $numgento   = null;
+      if (isset($_POST['numgenrangemode']) && $_POST['numgenrangemode'] === 'digits') {
+        $range = digit_range_to_numeric((int) $_POST['numgenmindig'], (int) $_POST['numgenmaxdig']);
+        if ($range !== null) {
+          $numgenfrom = $range[0];
+          $numgento   = $range[1];
+        } else {
+          echo formatOutput("Invalid digit range. Use 1–20 for min and max digits, with min ≤ max.", type: "danger");
+        }
+      } else {
+        $numgenfrom = $_POST['numgenfrom'];
+        $numgento   = $_POST['numgento'];
+      }
+      if ($numgenfrom !== null && $numgento !== null) {
+        $gen = numGen($numgenfrom, $numgento, $seed, $numgentype);
+        echo "<div style='margin-bottom: 15px;'>" . copyableOutput($gen) . "</div>";
+        if ($seed) {
+          echo "<div style='margin-top: 15px; opacity: 0.7;'><small><strong>Seed used:</strong> $seed</small></div>";
+        }
       }
   }
 

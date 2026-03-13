@@ -324,30 +324,42 @@ function handle_hash(array $req): string {
 /**
  * Handle random number generation requests
  *
- * Generates a random integer between two values with optional seed support
- * for reproducible results. Supports filtering by type: any, prime, odd, even.
+ * Generates a random integer between two values (or within a digit range) with
+ * optional seed support. Supports filtering by type: any, prime, odd, even.
  *
- * @param array $req Request array containing: 'numgenfrom', 'numgento', 'numgentype', 'seed', 'numgenseed'
+ * @param array $req Request array: 'numgenfrom'/'numgento' or 'numgenrangemode'='digits' with 'numgenmindig'/'numgenmaxdig'
  * @return string Formatted HTML with generated number and seed info if provided
  */
 function handle_numgen(array $req): string {
-    // Validate 'from' parameter
-    $fromValidation = req_int_validated($req, 'numgenfrom', -1000000000, 1000000000);
-    if (!$fromValidation['valid']) {
-        return formatOutput($fromValidation['error'], type: "danger");
-    }
-    $from = $fromValidation['value'];
+    $rangeMode = isset($req['numgenrangemode']) && $req['numgenrangemode'] === 'digits' ? 'digits' : 'numeric';
 
-    // Validate 'to' parameter
-    $toValidation = req_int_validated($req, 'numgento', -1000000000, 1000000000);
-    if (!$toValidation['valid']) {
-        return formatOutput($toValidation['error'], type: "danger");
-    }
-    $to = $toValidation['value'];
+    if ($rangeMode === 'digits') {
+        $minDig = isset($req['numgenmindig']) ? (int) $req['numgenmindig'] : 0;
+        $maxDig = isset($req['numgenmaxdig']) ? (int) $req['numgenmaxdig'] : 0;
+        $range = digit_range_to_numeric($minDig, $maxDig);
+        if ($range === null) {
+            return formatOutput("Invalid digit range. Use 1–20 for min and max digits, with min ≤ max.", type: "danger");
+        }
+        [$from, $to] = $range;
+    } else {
+        // Validate 'from' parameter
+        $fromValidation = req_int_validated($req, 'numgenfrom', -1000000000, 1000000000);
+        if (!$fromValidation['valid']) {
+            return formatOutput($fromValidation['error'], type: "danger");
+        }
+        $from = $fromValidation['value'];
 
-    // Ensure 'from' is not greater than 'to'
-    if ($from > $to) {
-        return formatOutput("'From' value must be less than or equal to 'To' value.", type: "danger");
+        // Validate 'to' parameter
+        $toValidation = req_int_validated($req, 'numgento', -1000000000, 1000000000);
+        if (!$toValidation['valid']) {
+            return formatOutput($toValidation['error'], type: "danger");
+        }
+        $to = $toValidation['value'];
+
+        // Ensure 'from' is not greater than 'to'
+        if ($from > $to) {
+            return formatOutput("'From' value must be less than or equal to 'To' value.", type: "danger");
+        }
     }
 
     // Validate number type

@@ -462,6 +462,25 @@ function submitBtn(string $value = "", string $name = "action", string $text = "
 
 /* ───────────────────────────────────────────────────────────────────── */
 /**
+ * Convert a digit range to a numeric range [from, to].
+ * 1 digit = 1–9, 2 digits = 10–99, etc.
+ *
+ * @param int $minDigits Minimum number of digits (1–20)
+ * @param int $maxDigits Maximum number of digits (1–20)
+ * @return array{0: int, 1: int}|null [from, to] or null if invalid
+ */
+function digit_range_to_numeric(int $minDigits, int $maxDigits): ?array {
+  $minDigits = (int) $minDigits;
+  $maxDigits = (int) $maxDigits;
+  if ($minDigits < 1 || $maxDigits < 1 || $minDigits > 20 || $maxDigits > 20 || $minDigits > $maxDigits) {
+    return null;
+  }
+  $from = (int) pow(10, $minDigits - 1);
+  $to   = (int) (pow(10, $maxDigits) - 1);
+  return [$from, $to];
+}
+
+/**
  * Check if an integer is prime (trial division).
  *
  * @param int $n Integer to check (must be >= 2 for true result)
