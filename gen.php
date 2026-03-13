@@ -309,7 +309,7 @@ do {
 /* ===================================================================== */
 /*                              MODULE: numgen                           */
 /* ===================================================================== */
-  if ((isset($_POST['numgenfrom']) && isset($_POST['numgento'])) || (isset($_POST['numgenrangemode']) && $_POST['numgenrangemode'] === 'digits' && isset($_POST['numgenmindig'], $_POST['numgenmaxdig']))) {
+  if ((isset($_POST['numgenfrom']) && isset($_POST['numgento'])) || (isset($_POST['numgenrangemode']) && $_POST['numgenrangemode'] === 'digits' && (isset($_POST['numgendigits']) || (isset($_POST['numgenmindig'], $_POST['numgenmaxdig']))))) {
       $numgentype = isset($_POST['numgentype']) && in_array($_POST['numgentype'], ['any', 'prime', 'composite', 'odd', 'even', 'square', 'palindromic', 'fibonacci'], true)
           ? $_POST['numgentype']
           : 'any';
@@ -324,12 +324,12 @@ do {
       $numgenfrom = null;
       $numgento   = null;
       if (isset($_POST['numgenrangemode']) && $_POST['numgenrangemode'] === 'digits') {
-        $range = digit_range_to_numeric((int) $_POST['numgenmindig'], (int) $_POST['numgenmaxdig']);
+        $range = resolve_numgen_digit_range($_POST);
         if ($range !== null) {
           $numgenfrom = $range[0];
           $numgento   = $range[1];
         } else {
-          echo formatOutput("Invalid digit range. Use 1–20 for min and max digits, with min ≤ max.", type: "danger");
+          echo formatOutput("Invalid digit range. Use 1–20 for fixed length, or min ≤ max for range.", type: "danger");
         }
       } else {
         $numgenfrom = $_POST['numgenfrom'];

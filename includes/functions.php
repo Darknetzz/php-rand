@@ -481,6 +481,26 @@ function digit_range_to_numeric(int $minDigits, int $maxDigits): ?array {
 }
 
 /**
+ * Resolve number generator digit range from request (fixed length or min–max range).
+ *
+ * @param array $req Request with numgen_digit_mode ('fixed'|'range'), and numgendigits or numgenmindig/numgenmaxdig
+ * @return array{0: int, 1: int}|null [from, to] or null if invalid
+ */
+function resolve_numgen_digit_range(array $req): ?array {
+  $mode = isset($req['numgen_digit_mode']) && $req['numgen_digit_mode'] === 'fixed' ? 'fixed' : 'range';
+  if ($mode === 'fixed' && isset($req['numgendigits'])) {
+    $d = (int) $req['numgendigits'];
+    if ($d >= 1 && $d <= 20) {
+      return digit_range_to_numeric($d, $d);
+    }
+    return null;
+  }
+  $minDig = isset($req['numgenmindig']) ? (int) $req['numgenmindig'] : 0;
+  $maxDig = isset($req['numgenmaxdig']) ? (int) $req['numgenmaxdig'] : 0;
+  return digit_range_to_numeric($minDig, $maxDig);
+}
+
+/**
  * Check if an integer is prime (trial division).
  *
  * @param int $n Integer to check (must be >= 2 for true result)

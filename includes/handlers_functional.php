@@ -334,11 +334,9 @@ function handle_numgen(array $req): string {
     $rangeMode = isset($req['numgenrangemode']) && $req['numgenrangemode'] === 'digits' ? 'digits' : 'numeric';
 
     if ($rangeMode === 'digits') {
-        $minDig = isset($req['numgenmindig']) ? (int) $req['numgenmindig'] : 0;
-        $maxDig = isset($req['numgenmaxdig']) ? (int) $req['numgenmaxdig'] : 0;
-        $range = digit_range_to_numeric($minDig, $maxDig);
+        $range = resolve_numgen_digit_range($req);
         if ($range === null) {
-            return formatOutput("Invalid digit range. Use 1–20 for min and max digits, with min ≤ max.", type: "danger");
+            return formatOutput("Invalid digit range. Use 1–20 for fixed length, or min ≤ max for range.", type: "danger");
         }
         [$from, $to] = $range;
     } else {
