@@ -4,6 +4,30 @@ All notable changes to this project are documented in this file.
 
 ---
 
+## [v1.2.6] (2026-03-13)
+
+### Major Features
+- **Number Generator** – Generate multiple numbers at once (1–500), configurable separator (comma, newline, tab, pipe, custom), and custom seed fix
+- **Docker** – Container prints php-rand version on start; build uses `PHP_RAND_VERSION` arg
+- **Secrets** – Prefer `.env.local` for Docker push secrets so they survive git pull/merge
+
+<details>
+<summary>📋 Detailed Changes (click to expand)</summary>
+
+#### Number Generator
+- **Quantity** – Generate 1–500 numbers per run; output joined with chosen separator
+- **Separator** – Presets: Comma and space, Newline, Tab, Space, Pipe; or Custom (free text, max 20 chars). Newline/tab display correctly in copyable output (`white-space: pre-wrap`)
+- **Seed fix** – Checkbox renamed to `numgenuseseed` so it is no longer overwritten by a hidden field; seed applied once for multiple numbers (reproducible sequence)
+- **Copyable output** – Shared copyable div now uses `white-space: pre-wrap` so newline-separated content displays and copies correctly
+
+#### Docker
+- **Entrypoint** – Prints `php-rand &lt;version&gt;` to console on container start; version set via `--build-arg PHP_RAND_VERSION=$VERSION` in `docker-pushimage.sh`
+- **Secrets** – Script sources `.env.local` first, then `.env`; `.env.local` added to `.gitignore` so it is never removed by merges that deleted `.env` from repo history
+
+</details>
+
+---
+
 ## [v1.2.5] (2026-03-13)
 
 ### Major Features
