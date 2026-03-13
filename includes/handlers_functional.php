@@ -370,7 +370,7 @@ function handle_numgen(array $req): string {
 
     // Validate seed if provided
     $seed = null;
-    if (req_bool($req, 'seed')) {
+    if (req_bool($req, 'numgenuseseed')) {
         $seedValidation = req_string($req, 'numgenseed', 1, 100);
         if (!$seedValidation['valid']) {
             return formatOutput($seedValidation['error'], type: "danger");
@@ -378,8 +378,35 @@ function handle_numgen(array $req): string {
         $seed = $seedValidation['value'];
     }
 
-    $result = numGen($from, $to, $seed, $type);
-    $output = output_copyable($result);
+    // Validate quantity (1–500)
+    $qty = isset($req['numgenqty']) ? (int) $req['numgenqty'] : 1;
+    $qty = max(1, min(500, $qty));
+
+    // Separator for multiple numbers (preset or custom, max 20 chars)
+    $sepPresets = [ 'comma' => ', ', 'newline' => "\n", 'tab' => "\t", 'space' => ' ', 'pipe' => ' | ' ];
+    $preset = isset($req['numgensep_preset']) ? $req['numgensep_preset'] : '';
+    $separator = isset($sepPresets[$preset]) ? $sepPresets[$preset] : (isset($req['numgenseparator']) ? (string)$req['numgenseparator'] : ', ');
+    $separator = mb_substr($separator, 0, 20);
+    if ($separator === '') {
+        $separator = ', ';
+    }
+
+    // Apply seed once so the same seed gives a reproducible sequence for multiple numbers
+    if ($seed !== null && ctype_digit($seed) && strlen($seed) <= 17) {
+        mt_srand((int) $seed);
+    }
+
+    $results = [];
+    for ($i = 0; $i < $qty; $i++) {
+        $result = numGen($from, $to, null, $type);
+        if (is_string($result)) {
+            return $result;
+        }
+        $results[] = $result;
+    }
+
+    $joined = $qty === 1 ? (string)$results[0] : implode($separator, $results);
+    $output = output_copyable($joined);
 
     if ($seed) {
         $output .= "<div style='margin-top: 15px; opacity: 0.7;'><small><strong>Seed used:</strong> " . htmlspecialchars($seed) . "</small></div>";

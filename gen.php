@@ -313,7 +313,7 @@ do {
       $numgentype = isset($_POST['numgentype']) && in_array($_POST['numgentype'], ['any', 'prime', 'composite', 'odd', 'even', 'square', 'palindromic', 'fibonacci'], true)
           ? $_POST['numgentype']
           : 'any';
-      $enableSeed = (isset($_POST['seed']) ? true : false);
+      $enableSeed = !empty($_POST['numgenuseseed']) && $_POST['numgenuseseed'] == 1;
       $seed       = null;
       if ($enableSeed !== false) {
         $seed = $_POST['numgenseed'];
@@ -333,10 +333,33 @@ do {
         $numgento   = $_POST['numgento'];
       }
       if ($numgenfrom !== null && $numgento !== null) {
-        $gen = numGen($numgenfrom, $numgento, $seed, $numgentype);
-        echo "<div style='margin-bottom: 15px;'>" . copyableOutput($gen) . "</div>";
-        if ($seed) {
-          echo "<div style='margin-top: 15px; opacity: 0.7;'><small><strong>Seed used:</strong> $seed</small></div>";
+        $qty = isset($_POST['numgenqty']) ? (int) $_POST['numgenqty'] : 1;
+        $qty = max(1, min(500, $qty));
+        $sepPresets = [ 'comma' => ', ', 'newline' => "\n", 'tab' => "\t", 'space' => ' ', 'pipe' => ' | ' ];
+        $preset = isset($_POST['numgensep_preset']) ? $_POST['numgensep_preset'] : '';
+        $separator = isset($sepPresets[$preset]) ? $sepPresets[$preset] : (isset($_POST['numgenseparator']) ? (string)$_POST['numgenseparator'] : ', ');
+        $separator = mb_substr($separator, 0, 20);
+        if ($separator === '') {
+          $separator = ', ';
+        }
+        if ($seed !== null && $seed !== '' && ctype_digit((string)$seed) && strlen((string)$seed) <= 17) {
+          mt_srand((int) $seed);
+        }
+        $results = [];
+        for ($i = 0; $i < $qty; $i++) {
+          $gen = numGen($numgenfrom, $numgento, null, $numgentype);
+          if (is_string($gen)) {
+            echo $gen;
+            break;
+          }
+          $results[] = $gen;
+        }
+        if (count($results) > 0) {
+          $joined = $qty === 1 ? (string)$results[0] : implode($separator, $results);
+          echo "<div style='margin-bottom: 15px;'>" . copyableOutput($joined) . "</div>";
+          if ($seed) {
+            echo "<div style='margin-top: 15px; opacity: 0.7;'><small><strong>Seed used:</strong> $seed</small></div>";
+          }
         }
       }
   }

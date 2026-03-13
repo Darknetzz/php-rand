@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Build and push Docker image. Config (IMAGE, TAG, VERSION, GHCR_IMAGE) is in
-# docker-image.config (tracked). Secrets (GITHUB_TOKEN) go in .env (not tracked).
+# docker-image.config (tracked). Secrets (GITHUB_TOKEN) go in .env or .env.local (not tracked).
 
 # from the repo root
 set -e
@@ -22,6 +22,8 @@ if [[ ! -f docker-image.config ]]; then
 fi
 source docker-image.config
 
+# Prefer .env.local (never in repo history, so survives pulls/merges); fallback to .env
+[[ -f .env.local ]] && source .env.local
 [[ -f .env ]] && source .env
 
 if [[ -z "$IMAGE" || -z "$TAG" || -z "$VERSION" ]]; then
@@ -47,5 +49,5 @@ if [[ -n "$GHCR_IMAGE" && -n "$GITHUB_TOKEN" ]]; then
   docker push $GHCR_IMAGE:$VERSION
   echo "Pushed $GHCR_IMAGE:$TAG and $GHCR_IMAGE:$VERSION"
 else
-  echo "Skipping GHCR (set GITHUB_TOKEN in .env to push to ghcr.io)."
+  echo "Skipping GHCR (set GITHUB_TOKEN in .env or .env.local to push to ghcr.io)."
 fi
