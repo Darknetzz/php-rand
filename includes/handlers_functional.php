@@ -324,31 +324,49 @@ function handle_hash(array $req): string {
 /**
  * Handle random number generation requests
  *
- * Generates a random integer between two values with optional seed support
- * for reproducible results.
+ * Generates a random integer between two values (or within a digit range) with
+ * optional seed support. Supports filtering by type: any, prime, odd, even.
  *
- * @param array $req Request array containing: 'numgenfrom', 'numgento', 'seed', 'numgenseed'
+ * @param array $req Request array: 'numgenfrom'/'numgento' or 'numgenrangemode'='digits' with 'numgenmindig'/'numgenmaxdig'
  * @return string Formatted HTML with generated number and seed info if provided
  */
 function handle_numgen(array $req): string {
-    // Validate 'from' parameter
-    $fromValidation = req_int_validated($req, 'numgenfrom', -1000000000, 1000000000);
-    if (!$fromValidation['valid']) {
-        return formatOutput($fromValidation['error'], type: "danger");
-    }
-    $from = $fromValidation['value'];
+    $rangeMode = isset($req['numgenrangemode']) && $req['numgenrangemode'] === 'digits' ? 'digits' : 'numeric';
 
-    // Validate 'to' parameter
-    $toValidation = req_int_validated($req, 'numgento', -1000000000, 1000000000);
-    if (!$toValidation['valid']) {
-        return formatOutput($toValidation['error'], type: "danger");
-    }
-    $to = $toValidation['value'];
+    if ($rangeMode === 'digits') {
+        $minDig = isset($req['numgenmindig']) ? (int) $req['numgenmindig'] : 0;
+        $maxDig = isset($req['numgenmaxdig']) ? (int) $req['numgenmaxdig'] : 0;
+        $range = digit_range_to_numeric($minDig, $maxDig);
+        if ($range === null) {
+            return formatOutput("Invalid digit range. Use 1–20 for min and max digits, with min ≤ max.", type: "danger");
+        }
+        [$from, $to] = $range;
+    } else {
+        // Validate 'from' parameter
+        $fromValidation = req_int_validated($req, 'numgenfrom', -1000000000, 1000000000);
+        if (!$fromValidation['valid']) {
+            return formatOutput($fromValidation['error'], type: "danger");
+        }
+        $from = $fromValidation['value'];
 
-    // Ensure 'from' is not greater than 'to'
-    if ($from > $to) {
-        return formatOutput("'From' value must be less than or equal to 'To' value.", type: "danger");
+        // Validate 'to' parameter
+        $toValidation = req_int_validated($req, 'numgento', -1000000000, 1000000000);
+        if (!$toValidation['valid']) {
+            return formatOutput($toValidation['error'], type: "danger");
+        }
+        $to = $toValidation['value'];
+
+        // Ensure 'from' is not greater than 'to'
+        if ($from > $to) {
+            return formatOutput("'From' value must be less than or equal to 'To' value.", type: "danger");
+        }
     }
+
+    // Validate number type
+    $allowedTypes = ['any', 'prime', 'composite', 'odd', 'even', 'square', 'palindromic', 'fibonacci'];
+    $type = isset($req['numgentype']) && in_array($req['numgentype'], $allowedTypes, true)
+        ? $req['numgentype']
+        : 'any';
 
     // Validate seed if provided
     $seed = null;
@@ -360,7 +378,7 @@ function handle_numgen(array $req): string {
         $seed = $seedValidation['value'];
     }
 
-    $result = numGen($from, $to, $seed);
+    $result = numGen($from, $to, $seed, $type);
     $output = output_copyable($result);
 
     if ($seed) {
@@ -632,11 +650,10 @@ function handle_openssl(array $req): string {
 /**
  * Handle datetime unit conversion requests
  *
- * Converts time values between different units (seconds, minutes, hours, days, weeks, etc.)
- * Displays both decimal and integer results.
+ * Converts time values from the selected source unit to all other units
+ * (seconds, minutes, hours, days, weeks, months, years).
  *
- * @param array $req Request array containing: 'time' (value), 'timefrom_unit' (source unit),
- *                   'timeto_unit' (target unit)
+ * @param array $req Request array containing: 'time' (value), 'timefrom_unit' (source unit)
  * @return string Formatted HTML with conversion results or error message
  */
 function handle_datetime(array $req): string {
@@ -647,21 +664,15 @@ function handle_datetime(array $req): string {
     }
     $time = $timeValidation['value'];
 
-    // Validate source and target units
     $validUnits = ['s', 'i', 'h', 'd', 'w', 'M', 'y'];
     $fromUnit = req_get($req, 'timefrom_unit');
-    $toUnit = req_get($req, 'timeto_unit');
 
-    if (empty($fromUnit) || empty($toUnit)) {
-        return formatOutput("You must select both source and target units.", type: "danger");
+    if (empty($fromUnit)) {
+        return formatOutput("You must select a unit.", type: "danger");
     }
 
     if (!in_array($fromUnit, $validUnits)) {
         return formatOutput("Invalid source time unit.", type: "danger");
-    }
-
-    if (!in_array($toUnit, $validUnits)) {
-        return formatOutput("Invalid target time unit.", type: "danger");
     }
 
     $units = [
@@ -674,8 +685,24 @@ function handle_datetime(array $req): string {
         "y" => ["years", 31536000]
     ];
 
-    $converted = round(($time * $units[$fromUnit][1]) / $units[$toUnit][1], 6);
-    return output_copyable($converted . " " . $units[$toUnit][0], "$time " . $units[$fromUnit][0]);
+    $fromSeconds = $time * $units[$fromUnit][1];
+    $fromLabel = "$time " . $units[$fromUnit][0];
+
+    $output = '<div class="table-responsive"><table class="table table-dark table-striped table-hover align-middle mb-0" style="border: 1px solid #334155;">';
+    $output .= '<caption class="text-start fw-bold" style="caption-side: top; color: var(--bs-body-color);">' . htmlspecialchars($fromLabel) . '</caption>';
+    $output .= '<thead><tr><th>Unit</th><th>Value</th></tr></thead><tbody>';
+
+    foreach ($units as $key => [$name, $factor]) {
+        if ($key === $fromUnit) {
+            continue;
+        }
+        $converted = round($fromSeconds / $factor, 6);
+        $value = $converted . " " . $name;
+        $output .= '<tr><td>' . htmlspecialchars($name) . '</td><td style="max-width: 280px;">' . copyableOutput($value, "") . '</td></tr>';
+    }
+
+    $output .= '</tbody></table></div>';
+    return $output;
 }
 
 /**
@@ -757,55 +784,65 @@ function handle_stringtools(array $req): string {
 /**
  * Handle QR code generation requests
  *
- * Generates QR codes from input text/URL/data using a free QR code API service.
- * Supports customizable size and error correction levels.
+ * Generates QR codes locally using the bundled QR library so the module
+ * does not depend on a third-party API.
  *
- * @param array $req Request array containing: 'qrcode' (input data), 'size', 'ecc'
+ * @param array $req Request array containing: 'qrcode', 'size', 'ecc', 'margin', 'fg', 'bg'
  * @return string Formatted HTML with QR code image and download option
  */
 function handle_qrcode(array $req): string {
-    // Get and validate input
-    $data = req_get($req, 'qrcode', '');
-    
-    if (empty($data)) {
+    $data = trim(req_get($req, 'qrcode', ''));
+
+    if ($data === '') {
         return formatOutput("Input data is required to generate a QR code.", type: "danger");
     }
-    
-    // Validate input length (QR codes have data capacity limits)
-    if (strlen($data) > 3000) {
-        return formatOutput("Input data is too long. Maximum 3000 characters allowed.", type: "danger");
+
+    if (strlen($data) > 4000) {
+        return formatOutput("Input data is too long. Maximum 4000 characters allowed.", type: "danger");
     }
-    
-    // Get size (validate and ensure it's in allowed range)
-    $size = req_int($req, 'size', 200);
-    if (!in_array($size, [200, 300, 400, 500])) {
-        $size = 200;
+
+    $size = req_int($req, 'size', 300);
+    if (!in_array($size, [200, 300, 400, 500], true)) {
+        $size = 300;
     }
-    
-    // Get error correction level (validate)
-    $ecc = req_get($req, 'ecc', 'L');
-    if (!in_array($ecc, ['L', 'M', 'Q', 'H'])) {
-        $ecc = 'L';
+
+    $ecc = strtoupper(req_get($req, 'ecc', 'M'));
+    if (!in_array($ecc, ['L', 'M', 'Q', 'H'], true)) {
+        $ecc = 'M';
     }
-    
-    // URL encode the data for the API
-    $encodedData = urlencode($data);
-    
-    // Use qr-server.com API (free, no authentication required)
-    $qrApiUrl = "https://api.qrserver.com/v1/create-qr-code/?size={$size}x{$size}&data={$encodedData}&ecc={$ecc}&margin=1";
-    
-    // Generate the QR code HTML
+
+    $margin = req_int($req, 'margin', 4);
+    $margin = max(0, min(10, $margin));
+
+    $foreground = qrcode_normalize_hex(req_get($req, 'fg', '#000000'), '#000000');
+    $background = qrcode_normalize_hex(req_get($req, 'bg', '#ffffff'), '#ffffff');
+
+    try {
+        $png = qrcode_generate_png($data, $size, $ecc, $margin, $foreground, $background);
+    } catch (Throwable) {
+        return formatOutput("Unable to generate the QR code locally right now.", type: "danger");
+    }
+
+    $qrDataUri = qrcode_png_data_uri($png);
+    $escapedData = htmlspecialchars($data, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    $escapedQrDataUri = htmlspecialchars($qrDataUri, ENT_QUOTES, 'UTF-8');
+
     $output = "<div style='text-align: center; padding: 20px;'>";
-    $output .= "<img src='" . htmlspecialchars($qrApiUrl, ENT_QUOTES, 'UTF-8') . "' alt='QR Code' style='max-width: 100%; height: auto; border: 2px solid #495057; border-radius: 0.5rem; background: white; padding: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);' />";
-    $output .= "<div style='margin-top: 20px;'>";
-    $output .= "<p><strong>Encoded Data:</strong> <code style='word-break: break-all;'>" . htmlspecialchars($data) . "</code></p>";
-    $output .= "<p><strong>Size:</strong> {$size}x{$size}px | <strong>Error Correction:</strong> {$ecc}</p>";
-    $output .= "<a href='" . htmlspecialchars($qrApiUrl, ENT_QUOTES, 'UTF-8') . "' download='qrcode.png' class='btn btn-primary' style='margin-top: 10px;'>";
-    $output .= icon('download') . " Download QR Code";
+    $output .= "<img src='{$escapedQrDataUri}' alt='QR Code' width='{$size}' height='{$size}' style='max-width: 100%; height: auto; border: 2px solid #495057; border-radius: 0.5rem; background: {$background}; padding: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);' />";
+    $output .= "<div style='margin-top: 20px; display: flex; justify-content: center; gap: 12px; flex-wrap: wrap;'>";
+    $output .= "<a href='{$escapedQrDataUri}' download='qrcode.png' class='btn btn-primary'>";
+    $output .= icon('download') . " Download PNG";
     $output .= "</a>";
     $output .= "</div>";
+    $output .= "<div style='margin-top: 20px; text-align: left; padding: 15px; background: rgba(255,255,255,0.04); border-radius: 0.5rem; border: 1px solid #495057;'>";
+    $output .= "<div style='margin-bottom: 10px;'><strong>Encoded Data</strong></div>";
+    $output .= "<code style='display: block; word-break: break-all; white-space: pre-wrap;'>{$escapedData}</code>";
+    $output .= "<div style='margin-top: 15px; color: #adb5bd;'>";
+    $output .= "<strong>Settings:</strong> {$size}x{$size}px, ECC {$ecc}, margin {$margin}, foreground {$foreground}, background {$background}";
     $output .= "</div>";
-    
+    $output .= "</div>";
+    $output .= "</div>";
+
     return $output;
 }
 

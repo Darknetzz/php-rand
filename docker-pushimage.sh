@@ -1,27 +1,51 @@
 #!/usr/bin/env bash
 
-# This file is only intended to help automate the docker image build and push process.
-# Make sure you have a .env file in the root of the repo with the following variables:
-# IMAGE=your-dockerhub-username/php-rand
-# TAG=latest
-# VERSION=v1.0.0
+# Build and push Docker image. Config (IMAGE, TAG, VERSION, GHCR_IMAGE) is in
+# docker-image.config (tracked). Secrets (GITHUB_TOKEN) go in .env (not tracked).
 
 # from the repo root
-docker login
+set -e
 
-if [[ ! -f .env ]]; then
-  echo ".env file not found! Please create one with IMAGE and VERSION variables."
+SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+cd "$SCRIPT_DIR"
+
+if ! docker info &>/dev/null; then
+  echo "Cannot connect to the Docker daemon (e.g. permission denied on docker.sock)."
+  echo "Run:  sg docker -c './docker-pushimage.sh'"
+  echo "Or:   newgrp docker   then run this script again."
   exit 1
 fi
 
-source .env
+if [[ ! -f docker-image.config ]]; then
+  echo "docker-image.config not found."
+  exit 1
+fi
+source docker-image.config
+
+[[ -f .env ]] && source .env
 
 if [[ -z "$IMAGE" || -z "$TAG" || -z "$VERSION" ]]; then
-  echo "IMAGE, TAG, and VERSION variables must be set in the .env file."
+  echo "IMAGE, TAG, and VERSION must be set in docker-image.config."
   exit 1
 fi
 
-docker build -t $IMAGE:$TAG -f Dockerfile .
+echo "=== Docker Hub login ==="
+docker login
+
+docker build --build-arg PHP_RAND_VERSION=$VERSION -t $IMAGE:$TAG -f Dockerfile .
 docker tag $IMAGE:$TAG $IMAGE:$VERSION
 docker push $IMAGE:$TAG
 docker push $IMAGE:$VERSION
+
+if [[ -n "$GHCR_IMAGE" && -n "$GITHUB_TOKEN" ]]; then
+  echo "=== Pushing to GitHub Container Registry (ghcr.io) ==="
+  GHCR_OWNER=$(echo "$GHCR_IMAGE" | cut -d/ -f2)
+  echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GHCR_OWNER" --password-stdin
+  docker tag $IMAGE:$TAG $GHCR_IMAGE:$TAG
+  docker tag $IMAGE:$VERSION $GHCR_IMAGE:$VERSION
+  docker push $GHCR_IMAGE:$TAG
+  docker push $GHCR_IMAGE:$VERSION
+  echo "Pushed $GHCR_IMAGE:$TAG and $GHCR_IMAGE:$VERSION"
+else
+  echo "Skipping GHCR (set GITHUB_TOKEN in .env to push to ghcr.io)."
+fi

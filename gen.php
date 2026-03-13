@@ -58,18 +58,17 @@ do {
 /*                             NOTE: datetime                            */
 /* ===================================================================== */
   if ($action == "datetime") {
-    $timefrom_unit = $_POST['timefrom_unit'];
-    $timeto_unit   = $_POST['timeto_unit'];
-    $time          = $_POST['time'];
+    $timefrom_unit = $_POST['timefrom_unit'] ?? '';
+    $time          = $_POST['time'] ?? '';
 
-    if (empty($time) || empty($timefrom_unit) || empty($timeto_unit)) {
-      echo formatOutput("You must enter a value and select units.", type: "danger");
+    if ($time === '' || $time === null || empty($timefrom_unit)) {
+      echo formatOutput("You must enter a value and select a unit.", type: "danger");
       break;
     }
 
     $time = intval($time);
 
-    $units    = [
+    $units = [
       "s" => ["seconds", 1],
       "i" => ["minutes", 60],
       "h" => ["hours", 3600],
@@ -79,14 +78,27 @@ do {
       "y" => ["years", 31536000]
     ];
 
-    $timefrom = $units[$timefrom_unit][1];
-    $timeto   = $units[$timeto_unit][1];
+    if (!isset($units[$timefrom_unit])) {
+      echo formatOutput("Invalid source time unit.", type: "danger");
+      break;
+    }
 
+    $fromSeconds    = $time * $units[$timefrom_unit][1];
     $from_unit_name = $units[$timefrom_unit][0];
-    $to_unit_name   = $units[$timeto_unit][0];
-    $converted      = round(($time * $timefrom) / $timeto, 6);
-    
-    echo "<div style='margin-bottom: 15px;'>" . copyableOutput($converted . " " . $to_unit_name, "$time $from_unit_name") . "</div>";
+    $fromLabel      = "$time $from_unit_name";
+
+    echo '<div class="table-responsive"><table class="table table-dark table-striped table-hover align-middle mb-0" style="border: 1px solid #334155;">';
+    echo '<caption class="text-start fw-bold" style="caption-side: top; color: var(--bs-body-color);">' . htmlspecialchars($fromLabel) . '</caption>';
+    echo '<thead><tr><th>Unit</th><th>Value</th></tr></thead><tbody>';
+    foreach ($units as $key => [$to_unit_name, $factor]) {
+      if ($key === $timefrom_unit) {
+        continue;
+      }
+      $converted = round($fromSeconds / $factor, 6);
+      $value     = $converted . " " . $to_unit_name;
+      echo '<tr><td>' . htmlspecialchars($to_unit_name) . '</td><td style="max-width: 280px;">' . copyableOutput($value, "") . '</td></tr>';
+    }
+    echo '</tbody></table></div>';
   }
 
 
@@ -297,18 +309,35 @@ do {
 /* ===================================================================== */
 /*                              MODULE: numgen                           */
 /* ===================================================================== */
-  if (isset($_POST['numgenfrom']) && isset($_POST['numgento'])) {
-      $numgenfrom = $_POST['numgenfrom'];
-      $numgento   = $_POST['numgento'];
+  if ((isset($_POST['numgenfrom']) && isset($_POST['numgento'])) || (isset($_POST['numgenrangemode']) && $_POST['numgenrangemode'] === 'digits' && isset($_POST['numgenmindig'], $_POST['numgenmaxdig']))) {
+      $numgentype = isset($_POST['numgentype']) && in_array($_POST['numgentype'], ['any', 'prime', 'composite', 'odd', 'even', 'square', 'palindromic', 'fibonacci'], true)
+          ? $_POST['numgentype']
+          : 'any';
       $enableSeed = (isset($_POST['seed']) ? true : false);
       $seed       = null;
       if ($enableSeed !== false) {
         $seed = $_POST['numgenseed'];
       }
-      $gen = numGen($numgenfrom, $numgento, $seed);
-      echo "<div style='margin-bottom: 15px;'>" . copyableOutput($gen) . "</div>";
-      if ($seed) {
-        echo "<div style='margin-top: 15px; opacity: 0.7;'><small><strong>Seed used:</strong> $seed</small></div>";
+      $numgenfrom = null;
+      $numgento   = null;
+      if (isset($_POST['numgenrangemode']) && $_POST['numgenrangemode'] === 'digits') {
+        $range = digit_range_to_numeric((int) $_POST['numgenmindig'], (int) $_POST['numgenmaxdig']);
+        if ($range !== null) {
+          $numgenfrom = $range[0];
+          $numgento   = $range[1];
+        } else {
+          echo formatOutput("Invalid digit range. Use 1–20 for min and max digits, with min ≤ max.", type: "danger");
+        }
+      } else {
+        $numgenfrom = $_POST['numgenfrom'];
+        $numgento   = $_POST['numgento'];
+      }
+      if ($numgenfrom !== null && $numgento !== null) {
+        $gen = numGen($numgenfrom, $numgento, $seed, $numgentype);
+        echo "<div style='margin-bottom: 15px;'>" . copyableOutput($gen) . "</div>";
+        if ($seed) {
+          echo "<div style='margin-top: 15px; opacity: 0.7;'><small><strong>Seed used:</strong> $seed</small></div>";
+        }
       }
   }
 
