@@ -4,6 +4,24 @@ All notable changes to this project are documented in this file.
 
 ---
 
+## [v1.2.5] (2026-03-13)
+
+### Major Features
+- **Number Generator** – Digit range mode (min–max digits), new number types, and large-range fixes
+
+<details>
+<summary>📋 Detailed Changes (click to expand)</summary>
+
+#### Number Generator
+- **Digit range** – Option to specify range by number of digits (e.g. 2–4 digits → 10 to 9,999) in addition to numeric From/To
+- **Number types** – Prime only, Odd only, Even only (existing); new: Composite only, Perfect square only, Palindromic only, Fibonacci only
+- **Large ranges** – Prime and composite use random sampling for big ranges (no more hanging on e.g. 10-digit primes); odd/even use direct formula; palindromic uses digit-based generation with rejection sampling
+- **Helpers** – `digit_range_to_numeric()`, `fibonacci_in_range()`, `is_perfect_square()`, `is_palindromic()`, `random_palindromic_with_digits()` for reuse
+
+</details>
+
+---
+
 ## [v1.2.4] (2026-03-13)
 
 ### Major Features
