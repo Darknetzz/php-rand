@@ -81,7 +81,7 @@
 
                 <div class="mb-3">
                     <div class="form-check form-switch">
-                        <input type="checkbox" class="form-check-input" id="number_toolsseedtoggle" name="seed" value="1">
+                        <input type="checkbox" class="form-check-input" id="number_toolsseedtoggle" name="numgenuseseed" value="1">
                         <label class="form-check-label" for="number_toolsseedtoggle">Use custom seed (for reproducible results)</label>
                     </div>
                 </div>
@@ -90,8 +90,6 @@
                     <label class="form-label">Seed value</label>
                     <input type="text" name="numgenseed" class="form-control" value="" placeholder="Enter a seed value (optional)" style="font-family: monospace;">
                 </div>
-
-                <input type="hidden" name="seed" value="0">
                 
                 <?= submitBtn("numgen") ?>
                 

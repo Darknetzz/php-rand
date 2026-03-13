@@ -313,7 +313,7 @@ do {
       $numgentype = isset($_POST['numgentype']) && in_array($_POST['numgentype'], ['any', 'prime', 'composite', 'odd', 'even', 'square', 'palindromic', 'fibonacci'], true)
           ? $_POST['numgentype']
           : 'any';
-      $enableSeed = (isset($_POST['seed']) ? true : false);
+      $enableSeed = !empty($_POST['numgenuseseed']) && $_POST['numgenuseseed'] == 1;
       $seed       = null;
       if ($enableSeed !== false) {
         $seed = $_POST['numgenseed'];

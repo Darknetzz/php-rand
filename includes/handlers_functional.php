@@ -370,7 +370,7 @@ function handle_numgen(array $req): string {
 
     // Validate seed if provided
     $seed = null;
-    if (req_bool($req, 'seed')) {
+    if (req_bool($req, 'numgenuseseed')) {
         $seedValidation = req_string($req, 'numgenseed', 1, 100);
         if (!$seedValidation['valid']) {
             return formatOutput($seedValidation['error'], type: "danger");
