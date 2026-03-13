@@ -325,9 +325,9 @@ function handle_hash(array $req): string {
  * Handle random number generation requests
  *
  * Generates a random integer between two values with optional seed support
- * for reproducible results.
+ * for reproducible results. Supports filtering by type: any, prime, odd, even.
  *
- * @param array $req Request array containing: 'numgenfrom', 'numgento', 'seed', 'numgenseed'
+ * @param array $req Request array containing: 'numgenfrom', 'numgento', 'numgentype', 'seed', 'numgenseed'
  * @return string Formatted HTML with generated number and seed info if provided
  */
 function handle_numgen(array $req): string {
@@ -350,6 +350,12 @@ function handle_numgen(array $req): string {
         return formatOutput("'From' value must be less than or equal to 'To' value.", type: "danger");
     }
 
+    // Validate number type
+    $allowedTypes = ['any', 'prime', 'odd', 'even'];
+    $type = isset($req['numgentype']) && in_array($req['numgentype'], $allowedTypes, true)
+        ? $req['numgentype']
+        : 'any';
+
     // Validate seed if provided
     $seed = null;
     if (req_bool($req, 'seed')) {
@@ -360,7 +366,7 @@ function handle_numgen(array $req): string {
         $seed = $seedValidation['value'];
     }
 
-    $result = numGen($from, $to, $seed);
+    $result = numGen($from, $to, $seed, $type);
     $output = output_copyable($result);
 
     if ($seed) {

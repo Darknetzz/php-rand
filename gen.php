@@ -312,12 +312,15 @@ do {
   if (isset($_POST['numgenfrom']) && isset($_POST['numgento'])) {
       $numgenfrom = $_POST['numgenfrom'];
       $numgento   = $_POST['numgento'];
+      $numgentype = isset($_POST['numgentype']) && in_array($_POST['numgentype'], ['any', 'prime', 'odd', 'even'], true)
+          ? $_POST['numgentype']
+          : 'any';
       $enableSeed = (isset($_POST['seed']) ? true : false);
       $seed       = null;
       if ($enableSeed !== false) {
         $seed = $_POST['numgenseed'];
       }
-      $gen = numGen($numgenfrom, $numgento, $seed);
+      $gen = numGen($numgenfrom, $numgento, $seed, $numgentype);
       echo "<div style='margin-bottom: 15px;'>" . copyableOutput($gen) . "</div>";
       if ($seed) {
         echo "<div style='margin-top: 15px; opacity: 0.7;'><small><strong>Seed used:</strong> $seed</small></div>";

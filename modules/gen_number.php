@@ -23,6 +23,18 @@
                         ?>
                         <input type="number" name="numgento" class="form-control form-control-lg" value="<?= $toValue ?>" placeholder="100" style="font-family: monospace; font-size: 1.5rem;">
                     </div>
+                    <div class="col-12">
+                        <label class="form-label">Number type</label>
+                        <?php
+                        $numgenType = isset($_POST['numgentype']) ? $_POST['numgentype'] : 'any';
+                        $allowedTypes = ['any' => 'Any number', 'prime' => 'Prime only', 'odd' => 'Odd only', 'even' => 'Even only'];
+                        ?>
+                        <select name="numgentype" class="form-select form-select-lg" style="font-family: monospace;">
+                            <?php foreach ($allowedTypes as $value => $label): ?>
+                                <option value="<?= htmlspecialchars($value) ?>" <?= $numgenType === $value ? 'selected' : '' ?>><?= htmlspecialchars($label) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
                 </div>
 
                 <div class="mb-3">

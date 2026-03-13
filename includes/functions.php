@@ -462,28 +462,52 @@ function submitBtn(string $value = "", string $name = "action", string $text = "
 
 /* ───────────────────────────────────────────────────────────────────── */
 /**
+ * Check if an integer is prime (trial division).
+ *
+ * @param int $n Integer to check (must be >= 2 for true result)
+ * @return bool True if prime, false otherwise
+ */
+function is_prime(int $n): bool {
+  if ($n < 2) {
+    return false;
+  }
+  if ($n === 2) {
+    return true;
+  }
+  if ($n % 2 === 0) {
+    return false;
+  }
+  $limit = (int) floor(sqrt($n));
+  for ($d = 3; $d <= $limit; $d += 2) {
+    if ($n % $d === 0) {
+      return false;
+    }
+  }
+  return true;
+}
+
+/**
  * Generate a random number within a range
  * 
- * Generates a cryptographically secure random integer between two values.
- * Optionally accepts a seed for reproducible random numbers. Validates input
- * to ensure numeric values and reasonable limits.
+ * Generates a random integer between two values. Optionally restricts to
+ * prime, odd, or even numbers. Accepts a seed for reproducible results.
  *
  * @param int $from Starting value of the range (lower bound)
  * @param int $to Ending value of the range (upper bound)
- * @param string|null $seed Optional seed for mt_srand() for reproducibility. 
- *                           Must be a valid digit string ≤ 17 chars. Default: null
+ * @param string|null $seed Optional seed for mt_srand() for reproducibility.
+ * @param string $type One of 'any', 'prime', 'odd', 'even'. Default: 'any'
  * @return int|string Random integer within range, or alert string on error
- * @throws void Dies if numbers exceed 20 digits or aren't numeric
  * 
  * @example
- * numGen(1, 100);           // Random number between 1-100
- * numGen(1, 1000, '12345'); // Random number with specific seed
+ * numGen(1, 100);                 // Any number 1-100
+ * numGen(1, 100, null, 'prime');  // Random prime in 1-100
+ * numGen(1, 1000, '12345');       // With seed
  */
-function numGen(int $from, int $to, ?string $seed = null) {
+function numGen(int $from, int $to, ?string $seed = null, string $type = 'any') {
   $from = (int)$from;
   $to   = (int)$to;
 
-  if (strlen($from) > 20 || strlen($to) > 20) {
+  if (strlen((string)$from) > 20 || strlen((string)$to) > 20) {
     die("Please use numbers with less than 20 digits.");
   }
   if (is_numeric($from) === FALSE || is_numeric($to) === FALSE) {
@@ -500,8 +524,34 @@ function numGen(int $from, int $to, ?string $seed = null) {
   if ($from > $to) {
     return alert("The first number must be smaller than the second number.", "danger");
   }
-  $num = mt_rand($from, $to);
-  return $num;
+
+  $candidates = [];
+  if ($type === 'any') {
+    $num = mt_rand($from, $to);
+    return $num;
+  }
+  if ($type === 'prime') {
+    for ($n = max(2, $from); $n <= $to; $n++) {
+      if (is_prime($n)) {
+        $candidates[] = $n;
+      }
+    }
+  } elseif ($type === 'odd') {
+    $start = $from % 2 === 1 ? $from : $from + 1;
+    for ($n = $start; $n <= $to; $n += 2) {
+      $candidates[] = $n;
+    }
+  } elseif ($type === 'even') {
+    $start = $from % 2 === 0 ? $from : $from + 1;
+    for ($n = $start; $n <= $to; $n += 2) {
+      $candidates[] = $n;
+    }
+  }
+
+  if (count($candidates) === 0) {
+    return alert("No " . htmlspecialchars($type) . " numbers in the range $from–$to.", "warning");
+  }
+  return $candidates[array_rand($candidates)];
 }
 
 /**
