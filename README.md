@@ -14,6 +14,7 @@ A comprehensive collection of useful developer tools built with PHP and modern w
 ### Generators
 - String generator
 - Number generator
+- QR Code generator
 - Logo generator ([php-logogen](https://github.com/Darknetzz/php-logogen))
 - Spin the wheel
 
