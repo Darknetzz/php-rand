@@ -7,6 +7,11 @@ namespace Composer\Autoload;
 class ComposerStaticInit01361b118028926d8b11ed908191c52f
 {
     public static $prefixLengthsPsr4 = array (
+        'c' => 
+        array (
+            'chillerlan\\Settings\\' => 20,
+            'chillerlan\\QRCode\\' => 18,
+        ),
         'M' => 
         array (
             'MatthiasMullie\\PathConverter\\' => 29,
@@ -15,6 +20,14 @@ class ComposerStaticInit01361b118028926d8b11ed908191c52f
     );
 
     public static $prefixDirsPsr4 = array (
+        'chillerlan\\Settings\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/chillerlan/php-settings-container/src',
+        ),
+        'chillerlan\\QRCode\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/chillerlan/php-qrcode/src',
+        ),
         'MatthiasMullie\\PathConverter\\' => 
         array (
             0 => __DIR__ . '/..' . '/matthiasmullie/path-converter/src',

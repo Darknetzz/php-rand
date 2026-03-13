@@ -1,6 +1,14 @@
 # Use official PHP (latest stable) with Apache (includes latest Apache 2.x)
 FROM php:8.3-apache
 
+# php-rand version (set at build time via --build-arg PHP_RAND_VERSION=v1.2.5)
+ARG PHP_RAND_VERSION=dev
+ENV PHP_RAND_VERSION=${PHP_RAND_VERSION}
+
+# Entrypoint: print version on start, then run the main process
+RUN printf '%s\n' '#!/bin/sh' 'echo "php-rand ${PHP_RAND_VERSION:-unknown}"' 'exec "$@"' > /usr/local/bin/docker-entrypoint.sh \
+    && chmod +x /usr/local/bin/docker-entrypoint.sh
+
 # Install system dependencies and common PHP extensions (adjust as needed)
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
@@ -39,5 +47,5 @@ RUN set -eux; \
 EXPOSE 80
 HEALTHCHECK --interval=30s --timeout=3s CMD curl -f http://localhost/ || exit 1
 
-# Default command (from base image)
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 CMD ["apache2-foreground"]

@@ -462,28 +462,133 @@ function submitBtn(string $value = "", string $name = "action", string $text = "
 
 /* ───────────────────────────────────────────────────────────────────── */
 /**
+ * Convert a digit range to a numeric range [from, to].
+ * 1 digit = 1–9, 2 digits = 10–99, etc.
+ *
+ * @param int $minDigits Minimum number of digits (1–20)
+ * @param int $maxDigits Maximum number of digits (1–20)
+ * @return array{0: int, 1: int}|null [from, to] or null if invalid
+ */
+function digit_range_to_numeric(int $minDigits, int $maxDigits): ?array {
+  $minDigits = (int) $minDigits;
+  $maxDigits = (int) $maxDigits;
+  if ($minDigits < 1 || $maxDigits < 1 || $minDigits > 20 || $maxDigits > 20 || $minDigits > $maxDigits) {
+    return null;
+  }
+  $from = (int) pow(10, $minDigits - 1);
+  $to   = (int) (pow(10, $maxDigits) - 1);
+  return [$from, $to];
+}
+
+/**
+ * Check if an integer is prime (trial division).
+ *
+ * @param int $n Integer to check (must be >= 2 for true result)
+ * @return bool True if prime, false otherwise
+ */
+function is_prime(int $n): bool {
+  if ($n < 2) {
+    return false;
+  }
+  if ($n === 2) {
+    return true;
+  }
+  if ($n % 2 === 0) {
+    return false;
+  }
+  $limit = (int) floor(sqrt($n));
+  for ($d = 3; $d <= $limit; $d += 2) {
+    if ($n % $d === 0) {
+      return false;
+    }
+  }
+  return true;
+}
+
+/**
+ * Return Fibonacci numbers within a range (in order). Uses iteration; list is small.
+ *
+ * @param int $from Lower bound (inclusive)
+ * @param int $to Upper bound (inclusive)
+ * @return int[]
+ */
+function fibonacci_in_range(int $from, int $to): array {
+  $out = [];
+  $a = 0;
+  $b = 1;
+  while ($b <= $to) {
+    if ($b >= $from) {
+      $out[] = $b;
+    }
+    $next = $a + $b;
+    $a = $b;
+    $b = $next;
+  }
+  return $out;
+}
+
+/**
+ * Check if a positive integer is a perfect square.
+ */
+function is_perfect_square(int $n): bool {
+  if ($n < 0) {
+    return false;
+  }
+  $k = (int) floor(sqrt($n));
+  return $k * $k === $n;
+}
+
+/**
+ * Check if the decimal representation of n is palindromic.
+ */
+function is_palindromic(int $n): bool {
+  if ($n < 0) {
+    return false;
+  }
+  $s = (string) $n;
+  return $s === strrev($s);
+}
+
+/**
+ * Generate a random palindromic number with exactly $numDigits digits (no leading zero).
+ * Even length: half digits + mirror. Odd: (numDigits+1)/2 digits then mirror (middle shared).
+ */
+function random_palindromic_with_digits(int $numDigits): int {
+  if ($numDigits < 1) {
+    return 0;
+  }
+  $half = (int) ceil($numDigits / 2);
+  $s = (string) mt_rand(1, 9);
+  for ($i = 1; $i < $half; $i++) {
+    $s .= (string) mt_rand(0, 9);
+  }
+  $left = $s;
+  $right = strrev($numDigits % 2 === 1 ? substr($s, 0, -1) : $s);
+  return (int) ($left . $right);
+}
+
+/**
  * Generate a random number within a range
  * 
- * Generates a cryptographically secure random integer between two values.
- * Optionally accepts a seed for reproducible random numbers. Validates input
- * to ensure numeric values and reasonable limits.
+ * Generates a random integer between two values. Optionally restricts to
+ * prime, odd, even, square, composite, palindromic, or Fibonacci numbers.
  *
  * @param int $from Starting value of the range (lower bound)
  * @param int $to Ending value of the range (upper bound)
- * @param string|null $seed Optional seed for mt_srand() for reproducibility. 
- *                           Must be a valid digit string ≤ 17 chars. Default: null
+ * @param string|null $seed Optional seed for mt_srand() for reproducibility.
+ * @param string $type One of 'any', 'prime', 'odd', 'even', 'square', 'composite', 'palindromic', 'fibonacci'. Default: 'any'
  * @return int|string Random integer within range, or alert string on error
- * @throws void Dies if numbers exceed 20 digits or aren't numeric
  * 
  * @example
- * numGen(1, 100);           // Random number between 1-100
- * numGen(1, 1000, '12345'); // Random number with specific seed
+ * numGen(1, 100);                 // Any number 1-100
+ * numGen(1, 100, null, 'prime');  // Random prime in 1-100
+ * numGen(1, 1000, '12345');       // With seed
  */
-function numGen(int $from, int $to, ?string $seed = null) {
+function numGen(int $from, int $to, ?string $seed = null, string $type = 'any') {
   $from = (int)$from;
   $to   = (int)$to;
 
-  if (strlen($from) > 20 || strlen($to) > 20) {
+  if (strlen((string)$from) > 20 || strlen((string)$to) > 20) {
     die("Please use numbers with less than 20 digits.");
   }
   if (is_numeric($from) === FALSE || is_numeric($to) === FALSE) {
@@ -500,8 +605,108 @@ function numGen(int $from, int $to, ?string $seed = null) {
   if ($from > $to) {
     return alert("The first number must be smaller than the second number.", "danger");
   }
-  $num = mt_rand($from, $to);
-  return $num;
+
+  $candidates = [];
+  if ($type === 'any') {
+    $num = mt_rand($from, $to);
+    return $num;
+  }
+  if ($type === 'prime') {
+    $rangeSize = $to - $from + 1;
+    $maxPrimeAttempts = 50000;
+    if ($rangeSize > 100000) {
+      // Large range: sample random numbers and test for primality (avoids building huge list)
+      $from = max(2, $from);
+      if ($from > $to) {
+        return alert("No prime numbers in the range $from–$to.", "warning");
+      }
+      for ($attempt = 0; $attempt < $maxPrimeAttempts; $attempt++) {
+        $n = mt_rand($from, $to);
+        if (is_prime($n)) {
+          return $n;
+        }
+      }
+      return alert("No prime found after $maxPrimeAttempts tries. Try a smaller range or different type.", "warning");
+    }
+    for ($n = max(2, $from); $n <= $to; $n++) {
+      if (is_prime($n)) {
+        $candidates[] = $n;
+      }
+    }
+  } elseif ($type === 'odd') {
+    $start = $from % 2 === 1 ? $from : $from + 1;
+    $end   = $to % 2 === 1 ? $to : $to - 1;
+    if ($start > $end) {
+      return alert("No odd numbers in the range $from–$to.", "warning");
+    }
+    $count = (int) (($end - $start) / 2 + 1);
+    return $start + 2 * mt_rand(0, $count - 1);
+  } elseif ($type === 'even') {
+    $start = $from % 2 === 0 ? $from : $from + 1;
+    $end   = $to % 2 === 0 ? $to : $to - 1;
+    if ($start > $end) {
+      return alert("No even numbers in the range $from–$to.", "warning");
+    }
+    $count = (int) (($end - $start) / 2 + 1);
+    return $start + 2 * mt_rand(0, $count - 1);
+  } elseif ($type === 'square') {
+    $kMin = max(1, (int) ceil(sqrt($from)));
+    $kMax = (int) floor(sqrt($to));
+    if ($kMin > $kMax) {
+      return alert("No perfect square in the range $from–$to.", "warning");
+    }
+    $k = mt_rand($kMin, $kMax);
+    return $k * $k;
+  } elseif ($type === 'composite') {
+    $rangeSize = $to - $from + 1;
+    $maxAttempts = 50000;
+    if ($rangeSize > 100000) {
+      $from = max(2, $from);
+      if ($from > $to) {
+        return alert("No composite numbers in the range $from–$to.", "warning");
+      }
+      for ($attempt = 0; $attempt < $maxAttempts; $attempt++) {
+        $n = mt_rand($from, $to);
+        if ($n > 1 && !is_prime($n)) {
+          return $n;
+        }
+      }
+      return alert("No composite found after $maxAttempts tries. Try a larger range.", "warning");
+    }
+    for ($n = max(2, $from); $n <= $to; $n++) {
+      if (!is_prime($n)) {
+        $candidates[] = $n;
+      }
+    }
+  } elseif ($type === 'palindromic') {
+    $rangeSize = $to - $from + 1;
+    if ($rangeSize <= 100000) {
+      for ($n = $from; $n <= $to; $n++) {
+        if (is_palindromic($n)) {
+          $candidates[] = $n;
+        }
+      }
+    } else {
+      $maxAttempts = 50000;
+      $lenFrom = strlen((string) $from);
+      $lenTo = strlen((string) $to);
+      for ($attempt = 0; $attempt < $maxAttempts; $attempt++) {
+        $numDig = $lenFrom === $lenTo ? $lenFrom : mt_rand($lenFrom, $lenTo);
+        $n = random_palindromic_with_digits($numDig);
+        if ($n >= $from && $n <= $to) {
+          return $n;
+        }
+      }
+      return alert("No palindromic number found after $maxAttempts tries. Try a different range.", "warning");
+    }
+  } elseif ($type === 'fibonacci') {
+    $candidates = fibonacci_in_range($from, $to);
+  }
+
+  if (count($candidates) === 0) {
+    return alert("No " . htmlspecialchars($type) . " numbers in the range $from–$to.", "warning");
+  }
+  return $candidates[array_rand($candidates)];
 }
 
 /**
