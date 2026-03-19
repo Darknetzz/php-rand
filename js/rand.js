@@ -275,6 +275,40 @@ $(document).ready(function() {
     });
 
     /* ===================================================================== */
+    /*                    Use as input (two-way converters)                  */
+    /* ===================================================================== */
+    $(document).on('click', '.btn-use-as-input', function() {
+        var $btn = $(this);
+        var $form = $btn.closest('form');
+        if (!$form.length) return;
+        var copyableId = $btn.data('copyable-id');
+        var inputName = $btn.data('input-name');
+        if (!copyableId || !inputName) return;
+        var contentEl = document.getElementById(copyableId);
+        if (!contentEl) return;
+        var text = contentEl.textContent || contentEl.innerText || '';
+        var $input = $form.find('[name="' + inputName + '"]');
+        if ($input.length) $input.val(text);
+
+        var swapNames = $btn.data('swap-names');
+        if (swapNames && Array.isArray(swapNames) && swapNames.length === 2) {
+            var $a = $form.find('[name="' + swapNames[0] + '"]');
+            var $b = $form.find('[name="' + swapNames[1] + '"]');
+            if ($a.length && $b.length) {
+                var tmp = $a.val();
+                $a.val($b.val());
+                $b.val(tmp);
+            }
+        }
+        var setSelectName = $btn.data('set-select-name');
+        var setSelectValue = $btn.data('set-select-value');
+        if (setSelectName && setSelectValue !== undefined) {
+            var $sel = $form.find('[name="' + setSelectName + '"]');
+            if ($sel.length) $sel.val(setSelectValue);
+        }
+    });
+
+    /* ===================================================================== */
     /*                      Navigation (and hash check)                      */
     /* ===================================================================== */
     if (window.location.hash != '' && window.location.hash != undefined) {

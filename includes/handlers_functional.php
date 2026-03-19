@@ -187,10 +187,11 @@ function req_int_validated(array $request, string $key, ?int $min = null, ?int $
  *
  * @param string $content The content to display and copy
  * @param string $label Optional label for the output section. Default: ""
+ * @param array|null $useAsInput Optional use-as-input button config for two-way converters
  * @return string HTML formatted copyable output element
  */
-function output_copyable(string $content, string $label = ""): string {
-    return "<div style='margin-bottom: 15px;'>" . copyableOutput($content, $label) . "</div>";
+function output_copyable(string $content, string $label = "", ?array $useAsInput = null): string {
+    return "<div style='margin-bottom: 15px;'>" . copyableOutput($content, $label, $useAsInput) . "</div>";
 }
 
 // ============================================================================
@@ -453,7 +454,7 @@ function handle_base(array $req): string {
         $result = convert_any($input, $from, $to);
         $output = "<div style='margin-bottom: 20px;'>";
         $output .= "<div style='margin-bottom: 15px;'><strong>Base $from → Base $to</strong></div>";
-        $output .= copyableOutput($result);
+        $output .= copyableOutput($result, '', ['inputName' => 'base', 'swapNames' => ['from', 'to']]);
         $output .= "</div>";
         return $output;
     } catch (Exception $e) {
@@ -529,7 +530,8 @@ function handle_hex(array $req): string {
         $output = hex2ip($input);
     }
 
-    return output_copyable($output);
+    $inputName = !empty($req['binhex']) ? 'binhex' : 'iphex';
+    return output_copyable($output, '', ['inputName' => $inputName]);
 }
 
 /**
@@ -560,7 +562,7 @@ function handle_rot(array $req): string {
         $output = "";
         for ($i = 0; $i < 26; $i++) {
             $rotated = str_rot($input, $i);
-            $output .= output_copyable($rotated, "ROT" . $i);
+            $output .= output_copyable($rotated, "ROT" . $i, ['inputName' => 'rot']);
         }
         return $output;
     }
@@ -576,7 +578,7 @@ function handle_rot(array $req): string {
         $note = formatOutput("Rotation normalized to $rotations (input: $rotationsRaw).", type: "info");
     }
 
-    return $note . output_copyable($result);
+    return $note . output_copyable($result, '', ['inputName' => 'rot']);
 }
 
 /**
@@ -1062,7 +1064,7 @@ function handle_brainfuck(array $req): string {
             $bfCode = textToBrainfuck($input);
             $output = "<div style='margin-bottom: 20px;'>";
             $output .= "<div style='margin-bottom: 15px;'><strong>Text → Brainfuck</strong></div>";
-            $output .= copyableOutput($bfCode);
+            $output .= copyableOutput($bfCode, '', ['inputName' => 'brainfuck', 'setSelectName' => 'mode', 'setSelectValue' => 'bf2text']);
             $output .= "<div style='margin-top: 15px; padding: 12px; background-color: rgba(255, 193, 7, 0.15); border-radius: 0.5rem;'>";
             $output .= "<strong>📊 Stats:</strong><br>";
             $output .= "Input length: <code>" . strlen($input) . " characters</code><br>";
@@ -1077,7 +1079,7 @@ function handle_brainfuck(array $req): string {
             if ($result['success']) {
                 $output = "<div style='margin-bottom: 20px;'>";
                 $output .= "<div style='margin-bottom: 15px;'><strong>Brainfuck → Text</strong></div>";
-                $output .= copyableOutput($result['output']);
+                $output .= copyableOutput($result['output'], '', ['inputName' => 'brainfuck', 'setSelectName' => 'mode', 'setSelectValue' => 'text2bf']);
                 if (!empty($result['warnings'])) {
                     $output .= "<div style='margin-top: 15px; padding: 12px; background-color: rgba(255, 193, 7, 0.15); border-radius: 0.5rem;'>";
                     $output .= "<strong>⚠️ Warnings:</strong><br>";

@@ -208,7 +208,7 @@ do {
     $toLabel   = (is_numeric($to) ? "Base $to" : ucfirst($to));
     echo "<div style='margin-bottom: 20px;'>";
     echo "<div style='margin-bottom: 15px;'><strong>$fromLabel → $toLabel</strong></div>";
-    echo copyableOutput($result);
+    echo copyableOutput($result, '', ['inputName' => 'base', 'swapNames' => ['from', 'to']]);
     echo "</div>";
   }
 
@@ -992,9 +992,10 @@ if ($tool == "dnslookup") {
     $encoded = urlencode($url);
     $decoded = urldecode($url);
 
-    $output  = "<div style='margin-bottom: 16px;'>" . copyableOutput($url, "Original Input") . "</div>";
-    $output .= "<div style='margin-bottom: 16px;'>" . copyableOutput($encoded, "URL Encoded") . "</div>";
-    $output .= "<div style='margin-bottom: 16px;'>" . copyableOutput($decoded, "URL Decoded") . "</div>";
+    $useAsInput = ['inputName' => 'urlencode'];
+    $output  = "<div style='margin-bottom: 16px;'>" . copyableOutput($url, "Original Input", $useAsInput) . "</div>";
+    $output .= "<div style='margin-bottom: 16px;'>" . copyableOutput($encoded, "URL Encoded", $useAsInput) . "</div>";
+    $output .= "<div style='margin-bottom: 16px;'>" . copyableOutput($decoded, "URL Decoded", $useAsInput) . "</div>";
 
     echo $output;
   }
@@ -1010,9 +1011,10 @@ if ($action == "htmlentities") {
       break;
     }
 
-    $output  = "<div style='margin-bottom: 16px;'>" . copyableOutput($input, "Original Input") . "</div>";
-    $output .= "<div style='margin-bottom: 16px;'>" . copyableOutput(htmlentities($input), "HTML Entities") . "</div>";
-    $output .= "<div style='margin-bottom: 16px;'>" . copyableOutput(html_entity_decode($input), "HTML Decoded") . "</div>";
+    $useAsInput = ['inputName' => 'htmlentities'];
+    $output  = "<div style='margin-bottom: 16px;'>" . copyableOutput($input, "Original Input", $useAsInput) . "</div>";
+    $output .= "<div style='margin-bottom: 16px;'>" . copyableOutput(htmlentities($input), "HTML Entities", $useAsInput) . "</div>";
+    $output .= "<div style='margin-bottom: 16px;'>" . copyableOutput(html_entity_decode($input), "HTML Decoded", $useAsInput) . "</div>";
 
     echo $output;
   }
