@@ -275,6 +275,73 @@ $(document).ready(function() {
     });
 
     /* ===================================================================== */
+    /*                    Use as input (two-way converters)                  */
+    /* ===================================================================== */
+    window._useAsInputUndo = window._useAsInputUndo || {};
+    $(document).on('click', '.btn-use-as-input', function() {
+        var $btn = $(this);
+        var $form = $btn.closest('form');
+        if (!$form.length) return;
+        var copyableId = $btn.data('copyable-id');
+        var inputName = $btn.data('input-name');
+        if (!copyableId || !inputName) return;
+        var contentEl = document.getElementById(copyableId);
+        if (!contentEl) return;
+        var text = (contentEl.textContent || contentEl.innerText || '').replace(/\r\n/g, '\n');
+        var $input = $form.find('[name="' + inputName + '"]');
+        if (!$input.length) return;
+
+        var stored = window._useAsInputUndo[copyableId];
+        if (stored) {
+            /* Undo: restore previous input and direction */
+            $input.val(stored.input);
+            var swapNames = $btn.data('swap-names');
+            if (swapNames && Array.isArray(swapNames) && swapNames.length === 2) {
+                var $a = $form.find('[name="' + swapNames[0] + '"]');
+                var $b = $form.find('[name="' + swapNames[1] + '"]');
+                if ($a.length && $b.length) {
+                    var tmp = $a.val();
+                    $a.val($b.val());
+                    $b.val(tmp);
+                }
+            }
+            var setSelectUndo = $btn.data('set-select-value-undo');
+            if (setSelectUndo !== undefined && setSelectUndo !== '') {
+                var setSelectName = $btn.data('set-select-name');
+                if (setSelectName) {
+                    var $sel = $form.find('[name="' + setSelectName + '"]');
+                    if ($sel.length) $sel.val(setSelectUndo);
+                }
+            }
+            delete window._useAsInputUndo[copyableId];
+            return;
+        }
+
+        /* Use as input: save current state, then replace */
+        var currentInput = $input.val();
+        if (currentInput === text) return; /* already showing output, nothing to do */
+        window._useAsInputUndo[copyableId] = { input: currentInput };
+
+        $input.val(text);
+        var swapNames = $btn.data('swap-names');
+        if (swapNames && Array.isArray(swapNames) && swapNames.length === 2) {
+            var $a = $form.find('[name="' + swapNames[0] + '"]');
+            var $b = $form.find('[name="' + swapNames[1] + '"]');
+            if ($a.length && $b.length) {
+                var tmp = $a.val();
+                $a.val($b.val());
+                $b.val(tmp);
+            }
+        }
+        var setSelectName = $btn.data('set-select-name');
+        var setSelectValue = $btn.data('set-select-value');
+        if (setSelectName && setSelectValue !== undefined) {
+            var $sel = $form.find('[name="' + setSelectName + '"]');
+            if ($sel.length) $sel.val(setSelectValue);
+        }
+    });
+
+    /* ===================================================================== */
     /*                      Navigation (and hash check)                      */
     /* ===================================================================== */
     if (window.location.hash != '' && window.location.hash != undefined) {

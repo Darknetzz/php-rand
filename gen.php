@@ -208,7 +208,7 @@ do {
     $toLabel   = (is_numeric($to) ? "Base $to" : ucfirst($to));
     echo "<div style='margin-bottom: 20px;'>";
     echo "<div style='margin-bottom: 15px;'><strong>$fromLabel → $toLabel</strong></div>";
-    echo copyableOutput($result);
+    echo copyableOutput($result, '', ['inputName' => 'base', 'swapNames' => ['from', 'to']]);
     echo "</div>";
   }
 
@@ -309,24 +309,27 @@ do {
 /* ===================================================================== */
 /*                              MODULE: numgen                           */
 /* ===================================================================== */
-  if ((isset($_POST['numgenfrom']) && isset($_POST['numgento'])) || (isset($_POST['numgenrangemode']) && $_POST['numgenrangemode'] === 'digits' && isset($_POST['numgenmindig'], $_POST['numgenmaxdig']))) {
+  if ((isset($_POST['numgenfrom']) && isset($_POST['numgento'])) || (isset($_POST['numgenrangemode']) && $_POST['numgenrangemode'] === 'digits' && (isset($_POST['numgendigits']) || (isset($_POST['numgenmindig'], $_POST['numgenmaxdig']))))) {
       $numgentype = isset($_POST['numgentype']) && in_array($_POST['numgentype'], ['any', 'prime', 'composite', 'odd', 'even', 'square', 'palindromic', 'fibonacci'], true)
           ? $_POST['numgentype']
           : 'any';
       $enableSeed = !empty($_POST['numgenuseseed']) && $_POST['numgenuseseed'] == 1;
       $seed       = null;
-      if ($enableSeed !== false) {
-        $seed = $_POST['numgenseed'];
+      $seedWarning = null;
+      if ($enableSeed) {
+        $resolved = resolve_numgen_seed(isset($_POST['numgenseed']) ? (string) $_POST['numgenseed'] : null);
+        $seed = $resolved['seed'];
+        $seedWarning = $resolved['warning'];
       }
       $numgenfrom = null;
       $numgento   = null;
       if (isset($_POST['numgenrangemode']) && $_POST['numgenrangemode'] === 'digits') {
-        $range = digit_range_to_numeric((int) $_POST['numgenmindig'], (int) $_POST['numgenmaxdig']);
+        $range = resolve_numgen_digit_range($_POST);
         if ($range !== null) {
           $numgenfrom = $range[0];
           $numgento   = $range[1];
         } else {
-          echo formatOutput("Invalid digit range. Use 1–20 for min and max digits, with min ≤ max.", type: "danger");
+          echo formatOutput("Invalid digit range. Use 1–20 for fixed length, or min ≤ max for range.", type: "danger");
         }
       } else {
         $numgenfrom = $_POST['numgenfrom'];
@@ -342,7 +345,7 @@ do {
         if ($separator === '') {
           $separator = ', ';
         }
-        if ($seed !== null && $seed !== '' && ctype_digit((string)$seed) && strlen((string)$seed) <= 17) {
+        if ($seed !== null && $seed !== '') {
           mt_srand((int) $seed);
         }
         $results = [];
@@ -355,10 +358,13 @@ do {
           $results[] = $gen;
         }
         if (count($results) > 0) {
-          $joined = $qty === 1 ? (string)$results[0] : implode($separator, $results);
+          $joined = joinNumGenResults($results, $separator);
           echo "<div style='margin-bottom: 15px;'>" . copyableOutput($joined) . "</div>";
+          if ($seedWarning) {
+            echo formatOutput($seedWarning, 6, "warning");
+          }
           if ($seed) {
-            echo "<div style='margin-top: 15px; opacity: 0.7;'><small><strong>Seed used:</strong> $seed</small></div>";
+            echo "<div style='margin-top: 15px; opacity: 0.7;'><small><strong>Seed used:</strong> " . htmlspecialchars($seed) . "</small></div>";
           }
         }
       }
@@ -986,9 +992,10 @@ if ($tool == "dnslookup") {
     $encoded = urlencode($url);
     $decoded = urldecode($url);
 
-    $output  = "<div style='margin-bottom: 16px;'>" . copyableOutput($url, "Original Input") . "</div>";
-    $output .= "<div style='margin-bottom: 16px;'>" . copyableOutput($encoded, "URL Encoded") . "</div>";
-    $output .= "<div style='margin-bottom: 16px;'>" . copyableOutput($decoded, "URL Decoded") . "</div>";
+    $useAsInput = ['inputName' => 'urlencode'];
+    $output  = "<div style='margin-bottom: 16px;'>" . copyableOutput($url, "Original Input", $useAsInput) . "</div>";
+    $output .= "<div style='margin-bottom: 16px;'>" . copyableOutput($encoded, "URL Encoded", $useAsInput) . "</div>";
+    $output .= "<div style='margin-bottom: 16px;'>" . copyableOutput($decoded, "URL Decoded", $useAsInput) . "</div>";
 
     echo $output;
   }
@@ -1004,9 +1011,10 @@ if ($action == "htmlentities") {
       break;
     }
 
-    $output  = "<div style='margin-bottom: 16px;'>" . copyableOutput($input, "Original Input") . "</div>";
-    $output .= "<div style='margin-bottom: 16px;'>" . copyableOutput(htmlentities($input), "HTML Entities") . "</div>";
-    $output .= "<div style='margin-bottom: 16px;'>" . copyableOutput(html_entity_decode($input), "HTML Decoded") . "</div>";
+    $useAsInput = ['inputName' => 'htmlentities'];
+    $output  = "<div style='margin-bottom: 16px;'>" . copyableOutput($input, "Original Input", $useAsInput) . "</div>";
+    $output .= "<div style='margin-bottom: 16px;'>" . copyableOutput(htmlentities($input), "HTML Entities", $useAsInput) . "</div>";
+    $output .= "<div style='margin-bottom: 16px;'>" . copyableOutput(html_entity_decode($input), "HTML Decoded", $useAsInput) . "</div>";
 
     echo $output;
   }

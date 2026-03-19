@@ -481,6 +481,26 @@ function digit_range_to_numeric(int $minDigits, int $maxDigits): ?array {
 }
 
 /**
+ * Resolve number generator digit range from request (fixed length or min–max range).
+ *
+ * @param array $req Request with numgen_digit_mode ('fixed'|'range'), and numgendigits or numgenmindig/numgenmaxdig
+ * @return array{0: int, 1: int}|null [from, to] or null if invalid
+ */
+function resolve_numgen_digit_range(array $req): ?array {
+  $mode = isset($req['numgen_digit_mode']) && $req['numgen_digit_mode'] === 'fixed' ? 'fixed' : 'range';
+  if ($mode === 'fixed' && isset($req['numgendigits'])) {
+    $d = (int) $req['numgendigits'];
+    if ($d >= 1 && $d <= 20) {
+      return digit_range_to_numeric($d, $d);
+    }
+    return null;
+  }
+  $minDig = isset($req['numgenmindig']) ? (int) $req['numgenmindig'] : 0;
+  $maxDig = isset($req['numgenmaxdig']) ? (int) $req['numgenmaxdig'] : 0;
+  return digit_range_to_numeric($minDig, $maxDig);
+}
+
+/**
  * Check if an integer is prime (trial division).
  *
  * @param int $n Integer to check (must be >= 2 for true result)
@@ -1426,16 +1446,66 @@ function bits_to_php_int($bits) {
 // echo convert_any(str_repeat('1', 13), 1, 2), PHP_EOL;    // Unary 13 -> 1101
 
 /* ===================================================================== */
+/*                     FUNCTION: resolve_numgen_seed                       */
+/* ===================================================================== */
+/**
+ * Validates custom seed for the number generator; if invalid, returns a generated seed and warning.
+ * Valid seed: non-empty, digits only, 1–17 characters (mt_srand constraint).
+ *
+ * @param string|null $customSeed Raw seed value from user (e.g. $_POST['numgenseed'])
+ * @return array{seed: string|null, warning: string|null} Effective seed to use; warning message if custom was invalid
+ */
+function resolve_numgen_seed(?string $customSeed): array {
+  $trimmed = $customSeed !== null ? trim($customSeed) : '';
+  if ($trimmed === '') {
+    return ['seed' => null, 'warning' => null];
+  }
+  if (ctype_digit($trimmed) && strlen($trimmed) >= 1 && strlen($trimmed) <= 17) {
+    return ['seed' => $trimmed, 'warning' => null];
+  }
+  $generated = (string) random_int(0, PHP_INT_MAX);
+  return [
+    'seed' => $generated,
+    'warning' => 'Custom seed was invalid (must be digits only, 1–17 digits). Using generated seed: ' . $generated,
+  ];
+}
+
+/* ===================================================================== */
+/*                     FUNCTION: joinNumGenResults                        */
+/* ===================================================================== */
+/**
+ * Joins number generator results with the given separator.
+ * When separator is newline, right-pads numbers so they align in a column.
+ *
+ * @param array $results List of numbers (int or string)
+ * @param string $separator Separator between items (e.g. ", ", "\n", "\t")
+ * @return string Joined string, optionally right-aligned for newline separator
+ */
+function joinNumGenResults(array $results, string $separator): string {
+  if (count($results) === 1) {
+    return (string) $results[0];
+  }
+  $strings = array_map('strval', $results);
+  if ($separator === "\n") {
+    $maxLen = max(array_map('strlen', $strings));
+    $strings = array_map(fn($s) => str_pad($s, $maxLen, ' ', STR_PAD_LEFT), $strings);
+  }
+  return implode($separator, $strings);
+}
+
+/* ===================================================================== */
 /*                       FUNCTION: copyableOutput                        */
 /* ===================================================================== */
 /**
  * Creates a copyable output box with a copy-to-clipboard button.
+ * Optionally adds a "Use as input" button for two-way converters.
  *
  * @param string $content The content to display and copy.
  * @param string $label Optional label for the output.
+ * @param array|null $useAsInput Optional: ['inputName' => string, 'swapNames' => [name1, name2]?, 'setSelectName' => string?, 'setSelectValue' => string?]
  * @return string HTML for the copyable output.
  */
-function copyableOutput($content, $label = "") {
+function copyableOutput($content, $label = "", $useAsInput = null) {
   $uniqueId = "copy_" . uniqid();
   $html = "";
   
@@ -1443,13 +1513,31 @@ function copyableOutput($content, $label = "") {
     $html .= "<strong style='display: block; margin-bottom: 8px;'>$label</strong>";
   }
   
-  $html .= "<div style='display: flex; gap: 10px; align-items: stretch;'>";
-  $html .= "  <div style='flex: 1; background-color: #0f172a; color: #e9ecef; padding: 14px; border-radius: 0.4rem; font-family: monospace; font-size: 0.95rem; word-break: break-all; white-space: pre-wrap; user-select: all; overflow-y: auto; max-height: 320px; border: 1px solid #334155; box-shadow: 0 6px 14px rgba(0,0,0,0.25);' id='$uniqueId'>";
+  $html .= "<div style='display: flex; gap: 10px; align-items: stretch; flex-wrap: wrap;'>";
+  $html .= "  <div style='flex: 1; min-width: 200px; background-color: #0f172a; color: #e9ecef; padding: 14px; border-radius: 0.4rem; font-family: monospace; font-size: 0.95rem; word-break: break-all; white-space: pre-wrap; user-select: all; overflow-y: auto; max-height: 320px; border: 1px solid #334155; box-shadow: 0 6px 14px rgba(0,0,0,0.25);' id='$uniqueId'>";
   $html .= htmlspecialchars($content ?? '');
   $html .= "  </div>";
-  $html .= "  <button type='button' class='btn btn-sm btn-outline-light' onclick=\"copyToClipboard('$uniqueId', this)\" style='height: fit-content; white-space: nowrap; align-self: flex-start; border: 1px solid #e9ecef;'>";
+  $html .= "  <div style='display: flex; gap: 6px; align-self: flex-start; flex-shrink: 0;'>";
+  $html .= "  <button type='button' class='btn btn-sm btn-outline-light' onclick=\"copyToClipboard('$uniqueId', this)\" style='white-space: nowrap; border: 1px solid #e9ecef;'>";
   $html .= "    <i class='bi bi-files'></i> Copy";
   $html .= "  </button>";
+  if (is_array($useAsInput) && !empty($useAsInput['inputName'])) {
+    $inputName = $useAsInput['inputName'];
+    $attrs = ' class="btn btn-sm btn-outline-info btn-use-as-input" data-copyable-id="' . htmlspecialchars($uniqueId) . '" data-input-name="' . htmlspecialchars($inputName) . '"';
+    if (!empty($useAsInput['swapNames']) && is_array($useAsInput['swapNames']) && count($useAsInput['swapNames']) === 2) {
+      $attrs .= ' data-swap-names="' . htmlspecialchars(json_encode($useAsInput['swapNames'])) . '"';
+    }
+    if (!empty($useAsInput['setSelectName']) && isset($useAsInput['setSelectValue'])) {
+      $attrs .= ' data-set-select-name="' . htmlspecialchars($useAsInput['setSelectName']) . '" data-set-select-value="' . htmlspecialchars((string) $useAsInput['setSelectValue']) . '"';
+      if (isset($useAsInput['setSelectValueUndo'])) {
+        $attrs .= ' data-set-select-value-undo="' . htmlspecialchars((string) $useAsInput['setSelectValueUndo']) . '"';
+      }
+    }
+    $html .= "  <button type='button'" . $attrs . " style='white-space: nowrap; border: 1px solid #0dcaf0;' title='Replace input with this output (click again to undo)'>";
+    $html .= "    <i class='bi bi-arrow-left-right'></i> Use as input";
+    $html .= "  </button>";
+  }
+  $html .= "  </div>";
   $html .= "</div>";
   
   return $html;

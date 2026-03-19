@@ -6,10 +6,12 @@
             <form class="form" action="gen.php" method="POST" id="numgen" data-action="numgen">
                 
                 <?php
-                $numgenRangeMode  = isset($_POST['numgenrangemode']) ? $_POST['numgenrangemode'] : 'numeric';
-                $minDig           = isset($_POST['numgenmindig']) ? (int)$_POST['numgenmindig'] : 1;
-                $maxDig           = isset($_POST['numgenmaxdig']) ? (int)$_POST['numgenmaxdig'] : 3;
-                $fromValue        = isset($_POST['numgenfrom']) ? $_POST['numgenfrom'] : '1';
+                $numgenRangeMode    = isset($_POST['numgenrangemode']) ? $_POST['numgenrangemode'] : 'numeric';
+                $numgenDigitMode   = isset($_POST['numgen_digit_mode']) ? $_POST['numgen_digit_mode'] : 'range';
+                $fixedDigits       = isset($_POST['numgendigits']) ? (int)$_POST['numgendigits'] : 2;
+                $minDig            = isset($_POST['numgenmindig']) ? (int)$_POST['numgenmindig'] : 1;
+                $maxDig            = isset($_POST['numgenmaxdig']) ? (int)$_POST['numgenmaxdig'] : 3;
+                $fromValue         = isset($_POST['numgenfrom']) ? $_POST['numgenfrom'] : '1';
                 $toValue          = isset($_POST['numgento']) ? $_POST['numgento'] : '100';
                 $separatorPreset  = isset($_POST['numgensep_preset']) ? $_POST['numgensep_preset'] : (isset($_POST['numgenseparator']) && (string)$_POST['numgenseparator'] !== '' ? 'custom' : 'comma');
                 $separatorValue   = isset($_POST['numgenseparator']) ? $_POST['numgenseparator'] : ', ';
@@ -20,15 +22,11 @@
                     </div>
                     <div class="col-12">
                         <label class="form-label">Range by</label>
-                        <div class="d-flex flex-wrap gap-3">
-                            <div class="form-check">
-                                <input type="radio" class="form-check-input" name="numgenrangemode" id="numgen_mode_numeric" value="numeric" <?= $numgenRangeMode !== 'digits' ? 'checked' : '' ?>>
-                                <label class="form-check-label" for="numgen_mode_numeric">Numeric range (From / To)</label>
-                            </div>
-                            <div class="form-check">
-                                <input type="radio" class="form-check-input" name="numgenrangemode" id="numgen_mode_digits" value="digits" <?= $numgenRangeMode === 'digits' ? 'checked' : '' ?>>
-                                <label class="form-check-label" for="numgen_mode_digits">Digit range (min–max digits)</label>
-                            </div>
+                        <div class="btn-group" role="group">
+                            <input type="radio" class="btn-check" name="numgenrangemode" id="numgen_mode_numeric" value="numeric" <?= $numgenRangeMode !== 'digits' ? 'checked' : '' ?>>
+                            <label class="btn btn-outline-secondary" for="numgen_mode_numeric">Numeric range (From / To)</label>
+                            <input type="radio" class="btn-check" name="numgenrangemode" id="numgen_mode_digits" value="digits" <?= $numgenRangeMode === 'digits' ? 'checked' : '' ?>>
+                            <label class="btn btn-outline-secondary" for="numgen_mode_digits">Digit range (min–max digits)</label>
                         </div>
                     </div>
                     <div class="numgen-numeric-range col-md-6">
@@ -40,7 +38,20 @@
                         <input type="number" name="numgento" class="form-control form-control-lg" value="<?= htmlspecialchars($toValue) ?>" placeholder="100" style="font-family: monospace; font-size: 1.5rem;">
                     </div>
                     <div class="numgen-digits-range col-12" style="display: none;">
-                        <div class="row g-3">
+                        <label class="form-label">Length</label>
+                        <div class="btn-group mb-2" role="group">
+                            <input type="radio" class="btn-check" name="numgen_digit_mode" id="numgen_digit_fixed" value="fixed" <?= $numgenDigitMode === 'fixed' ? 'checked' : '' ?>>
+                            <label class="btn btn-outline-secondary" for="numgen_digit_fixed">Fixed length</label>
+                            <input type="radio" class="btn-check" name="numgen_digit_mode" id="numgen_digit_range" value="range" <?= $numgenDigitMode !== 'fixed' ? 'checked' : '' ?>>
+                            <label class="btn btn-outline-secondary" for="numgen_digit_range">Range (min–max)</label>
+                        </div>
+                        <div class="numgen-digit-fixed row g-3" style="display: none;">
+                            <div class="col-md-6">
+                                <label class="form-label">Number of digits</label>
+                                <input type="number" name="numgendigits" class="form-control form-control-lg" value="<?= max(1, min(20, (int)$fixedDigits)) ?>" min="1" max="20" placeholder="2" style="font-family: monospace; font-size: 1.5rem;">
+                            </div>
+                        </div>
+                        <div class="numgen-digit-range row g-3" style="display: none;">
                             <div class="col-md-6">
                                 <label class="form-label">Min digits</label>
                                 <input type="number" name="numgenmindig" class="form-control form-control-lg" value="<?= (int)$minDig ?>" min="1" max="20" placeholder="1" style="font-family: monospace; font-size: 1.5rem;">
@@ -50,7 +61,7 @@
                                 <input type="number" name="numgenmaxdig" class="form-control form-control-lg" value="<?= (int)$maxDig ?>" min="1" max="20" placeholder="5" style="font-family: monospace; font-size: 1.5rem;">
                             </div>
                         </div>
-                        <small class="text-muted">e.g. 2–4 digits → numbers from 10 to 9,999</small>
+                        <small class="text-muted">e.g. fixed 4 digits → 1000–9999; range 2–4 → 10 to 9,999</small>
                     </div>
                     <div class="col-12">
                         <label class="form-label">Number type</label>
@@ -136,8 +147,15 @@
         var isDigits = $("#numgen_mode_digits").is(":checked");
         $(".numgen-numeric-range").toggle(!isDigits);
         $(".numgen-digits-range").toggle(isDigits);
+        if (isDigits) numgenToggleDigitMode();
+    }
+    function numgenToggleDigitMode() {
+        var isFixed = $("#numgen_digit_fixed").is(":checked");
+        $(".numgen-digit-fixed").toggle(isFixed);
+        $(".numgen-digit-range").toggle(!isFixed);
     }
     $("input[name='numgenrangemode']").on("change", numgenToggleRangeMode);
+    $("input[name='numgen_digit_mode']").on("change", numgenToggleDigitMode);
     numgenToggleRangeMode();
 
     // Separator preset: show custom input only when "Custom…" is selected

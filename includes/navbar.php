@@ -118,6 +118,11 @@ $navbarItems = [
                 "formalName" => "Metaphone",
                 "icon"       => icon("soundwave")
             ],
+            "units" => [
+                "name"       => "units",
+                "formalName" => "Units",
+                "icon"       => icon('rulers')
+            ],
             "currency" => [
                 "name"       => "currency",
                 "formalName" => "Currency Converter",

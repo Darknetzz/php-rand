@@ -187,10 +187,11 @@ function req_int_validated(array $request, string $key, ?int $min = null, ?int $
  *
  * @param string $content The content to display and copy
  * @param string $label Optional label for the output section. Default: ""
+ * @param array|null $useAsInput Optional use-as-input button config for two-way converters
  * @return string HTML formatted copyable output element
  */
-function output_copyable(string $content, string $label = ""): string {
-    return "<div style='margin-bottom: 15px;'>" . copyableOutput($content, $label) . "</div>";
+function output_copyable(string $content, string $label = "", ?array $useAsInput = null): string {
+    return "<div style='margin-bottom: 15px;'>" . copyableOutput($content, $label, $useAsInput) . "</div>";
 }
 
 // ============================================================================
@@ -334,11 +335,9 @@ function handle_numgen(array $req): string {
     $rangeMode = isset($req['numgenrangemode']) && $req['numgenrangemode'] === 'digits' ? 'digits' : 'numeric';
 
     if ($rangeMode === 'digits') {
-        $minDig = isset($req['numgenmindig']) ? (int) $req['numgenmindig'] : 0;
-        $maxDig = isset($req['numgenmaxdig']) ? (int) $req['numgenmaxdig'] : 0;
-        $range = digit_range_to_numeric($minDig, $maxDig);
+        $range = resolve_numgen_digit_range($req);
         if ($range === null) {
-            return formatOutput("Invalid digit range. Use 1–20 for min and max digits, with min ≤ max.", type: "danger");
+            return formatOutput("Invalid digit range. Use 1–20 for fixed length, or min ≤ max for range.", type: "danger");
         }
         [$from, $to] = $range;
     } else {
@@ -368,14 +367,17 @@ function handle_numgen(array $req): string {
         ? $req['numgentype']
         : 'any';
 
-    // Validate seed if provided
+    // Resolve seed: validate custom seed if provided; invalid → use generated seed + warning
     $seed = null;
+    $seedWarning = null;
     if (req_bool($req, 'numgenuseseed')) {
         $seedValidation = req_string($req, 'numgenseed', 1, 100);
         if (!$seedValidation['valid']) {
             return formatOutput($seedValidation['error'], type: "danger");
         }
-        $seed = $seedValidation['value'];
+        $resolved = resolve_numgen_seed($seedValidation['value']);
+        $seed = $resolved['seed'];
+        $seedWarning = $resolved['warning'];
     }
 
     // Validate quantity (1–500)
@@ -392,7 +394,7 @@ function handle_numgen(array $req): string {
     }
 
     // Apply seed once so the same seed gives a reproducible sequence for multiple numbers
-    if ($seed !== null && ctype_digit($seed) && strlen($seed) <= 17) {
+    if ($seed !== null) {
         mt_srand((int) $seed);
     }
 
@@ -405,9 +407,12 @@ function handle_numgen(array $req): string {
         $results[] = $result;
     }
 
-    $joined = $qty === 1 ? (string)$results[0] : implode($separator, $results);
+    $joined = joinNumGenResults($results, $separator);
     $output = output_copyable($joined);
 
+    if ($seedWarning) {
+        $output .= formatOutput($seedWarning, 6, "warning");
+    }
     if ($seed) {
         $output .= "<div style='margin-top: 15px; opacity: 0.7;'><small><strong>Seed used:</strong> " . htmlspecialchars($seed) . "</small></div>";
     }
@@ -449,7 +454,7 @@ function handle_base(array $req): string {
         $result = convert_any($input, $from, $to);
         $output = "<div style='margin-bottom: 20px;'>";
         $output .= "<div style='margin-bottom: 15px;'><strong>Base $from → Base $to</strong></div>";
-        $output .= copyableOutput($result);
+        $output .= copyableOutput($result, '', ['inputName' => 'base', 'swapNames' => ['from', 'to']]);
         $output .= "</div>";
         return $output;
     } catch (Exception $e) {
@@ -525,7 +530,8 @@ function handle_hex(array $req): string {
         $output = hex2ip($input);
     }
 
-    return output_copyable($output);
+    $inputName = !empty($req['binhex']) ? 'binhex' : 'iphex';
+    return output_copyable($output, '', ['inputName' => $inputName]);
 }
 
 /**
@@ -556,7 +562,7 @@ function handle_rot(array $req): string {
         $output = "";
         for ($i = 0; $i < 26; $i++) {
             $rotated = str_rot($input, $i);
-            $output .= output_copyable($rotated, "ROT" . $i);
+            $output .= output_copyable($rotated, "ROT" . $i, ['inputName' => 'rot']);
         }
         return $output;
     }
@@ -572,7 +578,7 @@ function handle_rot(array $req): string {
         $note = formatOutput("Rotation normalized to $rotations (input: $rotationsRaw).", type: "info");
     }
 
-    return $note . output_copyable($result);
+    return $note . output_copyable($result, '', ['inputName' => 'rot']);
 }
 
 /**
@@ -1058,7 +1064,7 @@ function handle_brainfuck(array $req): string {
             $bfCode = textToBrainfuck($input);
             $output = "<div style='margin-bottom: 20px;'>";
             $output .= "<div style='margin-bottom: 15px;'><strong>Text → Brainfuck</strong></div>";
-            $output .= copyableOutput($bfCode);
+            $output .= copyableOutput($bfCode, '', ['inputName' => 'brainfuck', 'setSelectName' => 'mode', 'setSelectValue' => 'bf2text', 'setSelectValueUndo' => 'text2bf']);
             $output .= "<div style='margin-top: 15px; padding: 12px; background-color: rgba(255, 193, 7, 0.15); border-radius: 0.5rem;'>";
             $output .= "<strong>📊 Stats:</strong><br>";
             $output .= "Input length: <code>" . strlen($input) . " characters</code><br>";
@@ -1073,7 +1079,7 @@ function handle_brainfuck(array $req): string {
             if ($result['success']) {
                 $output = "<div style='margin-bottom: 20px;'>";
                 $output .= "<div style='margin-bottom: 15px;'><strong>Brainfuck → Text</strong></div>";
-                $output .= copyableOutput($result['output']);
+                $output .= copyableOutput($result['output'], '', ['inputName' => 'brainfuck', 'setSelectName' => 'mode', 'setSelectValue' => 'text2bf', 'setSelectValueUndo' => 'bf2text']);
                 if (!empty($result['warnings'])) {
                     $output .= "<div style='margin-top: 15px; padding: 12px; background-color: rgba(255, 193, 7, 0.15); border-radius: 0.5rem;'>";
                     $output .= "<strong>⚠️ Warnings:</strong><br>";
