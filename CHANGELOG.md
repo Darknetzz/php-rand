@@ -4,6 +4,24 @@ All notable changes to this project are documented in this file.
 
 ---
 
+## [v1.2.7] (2026-03-19)
+
+### Major Features
+- **Unit Converter** (Convert → Units) – Single page with 12 measurement categories: Volume, Length, Weight & mass, Temperature, Energy, Area, Speed, Time, Power, Data, Pressure, Angle. Enter a value and source unit; result is shown as a table of equivalent values in all other units for that category (client-side). Currency remains a separate module (Convert → Currency Converter).
+
+<details>
+<summary>📋 Detailed Changes (click to expand)</summary>
+
+#### Unit Converter
+- **Convert → Units** – New nav item under Convert; tabbed interface for all unit types
+- **Categories** – Volume (L, mL, gallon, quart, pint, cup, fl oz, m³, ft³, in³), Length (m, km, cm, mm, mile, yard, foot, inch, nautical mile), Weight & mass (kg, g, mg, lb, oz, ton metric/US), Temperature (C, F, K), Energy (J, kJ, cal, kcal, kWh, eV, BTU), Area (m², km², ft², in², hectare, acre), Speed (m/s, km/h, mph, knot, ft/s), Time (s, min, h, day, week, month, year), Power (W, kW, hp metric/US, BTU/h), Data (bit, byte, KB–TB, KiB–TiB), Pressure (Pa, kPa, bar, psi, atm, mmHg, inHg), Angle (deg, rad, grad, arcmin, arcsec)
+- **UX** – One “From unit” dropdown per category; convert to all other units in a copyable table
+- **Currency** – No duplicate; currency conversion stays on the dedicated Convert → Currency Converter page
+
+</details>
+
+---
+
 ## [v1.2.6] (2026-03-13)
 
 ### Major Features

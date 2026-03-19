@@ -35,6 +35,8 @@ A comprehensive collection of useful developer tools built with PHP and modern w
 - Markdown editor (client-side live preview)
 - Minify (CSS and JavaScript)
 - Metaphone (phonetic key generation)
+- Unit converter (Convert → Units: volume, length, weight, temperature, energy, area, speed, time, power, data, pressure, angle)
+- Currency converter (Convert → Currency Converter)
 
 ### Networking
 - DNS lookup (hostname/IP resolution)
