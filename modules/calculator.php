@@ -125,12 +125,19 @@
         const opActions = ['÷','×','−','+'];
 
         if (numActions.includes(action)) {
-            if (justComputed) { display = action; expression = ''; justComputed = false; }
-            else if (display === '0' && action !== '.') display = action;
-            else if (display !== '0') display += action;
-            expression = (expression || '') + action;
+            if (justComputed) {
+                display = action;
+                expression = (pendingOp ? (expression || '') : '') + action;
+                justComputed = false;
+            } else if (display === '0' && action !== '.') {
+                display = action;
+                expression = (expression || '') + action;
+            } else if (display !== '0') {
+                display += action;
+                expression += action;
+            }
         } else if (action === '.') {
-            if (justComputed) { display = '0.'; expression = '0.'; justComputed = false; }
+            if (justComputed) { display = '0.'; expression = (pendingOp ? (expression || '') : '') + '0.'; justComputed = false; }
             else if (!display.includes('.')) { display += '.'; expression += '.'; }
         } else if (action === '±') {
             const n = getDisplayNum();
