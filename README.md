@@ -51,7 +51,6 @@ A comprehensive collection of useful developer tools built with PHP and modern w
 
 ### Miscellaneous
 - Calculator (basic arithmetic)
-- Currency converter
 - Datetime tools (time unit conversion, timezone selector)
 
 ## Installation
