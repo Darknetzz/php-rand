@@ -1064,7 +1064,7 @@ function handle_brainfuck(array $req): string {
             $bfCode = textToBrainfuck($input);
             $output = "<div style='margin-bottom: 20px;'>";
             $output .= "<div style='margin-bottom: 15px;'><strong>Text → Brainfuck</strong></div>";
-            $output .= copyableOutput($bfCode, '', ['inputName' => 'brainfuck', 'setSelectName' => 'mode', 'setSelectValue' => 'bf2text']);
+            $output .= copyableOutput($bfCode, '', ['inputName' => 'brainfuck', 'setSelectName' => 'mode', 'setSelectValue' => 'bf2text', 'setSelectValueUndo' => 'text2bf']);
             $output .= "<div style='margin-top: 15px; padding: 12px; background-color: rgba(255, 193, 7, 0.15); border-radius: 0.5rem;'>";
             $output .= "<strong>📊 Stats:</strong><br>";
             $output .= "Input length: <code>" . strlen($input) . " characters</code><br>";
@@ -1079,7 +1079,7 @@ function handle_brainfuck(array $req): string {
             if ($result['success']) {
                 $output = "<div style='margin-bottom: 20px;'>";
                 $output .= "<div style='margin-bottom: 15px;'><strong>Brainfuck → Text</strong></div>";
-                $output .= copyableOutput($result['output'], '', ['inputName' => 'brainfuck', 'setSelectName' => 'mode', 'setSelectValue' => 'text2bf']);
+                $output .= copyableOutput($result['output'], '', ['inputName' => 'brainfuck', 'setSelectName' => 'mode', 'setSelectValue' => 'text2bf', 'setSelectValueUndo' => 'bf2text']);
                 if (!empty($result['warnings'])) {
                     $output .= "<div style='margin-top: 15px; padding: 12px; background-color: rgba(255, 193, 7, 0.15); border-radius: 0.5rem;'>";
                     $output .= "<strong>⚠️ Warnings:</strong><br>";

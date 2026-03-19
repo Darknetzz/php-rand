@@ -1529,8 +1529,11 @@ function copyableOutput($content, $label = "", $useAsInput = null) {
     }
     if (!empty($useAsInput['setSelectName']) && isset($useAsInput['setSelectValue'])) {
       $attrs .= ' data-set-select-name="' . htmlspecialchars($useAsInput['setSelectName']) . '" data-set-select-value="' . htmlspecialchars((string) $useAsInput['setSelectValue']) . '"';
+      if (isset($useAsInput['setSelectValueUndo'])) {
+        $attrs .= ' data-set-select-value-undo="' . htmlspecialchars((string) $useAsInput['setSelectValueUndo']) . '"';
+      }
     }
-    $html .= "  <button type='button'" . $attrs . " style='white-space: nowrap; border: 1px solid #0dcaf0;' title='Replace input with this output and swap direction'>";
+    $html .= "  <button type='button'" . $attrs . " style='white-space: nowrap; border: 1px solid #0dcaf0;' title='Replace input with this output (click again to undo)'>";
     $html .= "    <i class='bi bi-arrow-left-right'></i> Use as input";
     $html .= "  </button>";
   }
