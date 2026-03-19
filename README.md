@@ -2,7 +2,7 @@
 
 A comprehensive collection of useful developer tools built with PHP and modern web technologies.
 
-**Demo:** https://roste.org/rand
+**Demo:** [https://roste.org/rand](https://rand.demo.roste.org/)
 
 > [!WARNING]  
 > Disclaimer: Please do not host this tool on a publicly accessible server. It most likely contains security vulnerabilities.
