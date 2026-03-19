@@ -22,15 +22,11 @@
                     </div>
                     <div class="col-12">
                         <label class="form-label">Range by</label>
-                        <div class="d-flex flex-wrap gap-3">
-                            <div class="form-check">
-                                <input type="radio" class="form-check-input" name="numgenrangemode" id="numgen_mode_numeric" value="numeric" <?= $numgenRangeMode !== 'digits' ? 'checked' : '' ?>>
-                                <label class="form-check-label" for="numgen_mode_numeric">Numeric range (From / To)</label>
-                            </div>
-                            <div class="form-check">
-                                <input type="radio" class="form-check-input" name="numgenrangemode" id="numgen_mode_digits" value="digits" <?= $numgenRangeMode === 'digits' ? 'checked' : '' ?>>
-                                <label class="form-check-label" for="numgen_mode_digits">Digit range (min–max digits)</label>
-                            </div>
+                        <div class="btn-group" role="group">
+                            <input type="radio" class="btn-check" name="numgenrangemode" id="numgen_mode_numeric" value="numeric" <?= $numgenRangeMode !== 'digits' ? 'checked' : '' ?>>
+                            <label class="btn btn-outline-secondary" for="numgen_mode_numeric">Numeric range (From / To)</label>
+                            <input type="radio" class="btn-check" name="numgenrangemode" id="numgen_mode_digits" value="digits" <?= $numgenRangeMode === 'digits' ? 'checked' : '' ?>>
+                            <label class="btn btn-outline-secondary" for="numgen_mode_digits">Digit range (min–max digits)</label>
                         </div>
                     </div>
                     <div class="numgen-numeric-range col-md-6">
@@ -43,15 +39,11 @@
                     </div>
                     <div class="numgen-digits-range col-12" style="display: none;">
                         <label class="form-label">Length</label>
-                        <div class="d-flex flex-wrap gap-3 mb-2">
-                            <div class="form-check">
-                                <input type="radio" class="form-check-input" name="numgen_digit_mode" id="numgen_digit_fixed" value="fixed" <?= $numgenDigitMode === 'fixed' ? 'checked' : '' ?>>
-                                <label class="form-check-label" for="numgen_digit_fixed">Fixed length</label>
-                            </div>
-                            <div class="form-check">
-                                <input type="radio" class="form-check-input" name="numgen_digit_mode" id="numgen_digit_range" value="range" <?= $numgenDigitMode !== 'fixed' ? 'checked' : '' ?>>
-                                <label class="form-check-label" for="numgen_digit_range">Range (min–max)</label>
-                            </div>
+                        <div class="btn-group mb-2" role="group">
+                            <input type="radio" class="btn-check" name="numgen_digit_mode" id="numgen_digit_fixed" value="fixed" <?= $numgenDigitMode === 'fixed' ? 'checked' : '' ?>>
+                            <label class="btn btn-outline-secondary" for="numgen_digit_fixed">Fixed length</label>
+                            <input type="radio" class="btn-check" name="numgen_digit_mode" id="numgen_digit_range" value="range" <?= $numgenDigitMode !== 'fixed' ? 'checked' : '' ?>>
+                            <label class="btn btn-outline-secondary" for="numgen_digit_range">Range (min–max)</label>
                         </div>
                         <div class="numgen-digit-fixed row g-3" style="display: none;">
                             <div class="col-md-6">
