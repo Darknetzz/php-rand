@@ -1,18 +1,9 @@
 <?php
 /**
- * Unit Converter – one page for all 13 categories: Currency, Volume, Length,
- * Weight and mass, Temperature, Energy, Area, Speed, Time, Power, Data, Pressure, Angle.
+ * Unit Converter – measurement units only (Volume, Length, Weight, Temperature, etc.).
+ * Currency has its own module: Convert → Currency Converter.
  * Convert → Units
  */
-$currencyList = [
-    'USD' => 'USD - US Dollar', 'EUR' => 'EUR - Euro', 'GBP' => 'GBP - British Pound',
-    'JPY' => 'JPY - Japanese Yen', 'AUD' => 'AUD - Australian Dollar', 'CAD' => 'CAD - Canadian Dollar',
-    'CHF' => 'CHF - Swiss Franc', 'CNY' => 'CNY - Chinese Yuan', 'SEK' => 'SEK - Swedish Krona',
-    'NZD' => 'NZD - New Zealand Dollar', 'MXN' => 'MXN - Mexican Peso', 'SGD' => 'SGD - Singapore Dollar',
-    'HKD' => 'HKD - Hong Kong Dollar', 'NOK' => 'NOK - Norwegian Krone', 'KRW' => 'KRW - South Korean Won',
-    'INR' => 'INR - Indian Rupee', 'BRL' => 'BRL - Brazilian Real', 'ZAR' => 'ZAR - South African Rand',
-    'RUB' => 'RUB - Russian Ruble', 'TRY' => 'TRY - Turkish Lira',
-];
 ?>
 <div id="units" class="content">
     <div class="card card-primary">
@@ -24,10 +15,7 @@ $currencyList = [
 
             <ul class="nav nav-tabs mb-4" id="unitsTab" role="tablist">
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link active" id="tab-currency" data-bs-toggle="tab" data-bs-target="#pane-currency" type="button" role="tab"><?= icon('currency-exchange') ?> Currency</button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="tab-volume" data-bs-toggle="tab" data-bs-target="#pane-volume" type="button" role="tab"><?= icon('box') ?> Volume</button>
+                    <button class="nav-link active" id="tab-volume" data-bs-toggle="tab" data-bs-target="#pane-volume" type="button" role="tab"><?= icon('box') ?> Volume</button>
                 </li>
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="tab-length" data-bs-toggle="tab" data-bs-target="#pane-length" type="button" role="tab"><?= icon('rulers') ?> Length</button>
