@@ -53,43 +53,11 @@
             </ul>
 
             <div class="tab-content" id="unitsTabContent">
-                <!-- Currency: uses existing backend -->
-                <div class="tab-pane fade show active" id="pane-currency" role="tabpanel">
-                    <form class="form" action="gen.php" method="POST" id="units-currency-form" data-action="currency">
-                        <input type="hidden" name="action" value="currency">
-                        <div class="row g-3 mb-3">
-                            <div class="col-12 col-md-4">
-                                <label class="form-label"><strong>Amount</strong></label>
-                                <input type="number" name="currency_amount" class="form-control form-control-lg" value="1" step="0.01" min="0" required style="font-family: monospace;">
-                            </div>
-                            <div class="col-12 col-md-4">
-                                <label class="form-label"><strong>From</strong></label>
-                                <select name="currency_from" class="form-select form-select-lg" required style="font-family: monospace;">
-                                    <?php foreach ($currencyList as $code => $label): ?>
-                                        <option value="<?= htmlspecialchars($code) ?>"><?= htmlspecialchars($label) ?></option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-                            <div class="col-12 col-md-4">
-                                <label class="form-label"><strong>To</strong></label>
-                                <select name="currency_to" class="form-select form-select-lg" required style="font-family: monospace;">
-                                    <?php foreach ($currencyList as $code => $label): ?>
-                                        <option value="<?= htmlspecialchars($code) ?>"><?= htmlspecialchars($label) ?></option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-                        </div>
-                        <?= submitBtn("currency", "action", "Convert", "arrow-repeat", "lg") ?>
-                        <div class="responseDiv units-response"></div>
-                    </form>
-                </div>
-
-                <!-- Math-based categories: value + from unit, convert to all (client-side) -->
                 <?php
                 $mathTabs = ['volume', 'length', 'weight', 'temperature', 'energy', 'area', 'speed', 'time', 'power', 'data', 'pressure', 'angle'];
                 foreach ($mathTabs as $cat):
                 ?>
-                <div class="tab-pane fade" id="pane-<?= $cat ?>" role="tabpanel">
+                <div class="tab-pane fade<?= $cat === 'volume' ? ' show active' : '' ?>" id="pane-<?= $cat ?>" role="tabpanel">
                     <form class="form units-math-form" data-category="<?= $cat ?>" data-action="units">
                         <input type="hidden" name="action" value="units">
                         <input type="hidden" name="units_category" value="<?= $cat ?>">
@@ -228,6 +196,5 @@
         });
     });
 
-    // Currency form uses the global .form submit handler (POST to gen.php, action=currency)
 })();
 </script>
