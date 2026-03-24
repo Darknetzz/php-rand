@@ -17,6 +17,7 @@ function getHandlerRegistry(): array {
     return [
         'stringgen' => 'handle_stringgen',
         'hash' => 'handle_hash',
+        'hasher' => 'handle_hash',
         'numgen' => 'handle_numgen',
         'base' => 'handle_base',
         'hex' => 'handle_hex',
@@ -301,6 +302,9 @@ function handle_hash(array $req): string {
     if (strlen($input) > 100000) {
         return formatOutput("Input text must be at most 100,000 characters.", type: "danger");
     }
+
+    $hashRounds = isset($req['hashrounds']) ? (int) $req['hashrounds'] : 1;
+    $hashRounds = max(1, min(1000, $hashRounds));
     
     $hashalgo = req_get($req, 'hashalgo', 'all');
     
@@ -314,9 +318,14 @@ function handle_hash(array $req): string {
         : hash_algos();
 
     $output = "";
+    $useAsInput = ['inputName' => 'hash'];
     foreach ($types as $type) {
-        $hashValue = hash($type, $input);
-        $output .= output_copyable($hashValue, $type);
+        $hashValue = (string) $input;
+        for ($round = 0; $round < $hashRounds; $round++) {
+            $hashValue = hash($type, $hashValue);
+        }
+        $label = $hashRounds > 1 ? "$type ({$hashRounds} rounds)" : $type;
+        $output .= output_copyable($hashValue, $label, $useAsInput);
     }
     
     return formatOutput($output);
