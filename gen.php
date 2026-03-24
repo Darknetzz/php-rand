@@ -1005,16 +1005,43 @@ if ($tool == "dnslookup") {
 /* ===================================================================== */
 if ($action == "htmlentities") {
     $input = (!empty($_POST['htmlentities']) ? $_POST['htmlentities'] : null);
+    $mode = $_POST['htmlentities_mode'] ?? 'auto';
 
     if (empty($input)) {
       echo formatOutput("You must enter a string.", type: "danger");
       break;
     }
 
+    $allowedModes = ['auto', 'encode', 'decode', 'both'];
+    if (!in_array($mode, $allowedModes, true)) {
+      $mode = 'auto';
+    }
+
+    $containsEntityPattern = preg_match('/&(?:#\d+|#x[0-9A-Fa-f]+|[A-Za-z][A-Za-z0-9]+);/', $input) === 1;
+    $decodedInput = html_entity_decode($input, ENT_QUOTES | ENT_HTML5);
+    $encodedInput = htmlentities($input, ENT_QUOTES | ENT_HTML5);
+    $looksEncoded = $containsEntityPattern && $decodedInput !== $input;
+    $effectiveMode = $mode === 'auto' ? ($looksEncoded ? 'decode' : 'encode') : $mode;
+
     $useAsInput = ['inputName' => 'htmlentities'];
-    $output  = "<div style='margin-bottom: 16px;'>" . copyableOutput($input, "Original Input", $useAsInput) . "</div>";
-    $output .= "<div style='margin-bottom: 16px;'>" . copyableOutput(htmlentities($input), "HTML Entities", $useAsInput) . "</div>";
-    $output .= "<div style='margin-bottom: 16px;'>" . copyableOutput(html_entity_decode($input), "HTML Decoded", $useAsInput) . "</div>";
+
+    $modeLabel = ucfirst($effectiveMode);
+    if ($mode === 'auto') {
+      $detectionLabel = $looksEncoded ? 'detected as encoded input' : 'detected as plain input';
+      $output = "<div style='margin-bottom: 12px; font-size: 0.82rem; opacity: 0.75;'>Auto mode: <strong>{$modeLabel}</strong> ({$detectionLabel}).</div>";
+    } else {
+      $output = "<div style='margin-bottom: 12px; font-size: 0.82rem; opacity: 0.75;'>Mode: <strong>{$modeLabel}</strong>.</div>";
+    }
+
+    if ($effectiveMode === 'both') {
+      $output .= "<div style='margin-bottom: 16px;'>" . copyableOutput($input, "Original Input", $useAsInput) . "</div>";
+      $output .= "<div style='margin-bottom: 16px;'>" . copyableOutput($encodedInput, "HTML Entities", $useAsInput) . "</div>";
+      $output .= "<div style='margin-bottom: 16px;'>" . copyableOutput($decodedInput, "HTML Decoded", $useAsInput) . "</div>";
+    } elseif ($effectiveMode === 'decode') {
+      $output .= "<div style='margin-bottom: 16px;'>" . copyableOutput($decodedInput, "HTML Decoded", $useAsInput) . "</div>";
+    } else {
+      $output .= "<div style='margin-bottom: 16px;'>" . copyableOutput($encodedInput, "HTML Entities", $useAsInput) . "</div>";
+    }
 
     echo $output;
   }

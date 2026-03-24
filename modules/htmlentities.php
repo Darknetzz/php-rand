@@ -1,5 +1,8 @@
 <div id="htmlentities" class="content">
-    <?php $htmlInputVal = isset($_POST['htmlentities']) ? htmlspecialchars($_POST['htmlentities']) : ""; ?>
+    <?php
+    $htmlInputVal = isset($_POST['htmlentities']) ? htmlspecialchars($_POST['htmlentities']) : "";
+    $htmlModeVal = $_POST['htmlentities_mode'] ?? 'auto';
+    ?>
 
     <div class="card card-primary">
         <h1 class="card-header">🧩 HTML Entities</h1>
@@ -15,6 +18,13 @@
                         <label for="htmlentitiesInput" class="form-label mb-3"><strong style="font-size: 1.1rem;">Input Text</strong></label>
                         <textarea name="htmlentities" id="htmlentitiesInput" class="form-control" style="min-height: 320px; resize: vertical; font-family: monospace; font-size: 0.95rem; border: 2px solid #495057;"
                             placeholder="Enter text or HTML-encoded string to convert..." required><?= $htmlInputVal ?></textarea>
+                        <label for="htmlentitiesMode" class="form-label mt-3 mb-2"><strong style="font-size: 1.1rem;">Output Mode</strong></label>
+                        <select name="htmlentities_mode" id="htmlentitiesMode" class="form-select">
+                            <option value="auto" <?= $htmlModeVal === 'auto' ? 'selected' : '' ?>>Auto detect</option>
+                            <option value="encode" <?= $htmlModeVal === 'encode' ? 'selected' : '' ?>>Encode only</option>
+                            <option value="decode" <?= $htmlModeVal === 'decode' ? 'selected' : '' ?>>Decode only</option>
+                            <option value="both" <?= $htmlModeVal === 'both' ? 'selected' : '' ?>>Show both</option>
+                        </select>
                     </div>
                     <div class="col-12 col-lg-6 d-flex flex-column">
                         <label class="form-label mb-3"><strong style="font-size: 1.1rem;">Converted Output</strong></label>
