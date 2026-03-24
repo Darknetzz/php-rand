@@ -134,6 +134,7 @@ What it does:
 - creates a release commit and annotated tag (`vX.Y.Z`)
 - optionally pushes branch + tag after an explicit confirmation prompt
 - optionally creates a GitHub release via `gh`
+- when a `v*` tag is pushed, GitHub Actions automatically publishes Docker images
 
 Environment toggles:
 - `PUSH_REMOTE=1` to pre-enable push flow (still requires confirmation)
@@ -145,6 +146,10 @@ Common options:
 - `./scripts/release.sh --help` to show usage
 - `./scripts/release.sh 1.2.9 --dry-run` to preview actions only
 - `./scripts/extract_changelog_section.sh --help` to show extraction script usage
+
+CI Docker publish requirements:
+- Docker Hub secrets: `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN`
+- GHCR publish uses `GITHUB_TOKEN` automatically
 
 ## Key Features
 
