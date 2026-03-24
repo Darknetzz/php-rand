@@ -6,15 +6,30 @@ All notable changes to this project are documented in this file.
 
 ## [v1.2.8] (2026-03-24)
 
-### Improvements
-- **HTML Entities** – Output mode: auto-detect (encoded vs plain), encode only, decode only, or show all three; auto mode shows a single relevant result by default. Mode control sits under the input; detection/status line is compact and shown below the output (primary/success tint).
-- **Hash Generator** – Optional **rounds** (1–1000) to apply the same algorithm repeatedly to the previous digest; **Use as input** on each hash result. Hashing is handled in `handle_hash()` (including `action=hasher`) so AJAX responses include the extra button.
-- **Copyable output** – **Copy** and **Use as input** render **below** the output block instead of beside it (shared `copyableOutput()` layout).
-- **Form submit UX** – Introduced shared JS submit helper (`submitToolForm`) and shared loading markup; String Tools now uses the same submit path/options as other modules.
-- **Router cleanup** – `gen.php` is now a thin router that delegates to `executeHandler()` only; legacy inline action chain removed.
-- **Module dedupe** – Legacy `encoding.php` is no longer auto-included; duplicate module/form id collisions reduced by renaming conflicting form IDs.
-- **New module: ID Generator** – Added `gen_id` module with UUIDv4, ULID, and NanoID generation (bulk quantity, NanoID length, uppercase option).
-- **New module: JWT Inspector** – Added `jwt` module with decode, verify, and sign flows for HMAC tokens (HS256/HS384/HS512), including claim and signature inspection outputs.
+### Major Features
+- **New module: ID Generator** – Added `gen_id` with UUIDv4, ULID, and NanoID generation (bulk quantity, configurable length, uppercase option).
+- **New module: JWT Inspector** – Added `jwt` with decode, verify, and sign flows for HMAC tokens (HS256/HS384/HS512).
+- **Hash Generator** – Added hash rounds (1–1000) and **Use as input** support.
+- **HTML Entities** – Added smart output modes (auto detect, encode only, decode only, show both) with cleaner output behavior.
+
+<details>
+<summary>📋 Detailed Changes (click to expand)</summary>
+
+#### UX and Output Consistency
+- **Copyable output** – `Copy` and `Use as input` buttons now render below output blocks for better readability.
+- **Form submit flow** – Added shared JS submit helper (`submitToolForm`) and shared loading markup to reduce per-module divergence.
+- **String Tools alignment** – String tools now use the same submit path/options as other modules.
+
+#### Architecture and Routing
+- **Router cleanup** – `gen.php` is now a thin router delegating to `executeHandler()`; legacy inline action chain removed.
+- **Module dedupe** – Legacy `encoding.php` is no longer auto-included to avoid overlapping UI and duplicate IDs.
+- **ID collision cleanup** – Renamed conflicting form IDs in active modules and added a runtime duplicate-ID warning check in JS.
+
+#### Module Enhancements
+- **Hashing** – `Use as input` now works correctly through the functional handler path (`handle_hash`, including `action=hasher`).
+- **ID Generator UX** – NanoID length field is now conditionally shown only when `NanoID` is selected.
+
+</details>
 
 ---
 
