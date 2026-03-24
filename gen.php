@@ -218,14 +218,22 @@ do {
 /* ===================================================================== */
   if (isset($_POST['hash'])) {
     $hashalgo = (!empty($_POST['hashalgo']) ? $_POST['hashalgo'] : null);
+    $hashRounds = isset($_POST['hashrounds']) ? (int) $_POST['hashrounds'] : 1;
+    $hashRounds = max(1, min(1000, $hashRounds));
     $types = hash_algos();
     if (!empty($hashalgo) && in_array($hashalgo, hash_algos())) {
       $types = [$hashalgo];
     }
     $output = "";
+    $hashInput = (string) $_POST['hash'];
+    $useAsInput = ['inputName' => 'hash'];
     foreach ($types as $type) {
-      $hashValue = hash($type, $_POST['hash']);
-      $output .= "<div style='margin-bottom: 20px;'>" . copyableOutput($hashValue, $type) . "</div>";
+      $hashValue = $hashInput;
+      for ($round = 0; $round < $hashRounds; $round++) {
+        $hashValue = hash($type, $hashValue);
+      }
+      $label = $hashRounds > 1 ? "$type ({$hashRounds} rounds)" : $type;
+      $output .= "<div style='margin-bottom: 20px;'>" . copyableOutput($hashValue, $label, $useAsInput) . "</div>";
     }
     echo formatOutput($output);
   }
