@@ -139,6 +139,7 @@ Environment toggles:
 - `PUSH_REMOTE=1` to pre-enable push flow (still requires confirmation)
 - `REMOTE_NAME=origin` to set the push remote
 - `CREATE_GH_RELEASE=1` to auto-create GitHub release via `gh`
+- `PUBLISH_DOCKER=1` to include Docker publish prompt (`VERSION_OVERRIDE=vX.Y.Z ./docker-pushimage.sh`)
 
 Common options:
 - `./scripts/release.sh --help` to show usage
