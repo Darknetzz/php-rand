@@ -16,18 +16,18 @@ All notable changes to this project are documented in this file.
 <summary>📋 Detailed Changes (click to expand)</summary>
 
 #### UX and Output Consistency
-- **Copyable output** – `Copy` and `Use as input` buttons now render below output blocks for better readability.
+- **Copyable output** – Updated output actions so `Copy` and `Use as input` render below output blocks for better readability.
 - **Form submit flow** – Added shared JS submit helper (`submitToolForm`) and shared loading markup to reduce per-module divergence.
-- **String Tools alignment** – String tools now use the same submit path/options as other modules.
+- **String Tools alignment** – Updated String Tools to use the same submit path/options as other modules.
 
 #### Architecture and Routing
-- **Router cleanup** – `gen.php` is now a thin router delegating to `executeHandler()`; legacy inline action chain removed.
-- **Module dedupe** – Legacy `encoding.php` is no longer auto-included to avoid overlapping UI and duplicate IDs.
+- **Router cleanup** – Updated `gen.php` to a thin router delegating to `executeHandler()` and removed the legacy inline action chain.
+- **Module dedupe** – Removed legacy `encoding.php` from auto-include to avoid overlapping UI and duplicate IDs.
 - **ID collision cleanup** – Renamed conflicting form IDs in active modules and added a runtime duplicate-ID warning check in JS.
 
 #### Module Enhancements
-- **Hashing** – `Use as input` now works correctly through the functional handler path (`handle_hash`, including `action=hasher`).
-- **ID Generator UX** – NanoID length field is now conditionally shown only when `NanoID` is selected.
+- **Hashing** – Fixed `Use as input` to work through the functional handler path (`handle_hash`, including `action=hasher`).
+- **ID Generator UX** – Improved the form by conditionally showing NanoID length only when `NanoID` is selected.
 
 </details>
 
@@ -36,21 +36,21 @@ All notable changes to this project are documented in this file.
 ## [v1.2.7] (2026-03-19)
 
 ### Major Features
-- **Unit Converter** (Convert → Units) – Single page with 12 measurement categories: Volume, Length, Weight & mass, Temperature, Energy, Area, Speed, Time, Power, Data, Pressure, Angle. Enter a value and source unit; result is shown as a table of equivalent values in all other units for that category (client-side). Currency remains a separate module (Convert → Currency Converter).
-- **Calculator** (Miscellaneous) – Basic arithmetic calculator with safe math evaluation (no `eval`); supports expressions such as `25+8*3`, parentheses, and common operators.
+- **Unit Converter** (Convert → Units) – Added a single page with 12 measurement categories: Volume, Length, Weight & mass, Temperature, Energy, Area, Speed, Time, Power, Data, Pressure, Angle. Enter a value and source unit to get equivalent values for all other units in the category (client-side). Currency remains in Convert → Currency Converter.
+- **Calculator** (Miscellaneous) – Added a basic arithmetic calculator with safe math evaluation (no `eval`), supporting expressions such as `25+8*3`, parentheses, and common operators.
 
 <details>
 <summary>📋 Detailed Changes (click to expand)</summary>
 
 #### Unit Converter
-- **Convert → Units** – New nav item under Convert; tabbed interface for all unit types
-- **Categories** – Volume (L, mL, gallon, quart, pint, cup, fl oz, m³, ft³, in³), Length (m, km, cm, mm, mile, yard, foot, inch, nautical mile), Weight & mass (kg, g, mg, lb, oz, ton metric/US), Temperature (C, F, K), Energy (J, kJ, cal, kcal, kWh, eV, BTU), Area (m², km², ft², in², hectare, acre), Speed (m/s, km/h, mph, knot, ft/s), Time (s, min, h, day, week, month, year), Power (W, kW, hp metric/US, BTU/h), Data (bit, byte, KB–TB, KiB–TiB), Pressure (Pa, kPa, bar, psi, atm, mmHg, inHg), Angle (deg, rad, grad, arcmin, arcsec)
-- **UX** – One “From unit” dropdown per category; convert to all other units in a copyable table
-- **Currency** – No duplicate; currency conversion stays on the dedicated Convert → Currency Converter page
+- **Convert → Units** – Added a new nav item under Convert with a tabbed interface for all unit types.
+- **Categories** – Added Volume (L, mL, gallon, quart, pint, cup, fl oz, m³, ft³, in³), Length (m, km, cm, mm, mile, yard, foot, inch, nautical mile), Weight & mass (kg, g, mg, lb, oz, ton metric/US), Temperature (C, F, K), Energy (J, kJ, cal, kcal, kWh, eV, BTU), Area (m², km², ft², in², hectare, acre), Speed (m/s, km/h, mph, knot, ft/s), Time (s, min, h, day, week, month, year), Power (W, kW, hp metric/US, BTU/h), Data (bit, byte, KB–TB, KiB–TiB), Pressure (Pa, kPa, bar, psi, atm, mmHg, inHg), and Angle (deg, rad, grad, arcmin, arcsec).
+- **UX** – Added one “From unit” dropdown per category and conversion to all other units in a copyable table.
+- **Currency** – Kept currency conversion on the dedicated Convert → Currency Converter page (no duplicate in Units).
 
 #### Calculator
-- **Miscellaneous menu** – Calculator module for basic arithmetic expressions
-- **Safe evaluation** – Uses tokenization and operator precedence (no `eval`); supports +, −, ×, ÷, parentheses, and common math
+- **Miscellaneous menu** – Added Calculator module for basic arithmetic expressions.
+- **Safe evaluation** – Implemented tokenization and operator precedence (no `eval`), supporting +, −, ×, ÷, parentheses, and common math.
 
 </details>
 
@@ -59,22 +59,22 @@ All notable changes to this project are documented in this file.
 ## [v1.2.6] (2026-03-13)
 
 ### Major Features
-- **Number Generator** – Generate multiple numbers at once (1–500), configurable separator (comma, newline, tab, pipe, custom), and custom seed fix
-- **Docker** – Container prints php-rand version on start; build uses `PHP_RAND_VERSION` arg
-- **Secrets** – Prefer `.env.local` for Docker push secrets so they survive git pull/merge
+- **Number Generator** – Added multi-number generation (1–500), configurable separators (comma, newline, tab, pipe, custom), and fixed custom seed handling.
+- **Docker** – Updated container startup to print php-rand version; build uses `PHP_RAND_VERSION` argument.
+- **Secrets** – Updated Docker push secret loading to prefer `.env.local` so secrets survive git pull/merge.
 
 <details>
 <summary>📋 Detailed Changes (click to expand)</summary>
 
 #### Number Generator
-- **Quantity** – Generate 1–500 numbers per run; output joined with chosen separator
-- **Separator** – Presets: Comma and space, Newline, Tab, Space, Pipe; or Custom (free text, max 20 chars). Newline/tab display correctly in copyable output (`white-space: pre-wrap`)
-- **Seed fix** – Checkbox renamed to `numgenuseseed` so it is no longer overwritten by a hidden field; seed applied once for multiple numbers (reproducible sequence)
-- **Copyable output** – Shared copyable div now uses `white-space: pre-wrap` so newline-separated content displays and copies correctly
+- **Quantity** – Added generation of 1–500 numbers per run, joined with the chosen separator.
+- **Separator** – Added presets (Comma and space, Newline, Tab, Space, Pipe) and Custom separator (free text, max 20 chars). Newline/tab display correctly in copyable output (`white-space: pre-wrap`).
+- **Seed fix** – Renamed checkbox to `numgenuseseed` so it is not overwritten by a hidden field; seed is applied once for multiple numbers (reproducible sequence).
+- **Copyable output** – Updated shared copyable output to use `white-space: pre-wrap` so newline-separated content displays and copies correctly.
 
 #### Docker
-- **Entrypoint** – Prints `php-rand &lt;version&gt;` to console on container start; version set via `--build-arg PHP_RAND_VERSION=$VERSION` in `docker-pushimage.sh`
-- **Secrets** – Script sources `.env.local` first, then `.env`; `.env.local` added to `.gitignore` so it is never removed by merges that deleted `.env` from repo history
+- **Entrypoint** – Updated container startup to print `php-rand &lt;version&gt;`; version is set via `--build-arg PHP_RAND_VERSION=$VERSION` in `docker-pushimage.sh`.
+- **Secrets** – Updated script to source `.env.local` first, then `.env`; added `.env.local` to `.gitignore` so it is not removed by merges that deleted `.env` from repo history.
 
 </details>
 
