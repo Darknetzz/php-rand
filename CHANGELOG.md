@@ -4,6 +4,15 @@ All notable changes to this project are documented in this file.
 
 ---
 
+## [v1.2.8] (2026-03-24)
+
+### Improvements
+- **HTML Entities** – Output mode: auto-detect (encoded vs plain), encode only, decode only, or show all three; auto mode shows a single relevant result by default. Mode control sits under the input; detection/status line is compact and shown below the output (primary/success tint).
+- **Hash Generator** – Optional **rounds** (1–1000) to apply the same algorithm repeatedly to the previous digest; **Use as input** on each hash result. Hashing is handled in `handle_hash()` (including `action=hasher`) so AJAX responses include the extra button.
+- **Copyable output** – **Copy** and **Use as input** render **below** the output block instead of beside it (shared `copyableOutput()` layout).
+
+---
+
 ## [v1.2.7] (2026-03-19)
 
 ### Major Features
