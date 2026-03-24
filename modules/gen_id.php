@@ -25,8 +25,10 @@
                         <label for="idQty" class="form-label"><strong>Quantity</strong></label>
                         <input type="number" min="1" max="500" name="idqty" id="idQty" class="form-control form-control-lg mb-3" value="<?= htmlspecialchars((string) $idQty) ?>">
 
-                        <label for="nanoidLength" class="form-label"><strong>NanoID length</strong></label>
-                        <input type="number" min="6" max="128" name="nanoid_length" id="nanoidLength" class="form-control form-control-lg mb-3" value="<?= htmlspecialchars((string) $nanoLen) ?>">
+                        <div id="nanoidLengthWrap">
+                            <label for="nanoidLength" class="form-label"><strong>NanoID length</strong></label>
+                            <input type="number" min="6" max="128" name="nanoid_length" id="nanoidLength" class="form-control form-control-lg mb-3" value="<?= htmlspecialchars((string) $nanoLen) ?>">
+                        </div>
 
                         <div class="form-check form-switch mb-3">
                             <input class="form-check-input" type="checkbox" id="idUppercase" name="id_uppercase" value="1" <?= !empty($_POST['id_uppercase']) ? 'checked' : '' ?>>
@@ -48,3 +50,17 @@
         </div>
     </div>
 </div>
+<script>
+(function () {
+    var idTypeEl = document.getElementById('idType');
+    var nanoWrapEl = document.getElementById('nanoidLengthWrap');
+    if (!idTypeEl || !nanoWrapEl) return;
+
+    function toggleNanoLength() {
+        nanoWrapEl.style.display = idTypeEl.value === 'nanoid' ? '' : 'none';
+    }
+
+    idTypeEl.addEventListener('change', toggleNanoLength);
+    toggleNanoLength();
+})();
+</script>
