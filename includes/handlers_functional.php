@@ -1505,10 +1505,22 @@ function ulid_encode_crockford(string $bytes): string {
 
 function gen_nanoid(int $length = 21): string {
     $alphabet = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-_';
-    $max = strlen($alphabet) - 1;
+    $alphabetLength = strlen($alphabet);
+    $mask = (2 << (int) floor(log($alphabetLength - 1, 2))) - 1;
+    $step = (int) ceil(1.6 * $mask * $length / $alphabetLength);
     $id = '';
-    for ($i = 0; $i < $length; $i++) {
-        $id .= $alphabet[random_int(0, $max)];
+
+    while (strlen($id) < $length) {
+        $bytes = random_bytes($step);
+        for ($i = 0; $i < $step; $i++) {
+            $index = ord($bytes[$i]) & $mask;
+            if ($index < $alphabetLength) {
+                $id .= $alphabet[$index];
+                if (strlen($id) === $length) {
+                    break;
+                }
+            }
+        }
     }
     return $id;
 }

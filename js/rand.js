@@ -140,6 +140,7 @@ function navigate(to) {
 
     $(".content").hide();
     $(to).fadeIn();
+    addRandomDataButtons($(to));
 
 }
 
@@ -419,8 +420,7 @@ $(document).ready(function() {
     /* ===================================================================== */
     /*                      Add Random Data Buttons                          */
     /* ===================================================================== */
-    addRandomDataButtons();
-    checkDuplicateIds();
+    addRandomDataButtons($(".content:visible").first());
 
 }); // document.ready
 
@@ -746,7 +746,8 @@ function generateRandomData(type, placeholder = '', $input = null) {
 /* ===================================================================== */
 /*                   FUNCTION: addRandomDataButtons                      */
 /* ===================================================================== */
-function addRandomDataButtons() {
+function addRandomDataButtons($root = null) {
+    const $scope = ($root && $root.length) ? $root : $(document);
     // Find all text inputs, number inputs, and textareas that don't already have a random button
     const selectors = [
         'input[type="text"]:not([readonly]):not([disabled])',
@@ -754,7 +755,7 @@ function addRandomDataButtons() {
         'textarea:not([readonly]):not([disabled])'
     ];
 
-    $(selectors.join(',')).each(function() {
+    $scope.find(selectors.join(',')).each(function() {
         const $input = $(this);
         
         // Skip if already has a random button
