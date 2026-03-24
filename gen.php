@@ -1026,12 +1026,7 @@ if ($action == "htmlentities") {
     $useAsInput = ['inputName' => 'htmlentities'];
 
     $modeLabel = ucfirst($effectiveMode);
-    if ($mode === 'auto') {
-      $detectionLabel = $looksEncoded ? 'detected as encoded input' : 'detected as plain input';
-      $output = "<div style='margin-bottom: 12px; font-size: 0.82rem; opacity: 0.75;'>Auto mode: <strong>{$modeLabel}</strong> ({$detectionLabel}).</div>";
-    } else {
-      $output = "<div style='margin-bottom: 12px; font-size: 0.82rem; opacity: 0.75;'>Mode: <strong>{$modeLabel}</strong>.</div>";
-    }
+    $output = "";
 
     if ($effectiveMode === 'both') {
       $output .= "<div style='margin-bottom: 16px;'>" . copyableOutput($input, "Original Input", $useAsInput) . "</div>";
@@ -1041,6 +1036,15 @@ if ($action == "htmlentities") {
       $output .= "<div style='margin-bottom: 16px;'>" . copyableOutput($decodedInput, "HTML Decoded", $useAsInput) . "</div>";
     } else {
       $output .= "<div style='margin-bottom: 16px;'>" . copyableOutput($encodedInput, "HTML Entities", $useAsInput) . "</div>";
+    }
+
+    if ($mode === 'auto') {
+      $detectionLabel = $looksEncoded ? 'detected as encoded input' : 'detected as plain input';
+      $statusColor = $looksEncoded ? 'var(--bs-success, #198754)' : 'var(--bs-primary, #0d6efd)';
+      $output .= "<div style='margin-top: 4px; font-size: 0.82rem; color: {$statusColor}; opacity: 0.9;'>Auto mode: <strong>{$modeLabel}</strong> ({$detectionLabel}).</div>";
+    } else {
+      $statusColor = $effectiveMode === 'decode' ? 'var(--bs-success, #198754)' : 'var(--bs-primary, #0d6efd)';
+      $output .= "<div style='margin-top: 4px; font-size: 0.82rem; color: {$statusColor}; opacity: 0.9;'>Mode: <strong>{$modeLabel}</strong>.</div>";
     }
 
     echo $output;
