@@ -1,0 +1,50 @@
+name: Create GitHub Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract changelog section for tag
+        id: notes
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF_NAME}"
+          awk -v section="[${TAG}]" '
+            BEGIN { capture = 0; found = 0 }
+            /^## \[/ {
+              if (capture == 1) {
+                exit
+              }
+            }
+            $0 ~ "^## " section {
+              capture = 1
+              found = 1
+            }
+            capture == 1 {
+              print
+            }
+            END {
+              if (found == 0) {
+                exit 1
+              }
+            }
+          ' CHANGELOG.md > release-section.md
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.ref_name }}
+          body_path: release-section.md

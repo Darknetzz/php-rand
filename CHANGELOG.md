@@ -4,6 +4,20 @@ All notable changes to this project are documented in this file.
 
 ---
 
+## [Unreleased]
+
+### Major Features
+- _No user-facing changes yet._
+
+<details>
+<summary>📋 Detailed Changes (click to expand)</summary>
+
+- _No detailed changes yet._
+
+</details>
+
+---
+
 ## [v1.2.8] (2026-03-24)
 
 ### Major Features

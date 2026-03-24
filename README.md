@@ -120,6 +120,31 @@ For detailed documentation, feature guides, and implementation details, see:
 - [VISUAL_GUIDE](docs/VISUAL_GUIDE.md) - UI/UX design documentation
 - [RANDOM_BUTTON_FEATURE](docs/RANDOM_BUTTON_FEATURE.md) - Random data generation feature guide
 
+## Release Workflow
+
+Use the interactive release helper:
+
+```bash
+./scripts/release.sh 1.2.9
+```
+
+What it does:
+- rotates `CHANGELOG.md` from `## [Unreleased]` into `## [vX.Y.Z] (YYYY-MM-DD)`
+- recreates a fresh `Unreleased` template
+- creates a release commit and annotated tag (`vX.Y.Z`)
+- optionally pushes branch + tag after an explicit confirmation prompt
+- optionally creates a GitHub release via `gh`
+
+Environment toggles:
+- `PUSH_REMOTE=1` to pre-enable push flow (still requires confirmation)
+- `REMOTE_NAME=origin` to set the push remote
+- `CREATE_GH_RELEASE=1` to auto-create GitHub release via `gh`
+
+Common options:
+- `./scripts/release.sh --help` to show usage
+- `./scripts/release.sh 1.2.9 --dry-run` to preview actions only
+- `./scripts/extract_changelog_section.sh --help` to show extraction script usage
+
 ## Key Features
 
 ### 🎲 Smart Random Data Generation
