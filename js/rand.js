@@ -63,6 +63,54 @@ function showData(obj, data) {
 }
 
 /* ===================================================================== */
+/*                       FUNCTION: buildLoadingHtml                       */
+/* ===================================================================== */
+function buildLoadingHtml(message = "Generating...") {
+    return '<div class="tool-loading"><div class="spinner-border text-primary tool-loading-spinner" role="status"><span class="visually-hidden">Loading...</span></div><p class="tool-loading-text">' + message + '</p></div>';
+}
+
+/* ===================================================================== */
+/*                        FUNCTION: submitToolForm                        */
+/* ===================================================================== */
+function submitToolForm($form, options = {}) {
+    var form = $form;
+    var responseObj = options.responseObj || form.find(".responseDiv");
+    var responseType = options.responseType || form.data("responsetype") || "html";
+    var action = options.action || form.data("action") || form.find("input[name=action]").val();
+    var url = options.url || form.attr("action") || "gen.php";
+    var data = options.data || form.serialize();
+    var loadingMessage = options.loadingMessage || "Generating...";
+    var onSuccess = options.onSuccess || function(dataOut) { showData(responseObj, dataOut); };
+    var onError = options.onError || function(xhr) {
+        var message = responseType === "html"
+            ? "<div class='alert alert-danger'>Error: " + xhr.statusText + "</div>"
+            : "Error: " + xhr.statusText;
+        showData(responseObj, message);
+    };
+
+    setFormVal(form, "responsetype", responseType);
+    if (action) {
+        setFormVal(form, "action", action);
+    }
+
+    if (responseObj.length === 0) {
+        $("#error").html("<br><div class='alert alert-danger'>No response object found.</div>").show();
+        return;
+    }
+    $("#error").hide();
+
+    showData(responseObj, buildLoadingHtml(loadingMessage));
+
+    $.ajax({
+        type: "POST",
+        url: url,
+        data: data,
+        success: onSuccess,
+        error: onError
+    });
+}
+
+/* ===================================================================== */
 /*                         FUNCTION: setFormVal                          */
 /* ===================================================================== */
 function setFormVal(form, name = "action", value = "") {
@@ -230,46 +278,17 @@ $(document).ready(function() {
         //   responseType = "html";
         // }
 
-        // Send form
-        var url = form.attr('action');
-        var responseObj = form.find(".responseDiv");
-
         var btnName = $("button[clicked=true]").prop("name");
         var btnValue = $("button[clicked=true]").val();
-
-        var serializeForm = form.serialize() + "&" + btnName + "=" + btnValue;
-        console.log("[submitForm] Sending form: " + serializeForm);
-
-        if (responseObj.length == 0) {
-            console.log("[submitForm] No response object found.");
-            $("#error").html("<br><div class='alert alert-danger'>No response object found.</div>");
-            $("#error").show();
-            return;
-        } else {
-            $("#error").hide();
+        var serializeForm = form.serialize();
+        if (btnName && btnValue !== undefined) {
+            serializeForm += "&" + btnName + "=" + btnValue;
         }
-
-        // AJAX call
-
-        $.ajax({
-            type: "POST",
-            url: url,
-            data: serializeForm, // serializes the form's elements.
-            beforeSend: function() {
-                showData(responseObj, '<div class="text-center py-5"><div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;"><span class="visually-hidden">Loading...</span></div><p class="text-muted">Generating...</p></div>'); // show loading spinner
-            },
-            error: function(data) {
-                console.log(data);
-                if (responsetype == "html") {
-                    showData(responseObj, "<div class='alert alert-danger'>Error: " + data
-                        .statusText + "</div>");
-                } else {
-                    showData(responseObj, "Error: " + data.statusText);
-                }
-            },
-            success: function(data) {
-                showData(responseObj, data);
-            }
+        console.log("[submitForm] Sending form: " + serializeForm);
+        submitToolForm(form, {
+            data: serializeForm,
+            responseType: responsetype,
+            loadingMessage: "Generating..."
         });
         randomizeDice();
     });
@@ -401,6 +420,7 @@ $(document).ready(function() {
     /*                      Add Random Data Buttons                          */
     /* ===================================================================== */
     addRandomDataButtons();
+    checkDuplicateIds();
 
 }); // document.ready
 
@@ -804,4 +824,20 @@ function addRandomDataButtons() {
         // Append button after input
         $input.after($btn);
     });
+}
+
+/* ===================================================================== */
+/*                      FUNCTION: checkDuplicateIds                       */
+/* ===================================================================== */
+function checkDuplicateIds() {
+    const idCount = {};
+    $('[id]').each(function() {
+        const id = this.id;
+        idCount[id] = (idCount[id] || 0) + 1;
+    });
+
+    const duplicates = Object.keys(idCount).filter(id => idCount[id] > 1);
+    if (duplicates.length > 0) {
+        console.warn('[duplicate-id-check] Duplicate IDs found:', duplicates);
+    }
 }

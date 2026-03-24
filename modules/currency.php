@@ -3,7 +3,7 @@
     <div class="card card-primary">
         <h1 class="card-header">Currency Converter</h1>
         <div class="card-body">
-            <form class="form" action="gen.php" method="POST" id="currency" data-action="currency">
+            <form class="form" action="gen.php" method="POST" id="currencyForm" data-action="currency">
                 <div class="row">
                     <div class="col-md-6">
                         <label for="currency_amount">Amount:</label>

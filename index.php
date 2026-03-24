@@ -61,7 +61,11 @@
         <!-------------------------------------------------------------------------------->
 
         <?php
+$disabledModules = ['encoding.php'];
 foreach (glob("modules/*.php") as $module) {
+  if (in_array(basename($module), $disabledModules, true)) {
+    continue;
+  }
   include_once($module);
 }
 ?>

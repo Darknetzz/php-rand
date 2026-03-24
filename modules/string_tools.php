@@ -352,35 +352,29 @@ $(document).ready(function() {
             return;
         }
 
-        // Show loading
         var responseDiv = $("#strtoolsresponse");
-        responseDiv.html('<div class="text-center py-5"><div class="spinner-border text-primary mb-3" role="status" style="width: 2rem; height: 2rem;"><span class="visually-hidden">Loading...</span></div></div>');
+        var formData = form.serialize() + "&tool=" + tool;
+        submitToolForm(form, {
+            data: formData,
+            action: "stringtools",
+            responseObj: responseDiv,
+            loadingMessage: "Processing text...",
+            onSuccess: function(data) {
+                responseDiv.html(data);
 
-        // Add delay for visibility
-        setTimeout(function() {
-            var formData = form.serialize() + "&tool=" + tool;
-            
-            $.ajax({
-                type: "POST",
-                url: "gen.php",
-                data: formData,
-                success: function(data) {
-                    responseDiv.html(data);
-                    
-                    // If auto-apply is checked, update input
-                    if ($("#outputToTextbox").is(":checked")) {
-                        var outputText = data.replace(/<[^>]*>/g, '').trim();
-                        history.push(input);
-                        historyIndex++;
-                        $("#strtoolsinput").val(outputText);
-                        updateCharCount();
-                    }
-                },
-                error: function() {
-                    responseDiv.html('<div class="alert alert-danger mb-0">Error processing request</div>');
+                // If auto-apply is checked, update input
+                if ($("#outputToTextbox").is(":checked")) {
+                    var outputText = data.replace(/<[^>]*>/g, '').trim();
+                    history.push(input);
+                    historyIndex++;
+                    $("#strtoolsinput").val(outputText);
+                    updateCharCount();
                 }
-            });
-        }, 300);
+            },
+            onError: function() {
+                responseDiv.html('<div class="alert alert-danger mb-0">Error processing request</div>');
+            }
+        });
     });
 
     /* ───────────────────────────────────────────────────────────────────── */

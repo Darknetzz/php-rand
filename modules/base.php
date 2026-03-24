@@ -72,7 +72,7 @@ foreach ($base_options as $value => $data) {
         <div class="card-body">
             <span class="description">Convert between different base systems (binary, octal, decimal, hexadecimal, base64, etc.)</span>
             <hr>
-            <form class="form" action="gen.php" method="POST" id="base" data-action="base">
+            <form class="form" action="gen.php" method="POST" id="baseForm" data-action="base">
                 
                 <!-- Input/Output Section -->
                 <div class="row g-4 mb-4">

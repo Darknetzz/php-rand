@@ -6,7 +6,7 @@
                 <h4><?= icon("info-circle", color: "cyan") ?> Information</h4>
                 <p style="margin-bottom: 0;">Calculate the Levenshtein distance between two strings. This is the minimal number of characters you need to insert, delete, or replace to transform one string into another. The algorithm complexity is O(m×n), where m and n are the string lengths.</p>
             </div>
-            <form class="form" action="gen.php" method="POST" id="levenshtein" data-action="levenshtein">
+            <form class="form" action="gen.php" method="POST" id="levenshteinForm" data-action="levenshtein">
                 <div class="row g-4 mb-4">
                     <div class="col-12 col-lg-6">
                         <label for="levenshtein1" class="form-label mb-3"><strong style="font-size: 1.1rem;">String 1</strong></label>

@@ -39,6 +39,8 @@ function getHandlerRegistry(): array {
         'qrcode' => 'handle_qrcode',
         'regex' => 'handle_regex',
         'brainfuck' => 'handle_brainfuck',
+        'genid' => 'handle_genid',
+        'jwt' => 'handle_jwt',
     ];
 }
 
@@ -1285,5 +1287,230 @@ function executeBrainfuck(string $code, string $input = ''): array {
     ];
 }
 
+/**
+ * Handle ID generator requests (UUIDv4, ULID, NanoID)
+ *
+ * @param array $req Request array containing: 'idtype', 'idqty', 'nanoid_length', 'id_uppercase'
+ * @return string Formatted HTML with generated IDs
+ */
+function handle_genid(array $req): string {
+    $idType = req_get($req, 'idtype', 'uuid4');
+    $allowedTypes = ['uuid4', 'ulid', 'nanoid'];
+    if (!in_array($idType, $allowedTypes, true)) {
+        return formatOutput("Invalid ID type selected.", type: "danger");
+    }
+
+    $qty = req_int($req, 'idqty', 1);
+    $qty = max(1, min(500, $qty));
+
+    $nanoLength = req_int($req, 'nanoid_length', 21);
+    $nanoLength = max(6, min(128, $nanoLength));
+
+    $uppercase = req_bool($req, 'id_uppercase');
+    $ids = [];
+    for ($i = 0; $i < $qty; $i++) {
+        $id = match ($idType) {
+            'uuid4' => gen_uuid4(),
+            'ulid' => gen_ulid(),
+            'nanoid' => gen_nanoid($nanoLength),
+            default => '',
+        };
+        $ids[] = $uppercase ? strtoupper($id) : $id;
+    }
+
+    $label = strtoupper($idType) . ($idType === 'nanoid' ? " ({$nanoLength} chars)" : "");
+    $output = output_copyable(implode("\n", $ids), $label);
+    $output .= "<div style='margin-top: 8px; font-size: 0.85rem; opacity: 0.75;'>Generated <strong>{$qty}</strong> ID" . ($qty > 1 ? "s" : "") . ".</div>";
+
+    return $output;
+}
+
+/**
+ * Handle JWT requests: decode, verify, and sign (HMAC algorithms)
+ *
+ * @param array $req Request array containing JWT inputs
+ * @return string Formatted HTML with JWT results
+ */
+function handle_jwt(array $req): string {
+    $mode = req_get($req, 'jwt_mode', 'decode');
+    $allowedModes = ['decode', 'verify', 'sign'];
+    if (!in_array($mode, $allowedModes, true)) {
+        return formatOutput("Invalid JWT mode selected.", type: "danger");
+    }
+
+    if ($mode === 'sign') {
+        $secret = (string) req_get($req, 'jwt_secret', '');
+        if ($secret === '') {
+            return formatOutput("Secret is required for signing.", type: "danger");
+        }
+
+        $alg = req_get($req, 'jwt_alg', 'HS256');
+        if (!in_array($alg, ['HS256', 'HS384', 'HS512'], true)) {
+            return formatOutput("Only HS256/HS384/HS512 are supported for signing.", type: "danger");
+        }
+
+        $payloadJson = trim((string) req_get($req, 'jwt_payload', ''));
+        if ($payloadJson === '') {
+            return formatOutput("Payload JSON is required for signing.", type: "danger");
+        }
+        $payload = json_decode($payloadJson, true);
+        if (!is_array($payload)) {
+            return formatOutput("Payload must be valid JSON object.", type: "danger");
+        }
+
+        $headerJson = trim((string) req_get($req, 'jwt_header', ''));
+        $header = ['typ' => 'JWT', 'alg' => $alg];
+        if ($headerJson !== '') {
+            $customHeader = json_decode($headerJson, true);
+            if (!is_array($customHeader)) {
+                return formatOutput("Header must be valid JSON object.", type: "danger");
+            }
+            $header = array_merge($header, $customHeader);
+            $header['alg'] = $alg;
+        }
+
+        $token = jwt_build_hmac($header, $payload, $secret, $alg);
+        return output_copyable($token, "Signed JWT", ['inputName' => 'jwt_token']);
+    }
+
+    $token = trim((string) req_get($req, 'jwt_token', ''));
+    if ($token === '') {
+        return formatOutput("JWT token is required.", type: "danger");
+    }
+
+    $parts = explode('.', $token);
+    if (count($parts) !== 3) {
+        return formatOutput("Invalid JWT format. Expected header.payload.signature", type: "danger");
+    }
+
+    [$headerB64, $payloadB64, $sigB64] = $parts;
+    $headerJson = jwt_b64url_decode($headerB64);
+    $payloadJson = jwt_b64url_decode($payloadB64);
+    if ($headerJson === false || $payloadJson === false) {
+        return formatOutput("Invalid base64url section in token.", type: "danger");
+    }
+
+    $header = json_decode($headerJson, true);
+    $payload = json_decode($payloadJson, true);
+    if (!is_array($header) || !is_array($payload)) {
+        return formatOutput("JWT header/payload must be valid JSON.", type: "danger");
+    }
+
+    $output = output_copyable(json_encode($header, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES), "Header");
+    $output .= output_copyable(json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES), "Payload", ['inputName' => 'jwt_payload']);
+    $output .= output_copyable($sigB64, "Signature (base64url)");
+
+    if ($mode === 'verify') {
+        $secret = (string) req_get($req, 'jwt_secret', '');
+        if ($secret === '') {
+            return $output . formatOutput("Secret is required to verify signature.", type: "warning");
+        }
+        $alg = (string) ($header['alg'] ?? '');
+        if (!in_array($alg, ['HS256', 'HS384', 'HS512'], true)) {
+            return $output . formatOutput("Verify currently supports HMAC JWTs only (HS256/HS384/HS512).", type: "warning");
+        }
+        $isValid = jwt_verify_hmac($token, $secret, $alg);
+        $output .= formatOutput(
+            $isValid ? "Signature is valid ({$alg})." : "Signature verification failed ({$alg}).",
+            type: $isValid ? "success" : "danger"
+        );
+
+        if (isset($payload['exp']) && is_numeric($payload['exp'])) {
+            $expired = time() >= (int) $payload['exp'];
+            $output .= formatOutput(
+                $expired ? "Token is expired (exp claim)." : "Token is not expired (exp claim).",
+                type: $expired ? "warning" : "info"
+            );
+        }
+    }
+
+    return $output;
+}
+
+function jwt_build_hmac(array $header, array $payload, string $secret, string $alg): string {
+    $headerEncoded = jwt_b64url_encode(json_encode($header, JSON_UNESCAPED_SLASHES));
+    $payloadEncoded = jwt_b64url_encode(json_encode($payload, JSON_UNESCAPED_SLASHES));
+    $signingInput = $headerEncoded . "." . $payloadEncoded;
+    $signature = jwt_sign_hmac($signingInput, $secret, $alg);
+    return $signingInput . "." . jwt_b64url_encode($signature);
+}
+
+function jwt_verify_hmac(string $token, string $secret, string $alg): bool {
+    $parts = explode('.', $token);
+    if (count($parts) !== 3) {
+        return false;
+    }
+    [$headerB64, $payloadB64, $signatureB64] = $parts;
+    $expected = jwt_sign_hmac($headerB64 . "." . $payloadB64, $secret, $alg);
+    $provided = jwt_b64url_decode($signatureB64);
+    if ($provided === false) {
+        return false;
+    }
+    return hash_equals($expected, $provided);
+}
+
+function jwt_sign_hmac(string $data, string $secret, string $alg): string {
+    $hashAlgo = match ($alg) {
+        'HS256' => 'sha256',
+        'HS384' => 'sha384',
+        'HS512' => 'sha512',
+        default => 'sha256',
+    };
+    return hash_hmac($hashAlgo, $data, $secret, true);
+}
+
+function jwt_b64url_encode(string $input): string {
+    return rtrim(strtr(base64_encode($input), '+/', '-_'), '=');
+}
+
+function jwt_b64url_decode(string $input): string|false {
+    $padding = strlen($input) % 4;
+    if ($padding > 0) {
+        $input .= str_repeat('=', 4 - $padding);
+    }
+    return base64_decode(strtr($input, '-_', '+/'), true);
+}
+
+function gen_uuid4(): string {
+    $data = random_bytes(16);
+    $data[6] = chr((ord($data[6]) & 0x0f) | 0x40);
+    $data[8] = chr((ord($data[8]) & 0x3f) | 0x80);
+    return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
+}
+
+function gen_ulid(): string {
+    $timeMs = (int) floor(microtime(true) * 1000);
+    $timeBytes = '';
+    for ($i = 5; $i >= 0; $i--) {
+        $timeBytes .= chr(($timeMs >> ($i * 8)) & 0xff);
+    }
+    $randomBytes = random_bytes(10);
+    return ulid_encode_crockford($timeBytes . $randomBytes);
+}
+
+function ulid_encode_crockford(string $bytes): string {
+    $alphabet = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+    $bits = '';
+    for ($i = 0; $i < strlen($bytes); $i++) {
+        $bits .= str_pad(decbin(ord($bytes[$i])), 8, '0', STR_PAD_LEFT);
+    }
+    $bits = str_pad($bits, 130, '0', STR_PAD_LEFT);
+    $encoded = '';
+    for ($i = 0; $i < 130; $i += 5) {
+        $chunk = substr($bits, $i, 5);
+        $encoded .= $alphabet[bindec($chunk)];
+    }
+    return substr($encoded, 0, 26);
+}
+
+function gen_nanoid(int $length = 21): string {
+    $alphabet = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-_';
+    $max = strlen($alphabet) - 1;
+    $id = '';
+    for ($i = 0; $i < $length; $i++) {
+        $id .= $alphabet[random_int(0, $max)];
+    }
+    return $id;
+}
+
 // Additional handlers can be added here following the same pattern...
-// handle_ip, handle_urlencode, handle_htmlentities, handle_minify, etc.

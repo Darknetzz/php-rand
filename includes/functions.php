@@ -1510,14 +1510,14 @@ function copyableOutput($content, $label = "", $useAsInput = null) {
   $html = "";
   
   if (!empty($label)) {
-    $html .= "<strong style='display: block; margin-bottom: 8px;'>$label</strong>";
+    $html .= "<strong class='copyable-label'>$label</strong>";
   }
   
-  $html .= "<div style='display: flex; flex-direction: column; gap: 8px;'>";
-  $html .= "  <div style='width: 100%; min-width: 200px; background-color: #0f172a; color: #e9ecef; padding: 14px; border-radius: 0.4rem; font-family: monospace; font-size: 0.95rem; word-break: break-all; white-space: pre-wrap; user-select: all; overflow-y: auto; max-height: 320px; border: 1px solid #334155; box-shadow: 0 6px 14px rgba(0,0,0,0.25);' id='$uniqueId'>";
+  $html .= "<div class='copyable-stack'>";
+  $html .= "  <div class='copyable-content' id='$uniqueId'>";
   $html .= htmlspecialchars($content ?? '');
   $html .= "  </div>";
-  $html .= "  <div style='display: flex; gap: 6px; flex-wrap: wrap;'>";
+  $html .= "  <div class='copyable-actions'>";
   $html .= "  <button type='button' class='btn btn-sm btn-outline-light' onclick=\"copyToClipboard('$uniqueId', this)\" style='white-space: nowrap; border: 1px solid #e9ecef;'>";
   $html .= "    <i class='bi bi-files'></i> Copy";
   $html .= "  </button>";

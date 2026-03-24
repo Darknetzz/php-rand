@@ -9,7 +9,7 @@
                 <span style="display: inline-block; margin-top: 4px;">Metaphone generates phonetic keys for words, useful for fuzzy matching and sound-alike searches.</span>
             </div>
 
-            <form class="form" action="gen.php" method="POST" id="metaphone" data-action="metaphone">
+            <form class="form" action="gen.php" method="POST" id="metaphoneForm" data-action="metaphone">
                 <div class="row g-4 mb-4">
                     <div class="col-12 col-lg-6">
                         <label for="metaphoneInput" class="form-label mb-3"><strong style="font-size: 1.1rem;">Input Text</strong></label>

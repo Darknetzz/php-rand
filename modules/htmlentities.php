@@ -12,7 +12,7 @@
                 Paste plain text or HTML-encoded strings to get the raw input, encoded entities, and decoded output side by side.
             </div>
 
-            <form class="form" action="gen.php" method="POST" id="htmlentities" data-action="htmlentities">
+            <form class="form" action="gen.php" method="POST" id="htmlentitiesForm" data-action="htmlentities">
                 <div class="row g-4 mb-4">
                     <div class="col-12 col-lg-6">
                         <label for="htmlentitiesInput" class="form-label mb-3"><strong style="font-size: 1.1rem;">Input Text</strong></label>

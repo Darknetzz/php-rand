@@ -32,6 +32,11 @@ $navbarItems = [
                 "formalName" => "QR Code Generator",
                 "icon"       => icon('qr-code')
             ],
+            "gen_id" => [
+                "name"       => "gen_id",
+                "formalName" => "ID Generator",
+                "icon"       => icon('hash')
+            ],
             "spin_the_wheel" => [
                 "name"       => "spin_the_wheel",
                 "formalName" => "Spin Wheel",
@@ -58,6 +63,11 @@ $navbarItems = [
                 "name"       => "rot",
                 "formalName" => "ROT Cipher",
                 "icon"       => icon('arrow-repeat')
+            ],
+            "jwt" => [
+                "name"       => "jwt",
+                "formalName" => "JWT Inspector",
+                "icon"       => icon('shield-lock')
             ],
         ],
     ],
