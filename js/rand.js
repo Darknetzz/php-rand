@@ -1310,7 +1310,7 @@ $(document).ready(function() {
         }
         $.ajax({
             type: "GET",
-            url: "CHANGELOG.md",
+            url: "changelog.php",
             cache: true
         }).done(function(markdownText) {
             ensureMarkdownAssets().done(function() {
