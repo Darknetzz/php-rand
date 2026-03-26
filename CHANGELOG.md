@@ -7,12 +7,19 @@ All notable changes to this project are documented in this file.
 ## [Unreleased]
 
 ### Major Features
-- _No user-facing changes yet._
+- **Performance: faster initial page load** - Reduced initial payload by lazy-loading tool modules, deferring non-critical scripts, and loading changelog content on demand.
 
 <details>
 <summary>📋 Detailed Changes (click to expand)</summary>
 
-- _No detailed changes yet._
+#### Initial Load Optimization
+- **Module loading** - Updated `index.php` to render only `dashboard` on first load; other modules now load on first navigation via new `load_module.php`.
+- **Script loading** - Added `defer` to non-critical script tags (jQuery, Tabler, Marked, Highlight.js, Code Input, Axios, and local scripts) to reduce render blocking.
+- **Changelog modal** - Removed eager inline `CHANGELOG.md` embedding from HTML and switched to AJAX fetch + parse when the modal is opened.
+
+#### Navigation and Runtime
+- **On-demand module fetch** - Added `loadModule()` flow in `js/rand.js` and integrated it into `navigate()` so missing module sections are fetched and inserted dynamically.
+- **UX safeguards** - Added loading placeholders for lazy module fetches and improved error handling when a module fails to load.
 
 </details>
 
