@@ -20,6 +20,7 @@ All notable changes to this project are documented in this file.
 
 ## [v1.2.9] (2026-03-26)
 
+### Major Features
 - **Performance: faster initial page load** - Reduced initial payload by lazy-loading tool modules, deferring non-critical scripts, and loading changelog content on demand.
 - **On-demand frontend libraries** - `marked`, `highlight.js`, and `code-input` are now loaded only when needed by active modules/features.
 - **Production deployment guidance** - Added server-side compression and cache-header recommendations for Nginx/Apache.
@@ -28,6 +29,10 @@ All notable changes to this project are documented in this file.
 - **Hybrid key generation mode** - Added client-side WebCrypto generation mode with server fallback for compatibility-sensitive flows.
 - **New key utilities** - Added `PEM/OpenSSH Converter` and `Crypto Diagnostics` modules for format conversion and runtime capability checks.
 - **Logo generator rewrite** - Replaced the old `php-logogen` dependency with a new built-in Logo Generator module in this repository.
+
+<details>
+<summary>📋 Detailed Changes (click to expand)</summary>
+
 #### Initial Load Optimization
 - **Module loading** - Updated `index.php` to render only `dashboard` on first load; other modules now load on first navigation via new `load_module.php`.
 - **Script loading** - Added `defer` to non-critical script tags (jQuery, Tabler, Marked, Highlight.js, Code Input, Axios, and local scripts) to reduce render blocking.
@@ -53,6 +58,8 @@ All notable changes to this project are documented in this file.
 - **Submodule removal** - Removed `.gitmodules` and dropped the `php-logogen` submodule path from this repository.
 - **Logo generator rebuilt in-app** - Replaced the old link-out approach with a native `modules/gen_image.php` UI backed by `handle_logo_generate()` in `includes/handlers_functional.php`.
 - **Logo presets and polish** - Added quick presets (`App Icon`, `Banner`, `Initials Badge`), palette randomization, and inline hints for faster iteration.
+
+</details>
 
 ---
 
