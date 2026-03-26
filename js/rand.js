@@ -667,7 +667,7 @@ async function maybeHandleClientSideKeygen(form, responseObj) {
         return true;
     }
 
-    const selected = form.find("[name='algorithm']").val() || "all-available";
+    const selected = form.find("[name='algorithm']").val() || (isSsh ? "rsa" : "all-available");
     const rsaBits = parseInt(form.find("[name='rsa_bits']").val() || "4096", 10);
     const ecdsaCurve = form.find("[name='ecdsa_curve']").val() || "prime256v1";
     const list = selected === "all-available" ? ["rsa", "ecdsa", "ed25519"] : [selected];

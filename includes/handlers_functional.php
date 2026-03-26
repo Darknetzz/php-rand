@@ -1733,8 +1733,8 @@ function crypto_openssh_to_pem_with_ssh_keygen(string $opensshLine): array {
 }
 
 function handle_keypair_generate(array $req): string {
-    $algorithmRequest = req_get($req, 'algorithm', 'all-available');
-    $algorithm = is_string($algorithmRequest) ? $algorithmRequest : 'all-available';
+    $algorithmRequest = req_get($req, 'algorithm', 'rsa');
+    $algorithm = is_string($algorithmRequest) ? $algorithmRequest : 'rsa';
     $algorithms = crypto_resolve_requested_algorithms($algorithm);
     if (empty($algorithms)) {
         return formatOutput("No supported algorithm selected for key generation.", type: "danger");
