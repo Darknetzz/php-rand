@@ -34,6 +34,11 @@
                             <input class="form-check-input" type="checkbox" id="idUppercase" name="id_uppercase" value="1" <?= !empty($_POST['id_uppercase']) ? 'checked' : '' ?>>
                             <label class="form-check-label" for="idUppercase">Uppercase output</label>
                         </div>
+
+                        <div class="alert alert-secondary mb-0" role="status">
+                            <strong>Key format:</strong>
+                            <span id="idFormatPreview" class="ms-1" style="font-family: monospace;"></span>
+                        </div>
                     </div>
                     <div class="col-12 col-lg-6 d-flex flex-column">
                         <label class="form-label mb-3"><strong>Generated IDs</strong></label>
@@ -54,13 +59,59 @@
 (function () {
     var idTypeEl = document.getElementById('idType');
     var nanoWrapEl = document.getElementById('nanoidLengthWrap');
-    if (!idTypeEl || !nanoWrapEl) return;
+    var nanoLenEl = document.getElementById('nanoidLength');
+    var uppercaseEl = document.getElementById('idUppercase');
+    var formatPreviewEl = document.getElementById('idFormatPreview');
+    if (!idTypeEl || !nanoWrapEl || !formatPreviewEl) return;
 
     function toggleNanoLength() {
         nanoWrapEl.style.display = idTypeEl.value === 'nanoid' ? '' : 'none';
     }
 
-    idTypeEl.addEventListener('change', toggleNanoLength);
+    function clampNanoLen(value) {
+        var n = parseInt(value, 10);
+        if (isNaN(n)) return 21;
+        return Math.max(6, Math.min(128, n));
+    }
+
+    function applyCase(text) {
+        return uppercaseEl && uppercaseEl.checked ? text.toUpperCase() : text.toLowerCase();
+    }
+
+    function updateFormatPreview() {
+        var preview = '';
+        if (idTypeEl.value === 'uuid4') {
+            preview = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx';
+        } else if (idTypeEl.value === 'ulid') {
+            preview = '26 chars (Crockford Base32): ' + applyCase('01ARZ3NDEKTSV4RRFFQ69G5FAV');
+        } else {
+            var len = clampNanoLen(nanoLenEl ? nanoLenEl.value : 21);
+            preview = len + ' chars (URL-safe Base64): ' + applyCase('V1StGXR8_Z5jdHi6B-myT');
+        }
+
+        if (idTypeEl.value === 'uuid4') {
+            formatPreviewEl.textContent = applyCase(preview);
+            return;
+        }
+
+        formatPreviewEl.textContent = preview;
+    }
+
+    idTypeEl.addEventListener('change', function () {
+        toggleNanoLength();
+        updateFormatPreview();
+    });
+
+    if (nanoLenEl) {
+        nanoLenEl.addEventListener('input', updateFormatPreview);
+        nanoLenEl.addEventListener('change', updateFormatPreview);
+    }
+
+    if (uppercaseEl) {
+        uppercaseEl.addEventListener('change', updateFormatPreview);
+    }
+
     toggleNanoLength();
+    updateFormatPreview();
 })();
 </script>

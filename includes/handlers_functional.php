@@ -41,6 +41,9 @@ function getHandlerRegistry(): array {
         'brainfuck' => 'handle_brainfuck',
         'genid' => 'handle_genid',
         'jwt' => 'handle_jwt',
+        'ssh_keygen' => 'handle_ssh_keygen',
+        'keypair_generate' => 'handle_keypair_generate',
+        'csr_generate' => 'handle_csr_generate',
     ];
 }
 
@@ -1323,6 +1326,249 @@ function handle_genid(array $req): string {
     $output .= "<div style='margin-top: 8px; font-size: 0.85rem; opacity: 0.75;'>Generated <strong>{$qty}</strong> ID" . ($qty > 1 ? "s" : "") . ".</div>";
 
     return $output;
+}
+
+function crypto_available_key_algorithms(): array {
+    $algorithms = ['rsa', 'ecdsa'];
+    if (defined('OPENSSL_KEYTYPE_ED25519')) {
+        $algorithms[] = 'ed25519';
+    }
+    return $algorithms;
+}
+
+function crypto_resolve_requested_algorithms(string $selected): array {
+    $available = crypto_available_key_algorithms();
+    if ($selected === 'all-available') {
+        return $available;
+    }
+    if (in_array($selected, $available, true)) {
+        return [$selected];
+    }
+    return [];
+}
+
+function crypto_make_key_config(string $algorithm, int $rsaBits = 4096, string $curve = 'prime256v1'): ?array {
+    if ($algorithm === 'rsa') {
+        $bits = in_array($rsaBits, [2048, 3072, 4096], true) ? $rsaBits : 4096;
+        return [
+            'private_key_type' => OPENSSL_KEYTYPE_RSA,
+            'private_key_bits' => $bits,
+        ];
+    }
+
+    if ($algorithm === 'ecdsa') {
+        $allowedCurves = ['prime256v1', 'secp384r1', 'secp521r1'];
+        $resolvedCurve = in_array($curve, $allowedCurves, true) ? $curve : 'prime256v1';
+        return [
+            'private_key_type' => OPENSSL_KEYTYPE_EC,
+            'curve_name' => $resolvedCurve,
+        ];
+    }
+
+    if ($algorithm === 'ed25519') {
+        if (!defined('OPENSSL_KEYTYPE_ED25519')) {
+            return null;
+        }
+        return [
+            'private_key_type' => OPENSSL_KEYTYPE_ED25519,
+        ];
+    }
+
+    return null;
+}
+
+function crypto_generate_keypair(string $algorithm, int $rsaBits = 4096, string $curve = 'prime256v1', string $passphrase = ''): array {
+    $config = crypto_make_key_config($algorithm, $rsaBits, $curve);
+    if ($config === null) {
+        return ['ok' => false, 'error' => "Algorithm {$algorithm} is not available on this host."];
+    }
+
+    $privateKey = openssl_pkey_new($config);
+    if ($privateKey === false) {
+        return ['ok' => false, 'error' => "Unable to generate {$algorithm} keypair."];
+    }
+
+    $exportOptions = [];
+    if ($passphrase !== '') {
+        $exportOptions = ['cipher' => 'aes-256-cbc'];
+    }
+
+    $privatePem = '';
+    $privateExported = openssl_pkey_export($privateKey, $privatePem, $passphrase, $exportOptions);
+    if ($privateExported === false || $privatePem === '') {
+        return ['ok' => false, 'error' => "Unable to export private key for {$algorithm}."];
+    }
+
+    $details = openssl_pkey_get_details($privateKey);
+    if (!is_array($details) || empty($details['key'])) {
+        return ['ok' => false, 'error' => "Unable to export public key for {$algorithm}."];
+    }
+
+    return [
+        'ok' => true,
+        'algorithm' => $algorithm,
+        'private_pem' => $privatePem,
+        'public_pem' => $details['key'],
+    ];
+}
+
+function crypto_data_download_link(string $filename, string $content, string $label): string {
+    $href = 'data:text/plain;charset=utf-8,' . rawurlencode($content);
+    $safeHref = htmlspecialchars($href, ENT_QUOTES, 'UTF-8');
+    $safeFilename = htmlspecialchars($filename, ENT_QUOTES, 'UTF-8');
+    $safeLabel = htmlspecialchars($label, ENT_QUOTES, 'UTF-8');
+    return "<a class='btn btn-outline-light btn-sm me-2 mb-2' href='{$safeHref}' download='{$safeFilename}'>" . icon('download') . " {$safeLabel}</a>";
+}
+
+function crypto_render_key_output(array $items, string $title): string {
+    $safeTitle = htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
+    $output = "<div class='card border-info mb-3'><h5 class='card-header'>{$safeTitle}</h5><div class='card-body'>";
+
+    foreach ($items as $item) {
+        $label = htmlspecialchars((string) ($item['label'] ?? ''), ENT_QUOTES, 'UTF-8');
+        $content = (string) ($item['content'] ?? '');
+        $filename = (string) ($item['filename'] ?? '');
+        $output .= output_copyable($content, $label);
+        if ($filename !== '') {
+            $output .= "<div style='margin-bottom: 16px;'>" . crypto_data_download_link($filename, $content, "Download {$label}") . "</div>";
+        }
+    }
+
+    $output .= "</div></div>";
+    return $output;
+}
+
+function handle_keypair_generate(array $req): string {
+    $algorithmRequest = req_get($req, 'algorithm', 'all-available');
+    $algorithm = is_string($algorithmRequest) ? $algorithmRequest : 'all-available';
+    $algorithms = crypto_resolve_requested_algorithms($algorithm);
+    if (empty($algorithms)) {
+        return formatOutput("No supported algorithm selected for key generation.", type: "danger");
+    }
+
+    $passphrase = trim((string) req_get($req, 'passphrase', ''));
+    if (strlen($passphrase) > 256) {
+        return formatOutput("Passphrase must be at most 256 characters.", type: "danger");
+    }
+
+    $rsaBits = req_int($req, 'rsa_bits', 4096);
+    $curve = (string) req_get($req, 'ecdsa_curve', 'prime256v1');
+
+    $output = '';
+    foreach ($algorithms as $algo) {
+        $result = crypto_generate_keypair($algo, $rsaBits, $curve, $passphrase);
+        if (!$result['ok']) {
+            $output .= formatOutput((string) $result['error'], type: "warning");
+            continue;
+        }
+
+        $suffix = $algo === 'rsa' ? "-{$rsaBits}" : ($algo === 'ecdsa' ? "-{$curve}" : '');
+        $items = [
+            [
+                'label' => strtoupper($algo) . ' Private Key (PEM)',
+                'content' => (string) $result['private_pem'],
+                'filename' => "private-{$algo}{$suffix}.pem",
+            ],
+            [
+                'label' => strtoupper($algo) . ' Public Key (PEM)',
+                'content' => (string) $result['public_pem'],
+                'filename' => "public-{$algo}{$suffix}.pem",
+            ],
+        ];
+        $output .= crypto_render_key_output($items, strtoupper($algo) . " Keypair");
+    }
+
+    return $output === '' ? formatOutput("Unable to generate any keypairs.", type: "danger") : $output;
+}
+
+function handle_ssh_keygen(array $req): string {
+    $keyResult = handle_keypair_generate($req);
+    $comment = trim((string) req_get($req, 'ssh_comment', 'generated-by-phprand'));
+    if ($comment !== '' && strlen($comment) > 200) {
+        return formatOutput("SSH comment must be at most 200 characters.", type: "danger");
+    }
+
+    $note = formatOutput(
+        "Generated compatible PEM private/public keys for SSH workflows. You can convert public keys to OpenSSH format on host if needed. Comment: " . htmlspecialchars($comment, ENT_QUOTES, 'UTF-8'),
+        type: "info"
+    );
+    return $note . $keyResult;
+}
+
+function handle_csr_generate(array $req): string {
+    $algorithm = (string) req_get($req, 'algorithm', 'rsa');
+    if ($algorithm === 'all-available') {
+        $algorithm = 'rsa';
+    }
+    $resolved = crypto_resolve_requested_algorithms($algorithm);
+    if (empty($resolved)) {
+        return formatOutput("Selected algorithm is not supported for CSR generation.", type: "danger");
+    }
+    $algorithm = $resolved[0];
+
+    $passphrase = trim((string) req_get($req, 'passphrase', ''));
+    if (strlen($passphrase) > 256) {
+        return formatOutput("Passphrase must be at most 256 characters.", type: "danger");
+    }
+
+    $rsaBits = req_int($req, 'rsa_bits', 4096);
+    $curve = (string) req_get($req, 'ecdsa_curve', 'prime256v1');
+    $keyResult = crypto_generate_keypair($algorithm, $rsaBits, $curve, $passphrase);
+    if (!$keyResult['ok']) {
+        return formatOutput((string) $keyResult['error'], type: "danger");
+    }
+
+    $cn = trim((string) req_get($req, 'csr_cn', ''));
+    if ($cn === '') {
+        return formatOutput("Common Name (CN) is required for CSR generation.", type: "danger");
+    }
+
+    $dn = [
+        'commonName' => $cn,
+        'organizationName' => trim((string) req_get($req, 'csr_o', '')),
+        'organizationalUnitName' => trim((string) req_get($req, 'csr_ou', '')),
+        'countryName' => trim((string) req_get($req, 'csr_c', '')),
+        'stateOrProvinceName' => trim((string) req_get($req, 'csr_st', '')),
+        'localityName' => trim((string) req_get($req, 'csr_l', '')),
+        'emailAddress' => trim((string) req_get($req, 'csr_email', '')),
+    ];
+    $dn = array_filter($dn, fn($v) => $v !== '');
+
+    $privateHandle = openssl_pkey_get_private((string) $keyResult['private_pem'], $passphrase);
+    if ($privateHandle === false) {
+        return formatOutput("Unable to load generated private key for CSR creation.", type: "danger");
+    }
+
+    $csr = openssl_csr_new($dn, $privateHandle, ['digest_alg' => 'sha256']);
+    if ($csr === false) {
+        return formatOutput("Unable to generate CSR with provided subject fields.", type: "danger");
+    }
+
+    $csrPem = '';
+    if (!openssl_csr_export($csr, $csrPem) || $csrPem === '') {
+        return formatOutput("Unable to export CSR in PEM format.", type: "danger");
+    }
+
+    $suffix = $algorithm === 'rsa' ? "-{$rsaBits}" : ($algorithm === 'ecdsa' ? "-{$curve}" : '');
+    $items = [
+        [
+            'label' => "CSR (PEM)",
+            'content' => $csrPem,
+            'filename' => "request-{$algorithm}{$suffix}.csr.pem",
+        ],
+        [
+            'label' => strtoupper($algorithm) . " Private Key (PEM)",
+            'content' => (string) $keyResult['private_pem'],
+            'filename' => "private-{$algorithm}{$suffix}.pem",
+        ],
+        [
+            'label' => strtoupper($algorithm) . " Public Key (PEM)",
+            'content' => (string) $keyResult['public_pem'],
+            'filename' => "public-{$algorithm}{$suffix}.pem",
+        ],
+    ];
+
+    return crypto_render_key_output($items, "CSR + Key Material");
 }
 
 /**
