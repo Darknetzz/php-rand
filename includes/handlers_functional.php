@@ -44,6 +44,8 @@ function getHandlerRegistry(): array {
         'ssh_keygen' => 'handle_ssh_keygen',
         'keypair_generate' => 'handle_keypair_generate',
         'csr_generate' => 'handle_csr_generate',
+        'pem_openssh_convert' => 'handle_pem_openssh_convert',
+        'crypto_diagnostics' => 'handle_crypto_diagnostics',
     ];
 }
 
@@ -1516,6 +1518,40 @@ function crypto_public_pem_to_openssh(string $publicPem, string $comment = ''): 
     return ['ok' => false, 'error' => 'OpenSSH export is unavailable for this key type on current OpenSSL/PHP build.'];
 }
 
+function crypto_openssh_to_pem_with_ssh_keygen(string $opensshLine): array {
+    if (!function_exists('shell_exec')) {
+        return ['ok' => false, 'error' => 'shell_exec() is disabled on this server.'];
+    }
+
+    $sshKeygenPath = trim((string) @shell_exec('command -v ssh-keygen 2>/dev/null'));
+    if ($sshKeygenPath === '') {
+        return ['ok' => false, 'error' => 'ssh-keygen is not available on this host.'];
+    }
+
+    $tempBase = tempnam(sys_get_temp_dir(), 'sshpub_');
+    if ($tempBase === false) {
+        return ['ok' => false, 'error' => 'Unable to create temporary file for conversion.'];
+    }
+    $inputPath = $tempBase . '.pub';
+    @rename($tempBase, $inputPath);
+
+    if (@file_put_contents($inputPath, trim($opensshLine) . PHP_EOL) === false) {
+        @unlink($inputPath);
+        return ['ok' => false, 'error' => 'Unable to write temporary OpenSSH key file.'];
+    }
+
+    $cmd = escapeshellarg($sshKeygenPath) . ' -f ' . escapeshellarg($inputPath) . ' -e -m PKCS8 2>&1';
+    $output = (string) @shell_exec($cmd);
+    @unlink($inputPath);
+
+    if (strpos($output, 'BEGIN PUBLIC KEY') === false) {
+        $trimmed = trim($output);
+        return ['ok' => false, 'error' => $trimmed !== '' ? $trimmed : 'Unable to convert OpenSSH key to PEM via ssh-keygen.'];
+    }
+
+    return ['ok' => true, 'pem' => trim($output) . PHP_EOL];
+}
+
 function handle_keypair_generate(array $req): string {
     $algorithmRequest = req_get($req, 'algorithm', 'all-available');
     $algorithm = is_string($algorithmRequest) ? $algorithmRequest : 'all-available';
@@ -1557,6 +1593,85 @@ function handle_keypair_generate(array $req): string {
     }
 
     return $output === '' ? formatOutput("Unable to generate any keypairs.", type: "danger") : $output;
+}
+
+function handle_pem_openssh_convert(array $req): string {
+    $mode = (string) req_get($req, 'convert_mode', 'pem_to_openssh');
+    $comment = trim((string) req_get($req, 'ssh_comment', 'generated-by-phprand'));
+    if (strlen($comment) > 200) {
+        return formatOutput("SSH comment must be at most 200 characters.", type: "danger");
+    }
+
+    if ($mode === 'pem_to_openssh') {
+        $pem = trim((string) req_get($req, 'public_pem', ''));
+        if ($pem === '') {
+            return formatOutput("Public PEM input is required.", type: "danger");
+        }
+        $converted = crypto_public_pem_to_openssh($pem, $comment);
+        if (($converted['ok'] ?? false) !== true) {
+            return formatOutput((string) ($converted['error'] ?? 'Conversion failed.'), type: "danger");
+        }
+        return crypto_render_key_output([
+            [
+                'label' => 'OpenSSH Public Key',
+                'content' => (string) $converted['line'],
+                'filename' => 'converted.pub',
+            ],
+        ], 'PEM -> OpenSSH');
+    }
+
+    if ($mode === 'openssh_to_pem') {
+        $openssh = trim((string) req_get($req, 'openssh_public', ''));
+        if ($openssh === '') {
+            return formatOutput("OpenSSH public key input is required.", type: "danger");
+        }
+        $converted = crypto_openssh_to_pem_with_ssh_keygen($openssh);
+        if (($converted['ok'] ?? false) !== true) {
+            return formatOutput((string) ($converted['error'] ?? 'Conversion failed.'), type: "danger");
+        }
+        return crypto_render_key_output([
+            [
+                'label' => 'PEM Public Key',
+                'content' => (string) $converted['pem'],
+                'filename' => 'converted-public.pem',
+            ],
+        ], 'OpenSSH -> PEM');
+    }
+
+    return formatOutput("Invalid converter mode selected.", type: "danger");
+}
+
+function handle_crypto_diagnostics(array $req): string {
+    $algorithms = crypto_available_key_algorithms();
+    $rows = [];
+
+    foreach (['rsa', 'ecdsa', 'ed25519'] as $algo) {
+        if (!in_array($algo, $algorithms, true)) {
+            $rows[] = "<tr><td>" . strtoupper($algo) . "</td><td>Unavailable</td><td>-</td></tr>";
+            continue;
+        }
+        $generated = crypto_generate_keypair($algo);
+        if (($generated['ok'] ?? false) !== true) {
+            $rows[] = "<tr><td>" . strtoupper($algo) . "</td><td>Available</td><td>Keygen failed</td></tr>";
+            continue;
+        }
+        $openssh = crypto_public_pem_to_openssh((string) $generated['public_pem']);
+        $opensshStatus = (($openssh['ok'] ?? false) === true) ? 'OK' : 'Not supported';
+        $rows[] = "<tr><td>" . strtoupper($algo) . "</td><td>Available</td><td>{$opensshStatus}</td></tr>";
+    }
+
+    $sshKeygenPath = function_exists('shell_exec')
+        ? trim((string) @shell_exec('command -v ssh-keygen 2>/dev/null'))
+        : '';
+    $sshKeygenStatus = $sshKeygenPath !== '' ? "Found (`" . htmlspecialchars($sshKeygenPath, ENT_QUOTES, 'UTF-8') . "`)" : "Not found";
+
+    $output = "<div class='card border-info mb-3'><h5 class='card-header'>Crypto Runtime Diagnostics</h5><div class='card-body'>";
+    $output .= "<div class='mb-3'><strong>Available key algorithms:</strong> " . htmlspecialchars(implode(', ', $algorithms), ENT_QUOTES, 'UTF-8') . "</div>";
+    $output .= "<div class='mb-3'><strong>ssh-keygen binary:</strong> {$sshKeygenStatus}</div>";
+    $output .= "<div class='table-responsive'><table class='table table-dark table-striped'><thead><tr><th>Algorithm</th><th>OpenSSL Keygen</th><th>OpenSSH Export</th></tr></thead><tbody>" . implode('', $rows) . "</tbody></table></div>";
+    $output .= "</div></div>";
+
+    return $output;
 }
 
 function handle_ssh_keygen(array $req): string {

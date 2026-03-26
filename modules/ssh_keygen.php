@@ -9,6 +9,14 @@
             <form class="form" action="gen.php" method="POST" id="sshKeygenForm" data-action="ssh_keygen">
                 <div class="row g-3 mb-4">
                     <div class="col-12 col-md-3">
+                        <label for="sshGenerationMode" class="form-label"><strong>Generation Mode</strong></label>
+                        <select name="generation_mode" id="sshGenerationMode" class="form-select form-select-lg">
+                            <option value="auto" selected>Auto (Client preferred)</option>
+                            <option value="client">Client-side only (WebCrypto)</option>
+                            <option value="server">Server-side only (OpenSSL)</option>
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-3">
                         <label for="sshAlgorithm" class="form-label"><strong>Algorithm</strong></label>
                         <select name="algorithm" id="sshAlgorithm" class="form-select form-select-lg">
                             <option value="all-available">All Available</option>

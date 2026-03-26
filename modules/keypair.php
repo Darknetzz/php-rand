@@ -9,6 +9,14 @@
             <form class="form" action="gen.php" method="POST" id="keypairForm" data-action="keypair_generate">
                 <div class="row g-3 mb-4">
                     <div class="col-12 col-md-4">
+                        <label for="keypairGenerationMode" class="form-label"><strong>Generation Mode</strong></label>
+                        <select name="generation_mode" id="keypairGenerationMode" class="form-select form-select-lg">
+                            <option value="auto" selected>Auto (Client preferred)</option>
+                            <option value="client">Client-side only (WebCrypto)</option>
+                            <option value="server">Server-side only (OpenSSL)</option>
+                        </select>
+                    </div>
+                    <div class="col-12 col-md-4">
                         <label for="keypairAlgorithm" class="form-label"><strong>Algorithm</strong></label>
                         <select name="algorithm" id="keypairAlgorithm" class="form-select form-select-lg">
                             <option value="all-available">All Available</option>

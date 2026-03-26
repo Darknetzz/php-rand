@@ -12,6 +12,8 @@ All notable changes to this project are documented in this file.
 - **Production deployment guidance** - Added server-side compression and cache-header recommendations for Nginx/Apache.
 - **New cryptography modules** - Added `Private/Public Keys`, `SSH Key Generator`, and `CSR Generator` under Cryptography.
 - **OpenSSH public key export** - SSH generator now emits true OpenSSH public key lines (RSA/ECDSA, Ed25519 when runtime details are available) in addition to PEM.
+- **Hybrid key generation mode** - Added client-side WebCrypto generation mode with server fallback for compatibility-sensitive flows.
+- **New key utilities** - Added `PEM/OpenSSH Converter` and `Crypto Diagnostics` modules for format conversion and runtime capability checks.
 
 <details>
 <summary>📋 Detailed Changes (click to expand)</summary>
@@ -32,8 +34,12 @@ All notable changes to this project are documented in this file.
 
 #### Cryptography
 - **New modules** - Added `modules/keypair.php`, `modules/ssh_keygen.php`, and `modules/csr.php` with matching navbar entries in `includes/navbar.php`.
+- **Additional modules** - Added `modules/pem_openssh.php` (public key converter) and `modules/crypto_diagnostics.php` (runtime checks).
 - **Shared backend helpers** - Added reusable keygen/export helpers in `includes/handlers_functional.php` for algorithm resolution, keypair generation, and download rendering.
 - **OpenSSH output** - Added server-side OpenSSH serialization in `handle_ssh_keygen()` for RSA/ECDSA public keys, with runtime-dependent Ed25519 support and graceful fallback warnings.
+- **Hybrid client/server mode** - Added browser-side key generation for keypair/SSH modules through `js/rand.js` (`generation_mode`: auto/client/server), with automatic fallback to server mode when WebCrypto support is missing or features require server processing.
+- **Format conversion** - Added `handle_pem_openssh_convert()` with PEM -> OpenSSH conversion and OpenSSH -> PEM conversion via host `ssh-keygen` when available.
+- **Runtime diagnostics** - Added `handle_crypto_diagnostics()` to verify algorithm availability and OpenSSH export support per algorithm.
 
 </details>
 

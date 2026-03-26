@@ -215,6 +215,138 @@ function submitToolForm($form, options = {}) {
     });
 }
 
+function arrayBufferToBase64(buffer) {
+    const bytes = new Uint8Array(buffer);
+    let binary = "";
+    for (let i = 0; i < bytes.byteLength; i++) {
+        binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary);
+}
+
+function derToPem(buffer, label) {
+    const base64 = arrayBufferToBase64(buffer);
+    const wrapped = base64.match(/.{1,64}/g)?.join("\n") || base64;
+    return "-----BEGIN " + label + "-----\n" + wrapped + "\n-----END " + label + "-----\n";
+}
+
+function htmlEscape(text) {
+    return $("<div>").text(text).html();
+}
+
+function buildClientKeyOutput(items, title) {
+    let html = "<div class='card border-info mb-3'><h5 class='card-header'>" + htmlEscape(title) + "</h5><div class='card-body'>";
+    items.forEach(function(item) {
+        const encoded = "data:text/plain;charset=utf-8," + encodeURIComponent(item.content);
+        html += "<div style='margin-bottom:14px;'><strong>" + htmlEscape(item.label) + "</strong></div>";
+        html += "<textarea class='form-control' style='min-height:120px; font-family:monospace; margin-bottom:8px;' readonly>" + htmlEscape(item.content) + "</textarea>";
+        html += "<a class='btn btn-outline-light btn-sm mb-3' download='" + htmlEscape(item.filename) + "' href='" + encoded + "'><i class='bi bi-download'></i> Download " + htmlEscape(item.label) + "</a>";
+    });
+    html += "</div></div>";
+    return html;
+}
+
+async function clientGeneratePemPair(algorithm, rsaBits, ecdsaCurve) {
+    const subtle = window.crypto && window.crypto.subtle;
+    if (!subtle) throw new Error("WebCrypto is unavailable in this browser.");
+
+    let algo;
+    if (algorithm === "rsa") {
+        algo = {
+            name: "RSA-PSS",
+            modulusLength: rsaBits,
+            publicExponent: new Uint8Array([1, 0, 1]),
+            hash: "SHA-256"
+        };
+    } else if (algorithm === "ecdsa") {
+        const namedCurve = ecdsaCurve === "secp384r1" ? "P-384" : (ecdsaCurve === "secp521r1" ? "P-521" : "P-256");
+        algo = { name: "ECDSA", namedCurve: namedCurve };
+    } else if (algorithm === "ed25519") {
+        algo = { name: "Ed25519" };
+    } else {
+        throw new Error("Unsupported client algorithm: " + algorithm);
+    }
+
+    const keyPair = await subtle.generateKey(algo, true, ["sign", "verify"]);
+    const privatePkcs8 = await subtle.exportKey("pkcs8", keyPair.privateKey);
+    const publicSpki = await subtle.exportKey("spki", keyPair.publicKey);
+
+    return {
+        privatePem: derToPem(privatePkcs8, "PRIVATE KEY"),
+        publicPem: derToPem(publicSpki, "PUBLIC KEY")
+    };
+}
+
+async function maybeHandleClientSideKeygen(form, responseObj) {
+    const action = form.data("action") || "";
+    if (action !== "keypair_generate" && action !== "ssh_keygen") {
+        return false;
+    }
+
+    const mode = (form.find("[name='generation_mode']").val() || "server").toLowerCase();
+    if (mode === "server") {
+        return false;
+    }
+
+    const passphrase = (form.find("[name='passphrase']").val() || "").trim();
+    const isSsh = action === "ssh_keygen";
+    if (passphrase !== "") {
+        if (mode === "auto") return false;
+        showData(responseObj, "<div class='alert alert-warning'>Client-side mode does not support private-key passphrase encryption yet. Use server mode.</div>");
+        return true;
+    }
+
+    if (isSsh && mode === "auto") {
+        // Prefer server for SSH in auto mode so OpenSSH output is always included.
+        return false;
+    }
+
+    const subtle = window.crypto && window.crypto.subtle;
+    if (!subtle) {
+        if (mode === "auto") return false;
+        showData(responseObj, "<div class='alert alert-danger'>WebCrypto is unavailable in this browser. Use server mode.</div>");
+        return true;
+    }
+
+    const selected = form.find("[name='algorithm']").val() || "all-available";
+    const rsaBits = parseInt(form.find("[name='rsa_bits']").val() || "4096", 10);
+    const ecdsaCurve = form.find("[name='ecdsa_curve']").val() || "prime256v1";
+    const list = selected === "all-available" ? ["rsa", "ecdsa", "ed25519"] : [selected];
+
+    let output = "";
+    let generatedCount = 0;
+    for (const algorithm of list) {
+        try {
+            const pair = await clientGeneratePemPair(algorithm, rsaBits, ecdsaCurve);
+            const suffix = algorithm === "rsa" ? ("-" + rsaBits) : (algorithm === "ecdsa" ? ("-" + ecdsaCurve) : "");
+            const items = [
+                { label: algorithm.toUpperCase() + " Private Key (PEM)", content: pair.privatePem, filename: "private-" + algorithm + suffix + ".pem" },
+                { label: algorithm.toUpperCase() + " Public Key (PEM)", content: pair.publicPem, filename: "public-" + algorithm + suffix + ".pem" }
+            ];
+            if (isSsh) {
+                output += "<div class='alert alert-warning'>OpenSSH public-key line generation is server-backed for best compatibility. Switch to server mode for full SSH output.</div>";
+            }
+            output += buildClientKeyOutput(items, algorithm.toUpperCase() + " Client-side Keypair");
+            generatedCount++;
+        } catch (err) {
+            if (mode === "auto") {
+                continue;
+            }
+            output += "<div class='alert alert-warning'>" + htmlEscape((algorithm.toUpperCase() + ": " + (err && err.message ? err.message : "Client generation failed."))) + "</div>";
+        }
+    }
+
+    if (generatedCount === 0) {
+        if (mode === "auto") return false;
+        showData(responseObj, output || "<div class='alert alert-danger'>No keys were generated client-side.</div>");
+        return true;
+    }
+
+    output = "<div class='alert alert-info'>Generated via browser WebCrypto (client-side).</div>" + output;
+    showData(responseObj, output);
+    return true;
+}
+
 /* ===================================================================== */
 /*                         FUNCTION: setFormVal                          */
 /* ===================================================================== */
@@ -398,7 +530,7 @@ $(document).ready(function() {
     /*                              Form submit                              */
     /* ===================================================================== */
     //function submitForm(formname, responseid) {
-    $(".form").submit(function(e) {
+    $(".form").submit(async function(e) {
         e.preventDefault(); // avoid to execute the actual submit of the form.
 
         var form = $(this);
@@ -447,6 +579,12 @@ $(document).ready(function() {
             serializeForm += "&" + btnName + "=" + btnValue;
         }
         console.log("[submitForm] Sending form: " + serializeForm);
+        const handledClientSide = await maybeHandleClientSideKeygen(form, form.find(".responseDiv"));
+        if (handledClientSide) {
+            randomizeDice();
+            return;
+        }
+
         submitToolForm(form, {
             data: serializeForm,
             responseType: responsetype,

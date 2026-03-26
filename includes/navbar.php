@@ -84,6 +84,16 @@ $navbarItems = [
                 "formalName" => "CSR Generator",
                 "icon"       => icon('file-earmark-lock')
             ],
+            "pem_openssh" => [
+                "name"       => "pem_openssh",
+                "formalName" => "PEM/OpenSSH Converter",
+                "icon"       => icon('arrow-left-right')
+            ],
+            "crypto_diagnostics" => [
+                "name"       => "crypto_diagnostics",
+                "formalName" => "Crypto Diagnostics",
+                "icon"       => icon('activity')
+            ],
         ],
     ],
     "encoding" => [
