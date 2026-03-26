@@ -541,31 +541,73 @@ function getClientCryptoEnvironment() {
     };
 }
 
-/**
- * Shared HTTPS / WebCrypto warnings for key generators and crypto diagnostics.
- * @param {string} marginClass - Bootstrap margin class on each alert (e.g. mb-2, mb-3).
- */
-function buildClientCryptoWarningAlertsHtml(marginClass) {
-    marginClass = marginClass || "mb-3";
+/** True when browser client-side key generation (auto/client) can run. */
+function clientCryptoClientGenerationAvailable() {
     const env = getClientCryptoEnvironment();
-    let html = "";
-    if (!env.secure) {
-        html += "<div class='alert alert-warning " + marginClass + "' role='alert'><strong>Not a secure context.</strong> This page is not served over HTTPS (or equivalent). Browsers restrict or disable WebCrypto and other APIs on plain HTTP. Use HTTPS or open the app on <code>localhost</code> for full client-side crypto support.</div>";
-    }
-    if (!env.hasSubtle) {
-        html += "<div class='alert alert-warning " + marginClass + "' role='alert'><strong>Client-side crypto unavailable.</strong> <code>window.crypto.subtle</code> is missing. Browser-side key generation cannot run; tools will fall back to server-side generation. If you are on HTTP, switching to HTTPS often fixes this.</div>";
-    }
-    return html;
+    return env.secure && env.hasSubtle;
 }
 
-function updateClientCryptoGeneratorBanners($scope) {
+/**
+ * Single HTTPS / WebCrypto warning for key generators and crypto diagnostics.
+ * @param {string} marginClass - Bootstrap margin on the alert (e.g. mb-2, mb-3).
+ * @returns {string} Empty when client generation is available; otherwise one alert with icon.
+ */
+function buildClientCryptoWarningBannerHtml(marginClass) {
+    if (clientCryptoClientGenerationAvailable()) {
+        return "";
+    }
+    marginClass = marginClass || "mb-3";
+    const env = getClientCryptoEnvironment();
+    let detail = "";
+    if (!env.secure && !env.hasSubtle) {
+        detail = "This page is not a secure context (use HTTPS or <code>localhost</code>) and <code>window.crypto.subtle</code> is unavailable.";
+    } else if (!env.secure) {
+        detail = "This page is not a secure context. Browsers restrict WebCrypto on plain HTTP; use HTTPS or <code>localhost</code>.";
+    } else {
+        detail = "<code>window.crypto.subtle</code> is not available in this browser.";
+    }
+    return "<div class=\"alert alert-warning " + marginClass + " d-flex align-items-start gap-2\" role=\"alert\">" +
+        "<i class=\"bi bi-exclamation-triangle-fill flex-shrink-0 mt-1\" aria-hidden=\"true\"></i>" +
+        "<div><strong>Client-side generation unavailable.</strong> " + detail +
+        " <strong>Generation mode is set to server-side only.</strong> Auto and client-only are disabled until this environment supports WebCrypto.</div>" +
+        "</div>";
+}
+
+/** Force server mode and disable auto/client when WebCrypto cannot be used. */
+function applyKeygenGenerationModeConstraints($scope) {
+    const $forms = ($scope && $scope.length)
+        ? $scope.find("form[data-action='keypair_generate'], form[data-action='ssh_keygen']")
+        : $("form[data-action='keypair_generate'], form[data-action='ssh_keygen']");
+    const canUseClient = clientCryptoClientGenerationAvailable();
+    $forms.each(function() {
+        const $form = $(this);
+        const $sel = $form.find("select[name='generation_mode']");
+        if (!$sel.length) {
+            return;
+        }
+        const $auto = $sel.find("option[value='auto']");
+        const $client = $sel.find("option[value='client']");
+        if (canUseClient) {
+            $auto.prop("disabled", false);
+            $client.prop("disabled", false);
+        } else {
+            $auto.prop("disabled", true);
+            $client.prop("disabled", true);
+            $sel.val("server");
+        }
+        updatePassphraseStateForForm($form);
+    });
+}
+
+function refreshClientCryptoGeneratorUi($scope) {
     const $targets = ($scope && $scope.length)
         ? $scope.find(".client-crypto-generator-banner")
         : $(".client-crypto-generator-banner");
-    const html = buildClientCryptoWarningAlertsHtml("mb-2");
+    const html = buildClientCryptoWarningBannerHtml("mb-2");
     $targets.each(function() {
         $(this).html(html);
     });
+    applyKeygenGenerationModeConstraints($scope);
 }
 
 function buildClientCryptoDiagnosticsHtml() {
@@ -580,7 +622,7 @@ function buildClientCryptoDiagnosticsHtml() {
     let html = "<div class='card border-info mt-3 mb-3'><h5 class='card-header'>Client-side Crypto Diagnostics (Browser)</h5><div class='card-body'>";
     html += "<p class='mb-3 text-muted'>Basic browser-side crypto/runtime signals. Detailed browser diagnostics are available in the Browser Inspector tool.</p>";
 
-    html += buildClientCryptoWarningAlertsHtml("mb-3");
+    html += buildClientCryptoWarningBannerHtml("mb-3");
 
     html += "<div class='table-responsive'><table class='table table-dark table-striped mb-0'><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>";
     items.forEach(function(item) {
@@ -864,7 +906,7 @@ function navigate(to) {
         $(".content").hide();
         $(normalizedTo).fadeIn();
         addRandomDataButtons($(normalizedTo));
-        updateClientCryptoGeneratorBanners($(normalizedTo));
+        refreshClientCryptoGeneratorUi($(normalizedTo));
     };
 
     if ($(normalizedTo).length) {
