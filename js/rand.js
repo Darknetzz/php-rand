@@ -70,6 +70,111 @@ function buildLoadingHtml(message = "Generating...") {
 }
 
 /* ===================================================================== */
+/*                      FUNCTION: loadScriptOnce                          */
+/* ===================================================================== */
+window._assetPromises = window._assetPromises || {};
+function loadScriptOnce(src) {
+    const key = "script:" + src;
+    if (window._assetPromises[key]) {
+        return window._assetPromises[key];
+    }
+    const deferred = $.Deferred();
+    const existing = document.querySelector('script[src="' + src + '"]');
+    if (existing) {
+        deferred.resolve();
+    } else {
+        const script = document.createElement("script");
+        script.src = src;
+        script.async = true;
+        script.onload = () => deferred.resolve();
+        script.onerror = () => deferred.reject(new Error("Failed to load script: " + src));
+        document.head.appendChild(script);
+    }
+    window._assetPromises[key] = deferred.promise();
+    return window._assetPromises[key];
+}
+
+/* ===================================================================== */
+/*                       FUNCTION: loadStyleOnce                          */
+/* ===================================================================== */
+function loadStyleOnce(href) {
+    const key = "style:" + href;
+    if (window._assetPromises[key]) {
+        return window._assetPromises[key];
+    }
+    const deferred = $.Deferred();
+    const existing = document.querySelector('link[rel="stylesheet"][href="' + href + '"]');
+    if (existing) {
+        deferred.resolve();
+    } else {
+        const link = document.createElement("link");
+        link.rel = "stylesheet";
+        link.href = href;
+        link.onload = () => deferred.resolve();
+        link.onerror = () => deferred.reject(new Error("Failed to load stylesheet: " + href));
+        document.head.appendChild(link);
+    }
+    window._assetPromises[key] = deferred.promise();
+    return window._assetPromises[key];
+}
+
+/* ===================================================================== */
+/*                    FUNCTION: ensureMarkdownAssets                      */
+/* ===================================================================== */
+function ensureMarkdownAssets() {
+    return $.when(
+        loadScriptOnce("https://cdn.jsdelivr.net/npm/marked/lib/marked.umd.js"),
+        loadStyleOnce("https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/dark.min.css"),
+        loadScriptOnce("https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js")
+    );
+}
+
+/* ===================================================================== */
+/*                    FUNCTION: ensureCodeInputAssets                     */
+/* ===================================================================== */
+function ensureCodeInputAssets() {
+    return $.when(
+        loadStyleOnce("https://cdn.jsdelivr.net/npm/@webcoder49/code-input@2.7.1/code-input.min.css"),
+        loadScriptOnce("https://cdn.jsdelivr.net/npm/@webcoder49/code-input@2.7.1/code-input.min.js"),
+        loadScriptOnce("js/hljs_autodetect.js"),
+        loadScriptOnce("js/hljs_indent.js"),
+        loadStyleOnce("https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/dark.min.css"),
+        loadScriptOnce("https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js")
+    );
+}
+
+/* ===================================================================== */
+/*                     FUNCTION: initCodeInputTemplate                    */
+/* ===================================================================== */
+window._codeInputTemplateReady = window._codeInputTemplateReady || false;
+function initCodeInputTemplate() {
+    if (window._codeInputTemplateReady) {
+        return;
+    }
+    if (typeof codeInput === "undefined" || typeof hljs === "undefined") {
+        return;
+    }
+    codeInput.registerTemplate("default", codeInput.templates.hljs(hljs, [
+        new codeInput.plugins.Autodetect(),
+        new codeInput.plugins.Indent(true, 2)
+    ]));
+    window._codeInputTemplateReady = true;
+}
+
+/* ===================================================================== */
+/*                    FUNCTION: ensureEnhancersForScope                   */
+/* ===================================================================== */
+function ensureEnhancersForScope($scope) {
+    const hasCodeInput = $scope.find("code-input").length > 0;
+    if (!hasCodeInput) {
+        return $.Deferred().resolve().promise();
+    }
+    return ensureCodeInputAssets().done(function() {
+        initCodeInputTemplate();
+    });
+}
+
+/* ===================================================================== */
 /*                        FUNCTION: submitToolForm                        */
 /* ===================================================================== */
 function submitToolForm($form, options = {}) {
@@ -171,7 +276,7 @@ function navigate(to) {
 function loadModule(moduleName) {
     const selector = "#" + moduleName;
     if ($(selector).length) {
-        return $.Deferred().resolve().promise();
+        return ensureEnhancersForScope($(selector));
     }
 
     const $container = $(".container.pt-5").first();
@@ -182,15 +287,24 @@ function loadModule(moduleName) {
     });
     $container.append($placeholder);
 
-    return $.ajax({
-        type: "GET",
-        url: "load_module.php",
-        data: { module: moduleName },
-        cache: true
-    }).done(function(html) {
-        $placeholder.replaceWith(html);
-        addRandomDataButtons($(selector));
-    }).fail(function(xhr) {
+    const beforeLoad = moduleName === "markdown"
+        ? ensureMarkdownAssets()
+        : $.Deferred().resolve().promise();
+
+    return beforeLoad.then(function() {
+        return $.ajax({
+            type: "GET",
+            url: "load_module.php",
+            data: { module: moduleName },
+            cache: true
+        }).done(function(html) {
+            $placeholder.replaceWith(html);
+            addRandomDataButtons($(selector));
+            ensureEnhancersForScope($(selector));
+        }).fail(function() {
+            $placeholder.remove();
+        });
+    }).fail(function() {
         $placeholder.remove();
     });
 }
@@ -263,13 +377,7 @@ $(document).ready(function() {
     /* ===================================================================== */
     /*                               Code Input                              */
     /* ===================================================================== */
-    // hljs.highlightAll();
-    if (typeof codeInput !== "undefined" && typeof hljs !== "undefined") {
-        codeInput.registerTemplate("default", codeInput.templates.hljs(hljs, [
-            new codeInput.plugins.Autodetect(),
-            new codeInput.plugins.Indent(true, 2) // 2 spaces indentation
-        ] /* Array of plugins (see below) */ ));
-    }
+    ensureEnhancersForScope($(".content:visible").first());
     $(".code").on("paste", function() {
         this.style.height = "auto";
     });
@@ -467,17 +575,17 @@ $(document).ready(function() {
             url: "CHANGELOG.md",
             cache: true
         }).done(function(markdownText) {
-            if (typeof marked === "undefined") {
+            ensureMarkdownAssets().done(function() {
+                marked.setOptions({
+                    breaks: true,
+                    gfm: true
+                });
+                changelog.html(marked.parse(markdownText));
+                changelogLoaded = true;
+            }).fail(function() {
                 changelog.html("<pre>" + $("<div>").text(markdownText).html() + "</pre>");
                 changelogLoaded = true;
-                return;
-            }
-            marked.setOptions({
-                breaks: true,
-                gfm: true
             });
-            changelog.html(marked.parse(markdownText));
-            changelogLoaded = true;
         }).fail(function() {
             changelog.html("<div class='alert alert-danger'>Failed to load changelog.</div>");
         });

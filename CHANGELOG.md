@@ -8,6 +8,8 @@ All notable changes to this project are documented in this file.
 
 ### Major Features
 - **Performance: faster initial page load** - Reduced initial payload by lazy-loading tool modules, deferring non-critical scripts, and loading changelog content on demand.
+- **On-demand frontend libraries** - `marked`, `highlight.js`, and `code-input` are now loaded only when needed by active modules/features.
+- **Production deployment guidance** - Added server-side compression and cache-header recommendations for Nginx/Apache.
 
 <details>
 <summary>📋 Detailed Changes (click to expand)</summary>
@@ -20,6 +22,11 @@ All notable changes to this project are documented in this file.
 #### Navigation and Runtime
 - **On-demand module fetch** - Added `loadModule()` flow in `js/rand.js` and integrated it into `navigate()` so missing module sections are fetched and inserted dynamically.
 - **UX safeguards** - Added loading placeholders for lazy module fetches and improved error handling when a module fails to load.
+
+#### Asset Loading and Production Ops
+- **Library lazy loading** - Removed global `marked`/`highlight.js`/`code-input` includes from `index.php`; added reusable `loadScriptOnce()`/`loadStyleOnce()` helpers with one-time caching in `js/rand.js`.
+- **Feature-gated assets** - Markdown assets now load only for markdown/changelog rendering; code-input assets load only when `code-input` elements exist in a visible module.
+- **Deployment docs** - Added `README.md` guidance for gzip/brotli compression and cache headers for static assets vs dynamic HTML/PHP responses.
 
 </details>
 

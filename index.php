@@ -15,29 +15,7 @@
   src="https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/js/tabler.min.js">
 </script>
 
-<!-- /* =============================== Marked ============================== */ -->
-<script defer src="https://cdn.jsdelivr.net/npm/marked/lib/marked.umd.js"></script>
-
-
-<!-- /* =====================================================================───── */ -->
-<!-- /*                               CODE HIGHLIGHT                               */ -->
-<!-- /* =====================================================================───── */ -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/dark.min.css">
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
-
-<!-- and it's easy to individually load additional languages -->
-<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/go.min.js"></script> -->
-
-
-<!-- <script src="https://cdn.jsdelivr.net/gh/WebCoder49/code-input@2.2/code-input.min.js"></script> -->
-<!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/WebCoder49/code-input@2.2/code-input.min.css"> -->
-<script defer src="https://cdn.jsdelivr.net/npm/@webcoder49/code-input@2.7.1/code-input.min.js"></script>
-<link href="https://cdn.jsdelivr.net/npm/@webcoder49/code-input@2.7.1/code-input.min.css" rel="stylesheet">
-
-<!-- Plugins -->
-<script defer src="js/hljs_autodetect.js"></script>
-<script defer src="js/hljs_indent.js"></script>
-<!-- /* =====================================================================───── */ -->
+<!-- Marked / Highlight.js / code-input are loaded on demand in js/rand.js -->
 
 <!-- Axios for AJAX requests -->
 <script defer src="js/axios.min.js"></script>

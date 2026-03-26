@@ -111,6 +111,72 @@ composer install
 
 Open your browser and visit `http://<webserver>/php-rand`
 
+## Production Performance Guidance
+
+For production deployments, enable HTTP compression and strong cache headers for static assets.
+
+### Nginx (gzip + brotli + cache headers)
+
+```nginx
+# Compression
+gzip on;
+gzip_comp_level 5;
+gzip_min_length 1024;
+gzip_vary on;
+gzip_proxied any;
+gzip_types text/plain text/css application/javascript application/json application/xml image/svg+xml;
+
+# If ngx_brotli is installed:
+brotli on;
+brotli_comp_level 5;
+brotli_types text/plain text/css application/javascript application/json application/xml image/svg+xml;
+
+# Static assets: long cache
+location ~* \.(?:css|js|png|jpg|jpeg|gif|svg|webp|ico|woff2?)$ {
+    expires 30d;
+    add_header Cache-Control "public, max-age=2592000, immutable";
+}
+
+# HTML/PHP responses: short/no cache
+location ~* \.(?:html|php)$ {
+    add_header Cache-Control "no-cache, must-revalidate";
+}
+```
+
+### Apache (.htaccess or vhost)
+
+```apache
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/plain text/html text/css application/javascript application/json application/xml image/svg+xml
+</IfModule>
+
+<IfModule mod_brotli.c>
+  AddOutputFilterByType BROTLI_COMPRESS text/plain text/html text/css application/javascript application/json application/xml image/svg+xml
+</IfModule>
+
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType text/css "access plus 30 days"
+  ExpiresByType application/javascript "access plus 30 days"
+  ExpiresByType image/png "access plus 30 days"
+  ExpiresByType image/jpeg "access plus 30 days"
+  ExpiresByType image/svg+xml "access plus 30 days"
+</IfModule>
+
+<IfModule mod_headers.c>
+  <FilesMatch "\.(css|js|png|jpg|jpeg|gif|svg|webp|ico|woff|woff2)$">
+    Header set Cache-Control "public, max-age=2592000, immutable"
+  </FilesMatch>
+  <FilesMatch "\.(php|html)$">
+    Header set Cache-Control "no-cache, must-revalidate"
+  </FilesMatch>
+</IfModule>
+```
+
+Notes:
+- Use content-hashed filenames (`app.abc123.js`) for truly immutable caching.
+- Keep HTML dynamic/short-lived so new releases are discovered quickly.
+
 ## Documentation
 
 For detailed documentation, feature guides, and implementation details, see:
