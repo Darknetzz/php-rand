@@ -638,6 +638,35 @@ function buildClientCryptoDiagnosticsHtml() {
     return html;
 }
 
+function buildBrowserInspectorStatusBadgeHtml(item) {
+    if (item.error) {
+        const full = String(item.error);
+        const short = full.length > 56 ? full.slice(0, 53) + "…" : full;
+        return "<span class='badge bg-danger text-white' title=\"" + htmlEscape(full) + "\">" + htmlEscape(short) + "</span>";
+    }
+    if (!item.available) {
+        return "<span class='badge bg-secondary text-white'>N/A</span>";
+    }
+    const raw = item.value === undefined || item.value === null ? "" : String(item.value).trim();
+    const lower = raw.toLowerCase();
+    if (lower === "granted") {
+        return "<span class='badge bg-success text-white'>Granted</span>";
+    }
+    if (lower === "denied") {
+        return "<span class='badge bg-danger text-white'>Denied</span>";
+    }
+    if (lower === "prompt") {
+        return "<span class='badge bg-warning text-dark'>Prompt</span>";
+    }
+    if (raw === "Yes") {
+        return "<span class='badge bg-success text-white'>Yes</span>";
+    }
+    if (raw === "No") {
+        return "<span class='badge bg-secondary text-white'>No</span>";
+    }
+    return "<span class='badge bg-success text-white'>OK</span>";
+}
+
 function renderBrowserSections(info) {
     const sections = Array.isArray(info.sections) ? info.sections : [];
     let html = "<div class='mb-3'><strong>Generated:</strong> " + htmlEscape(info.generatedAt || "") + "</div>";
@@ -648,11 +677,10 @@ function renderBrowserSections(info) {
         html += "<div class='card-body p-0'>";
         html += "<div class='table-responsive'><table class='table table-dark table-striped mb-0'><thead><tr><th>Field</th><th>Value</th><th>Status</th></tr></thead><tbody>";
         (section.items || []).forEach(function(item) {
-            const status = item.error ? ("Error: " + item.error) : (item.available ? "OK" : "N/A");
             html += "<tr>";
             html += "<td style='width: 30%;'><code>" + htmlEscape(item.label || item.key || "") + "</code></td>";
             html += "<td style='white-space: pre-wrap; word-break: break-word;'>" + htmlEscape(item.value) + "</td>";
-            html += "<td style='width: 18%;'>" + htmlEscape(status) + "</td>";
+            html += "<td style='width: 18%; white-space: nowrap;'>" + buildBrowserInspectorStatusBadgeHtml(item) + "</td>";
             html += "</tr>";
         });
         html += "</tbody></table></div></div></div>";
