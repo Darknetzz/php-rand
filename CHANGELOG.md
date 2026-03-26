@@ -14,6 +14,7 @@ All notable changes to this project are documented in this file.
 - **OpenSSH public key export** - SSH generator now emits true OpenSSH public key lines (RSA/ECDSA, Ed25519 when runtime details are available) in addition to PEM.
 - **Hybrid key generation mode** - Added client-side WebCrypto generation mode with server fallback for compatibility-sensitive flows.
 - **New key utilities** - Added `PEM/OpenSSH Converter` and `Crypto Diagnostics` modules for format conversion and runtime capability checks.
+- **Logo generator rewrite** - Replaced the old `php-logogen` dependency with a new built-in Logo Generator module in this repository.
 
 <details>
 <summary>📋 Detailed Changes (click to expand)</summary>
@@ -40,6 +41,10 @@ All notable changes to this project are documented in this file.
 - **Hybrid client/server mode** - Added browser-side key generation for keypair/SSH modules through `js/rand.js` (`generation_mode`: auto/client/server), with automatic fallback to server mode when WebCrypto support is missing or features require server processing.
 - **Format conversion** - Added `handle_pem_openssh_convert()` with PEM -> OpenSSH conversion and OpenSSH -> PEM conversion via host `ssh-keygen` when available.
 - **Runtime diagnostics** - Added `handle_crypto_diagnostics()` to verify algorithm availability and OpenSSH export support per algorithm.
+
+#### Repository and Tooling
+- **Submodule removal** - Removed `.gitmodules` and dropped the `php-logogen` submodule path from this repository.
+- **Image Generator module** - Updated `modules/gen_image.php` to validate local path availability and link directly to the in-repo logo generator.
 
 </details>
 

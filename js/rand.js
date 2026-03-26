@@ -234,6 +234,365 @@ function htmlEscape(text) {
     return $("<div>").text(text).html();
 }
 
+function capabilityAvailable(value) {
+    return value !== undefined && value !== null;
+}
+
+function normalizeCapabilityValue(value) {
+    if (value === undefined || value === null || value === "") {
+        return "N/A";
+    }
+    if (typeof value === "boolean") {
+        return value ? "Yes" : "No";
+    }
+    if (Array.isArray(value)) {
+        return value.length ? value.join(", ") : "N/A";
+    }
+    if (typeof value === "object") {
+        try {
+            return JSON.stringify(value);
+        } catch (error) {
+            return "N/A";
+        }
+    }
+    return String(value);
+}
+
+function mapToCollectorItems(entries) {
+    return entries.map(function(entry) {
+        return {
+            key: entry.key,
+            label: entry.label,
+            value: normalizeCapabilityValue(entry.value),
+            available: capabilityAvailable(entry.value),
+            error: entry.error || null
+        };
+    });
+}
+
+function collectBaseBrowserInfo() {
+    const nav = navigator || {};
+    const tzName = (Intl && Intl.DateTimeFormat) ? Intl.DateTimeFormat().resolvedOptions().timeZone : null;
+    const conn = nav.connection || nav.mozConnection || nav.webkitConnection || null;
+
+    const userAgentDataBrands = (nav.userAgentData && Array.isArray(nav.userAgentData.brands))
+        ? nav.userAgentData.brands.map(function(brand) {
+            return brand.brand + " " + brand.version;
+        })
+        : null;
+
+    return {
+        generatedAt: new Date().toISOString(),
+        sections: [
+            {
+                key: "browser",
+                title: "Browser",
+                items: mapToCollectorItems([
+                    { key: "userAgent", label: "User Agent", value: nav.userAgent || null },
+                    { key: "platform", label: "Platform", value: nav.platform || null },
+                    { key: "vendor", label: "Vendor", value: nav.vendor || null },
+                    { key: "product", label: "Product", value: nav.product || null },
+                    { key: "cookieEnabled", label: "Cookies Enabled", value: nav.cookieEnabled },
+                    { key: "doNotTrack", label: "Do Not Track", value: nav.doNotTrack || null },
+                    { key: "webdriver", label: "Webdriver", value: nav.webdriver },
+                    { key: "onLine", label: "Online", value: nav.onLine }
+                ])
+            },
+            {
+                key: "uaHints",
+                title: "User-Agent Hints",
+                items: mapToCollectorItems([
+                    { key: "brands", label: "Brands", value: userAgentDataBrands },
+                    { key: "mobile", label: "Mobile", value: nav.userAgentData ? nav.userAgentData.mobile : null },
+                    { key: "platform", label: "UA Platform", value: nav.userAgentData ? nav.userAgentData.platform : null }
+                ])
+            },
+            {
+                key: "localeTime",
+                title: "Locale & Time",
+                items: mapToCollectorItems([
+                    { key: "language", label: "Language", value: nav.language || null },
+                    { key: "languages", label: "Languages", value: nav.languages || null },
+                    { key: "timezone", label: "Timezone", value: tzName || null },
+                    { key: "timezoneOffsetMinutes", label: "Timezone Offset (minutes)", value: new Date().getTimezoneOffset() },
+                    { key: "currentLocalTime", label: "Current Local Time", value: new Date().toString() }
+                ])
+            },
+            {
+                key: "screen",
+                title: "Screen & Viewport",
+                items: mapToCollectorItems([
+                    { key: "screenWidth", label: "Screen Width", value: window.screen ? window.screen.width : null },
+                    { key: "screenHeight", label: "Screen Height", value: window.screen ? window.screen.height : null },
+                    { key: "availWidth", label: "Available Width", value: window.screen ? window.screen.availWidth : null },
+                    { key: "availHeight", label: "Available Height", value: window.screen ? window.screen.availHeight : null },
+                    { key: "colorDepth", label: "Color Depth", value: window.screen ? window.screen.colorDepth : null },
+                    { key: "pixelDepth", label: "Pixel Depth", value: window.screen ? window.screen.pixelDepth : null },
+                    { key: "innerWidth", label: "Viewport Width", value: window.innerWidth || null },
+                    { key: "innerHeight", label: "Viewport Height", value: window.innerHeight || null },
+                    { key: "devicePixelRatio", label: "Device Pixel Ratio", value: window.devicePixelRatio || null }
+                ])
+            },
+            {
+                key: "hardware",
+                title: "Hardware",
+                items: mapToCollectorItems([
+                    { key: "hardwareConcurrency", label: "CPU Threads", value: nav.hardwareConcurrency || null },
+                    { key: "deviceMemory", label: "Device Memory (GB, hint)", value: nav.deviceMemory || null },
+                    { key: "maxTouchPoints", label: "Max Touch Points", value: nav.maxTouchPoints || null }
+                ])
+            },
+            {
+                key: "network",
+                title: "Network Hints",
+                items: mapToCollectorItems([
+                    { key: "effectiveType", label: "Effective Type", value: conn ? conn.effectiveType : null },
+                    { key: "downlink", label: "Downlink (Mbps)", value: conn ? conn.downlink : null },
+                    { key: "rtt", label: "RTT (ms)", value: conn ? conn.rtt : null },
+                    { key: "saveData", label: "Save-Data", value: conn ? conn.saveData : null }
+                ])
+            },
+            {
+                key: "capabilities",
+                title: "Capabilities",
+                items: mapToCollectorItems([
+                    { key: "clipboard", label: "Clipboard API", value: !!(nav.clipboard && nav.clipboard.writeText) },
+                    { key: "serviceWorker", label: "Service Worker", value: !!nav.serviceWorker },
+                    { key: "geolocation", label: "Geolocation API", value: !!nav.geolocation },
+                    { key: "notifications", label: "Notifications API", value: ("Notification" in window) },
+                    { key: "bluetooth", label: "Web Bluetooth", value: !!nav.bluetooth },
+                    { key: "usb", label: "WebUSB", value: !!nav.usb },
+                    { key: "nfc", label: "WebNFC", value: !!nav.nfc },
+                    { key: "webgpu", label: "WebGPU", value: !!nav.gpu },
+                    { key: "webAssembly", label: "WebAssembly", value: ("WebAssembly" in window) },
+                    { key: "sharedWorker", label: "SharedWorker", value: ("SharedWorker" in window) },
+                    { key: "indexedDb", label: "IndexedDB", value: ("indexedDB" in window) },
+                    { key: "localStorage", label: "localStorage", value: ("localStorage" in window) },
+                    { key: "sessionStorage", label: "sessionStorage", value: ("sessionStorage" in window) },
+                    { key: "crypto", label: "WebCrypto", value: !!(window.crypto && window.crypto.subtle) }
+                ])
+            }
+        ]
+    };
+}
+
+function collectWebGlInfo() {
+    const section = { key: "webgl", title: "WebGL", items: [] };
+    const canvas = document.createElement("canvas");
+    const gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+    if (!gl) {
+        section.items = mapToCollectorItems([
+            { key: "supported", label: "WebGL Supported", value: false }
+        ]);
+        return section;
+    }
+
+    let renderer = null;
+    let vendor = null;
+    try {
+        const ext = gl.getExtension("WEBGL_debug_renderer_info");
+        if (ext) {
+            renderer = gl.getParameter(ext.UNMASKED_RENDERER_WEBGL);
+            vendor = gl.getParameter(ext.UNMASKED_VENDOR_WEBGL);
+        }
+    } catch (error) {
+        renderer = null;
+        vendor = null;
+    }
+
+    section.items = mapToCollectorItems([
+        { key: "supported", label: "WebGL Supported", value: true },
+        { key: "version", label: "WebGL Version", value: gl.getParameter(gl.VERSION) || null },
+        { key: "shadingLanguageVersion", label: "Shading Language Version", value: gl.getParameter(gl.SHADING_LANGUAGE_VERSION) || null },
+        { key: "renderer", label: "Renderer", value: renderer },
+        { key: "vendor", label: "Vendor", value: vendor }
+    ]);
+    return section;
+}
+
+async function collectPermissionsSection() {
+    const section = { key: "permissions", title: "Permissions", items: [] };
+    if (!navigator.permissions || !navigator.permissions.query) {
+        section.items = mapToCollectorItems([
+            { key: "supported", label: "Permissions API", value: false }
+        ]);
+        return section;
+    }
+
+    const permissionNames = [
+        "geolocation",
+        "notifications",
+        "microphone",
+        "camera",
+        "clipboard-read",
+        "clipboard-write"
+    ];
+    const items = [{ key: "supported", label: "Permissions API", value: true }];
+
+    for (const name of permissionNames) {
+        try {
+            const status = await navigator.permissions.query({ name: name });
+            items.push({
+                key: name,
+                label: name,
+                value: status && status.state ? status.state : null
+            });
+        } catch (error) {
+            items.push({
+                key: name,
+                label: name,
+                value: null,
+                error: "Unsupported or blocked"
+            });
+        }
+    }
+
+    section.items = mapToCollectorItems(items);
+    return section;
+}
+
+async function collectWebRtcSection() {
+    const section = { key: "webrtc", title: "WebRTC Candidates", items: [] };
+    if (typeof RTCPeerConnection === "undefined") {
+        section.items = mapToCollectorItems([
+            { key: "supported", label: "RTCPeerConnection", value: false }
+        ]);
+        return section;
+    }
+
+    const localCandidates = [];
+    let candidateError = null;
+
+    try {
+        const pc = new RTCPeerConnection({ iceServers: [] });
+        pc.createDataChannel("probe");
+        pc.onicecandidate = function(event) {
+            if (!event || !event.candidate || !event.candidate.candidate) {
+                return;
+            }
+            const candidate = event.candidate.candidate;
+            const parts = candidate.split(" ");
+            if (parts.length >= 8) {
+                localCandidates.push({
+                    protocol: parts[2] || null,
+                    address: parts[4] || null,
+                    port: parts[5] || null,
+                    type: parts[7] || null
+                });
+            }
+        };
+
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        await new Promise(function(resolve) { setTimeout(resolve, 1200); });
+        pc.close();
+    } catch (error) {
+        candidateError = error && error.message ? error.message : "Failed to collect WebRTC candidates.";
+    }
+
+    section.items = mapToCollectorItems([
+        { key: "supported", label: "RTCPeerConnection", value: true },
+        { key: "candidateCount", label: "Candidate Count", value: localCandidates.length },
+        { key: "candidates", label: "Candidates", value: localCandidates.length ? localCandidates : null },
+        { key: "error", label: "Probe Error", value: candidateError }
+    ]);
+    return section;
+}
+
+async function collectPublicIpSection() {
+    const section = { key: "publicIp", title: "Public IP (External)", items: [] };
+    try {
+        const response = await fetch("https://api.ipify.org?format=json", { method: "GET" });
+        const data = await response.json();
+        section.items = mapToCollectorItems([
+            { key: "ip", label: "Public IP", value: data && data.ip ? data.ip : null }
+        ]);
+    } catch (error) {
+        section.items = mapToCollectorItems([
+            { key: "ip", label: "Public IP", value: null, error: "Lookup failed" }
+        ]);
+    }
+    return section;
+}
+
+async function collectBrowserInfo(options) {
+    const opts = options || {};
+    const info = collectBaseBrowserInfo();
+    info.sections.push(collectWebGlInfo());
+
+    if (opts.includePermissions) {
+        info.sections.push(await collectPermissionsSection());
+    }
+    if (opts.includeWebRtc) {
+        info.sections.push(await collectWebRtcSection());
+    }
+    if (opts.includePublicIp) {
+        info.sections.push(await collectPublicIpSection());
+    }
+
+    return info;
+}
+
+function renderBrowserSections(info) {
+    const sections = Array.isArray(info.sections) ? info.sections : [];
+    let html = "<div class='mb-3'><strong>Generated:</strong> " + htmlEscape(info.generatedAt || "") + "</div>";
+
+    sections.forEach(function(section) {
+        html += "<div class='card border-info mb-3'>";
+        html += "<h5 class='card-header'>" + htmlEscape(section.title || section.key || "Section") + "</h5>";
+        html += "<div class='card-body p-0'>";
+        html += "<div class='table-responsive'><table class='table table-dark table-striped mb-0'><thead><tr><th>Field</th><th>Value</th><th>Status</th></tr></thead><tbody>";
+        (section.items || []).forEach(function(item) {
+            const status = item.error ? ("Error: " + item.error) : (item.available ? "OK" : "N/A");
+            html += "<tr>";
+            html += "<td style='width: 30%;'><code>" + htmlEscape(item.label || item.key || "") + "</code></td>";
+            html += "<td style='white-space: pre-wrap; word-break: break-word;'>" + htmlEscape(item.value) + "</td>";
+            html += "<td style='width: 18%;'>" + htmlEscape(status) + "</td>";
+            html += "</tr>";
+        });
+        html += "</tbody></table></div></div></div>";
+    });
+
+    return html;
+}
+
+function renderBrowserInfoHtml(info) {
+    const rawJson = JSON.stringify(info, null, 2);
+    let html = renderBrowserSections(info);
+    html += "<div class='card border-secondary mt-3'>";
+    html += "<h5 class='card-header d-flex justify-content-between align-items-center'>";
+    html += "<span>Raw JSON</span>";
+    html += "<button type='button' class='btn btn-sm btn-outline-light' onclick='copyToClipboard(\"browserInfoJson\", this)'><i class='bi bi-clipboard'></i> Copy JSON</button>";
+    html += "</h5>";
+    html += "<div class='card-body'>";
+    html += "<pre id='browserInfoJson' style='white-space: pre-wrap; word-break: break-word; margin-bottom: 0;'>" + htmlEscape(rawJson) + "</pre>";
+    html += "</div></div>";
+    return html;
+}
+
+async function maybeHandleBrowserInspector(form, responseObj) {
+    const action = (form.data("action") || "").toLowerCase();
+    if (action !== "browser_inspect") {
+        return false;
+    }
+
+    showData(responseObj, buildLoadingHtml("Detecting browser details..."));
+
+    try {
+        const info = await collectBrowserInfo({
+            includePermissions: form.find("[name='include_permissions']").is(":checked"),
+            includeWebRtc: form.find("[name='include_webrtc']").is(":checked"),
+            includePublicIp: form.find("[name='include_public_ip']").is(":checked")
+        });
+        showData(responseObj, renderBrowserInfoHtml(info));
+    } catch (error) {
+        const message = error && error.message ? error.message : "Failed to inspect browser details.";
+        showData(responseObj, "<div class='alert alert-danger'>" + htmlEscape(message) + "</div>");
+    }
+
+    return true;
+}
+
 function buildClientKeyOutput(items, title) {
     let html = "<div class='card border-info mb-3'><h5 class='card-header'>" + htmlEscape(title) + "</h5><div class='card-body'>";
     items.forEach(function(item) {
@@ -360,6 +719,41 @@ function setFormVal(form, name = "action", value = "") {
     $(form).append(hiddenInput);
 }
 
+const ACTIVE_MODULE_STORAGE_KEY = "rand.activeModule";
+
+function normalizeModuleHash(value) {
+    const moduleName = (value || "").replace(/^#/, "").trim();
+    return moduleName ? ("#" + moduleName) : "";
+}
+
+function persistActiveModule(hashValue) {
+    const normalizedHash = normalizeModuleHash(hashValue);
+    if (!normalizedHash) {
+        return;
+    }
+    try {
+        window.localStorage.setItem(ACTIVE_MODULE_STORAGE_KEY, normalizedHash);
+    } catch (error) {
+        // localStorage can be unavailable in privacy-restricted contexts.
+    }
+}
+
+function getPreferredInitialModule() {
+    const hashModule = normalizeModuleHash(window.location.hash);
+    if (hashModule) {
+        return hashModule;
+    }
+    try {
+        const storedModule = normalizeModuleHash(window.localStorage.getItem(ACTIVE_MODULE_STORAGE_KEY));
+        if (storedModule) {
+            return storedModule;
+        }
+    } catch (error) {
+        // Ignore storage read errors and fallback to dashboard.
+    }
+    return "#dashboard";
+}
+
 /* ===================================================================== */
 /*                           FUNCTION: navigate                          */
 /* ===================================================================== */
@@ -370,22 +764,28 @@ function navigate(to) {
     if (!moduleName) {
         return;
     }
+    const normalizedTo = "#" + moduleName;
+
+    persistActiveModule(normalizedTo);
+    if (window.location.hash !== normalizedTo) {
+        history.replaceState(null, "", normalizedTo);
+    }
 
     // Reset all nav links
     var navLinks = $(".link.nav-link");
     navLinks.prop("class", "link nav-link");
 
     // Set this nav link as active
-    var navLink = $(`.link.nav-link[href='${to}']`);
+    var navLink = $(`.link.nav-link[href='${normalizedTo}']`);
     navLink.prop("class", "link nav-link link-success active");
 
     const showTarget = function() {
         $(".content").hide();
-        $(to).fadeIn();
-        addRandomDataButtons($(to));
+        $(normalizedTo).fadeIn();
+        addRandomDataButtons($(normalizedTo));
     };
 
-    if ($(to).length) {
+    if ($(normalizedTo).length) {
         showTarget();
         return;
     }
@@ -579,6 +979,11 @@ $(document).ready(function() {
             serializeForm += "&" + btnName + "=" + btnValue;
         }
         console.log("[submitForm] Sending form: " + serializeForm);
+        const handledBrowserInspector = await maybeHandleBrowserInspector(form, form.find(".responseDiv"));
+        if (handledBrowserInspector) {
+            randomizeDice();
+            return;
+        }
         const handledClientSide = await maybeHandleClientSideKeygen(form, form.find(".responseDiv"));
         if (handledClientSide) {
             randomizeDice();
@@ -663,15 +1068,10 @@ $(document).ready(function() {
     /* ===================================================================== */
     /*                      Navigation (and hash check)                      */
     /* ===================================================================== */
-    if (window.location.hash != '' && window.location.hash != undefined) {
-        // Hash is set on page load, so navigate to it
-        var hash = window.location.hash;
-        var afterhash = hash.replace('#', '');
-        navigate(hash);
-        console.log("Hash detected: " + hash + ", setting nav" + afterhash + " parent as the active tab.");
-    } else {
-        navigate("#dashboard");
-    }
+    var initialModule = getPreferredInitialModule();
+    var initialModuleName = initialModule.replace('#', '');
+    navigate(initialModule);
+    console.log("Initial module: " + initialModule + ", setting nav " + initialModuleName + " as the active tab.");
 
     /* ===================================================================== */
     /*                               Click link                              */

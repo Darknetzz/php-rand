@@ -37,6 +37,7 @@ function getHandlerRegistry(): array {
         'calc' => 'handle_calculator',
         'currency' => 'handle_currency',
         'qrcode' => 'handle_qrcode',
+        'logo_generate' => 'handle_logo_generate',
         'regex' => 'handle_regex',
         'brainfuck' => 'handle_brainfuck',
         'genid' => 'handle_genid',
@@ -828,6 +829,185 @@ function handle_stringtools(array $req): string {
     }
 
     return formatOutput(nl2br($string));
+}
+
+/**
+ * Parse #RRGGBB color to RGB tuple.
+ *
+ * @return array{0:int,1:int,2:int}
+ */
+function logo_hex_to_rgb(string $hex, string $fallback = '#1f2937'): array {
+    $value = trim($hex);
+    if (!preg_match('/^#[0-9a-fA-F]{6}$/', $value)) {
+        $value = $fallback;
+    }
+    return [
+        hexdec(substr($value, 1, 2)),
+        hexdec(substr($value, 3, 2)),
+        hexdec(substr($value, 5, 2)),
+    ];
+}
+
+function logo_get_fonts(): array {
+    $fonts = glob(APP_ROOT . DIRSEP . 'fonts' . DIRSEP . '*.ttf');
+    return is_array($fonts) ? $fonts : [];
+}
+
+function logo_pick_font(string $fontFile): ?string {
+    $fonts = logo_get_fonts();
+    if (empty($fonts)) {
+        return null;
+    }
+    foreach ($fonts as $fontPath) {
+        if (basename($fontPath) === $fontFile) {
+            return $fontPath;
+        }
+    }
+    return $fonts[0];
+}
+
+function logo_build_png_data_uri($image): string {
+    ob_start();
+    imagepng($image);
+    $binary = (string) ob_get_clean();
+    return 'data:image/png;base64,' . base64_encode($binary);
+}
+
+function logo_draw_background($image, int $width, int $height, string $style, array $bgRgb, array $accentRgb): void {
+    if ($style === 'gradient') {
+        for ($y = 0; $y < $height; $y++) {
+            $t = $height > 1 ? ($y / ($height - 1)) : 0;
+            $r = (int) round($bgRgb[0] + ($accentRgb[0] - $bgRgb[0]) * $t);
+            $g = (int) round($bgRgb[1] + ($accentRgb[1] - $bgRgb[1]) * $t);
+            $b = (int) round($bgRgb[2] + ($accentRgb[2] - $bgRgb[2]) * $t);
+            $line = imagecolorallocate($image, $r, $g, $b);
+            imageline($image, 0, $y, $width, $y, $line);
+        }
+        return;
+    }
+
+    $bg = imagecolorallocate($image, $bgRgb[0], $bgRgb[1], $bgRgb[2]);
+    imagefilledrectangle($image, 0, 0, $width, $height, $bg);
+}
+
+/**
+ * Handle logo generator requests.
+ *
+ * @param array $req Request array containing logo configuration options
+ * @return string HTML preview with download link
+ */
+function handle_logo_generate(array $req): string {
+    if (!extension_loaded('gd')) {
+        return formatOutput("GD extension is required for logo generation.", type: "danger");
+    }
+
+    $text = trim((string) req_get($req, 'logo_text', 'Rand'));
+    if ($text === '') {
+        $text = 'Rand';
+    }
+    $text = mb_substr($text, 0, 40);
+
+    $width = max(128, min(1600, req_int($req, 'logo_width', 512)));
+    $height = max(128, min(1600, req_int($req, 'logo_height', 512)));
+    $fontSize = max(12, min(220, req_int($req, 'logo_font_size', 96)));
+    $shape = (string) req_get($req, 'logo_shape', 'rounded');
+    $style = (string) req_get($req, 'logo_style', 'gradient');
+    $uppercase = req_bool($req, 'logo_uppercase');
+    $useInitials = req_bool($req, 'logo_initials');
+    $border = max(0, min(24, req_int($req, 'logo_border', 0)));
+    $fontFile = (string) req_get($req, 'logo_font', '');
+
+    $displayText = $uppercase ? mb_strtoupper($text) : $text;
+    if ($useInitials) {
+        $parts = preg_split('/\s+/', trim($displayText)) ?: [];
+        $initials = '';
+        foreach ($parts as $part) {
+            if ($part !== '') {
+                $initials .= mb_substr($part, 0, 1);
+            }
+        }
+        $displayText = $initials !== '' ? mb_substr($initials, 0, 4) : mb_substr($displayText, 0, 3);
+    }
+
+    $bgRgb = logo_hex_to_rgb((string) req_get($req, 'logo_bg_color', '#111827'));
+    $accentRgb = logo_hex_to_rgb((string) req_get($req, 'logo_accent_color', '#1d4ed8'));
+    $textRgb = logo_hex_to_rgb((string) req_get($req, 'logo_text_color', '#ffffff'), '#ffffff');
+    $borderRgb = logo_hex_to_rgb((string) req_get($req, 'logo_border_color', '#ffffff'), '#ffffff');
+
+    $image = imagecreatetruecolor($width, $height);
+    imagealphablending($image, true);
+    imagesavealpha($image, true);
+
+    logo_draw_background($image, $width, $height, $style, $bgRgb, $accentRgb);
+
+    if ($shape === 'circle') {
+        $mask = imagecreatetruecolor($width, $height);
+        $transparent = imagecolorallocatealpha($mask, 0, 0, 0, 127);
+        imagefill($mask, 0, 0, $transparent);
+        imagealphablending($mask, true);
+        $white = imagecolorallocate($mask, 255, 255, 255);
+        imagefilledellipse($mask, (int) ($width / 2), (int) ($height / 2), $width, $height, $white);
+        imagecolortransparent($mask, $transparent);
+        imagecopymerge($image, $mask, 0, 0, 0, 0, $width, $height, 100);
+        imagedestroy($mask);
+    } elseif ($shape === 'rounded') {
+        $radius = (int) max(12, min((int) floor(min($width, $height) * 0.15), 80));
+        $overlay = imagecreatetruecolor($width, $height);
+        imagesavealpha($overlay, true);
+        $trans = imagecolorallocatealpha($overlay, 0, 0, 0, 127);
+        imagefill($overlay, 0, 0, $trans);
+        $fill = imagecolorallocate($overlay, 255, 255, 255);
+        imagefilledrectangle($overlay, $radius, 0, $width - $radius, $height, $fill);
+        imagefilledrectangle($overlay, 0, $radius, $width, $height - $radius, $fill);
+        imagefilledellipse($overlay, $radius, $radius, $radius * 2, $radius * 2, $fill);
+        imagefilledellipse($overlay, $width - $radius, $radius, $radius * 2, $radius * 2, $fill);
+        imagefilledellipse($overlay, $radius, $height - $radius, $radius * 2, $radius * 2, $fill);
+        imagefilledellipse($overlay, $width - $radius, $height - $radius, $radius * 2, $radius * 2, $fill);
+        imagecolortransparent($overlay, $trans);
+        imagecopymerge($image, $overlay, 0, 0, 0, 0, $width, $height, 100);
+        imagedestroy($overlay);
+    }
+
+    if ($border > 0) {
+        $borderColor = imagecolorallocate($image, $borderRgb[0], $borderRgb[1], $borderRgb[2]);
+        for ($i = 0; $i < $border; $i++) {
+            imagerectangle($image, $i, $i, $width - 1 - $i, $height - 1 - $i, $borderColor);
+        }
+    }
+
+    $fontColor = imagecolorallocate($image, $textRgb[0], $textRgb[1], $textRgb[2]);
+    $fontPath = logo_pick_font($fontFile);
+    if ($fontPath !== null && function_exists('imagettfbbox') && function_exists('imagettftext')) {
+        $bbox = imagettfbbox($fontSize, 0, $fontPath, $displayText);
+        $textWidth = (int) abs(($bbox[2] ?? 0) - ($bbox[0] ?? 0));
+        $textHeight = (int) abs(($bbox[7] ?? 0) - ($bbox[1] ?? 0));
+        $x = (int) floor(($width - $textWidth) / 2);
+        $y = (int) floor(($height + $textHeight) / 2);
+        imagettftext($image, $fontSize, 0, $x, $y, $fontColor, $fontPath, $displayText);
+    } else {
+        $font = 5;
+        $textWidth = imagefontwidth($font) * strlen($displayText);
+        $textHeight = imagefontheight($font);
+        $x = (int) floor(($width - $textWidth) / 2);
+        $y = (int) floor(($height - $textHeight) / 2);
+        imagestring($image, $font, $x, $y, $displayText, $fontColor);
+    }
+
+    $dataUri = logo_build_png_data_uri($image);
+    imagedestroy($image);
+
+    $safeDataUri = htmlspecialchars($dataUri, ENT_QUOTES, 'UTF-8');
+    $safeAlt = htmlspecialchars($displayText, ENT_QUOTES, 'UTF-8');
+    $filenameBase = preg_replace('/[^a-zA-Z0-9_-]+/', '-', strtolower($displayText)) ?: 'logo';
+    $filename = $filenameBase . '.png';
+
+    $output = "<div style='text-align:center; padding:12px;'>";
+    $output .= "<img src='{$safeDataUri}' alt='{$safeAlt}' style='max-width:100%; height:auto; border-radius:8px; border:1px solid #334155;' />";
+    $output .= "<div style='margin-top:12px;'>";
+    $output .= "<a class='btn btn-primary btn-sm' href='{$safeDataUri}' download='" . htmlspecialchars($filename, ENT_QUOTES, 'UTF-8') . "'>" . icon('download') . " Download PNG</a>";
+    $output .= "</div>";
+    $output .= "</div>";
+    return $output;
 }
 
 /**

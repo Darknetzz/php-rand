@@ -15,7 +15,7 @@ A comprehensive collection of useful developer tools built with PHP and modern w
 - String generator
 - Number generator
 - QR Code generator
-- Logo generator ([php-logogen](https://github.com/Darknetzz/php-logogen))
+- Logo generator (built into this repository)
 - Spin the wheel
 
 ### Encoding & Decoding
@@ -80,7 +80,7 @@ services:
 #### Build from Dockerfile
 ```bash
 # Clone repo
-git clone --recurse-submodules https://github.com/Darknetzz/php-rand.git && cd php-rand
+git clone https://github.com/Darknetzz/php-rand.git && cd php-rand
 
 # Build image
 docker build --no-cache -t php-rand .
@@ -102,7 +102,7 @@ sudo apt install -y php8.3-common php8.3-mbstring php8.3-mcrypt php8.3-gd php8.3
 
 # Clone repository (assuming webroot is /var/www/html)
 cd /var/www/html
-git clone --recurse-submodules https://github.com/Darknetzz/php-rand.git
+git clone https://github.com/Darknetzz/php-rand.git
 cd php-rand
 
 # Install Composer dependencies
@@ -243,7 +243,7 @@ All functions include PHPDoc comments with descriptions, parameters, return type
 
 - **Backend:** PHP 8.3+ with modular design
 - **Frontend:** Vanilla JavaScript, jQuery, Bootstrap 5, Tabler UI
-- **Dependencies:** Composer-managed (minify utilities, submodules)
+- **Dependencies:** Composer-managed (minify utilities)
 - **Extensible:** Easy to add new tools by creating new modules
 
 ## License

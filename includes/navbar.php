@@ -205,6 +205,11 @@ $navbarItems = [
                 "formalName" => "Regex Tester",
                 "icon"       => icon("regex"),
             ],
+            "browser" => [
+                "name"       => "browser",
+                "formalName" => "Browser",
+                "icon"       => icon("browser-chrome"),
+            ],
         ],
     ],
 ];
