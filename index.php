@@ -66,6 +66,42 @@ include_once("modules/dashboard.php");
         </div>
     </div>
 
+    <div class="modal fade" tabindex="-1" id="privacyModal" aria-labelledby="privacyModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title h4 mb-0" id="privacyModalLabel"><?= icon("shield-lock") ?> Privacy & Data Flow</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-3">
+                        Inputs are submitted to the server for processing in most tools, but this app does not persist submitted input data in its own database, files, or sessions.
+                    </p>
+
+                    <h4 class="h6">Processed on server (submitted to <code>gen.php</code>)</h4>
+                    <p class="text-muted small mb-3">
+                        Most tools (generators, crypto, encoding, convert, and misc tools) send input to the server and return results immediately.
+                    </p>
+
+                    <h4 class="h6">Client-side only</h4>
+                    <ul class="mb-3">
+                        <li><code>dashboard</code> (display only)</li>
+                        <li><code>markdown</code> (rendered in browser with JS)</li>
+                        <li><code>gen_image</code> (opens external image generator page)</li>
+                    </ul>
+
+                    <h4 class="h6">Important note</h4>
+                    <p class="mb-0">
+                        Server/proxy logs may still retain request metadata depending on infrastructure configuration. This modal describes app-level behavior.
+                    </p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="error"></div>
 
 

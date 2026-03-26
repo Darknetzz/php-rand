@@ -131,6 +131,9 @@
                                 <div class="mb-2"><?= icon("lock-fill", 2, "#20c997") ?></div>
                                 <strong>Privacy</strong>
                                 <div class="small text-muted">No input data is stored on the server</div>
+                                <button type="button" class="btn btn-link btn-sm p-0 mt-1" data-bs-toggle="modal" data-bs-target="#privacyModal">
+                                    Details
+                                </button>
                             </div>
                         </div>
                         <div class="col-6">
