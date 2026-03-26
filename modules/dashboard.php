@@ -129,8 +129,8 @@
                         <div class="col-6">
                             <div class="text-center p-3" style="background: rgba(32, 201, 151, 0.1); border-radius: 0.5rem;">
                                 <div class="mb-2"><?= icon("lock-fill", 2, "#20c997") ?></div>
-                                <strong>Client-Side</strong>
-                                <div class="small text-muted">No data leaves your browser</div>
+                                <strong>Privacy</strong>
+                                <div class="small text-muted">No input data is stored on the server</div>
                             </div>
                         </div>
                         <div class="col-6">
