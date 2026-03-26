@@ -533,6 +533,41 @@ async function collectBrowserInfo(options) {
     return info;
 }
 
+function buildClientCryptoDiagnosticsHtml() {
+    const subtle = window.crypto && window.crypto.subtle;
+    const hasSubtle = !!subtle;
+    const secure = !!window.isSecureContext;
+
+    const items = [
+        { label: "WebCrypto available", value: hasSubtle ? "Yes" : "No" },
+        { label: "Secure context (HTTPS / localhost)", value: secure ? "Yes" : "No" },
+        { label: "User agent", value: (navigator && navigator.userAgent) || "N/A" }
+    ];
+
+    let html = "<div class='card border-info mt-3 mb-3'><h5 class='card-header'>Client-side Crypto Diagnostics (Browser)</h5><div class='card-body'>";
+    html += "<p class='mb-3 text-muted'>Basic browser-side crypto/runtime signals. Detailed browser diagnostics are available in the Browser Inspector tool.</p>";
+
+    if (!secure) {
+        html += "<div class='alert alert-warning mb-3' role='alert'><strong>Not a secure context.</strong> This page is not served over HTTPS (or equivalent). Browsers restrict or disable WebCrypto and other APIs on plain HTTP. Use HTTPS or open the app on <code>localhost</code> for full client-side crypto support.</div>";
+    }
+    if (!hasSubtle) {
+        html += "<div class='alert alert-warning mb-3' role='alert'><strong>Client-side crypto unavailable.</strong> <code>window.crypto.subtle</code> is missing. Browser-side key generation cannot run; tools will fall back to server-side generation. If you are on HTTP, switching to HTTPS often fixes this.</div>";
+    }
+
+    html += "<div class='table-responsive'><table class='table table-dark table-striped mb-0'><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>";
+    items.forEach(function(item) {
+        html += "<tr><td style='width: 30%;'><code>" + htmlEscape(item.label) + "</code></td><td>" + htmlEscape(item.value) + "</td></tr>";
+    });
+    html += "</tbody></table></div>";
+
+    if (secure && hasSubtle) {
+        html += "<p class='mt-3 mb-0 small text-muted'>WebCrypto is available in a secure context; key generators probe algorithms at runtime.</p>";
+    }
+
+    html += "</div></div>";
+    return html;
+}
+
 function renderBrowserSections(info) {
     const sections = Array.isArray(info.sections) ? info.sections : [];
     let html = "<div class='mb-3'><strong>Generated:</strong> " + htmlEscape(info.generatedAt || "") + "</div>";
@@ -1120,6 +1155,22 @@ $(document).ready(function() {
     // Initialize state on any already-rendered forms
     $("form[data-action='keypair_generate'], form[data-action='ssh_keygen']").each(function() {
         updatePassphraseStateForForm($(this));
+    });
+
+    // If crypto diagnostics output is present, append client-side diagnostics under it
+    $(document).on("submit", "#cryptoDiagnosticsForm", function() {
+        // Let normal AJAX flow run; client diagnostics are appended on success via delegated handler below.
+    });
+
+    $(document).ajaxSuccess(function(event, xhr, settings) {
+        if (!settings || settings.type !== "POST") return;
+        const data = settings.data || "";
+        if (typeof data !== "string" || data.indexOf("action=crypto_diagnostics") === -1) return;
+
+        const $root = $("#clientCryptoDiagnosticsRoot");
+        if ($root.length) {
+            $root.html(buildClientCryptoDiagnosticsHtml());
+        }
     });
 
 

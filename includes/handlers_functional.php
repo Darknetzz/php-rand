@@ -1859,11 +1859,14 @@ function handle_crypto_diagnostics(array $req): string {
         ? "<span class='badge bg-success text-white me-2'>" . icon('check-circle') . " OK</span><code>" . htmlspecialchars($sshKeygenPath, ENT_QUOTES, 'UTF-8') . "</code>"
         : "<span class='badge bg-warning text-dark'>" . icon('exclamation-triangle') . " Not found</span>";
 
-    $output = "<div class='card border-info mb-3'><h5 class='card-header'>Crypto Runtime Diagnostics</h5><div class='card-body'>";
+    $output = "<div class='card border-info mb-3'><h5 class='card-header'>Crypto Runtime Diagnostics (Server)</h5><div class='card-body'>";
     $output .= "<div class='mb-3'><strong>Available key algorithms:</strong> " . htmlspecialchars(implode(', ', $algorithms), ENT_QUOTES, 'UTF-8') . "</div>";
     $output .= "<div class='mb-3'><strong>ssh-keygen binary:</strong> {$sshKeygenStatus}</div>";
     $output .= "<div class='table-responsive'><table class='table table-dark table-striped'><thead><tr><th>Algorithm</th><th>OpenSSL Keygen</th><th>OpenSSH Export</th></tr></thead><tbody>" . implode('', $rows) . "</tbody></table></div>";
     $output .= "</div></div>";
+
+    // Placeholder container for client-side diagnostics; populated by JS on the crypto diagnostics page.
+    $output .= "<div id='clientCryptoDiagnosticsRoot' class='mt-3'></div>";
 
     return $output;
 }
