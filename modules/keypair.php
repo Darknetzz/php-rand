@@ -6,6 +6,8 @@
                 Generate asymmetric keypairs in PEM format. Supports RSA, ECDSA, and Ed25519.
             </div>
 
+            <div class="client-crypto-generator-banner mb-3" aria-live="polite"></div>
+
             <form class="form" action="gen.php" method="POST" id="keypairForm" data-action="keypair_generate">
                 <div class="row g-3 mb-4">
                     <div class="col-12 col-md-4">

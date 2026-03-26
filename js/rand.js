@@ -533,26 +533,54 @@ async function collectBrowserInfo(options) {
     return info;
 }
 
-function buildClientCryptoDiagnosticsHtml() {
+function getClientCryptoEnvironment() {
     const subtle = window.crypto && window.crypto.subtle;
-    const hasSubtle = !!subtle;
-    const secure = !!window.isSecureContext;
+    return {
+        hasSubtle: !!subtle,
+        secure: !!window.isSecureContext
+    };
+}
+
+/**
+ * Shared HTTPS / WebCrypto warnings for key generators and crypto diagnostics.
+ * @param {string} marginClass - Bootstrap margin class on each alert (e.g. mb-2, mb-3).
+ */
+function buildClientCryptoWarningAlertsHtml(marginClass) {
+    marginClass = marginClass || "mb-3";
+    const env = getClientCryptoEnvironment();
+    let html = "";
+    if (!env.secure) {
+        html += "<div class='alert alert-warning " + marginClass + "' role='alert'><strong>Not a secure context.</strong> This page is not served over HTTPS (or equivalent). Browsers restrict or disable WebCrypto and other APIs on plain HTTP. Use HTTPS or open the app on <code>localhost</code> for full client-side crypto support.</div>";
+    }
+    if (!env.hasSubtle) {
+        html += "<div class='alert alert-warning " + marginClass + "' role='alert'><strong>Client-side crypto unavailable.</strong> <code>window.crypto.subtle</code> is missing. Browser-side key generation cannot run; tools will fall back to server-side generation. If you are on HTTP, switching to HTTPS often fixes this.</div>";
+    }
+    return html;
+}
+
+function updateClientCryptoGeneratorBanners($scope) {
+    const $targets = ($scope && $scope.length)
+        ? $scope.find(".client-crypto-generator-banner")
+        : $(".client-crypto-generator-banner");
+    const html = buildClientCryptoWarningAlertsHtml("mb-2");
+    $targets.each(function() {
+        $(this).html(html);
+    });
+}
+
+function buildClientCryptoDiagnosticsHtml() {
+    const env = getClientCryptoEnvironment();
 
     const items = [
-        { label: "WebCrypto available", value: hasSubtle ? "Yes" : "No" },
-        { label: "Secure context (HTTPS / localhost)", value: secure ? "Yes" : "No" },
+        { label: "WebCrypto available", value: env.hasSubtle ? "Yes" : "No" },
+        { label: "Secure context (HTTPS / localhost)", value: env.secure ? "Yes" : "No" },
         { label: "User agent", value: (navigator && navigator.userAgent) || "N/A" }
     ];
 
     let html = "<div class='card border-info mt-3 mb-3'><h5 class='card-header'>Client-side Crypto Diagnostics (Browser)</h5><div class='card-body'>";
     html += "<p class='mb-3 text-muted'>Basic browser-side crypto/runtime signals. Detailed browser diagnostics are available in the Browser Inspector tool.</p>";
 
-    if (!secure) {
-        html += "<div class='alert alert-warning mb-3' role='alert'><strong>Not a secure context.</strong> This page is not served over HTTPS (or equivalent). Browsers restrict or disable WebCrypto and other APIs on plain HTTP. Use HTTPS or open the app on <code>localhost</code> for full client-side crypto support.</div>";
-    }
-    if (!hasSubtle) {
-        html += "<div class='alert alert-warning mb-3' role='alert'><strong>Client-side crypto unavailable.</strong> <code>window.crypto.subtle</code> is missing. Browser-side key generation cannot run; tools will fall back to server-side generation. If you are on HTTP, switching to HTTPS often fixes this.</div>";
-    }
+    html += buildClientCryptoWarningAlertsHtml("mb-3");
 
     html += "<div class='table-responsive'><table class='table table-dark table-striped mb-0'><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>";
     items.forEach(function(item) {
@@ -560,7 +588,7 @@ function buildClientCryptoDiagnosticsHtml() {
     });
     html += "</tbody></table></div>";
 
-    if (secure && hasSubtle) {
+    if (env.secure && env.hasSubtle) {
         html += "<div class='alert alert-success mb-0' role='alert'><strong>Client-side crypto OK.</strong> HTTPS (or localhost) and WebCrypto are available; browser key generation can run when you choose client or auto mode.</div>";
     }
 
@@ -836,6 +864,7 @@ function navigate(to) {
         $(".content").hide();
         $(normalizedTo).fadeIn();
         addRandomDataButtons($(normalizedTo));
+        updateClientCryptoGeneratorBanners($(normalizedTo));
     };
 
     if ($(normalizedTo).length) {

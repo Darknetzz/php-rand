@@ -24,6 +24,8 @@
                 Generate PEM keypairs for SSH usage. Also outputs true OpenSSH public keys when supported by the selected algorithm/runtime.
             </div>
 
+            <div class="client-crypto-generator-banner mb-3" aria-live="polite"></div>
+
             <form class="form" action="gen.php" method="POST" id="sshKeygenForm" data-action="ssh_keygen">
                 <div class="row g-3 mb-4">
                     <div class="col-12 col-md-3">
