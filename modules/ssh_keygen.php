@@ -66,7 +66,17 @@
 
                 <div class="mb-4">
                     <label for="sshPassphrase" class="form-label"><strong>Private Key Passphrase (Optional)</strong></label>
-                    <input type="text" name="passphrase" id="sshPassphrase" class="form-control form-control-lg" placeholder="Leave empty for unencrypted private key">
+                    <input
+                        type="text"
+                        name="passphrase"
+                        id="sshPassphrase"
+                        class="form-control form-control-lg"
+                        placeholder="Leave empty for unencrypted private key"
+                        data-original-placeholder="Leave empty for unencrypted private key"
+                    >
+                    <div class="form-text">
+                        Passphrase protection is applied in server/auto modes. In client-only mode this field is disabled.
+                    </div>
                 </div>
 
                 <div class="d-flex gap-3 flex-wrap mb-4">

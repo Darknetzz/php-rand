@@ -706,6 +706,24 @@ async function maybeHandleClientSideKeygen(form, responseObj) {
     return true;
 }
 
+function updatePassphraseStateForForm($form) {
+    const mode = ($form.find("[name='generation_mode']").val() || "").toLowerCase();
+    const $pass = $form.find("input[name='passphrase']");
+    if (!$pass.length) return;
+
+    const isClientOnly = mode === "client";
+    if (isClientOnly) {
+        $pass.val("");
+        $pass.prop("disabled", true);
+        $pass.attr("placeholder", "Disabled in client-side mode; use server/auto for passphrase protection");
+    } else {
+        $pass.prop("disabled", false);
+        if ($pass.attr("data-original-placeholder")) {
+            $pass.attr("placeholder", $pass.attr("data-original-placeholder"));
+        }
+    }
+}
+
 /* ===================================================================== */
 /*                         FUNCTION: setFormVal                          */
 /* ===================================================================== */
@@ -1091,6 +1109,17 @@ $(document).ready(function() {
             $("#error").hide();
             console.log("Showing " + elementToShow);
         }
+    });
+
+    // Keep passphrase inputs in sync with generation mode for keypair/SSH forms
+    $(document).on("change", "[name='generation_mode']", function() {
+        const $form = $(this).closest("form");
+        updatePassphraseStateForForm($form);
+    });
+
+    // Initialize state on any already-rendered forms
+    $("form[data-action='keypair_generate'], form[data-action='ssh_keygen']").each(function() {
+        updatePassphraseStateForForm($(this));
     });
 
 
