@@ -35,9 +35,18 @@
                             <label class="form-check-label" for="idUppercase">Uppercase output</label>
                         </div>
 
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="idShowPattern">
+                            <label class="form-check-label" for="idShowPattern">Show pattern notation</label>
+                        </div>
+
                         <div class="alert alert-secondary mb-0" role="status">
                             <strong>Key format:</strong>
                             <span id="idFormatPreview" class="ms-1" style="font-family: monospace;"></span>
+                            <div id="idPatternPreviewWrap" class="small text-muted mt-2" style="display: none;">
+                                <strong>Pattern:</strong>
+                                <span id="idPatternPreview" class="ms-1" style="font-family: monospace;"></span>
+                            </div>
                         </div>
                     </div>
                     <div class="col-12 col-lg-6 d-flex flex-column">
@@ -61,8 +70,11 @@
     var nanoWrapEl = document.getElementById('nanoidLengthWrap');
     var nanoLenEl = document.getElementById('nanoidLength');
     var uppercaseEl = document.getElementById('idUppercase');
+    var showPatternEl = document.getElementById('idShowPattern');
     var formatPreviewEl = document.getElementById('idFormatPreview');
-    if (!idTypeEl || !nanoWrapEl || !formatPreviewEl) return;
+    var patternWrapEl = document.getElementById('idPatternPreviewWrap');
+    var patternPreviewEl = document.getElementById('idPatternPreview');
+    if (!idTypeEl || !nanoWrapEl || !formatPreviewEl || !patternWrapEl || !patternPreviewEl) return;
 
     function toggleNanoLength() {
         nanoWrapEl.style.display = idTypeEl.value === 'nanoid' ? '' : 'none';
@@ -78,23 +90,38 @@
         return uppercaseEl && uppercaseEl.checked ? text.toUpperCase() : text.toLowerCase();
     }
 
-    function updateFormatPreview() {
-        var preview = '';
+    function getPreviewParts() {
+        var sample = '';
+        var pattern = '';
+
         if (idTypeEl.value === 'uuid4') {
-            preview = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx';
+            sample = applyCase('xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx');
+            pattern = uppercaseEl && uppercaseEl.checked
+                ? '[0-9A-F]{8}-[0-9A-F]{4}-4[0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}'
+                : '[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}';
         } else if (idTypeEl.value === 'ulid') {
-            preview = '26 chars (Crockford Base32): ' + applyCase('01ARZ3NDEKTSV4RRFFQ69G5FAV');
+            sample = '26 chars (Crockford Base32): ' + applyCase('01ARZ3NDEKTSV4RRFFQ69G5FAV');
+            pattern = uppercaseEl && uppercaseEl.checked
+                ? '[0-9A-HJKMNP-TV-Z]{26}'
+                : '[0-9a-hjkmnp-tv-z]{26}';
         } else {
             var len = clampNanoLen(nanoLenEl ? nanoLenEl.value : 21);
-            preview = len + ' chars (URL-safe Base64): ' + applyCase('V1StGXR8_Z5jdHi6B-myT');
+            sample = len + ' chars (URL-safe Base64): ' + applyCase('V1StGXR8_Z5jdHi6B-myT');
+            pattern = uppercaseEl && uppercaseEl.checked
+                ? '[A-Z0-9_-]{' + len + '}'
+                : '[A-Za-z0-9_-]{' + len + '}';
         }
 
-        if (idTypeEl.value === 'uuid4') {
-            formatPreviewEl.textContent = applyCase(preview);
-            return;
-        }
+        return { sample: sample, pattern: pattern };
+    }
 
-        formatPreviewEl.textContent = preview;
+    function updateFormatPreview() {
+        var parts = getPreviewParts();
+        formatPreviewEl.textContent = parts.sample;
+
+        var showPattern = !!(showPatternEl && showPatternEl.checked);
+        patternWrapEl.style.display = showPattern ? '' : 'none';
+        patternPreviewEl.textContent = showPattern ? parts.pattern : '';
     }
 
     idTypeEl.addEventListener('change', function () {
@@ -109,6 +136,10 @@
 
     if (uppercaseEl) {
         uppercaseEl.addEventListener('change', updateFormatPreview);
+    }
+
+    if (showPatternEl) {
+        showPatternEl.addEventListener('change', updateFormatPreview);
     }
 
     toggleNanoLength();

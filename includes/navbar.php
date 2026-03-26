@@ -69,6 +69,21 @@ $navbarItems = [
                 "formalName" => "JWT Inspector",
                 "icon"       => icon('shield-lock')
             ],
+            "keypair" => [
+                "name"       => "keypair",
+                "formalName" => "Private/Public Keys",
+                "icon"       => icon('key-fill')
+            ],
+            "ssh_keygen" => [
+                "name"       => "ssh_keygen",
+                "formalName" => "SSH Key Generator",
+                "icon"       => icon('terminal-fill')
+            ],
+            "csr" => [
+                "name"       => "csr",
+                "formalName" => "CSR Generator",
+                "icon"       => icon('file-earmark-lock')
+            ],
         ],
     ],
     "encoding" => [
