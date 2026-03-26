@@ -1644,26 +1644,31 @@ function handle_pem_openssh_convert(array $req): string {
 function handle_crypto_diagnostics(array $req): string {
     $algorithms = crypto_available_key_algorithms();
     $rows = [];
+    $okBadge = "<span class='badge bg-success text-white'>" . icon('check-circle') . " OK</span>";
+    $warnBadge = "<span class='badge bg-warning text-dark'>" . icon('exclamation-triangle') . " Warning</span>";
+    $errBadge = "<span class='badge bg-danger text-white'>" . icon('x-circle') . " Error</span>";
 
     foreach (['rsa', 'ecdsa', 'ed25519'] as $algo) {
         if (!in_array($algo, $algorithms, true)) {
-            $rows[] = "<tr><td>" . strtoupper($algo) . "</td><td>Unavailable</td><td>-</td></tr>";
+            $rows[] = "<tr><td>" . strtoupper($algo) . "</td><td>{$warnBadge}</td><td>{$warnBadge}</td></tr>";
             continue;
         }
         $generated = crypto_generate_keypair($algo);
         if (($generated['ok'] ?? false) !== true) {
-            $rows[] = "<tr><td>" . strtoupper($algo) . "</td><td>Available</td><td>Keygen failed</td></tr>";
+            $rows[] = "<tr><td>" . strtoupper($algo) . "</td><td>{$errBadge}</td><td>{$warnBadge}</td></tr>";
             continue;
         }
         $openssh = crypto_public_pem_to_openssh((string) $generated['public_pem']);
-        $opensshStatus = (($openssh['ok'] ?? false) === true) ? 'OK' : 'Not supported';
-        $rows[] = "<tr><td>" . strtoupper($algo) . "</td><td>Available</td><td>{$opensshStatus}</td></tr>";
+        $opensshStatus = (($openssh['ok'] ?? false) === true) ? $okBadge : $warnBadge;
+        $rows[] = "<tr><td>" . strtoupper($algo) . "</td><td>{$okBadge}</td><td>{$opensshStatus}</td></tr>";
     }
 
     $sshKeygenPath = function_exists('shell_exec')
         ? trim((string) @shell_exec('command -v ssh-keygen 2>/dev/null'))
         : '';
-    $sshKeygenStatus = $sshKeygenPath !== '' ? "Found (`" . htmlspecialchars($sshKeygenPath, ENT_QUOTES, 'UTF-8') . "`)" : "Not found";
+    $sshKeygenStatus = $sshKeygenPath !== ''
+        ? "<span class='badge bg-success text-white me-2'>" . icon('check-circle') . " OK</span><code>" . htmlspecialchars($sshKeygenPath, ENT_QUOTES, 'UTF-8') . "</code>"
+        : "<span class='badge bg-warning text-dark'>" . icon('exclamation-triangle') . " Not found</span>";
 
     $output = "<div class='card border-info mb-3'><h5 class='card-header'>Crypto Runtime Diagnostics</h5><div class='card-body'>";
     $output .= "<div class='mb-3'><strong>Available key algorithms:</strong> " . htmlspecialchars(implode(', ', $algorithms), ENT_QUOTES, 'UTF-8') . "</div>";

@@ -10,7 +10,7 @@
         <h1 class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
             <span>🧷 SSH Key Generator</span>
             <?php if ($sshKeygenAvailable): ?>
-                <span class="badge bg-success" title="<?= htmlspecialchars($sshKeygenPath, ENT_QUOTES, 'UTF-8') ?>">
+                <span class="badge bg-success text-white" title="<?= htmlspecialchars($sshKeygenPath, ENT_QUOTES, 'UTF-8') ?>">
                     <?= icon('shield-check') ?> ssh-keygen detected
                 </span>
             <?php else: ?>
