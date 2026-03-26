@@ -127,8 +127,12 @@ function setFormVal(form, name = "action", value = "") {
 /*                           FUNCTION: navigate                          */
 /* ===================================================================== */
 function navigate(to) {
+    console.log("[navigate] Navigating to: " + to);
 
-    console.log("[navigate] Navigating to: " + to)
+    const moduleName = (to || "").replace(/^#/, "");
+    if (!moduleName) {
+        return;
+    }
 
     // Reset all nav links
     var navLinks = $(".link.nav-link");
@@ -138,10 +142,57 @@ function navigate(to) {
     var navLink = $(`.link.nav-link[href='${to}']`);
     navLink.prop("class", "link nav-link link-success active");
 
-    $(".content").hide();
-    $(to).fadeIn();
-    addRandomDataButtons($(to));
+    const showTarget = function() {
+        $(".content").hide();
+        $(to).fadeIn();
+        addRandomDataButtons($(to));
+    };
 
+    if ($(to).length) {
+        showTarget();
+        return;
+    }
+
+    loadModule(moduleName)
+        .done(function() {
+            showTarget();
+        })
+        .fail(function(xhr) {
+            const message = xhr && xhr.responseText
+                ? xhr.responseText
+                : "<div class='alert alert-danger'>Failed to load module: " + moduleName + ".</div>";
+            $("#error").html("<br>" + message).show();
+        });
+}
+
+/* ===================================================================== */
+/*                         FUNCTION: loadModule                           */
+/* ===================================================================== */
+function loadModule(moduleName) {
+    const selector = "#" + moduleName;
+    if ($(selector).length) {
+        return $.Deferred().resolve().promise();
+    }
+
+    const $container = $(".container.pt-5").first();
+    const $placeholder = $("<div>", {
+        id: moduleName + "_loading",
+        class: "content",
+        html: buildLoadingHtml("Loading " + moduleName.replace(/_/g, " ") + "...")
+    });
+    $container.append($placeholder);
+
+    return $.ajax({
+        type: "GET",
+        url: "load_module.php",
+        data: { module: moduleName },
+        cache: true
+    }).done(function(html) {
+        $placeholder.replaceWith(html);
+        addRandomDataButtons($(selector));
+    }).fail(function(xhr) {
+        $placeholder.remove();
+    });
 }
 
 /* ===================================================================== */
@@ -213,10 +264,12 @@ $(document).ready(function() {
     /*                               Code Input                              */
     /* ===================================================================== */
     // hljs.highlightAll();
-    codeInput.registerTemplate("default", codeInput.templates.hljs(hljs, [
-        new codeInput.plugins.Autodetect(),
-        new codeInput.plugins.Indent(true, 2) // 2 spaces indentation
-    ] /* Array of plugins (see below) */ ));
+    if (typeof codeInput !== "undefined" && typeof hljs !== "undefined") {
+        codeInput.registerTemplate("default", codeInput.templates.hljs(hljs, [
+            new codeInput.plugins.Autodetect(),
+            new codeInput.plugins.Indent(true, 2) // 2 spaces indentation
+        ] /* Array of plugins (see below) */ ));
+    }
     $(".code").on("paste", function() {
         this.style.height = "auto";
     });
@@ -377,7 +430,8 @@ $(document).ready(function() {
     /* ===================================================================== */
     /*                               Click link                              */
     /* ===================================================================== */
-    $(".link").click(function() {
+    $(".link").click(function(e) {
+        e.preventDefault();
         var elementToShow = $(this).attr("href");
 
         navigate(elementToShow);
@@ -403,19 +457,31 @@ $(document).ready(function() {
     /*                            Changelog modal                            */
     /* ===================================================================== */
     var changelog = $("#changelogMarkdown");
-    
-    // Get the raw markdown text and decode HTML entities so raw <details> tags are visible to marked
-    let markdownText = changelog.text();
-    const decodeHtml = (str) => $('<textarea/>').html(str).text();
-    markdownText = decodeHtml(markdownText);
-
-    // Parse with marked (GFM with line breaks)
-    marked.setOptions({
-        breaks: true,
-        gfm: true
+    var changelogLoaded = false;
+    $("#changelogModal").on("show.bs.modal", function() {
+        if (changelogLoaded) {
+            return;
+        }
+        $.ajax({
+            type: "GET",
+            url: "CHANGELOG.md",
+            cache: true
+        }).done(function(markdownText) {
+            if (typeof marked === "undefined") {
+                changelog.html("<pre>" + $("<div>").text(markdownText).html() + "</pre>");
+                changelogLoaded = true;
+                return;
+            }
+            marked.setOptions({
+                breaks: true,
+                gfm: true
+            });
+            changelog.html(marked.parse(markdownText));
+            changelogLoaded = true;
+        }).fail(function() {
+            changelog.html("<div class='alert alert-danger'>Failed to load changelog.</div>");
+        });
     });
-
-    changelog.html(marked.parse(markdownText));
 
     /* ===================================================================== */
     /*                      Add Random Data Buttons                          */
