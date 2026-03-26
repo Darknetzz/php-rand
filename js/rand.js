@@ -530,7 +530,7 @@ $(document).ready(function() {
     /*                              Form submit                              */
     /* ===================================================================== */
     //function submitForm(formname, responseid) {
-    $(".form").submit(async function(e) {
+    $(document).on("submit", ".form", async function(e) {
         e.preventDefault(); // avoid to execute the actual submit of the form.
 
         var form = $(this);
