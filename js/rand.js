@@ -561,7 +561,7 @@ function buildClientCryptoDiagnosticsHtml() {
     html += "</tbody></table></div>";
 
     if (secure && hasSubtle) {
-        html += "<p class='mt-3 mb-0 small text-muted'>WebCrypto is available in a secure context; key generators probe algorithms at runtime.</p>";
+        html += "<div class='alert alert-success mb-0' role='alert'><strong>Client-side crypto OK.</strong> HTTPS (or localhost) and WebCrypto are available; browser key generation can run when you choose client or auto mode.</div>";
     }
 
     html += "</div></div>";
@@ -1043,11 +1043,26 @@ $(document).ready(function() {
             return;
         }
 
-        submitToolForm(form, {
+        const responseDiv = form.find(".responseDiv");
+        const submitOpts = {
             data: serializeForm,
             responseType: responsetype,
             loadingMessage: "Generating..."
-        });
+        };
+        if ((form.data("action") || "") === "crypto_diagnostics") {
+            submitOpts.onSuccess = function(dataOut) {
+                showData(responseDiv, dataOut);
+                // After server HTML is in the response div, fill #clientCryptoDiagnosticsRoot (ajaxSuccess ran too early).
+                setTimeout(function() {
+                    const $root = $("#clientCryptoDiagnosticsRoot");
+                    if ($root.length) {
+                        $root.html(buildClientCryptoDiagnosticsHtml());
+                    }
+                }, 0);
+            };
+        }
+
+        submitToolForm(form, submitOpts);
         randomizeDice();
     });
 
@@ -1156,23 +1171,6 @@ $(document).ready(function() {
     $("form[data-action='keypair_generate'], form[data-action='ssh_keygen']").each(function() {
         updatePassphraseStateForForm($(this));
     });
-
-    // If crypto diagnostics output is present, append client-side diagnostics under it
-    $(document).on("submit", "#cryptoDiagnosticsForm", function() {
-        // Let normal AJAX flow run; client diagnostics are appended on success via delegated handler below.
-    });
-
-    $(document).ajaxSuccess(function(event, xhr, settings) {
-        if (!settings || settings.type !== "POST") return;
-        const data = settings.data || "";
-        if (typeof data !== "string" || data.indexOf("action=crypto_diagnostics") === -1) return;
-
-        const $root = $("#clientCryptoDiagnosticsRoot");
-        if ($root.length) {
-            $root.html(buildClientCryptoDiagnosticsHtml());
-        }
-    });
-
 
     // turn off all autocomplete
     $(".form-control").prop("autocomplete", "off");
