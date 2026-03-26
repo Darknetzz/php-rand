@@ -1,10 +1,33 @@
 <div id="ssh_keygen" class="content">
+    <?php
+    $sshKeygenPath = '';
+    if (function_exists('shell_exec')) {
+        $sshKeygenPath = trim((string) @shell_exec('command -v ssh-keygen 2>/dev/null'));
+    }
+    $sshKeygenAvailable = $sshKeygenPath !== '';
+    ?>
     <div class="card card-primary">
-        <h1 class="card-header">🧷 SSH Key Generator</h1>
+        <h1 class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <span>🧷 SSH Key Generator</span>
+            <?php if ($sshKeygenAvailable): ?>
+                <span class="badge bg-success">ssh-keygen detected</span>
+            <?php else: ?>
+                <span class="badge bg-warning text-dark">ssh-keygen not detected</span>
+            <?php endif; ?>
+        </h1>
         <div class="card-body">
             <div class="alert alert-warning mb-4">
                 Generate PEM keypairs for SSH usage. Also outputs true OpenSSH public keys when supported by the selected algorithm/runtime.
             </div>
+            <?php if ($sshKeygenAvailable): ?>
+                <div class="alert alert-success mb-4">
+                    Host conversion tools available: <code><?= htmlspecialchars($sshKeygenPath, ENT_QUOTES, 'UTF-8') ?></code>
+                </div>
+            <?php else: ?>
+                <div class="alert alert-warning mb-4">
+                    Host conversion tools unavailable: OpenSSH to PEM conversion requires `ssh-keygen` on the server host.
+                </div>
+            <?php endif; ?>
 
             <form class="form" action="gen.php" method="POST" id="sshKeygenForm" data-action="ssh_keygen">
                 <div class="row g-3 mb-4">
