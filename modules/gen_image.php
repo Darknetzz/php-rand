@@ -19,6 +19,17 @@
                 Generate logos directly in this app with custom text, style, shape, and colors.
             </div>
             <form class="form" action="gen.php" method="POST" id="logoGeneratorForm" data-action="logo_generate">
+                <div class="mb-4">
+                    <label class="form-label"><strong>Quick Presets</strong></label>
+                    <div class="d-flex gap-2 flex-wrap">
+                        <button type="button" class="btn btn-outline-primary btn-sm logo-preset-btn" data-preset="app-icon">App Icon</button>
+                        <button type="button" class="btn btn-outline-primary btn-sm logo-preset-btn" data-preset="banner">Banner</button>
+                        <button type="button" class="btn btn-outline-primary btn-sm logo-preset-btn" data-preset="initials-badge">Initials Badge</button>
+                        <button type="button" class="btn btn-outline-warning btn-sm" id="logoRandomizeBtn">Randomize Palette</button>
+                    </div>
+                    <small class="form-text text-muted">Presets update dimensions, shape, style, and text behavior in one click.</small>
+                </div>
+
                 <div class="row g-3 mb-4">
                     <div class="col-12 col-md-6">
                         <label class="form-label"><strong>Logo Text</strong></label>
@@ -103,6 +114,9 @@
                 <div class="d-flex gap-3 flex-wrap mb-4">
                     <?= submitBtn("logo_generate", "action", "Generate Logo", "brush-fill", "lg") ?>
                 </div>
+                <div class="mb-3">
+                    <small id="logoHintText" class="text-muted">Tip: Use <strong>Initials Badge</strong> for avatars and app icons.</small>
+                </div>
 
                 <label class="form-label mb-2"><strong>Output</strong></label>
                 <div class="responseDiv" id="logoGeneratorFormresponse" style="border: 2px solid #495057; padding: 20px; min-height: 240px; border-radius: 0.5rem;">
@@ -112,3 +126,78 @@
         </div>
     </div>
 </div>
+<script>
+(function() {
+    const form = document.getElementById("logoGeneratorForm");
+    if (!form) return;
+
+    const hint = document.getElementById("logoHintText");
+    const setVal = (name, value) => {
+        const el = form.querySelector('[name="' + name + '"]');
+        if (!el) return;
+        if (el.type === "checkbox") {
+            el.checked = !!value;
+        } else {
+            el.value = value;
+        }
+    };
+
+    const setPreset = (preset) => {
+        if (preset === "app-icon") {
+            setVal("logo_width", 512);
+            setVal("logo_height", 512);
+            setVal("logo_shape", "rounded");
+            setVal("logo_style", "gradient");
+            setVal("logo_font_size", 120);
+            setVal("logo_border", 0);
+            setVal("logo_initials", true);
+            setVal("logo_uppercase", true);
+            if (hint) hint.textContent = "App Icon preset: square logo with initials and strong contrast.";
+            return;
+        }
+        if (preset === "banner") {
+            setVal("logo_width", 1200);
+            setVal("logo_height", 400);
+            setVal("logo_shape", "rectangle");
+            setVal("logo_style", "gradient");
+            setVal("logo_font_size", 110);
+            setVal("logo_border", 0);
+            setVal("logo_initials", false);
+            setVal("logo_uppercase", false);
+            if (hint) hint.textContent = "Banner preset: wide layout for headers and social cover images.";
+            return;
+        }
+        if (preset === "initials-badge") {
+            setVal("logo_width", 384);
+            setVal("logo_height", 384);
+            setVal("logo_shape", "circle");
+            setVal("logo_style", "solid");
+            setVal("logo_font_size", 132);
+            setVal("logo_border", 8);
+            setVal("logo_initials", true);
+            setVal("logo_uppercase", true);
+            if (hint) hint.textContent = "Initials Badge preset: circular emblem with thicker border.";
+        }
+    };
+
+    const randomHex = () => "#" + Math.floor(Math.random() * 16777215).toString(16).padStart(6, "0");
+    const randomizePalette = () => {
+        setVal("logo_bg_color", randomHex());
+        setVal("logo_accent_color", randomHex());
+        setVal("logo_text_color", "#ffffff");
+        setVal("logo_border_color", randomHex());
+        if (hint) hint.textContent = "Palette randomized. Generate to preview the new style.";
+    };
+
+    form.querySelectorAll(".logo-preset-btn").forEach((btn) => {
+        btn.addEventListener("click", function() {
+            setPreset(this.dataset.preset || "");
+        });
+    });
+
+    const randomizeBtn = document.getElementById("logoRandomizeBtn");
+    if (randomizeBtn) {
+        randomizeBtn.addEventListener("click", randomizePalette);
+    }
+})();
+</script>
