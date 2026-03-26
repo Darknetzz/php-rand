@@ -7,6 +7,19 @@ All notable changes to this project are documented in this file.
 ## [Unreleased]
 
 ### Major Features
+- _No user-facing changes yet._
+
+<details>
+<summary>📋 Detailed Changes (click to expand)</summary>
+
+- _No detailed changes yet._
+
+</details>
+
+---
+
+## [v1.2.9] (2026-03-26)
+
 - **Performance: faster initial page load** - Reduced initial payload by lazy-loading tool modules, deferring non-critical scripts, and loading changelog content on demand.
 - **On-demand frontend libraries** - `marked`, `highlight.js`, and `code-input` are now loaded only when needed by active modules/features.
 - **Production deployment guidance** - Added server-side compression and cache-header recommendations for Nginx/Apache.
@@ -15,25 +28,18 @@ All notable changes to this project are documented in this file.
 - **Hybrid key generation mode** - Added client-side WebCrypto generation mode with server fallback for compatibility-sensitive flows.
 - **New key utilities** - Added `PEM/OpenSSH Converter` and `Crypto Diagnostics` modules for format conversion and runtime capability checks.
 - **Logo generator rewrite** - Replaced the old `php-logogen` dependency with a new built-in Logo Generator module in this repository.
-
-<details>
-<summary>📋 Detailed Changes (click to expand)</summary>
-
 #### Initial Load Optimization
 - **Module loading** - Updated `index.php` to render only `dashboard` on first load; other modules now load on first navigation via new `load_module.php`.
 - **Script loading** - Added `defer` to non-critical script tags (jQuery, Tabler, Marked, Highlight.js, Code Input, Axios, and local scripts) to reduce render blocking.
 - **Changelog modal** - Removed eager inline `CHANGELOG.md` embedding from HTML and switched to AJAX fetch + parse when the modal is opened.
-
 #### Navigation and Runtime
 - **On-demand module fetch** - Added `loadModule()` flow in `js/rand.js` and integrated it into `navigate()` so missing module sections are fetched and inserted dynamically.
 - **UX safeguards** - Added loading placeholders for lazy module fetches and improved error handling when a module fails to load.
 - **AJAX submit fix for lazy modules** - Switched to delegated form submit handling in `js/rand.js` so dynamically loaded tools no longer navigate to `gen.php` on submit.
-
 #### Asset Loading and Production Ops
 - **Library lazy loading** - Removed global `marked`/`highlight.js`/`code-input` includes from `index.php`; added reusable `loadScriptOnce()`/`loadStyleOnce()` helpers with one-time caching in `js/rand.js`.
 - **Feature-gated assets** - Markdown assets now load only for markdown/changelog rendering; code-input assets load only when `code-input` elements exist in a visible module.
 - **Deployment docs** - Added `README.md` guidance for gzip/brotli compression and cache headers for static assets vs dynamic HTML/PHP responses.
-
 #### Cryptography
 - **New modules** - Added `modules/keypair.php`, `modules/ssh_keygen.php`, and `modules/csr.php` with matching navbar entries in `includes/navbar.php`.
 - **Additional modules** - Added `modules/pem_openssh.php` (public key converter) and `modules/crypto_diagnostics.php` (runtime checks).
@@ -43,13 +49,10 @@ All notable changes to this project are documented in this file.
 - **Format conversion** - Added `handle_pem_openssh_convert()` with PEM -> OpenSSH conversion and OpenSSH -> PEM conversion via host `ssh-keygen` when available.
 - **Runtime diagnostics** - Added `handle_crypto_diagnostics()` to verify algorithm availability and OpenSSH export support per algorithm.
 - **Status visibility improvements** - Updated SSH/diagnostics status rendering with clearer icon badges and better contrast for dark mode.
-
 #### Repository and Tooling
 - **Submodule removal** - Removed `.gitmodules` and dropped the `php-logogen` submodule path from this repository.
 - **Logo generator rebuilt in-app** - Replaced the old link-out approach with a native `modules/gen_image.php` UI backed by `handle_logo_generate()` in `includes/handlers_functional.php`.
 - **Logo presets and polish** - Added quick presets (`App Icon`, `Banner`, `Initials Badge`), palette randomization, and inline hints for faster iteration.
-
-</details>
 
 ---
 
