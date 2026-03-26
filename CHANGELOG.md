@@ -27,6 +27,7 @@ All notable changes to this project are documented in this file.
 #### Navigation and Runtime
 - **On-demand module fetch** - Added `loadModule()` flow in `js/rand.js` and integrated it into `navigate()` so missing module sections are fetched and inserted dynamically.
 - **UX safeguards** - Added loading placeholders for lazy module fetches and improved error handling when a module fails to load.
+- **AJAX submit fix for lazy modules** - Switched to delegated form submit handling in `js/rand.js` so dynamically loaded tools no longer navigate to `gen.php` on submit.
 
 #### Asset Loading and Production Ops
 - **Library lazy loading** - Removed global `marked`/`highlight.js`/`code-input` includes from `index.php`; added reusable `loadScriptOnce()`/`loadStyleOnce()` helpers with one-time caching in `js/rand.js`.
@@ -41,10 +42,12 @@ All notable changes to this project are documented in this file.
 - **Hybrid client/server mode** - Added browser-side key generation for keypair/SSH modules through `js/rand.js` (`generation_mode`: auto/client/server), with automatic fallback to server mode when WebCrypto support is missing or features require server processing.
 - **Format conversion** - Added `handle_pem_openssh_convert()` with PEM -> OpenSSH conversion and OpenSSH -> PEM conversion via host `ssh-keygen` when available.
 - **Runtime diagnostics** - Added `handle_crypto_diagnostics()` to verify algorithm availability and OpenSSH export support per algorithm.
+- **Status visibility improvements** - Updated SSH/diagnostics status rendering with clearer icon badges and better contrast for dark mode.
 
 #### Repository and Tooling
 - **Submodule removal** - Removed `.gitmodules` and dropped the `php-logogen` submodule path from this repository.
-- **Image Generator module** - Updated `modules/gen_image.php` to validate local path availability and link directly to the in-repo logo generator.
+- **Logo generator rebuilt in-app** - Replaced the old link-out approach with a native `modules/gen_image.php` UI backed by `handle_logo_generate()` in `includes/handlers_functional.php`.
+- **Logo presets and polish** - Added quick presets (`App Icon`, `Banner`, `Initials Badge`), palette randomization, and inline hints for faster iteration.
 
 </details>
 
