@@ -10,6 +10,8 @@ All notable changes to this project are documented in this file.
 - **Performance: faster initial page load** - Reduced initial payload by lazy-loading tool modules, deferring non-critical scripts, and loading changelog content on demand.
 - **On-demand frontend libraries** - `marked`, `highlight.js`, and `code-input` are now loaded only when needed by active modules/features.
 - **Production deployment guidance** - Added server-side compression and cache-header recommendations for Nginx/Apache.
+- **New cryptography modules** - Added `Private/Public Keys`, `SSH Key Generator`, and `CSR Generator` under Cryptography.
+- **OpenSSH public key export** - SSH generator now emits true OpenSSH public key lines (RSA/ECDSA, Ed25519 when runtime details are available) in addition to PEM.
 
 <details>
 <summary>📋 Detailed Changes (click to expand)</summary>
@@ -27,6 +29,11 @@ All notable changes to this project are documented in this file.
 - **Library lazy loading** - Removed global `marked`/`highlight.js`/`code-input` includes from `index.php`; added reusable `loadScriptOnce()`/`loadStyleOnce()` helpers with one-time caching in `js/rand.js`.
 - **Feature-gated assets** - Markdown assets now load only for markdown/changelog rendering; code-input assets load only when `code-input` elements exist in a visible module.
 - **Deployment docs** - Added `README.md` guidance for gzip/brotli compression and cache headers for static assets vs dynamic HTML/PHP responses.
+
+#### Cryptography
+- **New modules** - Added `modules/keypair.php`, `modules/ssh_keygen.php`, and `modules/csr.php` with matching navbar entries in `includes/navbar.php`.
+- **Shared backend helpers** - Added reusable keygen/export helpers in `includes/handlers_functional.php` for algorithm resolution, keypair generation, and download rendering.
+- **OpenSSH output** - Added server-side OpenSSH serialization in `handle_ssh_keygen()` for RSA/ECDSA public keys, with runtime-dependent Ed25519 support and graceful fallback warnings.
 
 </details>
 

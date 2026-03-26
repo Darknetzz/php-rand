@@ -1438,6 +1438,84 @@ function crypto_render_key_output(array $items, string $title): string {
     return $output;
 }
 
+function crypto_ssh_pack_string(string $value): string {
+    return pack('N', strlen($value)) . $value;
+}
+
+function crypto_ssh_pack_mpint(string $value): string {
+    $value = ltrim($value, "\x00");
+    if ($value === '') {
+        return pack('N', 0);
+    }
+    if ((ord($value[0]) & 0x80) !== 0) {
+        $value = "\x00" . $value;
+    }
+    return pack('N', strlen($value)) . $value;
+}
+
+function crypto_openssh_curve_name(string $curve): ?string {
+    return match ($curve) {
+        'prime256v1' => 'nistp256',
+        'secp384r1' => 'nistp384',
+        'secp521r1' => 'nistp521',
+        default => null,
+    };
+}
+
+function crypto_public_pem_to_openssh(string $publicPem, string $comment = ''): array {
+    $publicHandle = openssl_pkey_get_public($publicPem);
+    if ($publicHandle === false) {
+        return ['ok' => false, 'error' => 'Unable to parse public key PEM for OpenSSH conversion.'];
+    }
+
+    $details = openssl_pkey_get_details($publicHandle);
+    if (!is_array($details)) {
+        return ['ok' => false, 'error' => 'Unable to read public key details for OpenSSH conversion.'];
+    }
+
+    if (($details['type'] ?? null) === OPENSSL_KEYTYPE_RSA && isset($details['rsa']['e'], $details['rsa']['n'])) {
+        $blob = crypto_ssh_pack_string('ssh-rsa')
+            . crypto_ssh_pack_mpint($details['rsa']['e'])
+            . crypto_ssh_pack_mpint($details['rsa']['n']);
+        $line = 'ssh-rsa ' . base64_encode($blob);
+        if ($comment !== '') {
+            $line .= ' ' . $comment;
+        }
+        return ['ok' => true, 'line' => $line, 'type' => 'ssh-rsa'];
+    }
+
+    if (($details['type'] ?? null) === OPENSSL_KEYTYPE_EC && isset($details['ec']['curve_name'], $details['ec']['x'], $details['ec']['y'])) {
+        $sshCurve = crypto_openssh_curve_name((string) $details['ec']['curve_name']);
+        if ($sshCurve === null) {
+            return ['ok' => false, 'error' => 'Unsupported ECDSA curve for OpenSSH export.'];
+        }
+        $point = "\x04" . $details['ec']['x'] . $details['ec']['y'];
+        $algo = 'ecdsa-sha2-' . $sshCurve;
+        $blob = crypto_ssh_pack_string($algo)
+            . crypto_ssh_pack_string($sshCurve)
+            . crypto_ssh_pack_string($point);
+        $line = $algo . ' ' . base64_encode($blob);
+        if ($comment !== '') {
+            $line .= ' ' . $comment;
+        }
+        return ['ok' => true, 'line' => $line, 'type' => $algo];
+    }
+
+    if (isset($details['ed25519']['pub_key']) && is_string($details['ed25519']['pub_key'])) {
+        $raw = $details['ed25519']['pub_key'];
+        if (strlen($raw) === 32) {
+            $blob = crypto_ssh_pack_string('ssh-ed25519') . crypto_ssh_pack_string($raw);
+            $line = 'ssh-ed25519 ' . base64_encode($blob);
+            if ($comment !== '') {
+                $line .= ' ' . $comment;
+            }
+            return ['ok' => true, 'line' => $line, 'type' => 'ssh-ed25519'];
+        }
+    }
+
+    return ['ok' => false, 'error' => 'OpenSSH export is unavailable for this key type on current OpenSSL/PHP build.'];
+}
+
 function handle_keypair_generate(array $req): string {
     $algorithmRequest = req_get($req, 'algorithm', 'all-available');
     $algorithm = is_string($algorithmRequest) ? $algorithmRequest : 'all-available';
@@ -1482,17 +1560,70 @@ function handle_keypair_generate(array $req): string {
 }
 
 function handle_ssh_keygen(array $req): string {
-    $keyResult = handle_keypair_generate($req);
     $comment = trim((string) req_get($req, 'ssh_comment', 'generated-by-phprand'));
     if ($comment !== '' && strlen($comment) > 200) {
         return formatOutput("SSH comment must be at most 200 characters.", type: "danger");
     }
 
-    $note = formatOutput(
-        "Generated compatible PEM private/public keys for SSH workflows. You can convert public keys to OpenSSH format on host if needed. Comment: " . htmlspecialchars($comment, ENT_QUOTES, 'UTF-8'),
+    $algorithmRequest = req_get($req, 'algorithm', 'all-available');
+    $algorithm = is_string($algorithmRequest) ? $algorithmRequest : 'all-available';
+    $algorithms = crypto_resolve_requested_algorithms($algorithm);
+    if (empty($algorithms)) {
+        return formatOutput("No supported algorithm selected for key generation.", type: "danger");
+    }
+
+    $passphrase = trim((string) req_get($req, 'passphrase', ''));
+    if (strlen($passphrase) > 256) {
+        return formatOutput("Passphrase must be at most 256 characters.", type: "danger");
+    }
+
+    $rsaBits = req_int($req, 'rsa_bits', 4096);
+    $curve = (string) req_get($req, 'ecdsa_curve', 'prime256v1');
+
+    $output = formatOutput(
+        "Generated PEM key material and OpenSSH public keys when supported. Comment: " . htmlspecialchars($comment, ENT_QUOTES, 'UTF-8'),
         type: "info"
     );
-    return $note . $keyResult;
+
+    foreach ($algorithms as $algo) {
+        $result = crypto_generate_keypair($algo, $rsaBits, $curve, $passphrase);
+        if (!$result['ok']) {
+            $output .= formatOutput((string) $result['error'], type: "warning");
+            continue;
+        }
+
+        $suffix = $algo === 'rsa' ? "-{$rsaBits}" : ($algo === 'ecdsa' ? "-{$curve}" : '');
+        $items = [
+            [
+                'label' => strtoupper($algo) . ' Private Key (PEM)',
+                'content' => (string) $result['private_pem'],
+                'filename' => "private-{$algo}{$suffix}.pem",
+            ],
+            [
+                'label' => strtoupper($algo) . ' Public Key (PEM)',
+                'content' => (string) $result['public_pem'],
+                'filename' => "public-{$algo}{$suffix}.pem",
+            ],
+        ];
+
+        $sshLine = crypto_public_pem_to_openssh((string) $result['public_pem'], $comment);
+        if (($sshLine['ok'] ?? false) === true) {
+            $items[] = [
+                'label' => strtoupper($algo) . ' Public Key (OpenSSH)',
+                'content' => (string) $sshLine['line'],
+                'filename' => "public-{$algo}{$suffix}.pub",
+            ];
+        } else {
+            $output .= formatOutput(
+                strtoupper($algo) . ': ' . (string) ($sshLine['error'] ?? 'OpenSSH export unavailable.'),
+                type: "warning"
+            );
+        }
+
+        $output .= crypto_render_key_output($items, strtoupper($algo) . " SSH Key Material");
+    }
+
+    return $output;
 }
 
 function handle_csr_generate(array $req): string {

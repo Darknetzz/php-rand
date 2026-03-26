@@ -3,7 +3,7 @@
         <h1 class="card-header">🧷 SSH Key Generator</h1>
         <div class="card-body">
             <div class="alert alert-warning mb-4">
-                Generate PEM keypairs for SSH usage. You can set an SSH comment and optionally protect the private key with a passphrase.
+                Generate PEM keypairs for SSH usage. Also outputs true OpenSSH public keys when supported by the selected algorithm/runtime.
             </div>
 
             <form class="form" action="gen.php" method="POST" id="sshKeygenForm" data-action="ssh_keygen">
@@ -50,7 +50,7 @@
 
                 <label class="form-label mb-2"><strong>Output</strong></label>
                 <div class="responseDiv" id="sshKeygenFormresponse" style="border: 2px solid #495057; padding: 20px; min-height: 220px; border-radius: 0.5rem;">
-                    <div style="opacity: 0.55;">Generated SSH-compatible PEM keys and download buttons will appear here.</div>
+                    <div style="opacity: 0.55;">Generated PEM keys, OpenSSH public key lines, and download buttons will appear here.</div>
                 </div>
             </form>
         </div>
