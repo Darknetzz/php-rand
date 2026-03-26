@@ -1733,6 +1733,9 @@ function crypto_openssh_to_pem_with_ssh_keygen(string $opensshLine): array {
 }
 
 function handle_keypair_generate(array $req): string {
+    $mode = (string) req_get($req, 'generation_mode', 'server');
+    $mode = strtolower($mode) ?: 'server';
+
     $algorithmRequest = req_get($req, 'algorithm', 'ed25519');
     $algorithm = is_string($algorithmRequest) ? $algorithmRequest : 'ed25519';
     $algorithms = crypto_resolve_requested_algorithms($algorithm);
@@ -1748,7 +1751,13 @@ function handle_keypair_generate(array $req): string {
     $rsaBits = req_int($req, 'rsa_bits', 4096);
     $curve = (string) req_get($req, 'ecdsa_curve', 'prime256v1');
 
-    $output = '';
+    $modeLabel = $mode === 'client'
+        ? 'client-only (WebCrypto)'
+        : ($mode === 'auto' ? 'auto (resolved to server-side OpenSSL for this run)' : 'server-side (OpenSSL)');
+    $output = formatOutput(
+        "Keypair generation mode: " . htmlspecialchars($modeLabel, ENT_QUOTES, 'UTF-8'),
+        type: "info"
+    );
     foreach ($algorithms as $algo) {
         $result = crypto_generate_keypair($algo, $rsaBits, $curve, $passphrase);
         if (!$result['ok']) {
@@ -1860,6 +1869,8 @@ function handle_crypto_diagnostics(array $req): string {
 }
 
 function handle_ssh_keygen(array $req): string {
+    $mode = (string) req_get($req, 'generation_mode', 'server');
+    $mode = strtolower($mode) ?: 'server';
     $comment = trim((string) req_get($req, 'ssh_comment', 'generated-by-phprand'));
     if ($comment !== '' && strlen($comment) > 200) {
         return formatOutput("SSH comment must be at most 200 characters.", type: "danger");
@@ -1880,7 +1891,16 @@ function handle_ssh_keygen(array $req): string {
     $rsaBits = req_int($req, 'rsa_bits', 4096);
     $curve = (string) req_get($req, 'ecdsa_curve', 'prime256v1');
 
-    $output = formatOutput(
+    $modeLabel = $mode === 'client'
+        ? 'client-only (WebCrypto)'
+        : ($mode === 'auto' ? 'auto (server-preferred for SSH / OpenSSH output)' : 'server-side (OpenSSL)');
+
+    $output = '';
+    $output .= formatOutput(
+        "SSH generation mode: " . htmlspecialchars($modeLabel, ENT_QUOTES, 'UTF-8'),
+        type: "info"
+    );
+    $output .= formatOutput(
         "Generated PEM key material and OpenSSH public keys when supported. Comment: " . htmlspecialchars($comment, ENT_QUOTES, 'UTF-8'),
         type: "info"
     );
