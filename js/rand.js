@@ -906,6 +906,28 @@ function getPreferredInitialModule() {
 }
 
 /* ===================================================================== */
+/*                        FUNCTION: initCsrFormUi                         */
+/* ===================================================================== */
+function initCsrFormUi($scope) {
+    if (!$scope.find("#csrForm").length) {
+        return;
+    }
+    const algEl = document.getElementById("csrAlgorithm");
+    const rsaWrap = document.getElementById("csrOptRsa");
+    const ecdsaWrap = document.getElementById("csrOptEcdsa");
+    if (!algEl || !rsaWrap || !ecdsaWrap) {
+        return;
+    }
+    function syncCsrKeyOptions() {
+        const v = algEl.value;
+        rsaWrap.classList.toggle("d-none", v !== "rsa");
+        ecdsaWrap.classList.toggle("d-none", v !== "ecdsa");
+    }
+    $(algEl).off("change.csrKeyOpts").on("change.csrKeyOpts", syncCsrKeyOptions);
+    syncCsrKeyOptions();
+}
+
+/* ===================================================================== */
 /*                           FUNCTION: navigate                          */
 /* ===================================================================== */
 function navigate(to) {
@@ -934,6 +956,7 @@ function navigate(to) {
         $(".content").hide();
         $(normalizedTo).fadeIn();
         addRandomDataButtons($(normalizedTo));
+        initCsrFormUi($(normalizedTo));
         refreshClientCryptoGeneratorUi($(normalizedTo));
     };
 
@@ -1655,6 +1678,10 @@ function addRandomDataButtons($root = null) {
         // Skip certain inputs (checkboxes, hidden, etc.)
         const skipIds = ['enablebordercheckbox', 'enablefilterscheckbox', 'enabledebugcheckbox'];
         if (skipIds.includes($input.attr('id'))) {
+            return;
+        }
+
+        if ($input.closest('[data-no-random-buttons]').length > 0) {
             return;
         }
 
