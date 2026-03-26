@@ -37,9 +37,9 @@
                     <div class="col-12 col-md-3">
                         <label for="sshAlgorithm" class="form-label"><strong>Algorithm</strong></label>
                         <select name="algorithm" id="sshAlgorithm" class="form-select form-select-lg">
-                            <option value="rsa" selected>RSA</option>
+                            <option value="rsa">RSA</option>
                             <option value="ecdsa">ECDSA</option>
-                            <option value="ed25519">Ed25519</option>
+                            <option value="ed25519" selected>Ed25519 (Recommended)</option>
                         </select>
                     </div>
                     <div class="col-12 col-md-3">

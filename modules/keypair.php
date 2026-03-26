@@ -3,7 +3,7 @@
         <h1 class="card-header">🔐 Private/Public Key Generator</h1>
         <div class="card-body">
             <div class="alert alert-info mb-4">
-                Generate asymmetric keypairs in PEM format. Supports RSA, ECDSA, Ed25519, or all available algorithms.
+                Generate asymmetric keypairs in PEM format. Supports RSA, ECDSA, and Ed25519.
             </div>
 
             <form class="form" action="gen.php" method="POST" id="keypairForm" data-action="keypair_generate">
@@ -19,10 +19,9 @@
                     <div class="col-12 col-md-4">
                         <label for="keypairAlgorithm" class="form-label"><strong>Algorithm</strong></label>
                         <select name="algorithm" id="keypairAlgorithm" class="form-select form-select-lg">
-                            <option value="all-available">All Available</option>
                             <option value="rsa">RSA</option>
                             <option value="ecdsa">ECDSA</option>
-                            <option value="ed25519">Ed25519</option>
+                            <option value="ed25519" selected>Ed25519 (Recommended)</option>
                         </select>
                     </div>
                     <div class="col-12 col-md-4">
