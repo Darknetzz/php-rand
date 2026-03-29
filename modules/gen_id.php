@@ -95,7 +95,7 @@
         var pattern = '';
 
         if (idTypeEl.value === 'uuid4') {
-            sample = applyCase('xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx');
+            sample = '36 chars (8-4-4-4-12 hex, RFC 4122 v4): ' + applyCase('a8213467-a34d-480c-9cc9-3bd359572d30');
             pattern = uppercaseEl && uppercaseEl.checked
                 ? '[0-9A-F]{8}-[0-9A-F]{4}-4[0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}'
                 : '[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}';
