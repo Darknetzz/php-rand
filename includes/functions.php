@@ -1683,11 +1683,13 @@ function validateInput($value, $rules = []) {
  */
 function getLatestChangelogVersion(): ?array {
     $changelogPath = __DIR__ . '/../CHANGELOG.md';
-    
-    if (!file_exists($changelogPath)) {
+
+    // is_readable avoids file_get_contents when the process cannot read the file
+    // (file_exists alone is true for unreadable files and still emits warnings).
+    if (!is_readable($changelogPath)) {
         return null;
     }
-    
+
     $content = file_get_contents($changelogPath);
     if ($content === false) {
         return null;
