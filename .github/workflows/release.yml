@@ -22,14 +22,15 @@ jobs:
         run: |
           set -euo pipefail
           TAG="${GITHUB_REF_NAME}"
-          awk -v section="[${TAG}]" '
-            BEGIN { capture = 0; found = 0 }
+          # Literal "## [v1.2.10]" must not use regex "[v1.2.10]" (that is a character class in awk).
+          awk -v tag="$TAG" '
+            BEGIN { capture = 0; found = 0; prefix = "## [" tag "]" }
             /^## \[/ {
               if (capture == 1) {
                 exit
               }
             }
-            $0 ~ "^## " section {
+            index($0, prefix) == 1 {
               capture = 1
               found = 1
             }

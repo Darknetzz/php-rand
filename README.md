@@ -201,7 +201,8 @@ What it does:
 - creates a release commit and annotated tag (`vX.Y.Z`; commit includes `CHANGELOG.md` and `docker-image.config`)
 - optionally pushes branch + tag after an explicit confirmation prompt
 - **GitHub Release + Docker Hub / GHCR images:** pushing the tag runs `.github/workflows/release.yml` and `docker-release.yml`. You normally do **not** need `gh` or `docker-pushimage.sh` unless Actions are off or you want an immediate local registry push.
-- after a successful push, optionally runs `gh release create` (see below) or `./docker-pushimage.sh`
+- after a successful push, prompts (from `/dev/tty`, not stdin) to run `gh release create` and `./docker-pushimage.sh` — default is **Y** (Enter accepts) so a normal push is not cut short after `git`
+- if you already pushed the tag but skipped those steps: `./scripts/release.sh 1.2.10 --publish-only`
 
 Environment toggles:
 - `CREATE_GH_RELEASE=1` — after push, run `gh release create` with changelog notes (skipped if the release already exists, e.g. CI created it first)
@@ -210,6 +211,7 @@ Environment toggles:
 Common options:
 - `./scripts/release.sh --help` to show usage
 - `./scripts/release.sh 1.2.10 --dry-run` to preview actions only
+- `./scripts/release.sh 1.2.10 --publish-only` to run only `gh` + Docker after the tag is on the remote
 - `./scripts/extract_changelog_section.sh --help` to show extraction script usage
 
 CI Docker publish requirements:
