@@ -7,14 +7,6 @@ All notable changes to this project are documented in this file.
 ## [Unreleased]
 
 ### Major Features
-
-_Add entries here during development; rotate into a dated release section when tagging._
-
----
-
-## [v1.2.10] (2026-03-30)
-
-### Major Features
 - **Number Generator: up to 50 digits (digit mode)** – For digit ranges that exceed native PHP integer bounds, generation uses a dedicated large-number path (requires the **GMP** extension, including `gmp_prob_prime`). Supported types include **any**, **odd**, **even**, **palindromic**, **prime**, and **composite**. **Square** and **Fibonacci** remain limited to the server’s native integer range.
 - **Deployment** – Docker image builds with **GMP** (`libgmp-dev` + `gmp` extension). README documents the `gmp` requirement and large-digit behavior.
 - **SSH / PEM cryptography** – **Verify** SSH or PEM material (unified public paste with auto-detect or forced PEM vs OpenSSH, optional private PEM and passphrase, `ssh-keygen -l` when available). **SSH generator** results use a **Public key output** control (PEM vs OpenSSH one-line when both exist) and always show the **private key** below. **Private/Public Keys** adds **Sign or verify a message** (server-side OpenSSL). **Client WebCrypto** key output gains the same copy UI as the server.
