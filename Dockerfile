@@ -1,5 +1,5 @@
-# Use official PHP (latest stable) with Apache (includes latest Apache 2.x)
-FROM php:8.3-apache
+# Official PHP 8.5 + Apache; GMP is built via docker-php-ext-install (same role as php8.5-gmp on Debian).
+FROM php:8.5-apache
 
 # php-rand version (set at build time via --build-arg PHP_RAND_VERSION=v1.2.5)
 ARG PHP_RAND_VERSION=dev

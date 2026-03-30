@@ -57,6 +57,8 @@ A comprehensive collection of useful developer tools built with PHP and modern w
 
 ### Docker (Recommended)
 
+The published image and `Dockerfile` use **PHP 8.5** with **GMP**, **OpenSSH client** (`ssh-keygen`), and the extensions listed in the Dockerfile.
+
 #### Pull from Docker Hub
 ```bash
 # Pull latest image
@@ -252,7 +254,7 @@ All functions include PHPDoc comments with descriptions, parameters, return type
 
 ## Architecture
 
-- **Backend:** PHP 8.3+ with modular design
+- **Backend:** PHP 8.3+ with modular design (Docker image: PHP 8.5)
 - **Frontend:** Vanilla JavaScript, jQuery, Bootstrap 5, Tabler UI
 - **Dependencies:** Composer-managed (minify utilities)
 - **Extensible:** Easy to add new tools by creating new modules
