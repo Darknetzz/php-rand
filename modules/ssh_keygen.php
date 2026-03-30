@@ -24,9 +24,9 @@
                 <div class="d-flex align-items-start gap-2 gap-md-3">
                     <span class="fs-3 lh-1 text-primary"><?= icon('journal-text') ?></span>
                     <div>
-                        <strong class="d-block mb-1">You choose which public format to use later</strong>
+                        <strong class="d-block mb-1">Public vs private in the results</strong>
                         <p class="mb-0">
-                            Generated material includes <strong>both</strong> a <strong>PEM</strong> public key (<code>BEGIN PUBLIC KEY</code>) and, when this server/runtime supports it, a true <strong>OpenSSH one-line</strong> public key (<code>ssh-ed25519</code> / <code>ssh-rsa</code> / …). They represent the same key—copy the format your host, cloud UI, or <code>authorized_keys</code> expects. The private key is PEM only.
+                            Each card always shows the <strong>private key</strong> below. When both are available, <strong>Public key output</strong> switches between <strong>PEM</strong> and <strong>OpenSSH (one-line)</strong>—same public key, different encoding.
                         </p>
                     </div>
                 </div>
@@ -98,7 +98,7 @@
 
                 <label class="form-label mb-2"><strong>Output</strong></label>
                 <div class="responseDiv" id="sshKeygenFormresponse" style="border: 2px solid #495057; padding: 20px; min-height: 220px; border-radius: 0.5rem;">
-                    <div style="opacity: 0.55;">Public key as <strong>PEM</strong> and <strong>OpenSSH</strong> (when available), private PEM, copy/download—shown here after generate.</div>
+                    <div style="opacity: 0.55;">Results: optional <strong>Public key output</strong> selector (PEM vs OpenSSH), plus private key always listed below on each card.</div>
                 </div>
             </form>
         </div>

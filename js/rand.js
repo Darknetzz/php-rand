@@ -51,9 +51,30 @@ function updateTime(tz = null) {
 /* ===================================================================== */
 /*                           FUNCTION: showData                          */
 /* ===================================================================== */
+function initSshKeyOutputFormatUi($root) {
+    $root.find(".crypto-ssh-key-output-card").each(function() {
+        const $card = $(this);
+        const $sel = $card.find(".crypto-ssh-output-format");
+        if (!$sel.length) {
+            return;
+        }
+        function syncFormat() {
+            const v = $sel.val();
+            $card.find(".crypto-ssh-output-panels .crypto-ssh-output-panel").each(function() {
+                $(this).toggleClass("d-none", $(this).attr("data-format") !== v);
+            });
+        }
+        $sel.off("change.sshKeyOutFmt").on("change.sshKeyOutFmt", syncFormat);
+        syncFormat();
+    });
+}
+
 function showData(obj, data) {
     if (obj.is("div")) {
         obj.html(data);
+        if (obj.find(".crypto-ssh-key-output-card").length) {
+            initSshKeyOutputFormatUi(obj);
+        }
     } else if (obj.is("code-input")) {
         obj.val(data.trim());
     } else {
@@ -755,6 +776,90 @@ function buildClientKeyOutput(items, title) {
     return html;
 }
 
+/** SSH client output: public only in panels; private always visible (matches server when no OpenSSH). */
+function buildClientSshKeyOutput(slotItems, title) {
+    const publicSlotLabels = {
+        "pem-public": "PEM",
+        "openssh-public": "OpenSSH (one-line)"
+    };
+    const publicOrder = ["pem-public", "openssh-public"];
+    const bySlot = {};
+    slotItems.forEach(function(it) {
+        bySlot[it.slot] = it;
+    });
+
+    const presentPublic = [];
+    publicOrder.forEach(function(slot) {
+        if (bySlot[slot]) {
+            presentPublic.push(slot);
+        }
+    });
+    const publicCount = presentPublic.length;
+
+    let selectRow = "";
+    if (publicCount > 1) {
+        let optionsHtml = "";
+        presentPublic.forEach(function(slot) {
+            optionsHtml += "<option value=\"" + htmlEscape(slot) + "\">" + htmlEscape(publicSlotLabels[slot]) + "</option>";
+        });
+        selectRow = "<div class=\"mb-3 crypto-ssh-public-format-row d-flex flex-wrap align-items-center gap-2\">"
+            + "<label class=\"form-label mb-0 me-1\"><strong>Public key output</strong></label>"
+            + "<select class=\"form-select form-select-lg crypto-ssh-output-format\" style=\"max-width:22rem\">"
+            + optionsHtml
+            + "</select></div>";
+    }
+
+    let panelsHtml = "";
+    let isFirst = true;
+    presentPublic.forEach(function(slot) {
+        const item = bySlot[slot];
+        const copyId = newClientCopyableElementId();
+        const encoded = "data:text/plain;charset=utf-8," + encodeURIComponent(item.content);
+        let panelClass = "crypto-ssh-output-panel";
+        if (publicCount > 1 && !isFirst) {
+            panelClass += " d-none";
+        }
+        isFirst = false;
+        panelsHtml += "<div class=\"" + panelClass + "\" data-format=\"" + htmlEscape(slot) + "\">";
+        panelsHtml += "<div style='margin-bottom:15px;'>";
+        panelsHtml += "<strong class='copyable-label'>" + htmlEscape(item.label) + "</strong>";
+        panelsHtml += "<div class='copyable-content'>";
+        panelsHtml += "<div class='copyable-body' id='" + htmlEscape(copyId) + "'>" + htmlEscape(item.content) + "</div>";
+        panelsHtml += "<div class='copyable-actions'>";
+        panelsHtml += "<button type='button' class='btn btn-sm btn-outline-light' onclick=\"copyToClipboard('" + htmlEscape(copyId) + "', this)\" style='white-space: nowrap; border: 1px solid #e9ecef;\">";
+        panelsHtml += "<i class='bi bi-files'></i> Copy</button>";
+        panelsHtml += "<a class='btn btn-outline-light btn-sm' download='" + htmlEscape(item.filename) + "' href='" + encoded + "'>";
+        panelsHtml += "<i class='bi bi-download'></i> Download " + htmlEscape(item.label);
+        panelsHtml += "</a></div></div></div></div>";
+    });
+
+    let privateHtml = "";
+    const priv = bySlot["private-pem"];
+    if (priv) {
+        const copyId = newClientCopyableElementId();
+        const encoded = "data:text/plain;charset=utf-8," + encodeURIComponent(priv.content);
+        privateHtml = "<div class=\"crypto-ssh-private-block mt-3 pt-3 border-top border-secondary\">";
+        privateHtml += "<div style='margin-bottom:15px;'>";
+        privateHtml += "<strong class='copyable-label'>" + htmlEscape(priv.label) + "</strong>";
+        privateHtml += "<div class='copyable-content'>";
+        privateHtml += "<div class='copyable-body' id='" + htmlEscape(copyId) + "'>" + htmlEscape(priv.content) + "</div>";
+        privateHtml += "<div class='copyable-actions'>";
+        privateHtml += "<button type='button' class='btn btn-sm btn-outline-light' onclick=\"copyToClipboard('" + htmlEscape(copyId) + "', this)\" style='white-space: nowrap; border: 1px solid #e9ecef;\">";
+        privateHtml += "<i class='bi bi-files'></i> Copy</button>";
+        privateHtml += "<a class='btn btn-outline-light btn-sm' download='" + htmlEscape(priv.filename) + "' href='" + encoded + "'>";
+        privateHtml += "<i class='bi bi-download'></i> Download " + htmlEscape(priv.label);
+        privateHtml += "</a></div></div></div></div>";
+    }
+
+    return "<div class=\"card border-info mb-3 crypto-ssh-key-output-card\" data-crypto-ssh-output>"
+        + "<h5 class=\"card-header\">" + htmlEscape(title) + "</h5>"
+        + "<div class=\"card-body\">"
+        + selectRow
+        + "<div class=\"crypto-ssh-output-panels\">" + panelsHtml + "</div>"
+        + privateHtml
+        + "</div></div>";
+}
+
 async function clientGeneratePemPair(algorithm, rsaBits, ecdsaCurve) {
     const subtle = window.crypto && window.crypto.subtle;
     if (!subtle) throw new Error("WebCrypto is unavailable in this browser.");
@@ -828,14 +933,20 @@ async function maybeHandleClientSideKeygen(form, responseObj) {
         try {
             const pair = await clientGeneratePemPair(algorithm, rsaBits, ecdsaCurve);
             const suffix = algorithm === "rsa" ? ("-" + rsaBits) : (algorithm === "ecdsa" ? ("-" + ecdsaCurve) : "");
-            const items = [
-                { label: algorithm.toUpperCase() + " Public Key (PEM)", content: pair.publicPem, filename: "public-" + algorithm + suffix + ".pem" },
-                { label: algorithm.toUpperCase() + " Private Key (PEM)", content: pair.privatePem, filename: "private-" + algorithm + suffix + ".pem" }
-            ];
             if (isSsh) {
-                output += "<div class='alert alert-warning'>OpenSSH public-key line generation is server-backed for best compatibility. Switch to server mode for full SSH output.</div>";
+                output += "<div class='alert alert-warning'>OpenSSH one-line public keys are not generated in the browser—public PEM and private PEM are shown; use server mode for OpenSSH + PEM public together.</div>";
+                const slotItems = [
+                    { slot: "pem-public", label: algorithm.toUpperCase() + " Public Key (PEM)", content: pair.publicPem, filename: "public-" + algorithm + suffix + ".pem" },
+                    { slot: "private-pem", label: algorithm.toUpperCase() + " Private Key (PEM)", content: pair.privatePem, filename: "private-" + algorithm + suffix + ".pem" }
+                ];
+                output += buildClientSshKeyOutput(slotItems, algorithm.toUpperCase() + " Client-side SSH Key Material");
+            } else {
+                const items = [
+                    { label: algorithm.toUpperCase() + " Public Key (PEM)", content: pair.publicPem, filename: "public-" + algorithm + suffix + ".pem" },
+                    { label: algorithm.toUpperCase() + " Private Key (PEM)", content: pair.privatePem, filename: "private-" + algorithm + suffix + ".pem" }
+                ];
+                output += buildClientKeyOutput(items, algorithm.toUpperCase() + " Client-side Keypair");
             }
-            output += buildClientKeyOutput(items, algorithm.toUpperCase() + " Client-side Keypair");
             generatedCount++;
         } catch (err) {
             if (mode === "auto") {

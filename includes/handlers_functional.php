@@ -1654,6 +1654,90 @@ function crypto_render_key_output(array $items, string $title): string {
     return $output;
 }
 
+/**
+ * SSH keygen: public PEM vs OpenSSH selectable; private PEM always shown below.
+ *
+ * @param list<array{label: string, content: string, filename?: string, ssh_output_slot: string}> $items
+ */
+function crypto_render_ssh_key_output(array $items, string $title): string {
+    $publicSlots = ['pem-public', 'openssh-public'];
+    $publicSlotLabels = [
+        'pem-public' => 'PEM',
+        'openssh-public' => 'OpenSSH (one-line)',
+    ];
+    $bySlot = [];
+    foreach ($items as $item) {
+        $slot = (string) ($item['ssh_output_slot'] ?? '');
+        if ($slot === '') {
+            continue;
+        }
+        $bySlot[$slot] = $item;
+    }
+
+    $safeTitle = htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
+    $output = "<div class='card border-info mb-3 crypto-ssh-key-output-card' data-crypto-ssh-output><h5 class='card-header'>{$safeTitle}</h5><div class='card-body'>";
+
+    $presentPublic = [];
+    foreach ($publicSlots as $slot) {
+        if (isset($bySlot[$slot])) {
+            $presentPublic[] = $slot;
+        }
+    }
+    $publicCount = count($presentPublic);
+
+    if ($publicCount > 1) {
+        $output .= '<div class="mb-3 crypto-ssh-public-format-row d-flex flex-wrap align-items-center gap-2">';
+        $output .= '<label class="form-label mb-0 me-1"><strong>Public key output</strong></label>';
+        $output .= '<select class="form-select form-select-lg crypto-ssh-output-format" style="max-width: 22rem;">';
+        foreach ($presentPublic as $slot) {
+            $sEsc = htmlspecialchars($slot, ENT_QUOTES, 'UTF-8');
+            $lbl = htmlspecialchars((string) ($publicSlotLabels[$slot] ?? $slot), ENT_QUOTES, 'UTF-8');
+            $output .= "<option value=\"{$sEsc}\">{$lbl}</option>";
+        }
+        $output .= '</select></div>';
+    }
+
+    $output .= '<div class="crypto-ssh-output-panels">';
+    $first = true;
+    foreach ($presentPublic as $slot) {
+        $item = $bySlot[$slot];
+        $label = htmlspecialchars((string) ($item['label'] ?? ''), ENT_QUOTES, 'UTF-8');
+        $content = (string) ($item['content'] ?? '');
+        $filename = (string) ($item['filename'] ?? '');
+        $sEsc = htmlspecialchars($slot, ENT_QUOTES, 'UTF-8');
+        $panelClass = 'crypto-ssh-output-panel';
+        if ($publicCount > 1 && !$first) {
+            $panelClass .= ' d-none';
+        }
+        $first = false;
+
+        $output .= "<div class=\"{$panelClass}\" data-format=\"{$sEsc}\">";
+        $output .= output_copyable($content, $label);
+        if ($filename !== '') {
+            $output .= "<div style='margin-bottom: 16px;'>" . crypto_data_download_link($filename, $content, "Download {$label}") . "</div>";
+        }
+        $output .= '</div>';
+    }
+    $output .= '</div>';
+
+    if (isset($bySlot['private-pem'])) {
+        $priv = $bySlot['private-pem'];
+        $pl = htmlspecialchars((string) ($priv['label'] ?? ''), ENT_QUOTES, 'UTF-8');
+        $pc = (string) ($priv['content'] ?? '');
+        $pf = (string) ($priv['filename'] ?? '');
+        $output .= "<div class='crypto-ssh-private-block mt-3 pt-3 border-top border-secondary'>";
+        $output .= output_copyable($pc, $pl);
+        if ($pf !== '') {
+            $output .= "<div style='margin-bottom: 16px;'>" . crypto_data_download_link($pf, $pc, "Download {$pl}") . "</div>";
+        }
+        $output .= '</div>';
+    }
+
+    $output .= '</div></div>';
+
+    return $output;
+}
+
 function crypto_ssh_pack_string(string $value): string {
     return pack('N', strlen($value)) . $value;
 }
@@ -2386,6 +2470,7 @@ function handle_ssh_keygen(array $req): string {
                 'label' => strtoupper($algo) . ' Public Key (PEM)',
                 'content' => $publicPem,
                 'filename' => "public-{$algo}{$suffix}.pem",
+                'ssh_output_slot' => 'pem-public',
             ],
         ];
 
@@ -2395,6 +2480,7 @@ function handle_ssh_keygen(array $req): string {
                 'label' => strtoupper($algo) . ' Public Key (OpenSSH)',
                 'content' => (string) $sshLine['line'],
                 'filename' => "public-{$algo}{$suffix}.pub",
+                'ssh_output_slot' => 'openssh-public',
             ];
         } else {
             $output .= formatOutput(
@@ -2407,9 +2493,10 @@ function handle_ssh_keygen(array $req): string {
             'label' => strtoupper($algo) . ' Private Key (PEM)',
             'content' => (string) $result['private_pem'],
             'filename' => "private-{$algo}{$suffix}.pem",
+            'ssh_output_slot' => 'private-pem',
         ];
 
-        $output .= crypto_render_key_output($items, strtoupper($algo) . " SSH Key Material");
+        $output .= crypto_render_ssh_key_output($items, strtoupper($algo) . ' SSH Key Material');
     }
 
     return $output;
