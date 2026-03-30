@@ -153,20 +153,37 @@ $navbarItems = [
                 "formalName" => "Metaphone",
                 "icon"       => icon("soundwave")
             ],
-            "units" => [
-                "name"       => "units",
-                "formalName" => "Units",
-                "icon"       => icon('rulers')
+            "brainfuck" => [
+                "name"       => "brainfuck",
+                "formalName" => "Brainfuck Converter",
+                "icon"       => icon('code-slash')
+            ],
+        ],
+    ],
+    "math" => [
+        "name"       => "math",
+        "formalName" => "Math",
+        "icon"       => icon('infinity'),
+        "subitems" => [
+            "calculator" => [
+                "name"       => "calculator",
+                "formalName" => "Calculator",
+                "icon"       => icon('calculator')
             ],
             "currency" => [
                 "name"       => "currency",
                 "formalName" => "Currency Converter",
                 "icon"       => icon('currency-exchange')
             ],
-            "brainfuck" => [
-                "name"       => "brainfuck",
-                "formalName" => "Brainfuck Converter",
-                "icon"       => icon('code-slash')
+            "units" => [
+                "name"       => "units",
+                "formalName" => "Units",
+                "icon"       => icon('rulers')
+            ],
+            "datetime" => [
+                "name"       => "datetime",
+                "formalName" => "Date & Time",
+                "icon"       => icon('calendar')
             ],
         ],
     ],
@@ -175,16 +192,6 @@ $navbarItems = [
         "formalName" => "Miscellaneous",
         "icon"       => icon('briefcase'),
         "subitems" => [
-            "calculator" => [
-                "name"       => "calculator",
-                "formalName" => "Calculator",
-                "icon"       => icon('calculator')
-            ],
-            "datetime" => [
-                "name"       => "datetime",
-                "formalName" => "Date & Time",
-                "icon"       => icon('calendar')
-            ],
             "networking" => [
                 "name"       => "networking",
                 "formalName" => "Network Tools",

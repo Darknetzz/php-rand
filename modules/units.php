@@ -1,8 +1,8 @@
 <?php
 /**
  * Unit Converter – measurement units only (Volume, Length, Weight, Temperature, etc.).
- * Currency has its own module: Convert → Currency Converter.
- * Convert → Units
+ * Currency has its own module: Math → Currency Converter.
+ * Math → Units
  */
 ?>
 <div id="units" class="content">
