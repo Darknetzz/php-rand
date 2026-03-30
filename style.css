@@ -144,13 +144,10 @@ th.tablehead,
   margin-bottom: 8px;
 }
 
-.copyable-stack {
+.copyable-content {
   display: flex;
   flex-direction: column;
   gap: 8px;
-}
-
-.copyable-content {
   width: 100%;
   min-width: 200px;
   background-color: #0f172a;
@@ -159,19 +156,26 @@ th.tablehead,
   border-radius: 0.4rem;
   font-family: monospace;
   font-size: 0.95rem;
+  border: 1px solid #334155;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.25);
+}
+
+.copyable-body {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
   word-break: break-all;
   white-space: pre-wrap;
   user-select: all;
   overflow-y: auto;
   max-height: 320px;
-  border: 1px solid #334155;
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.25);
 }
 
 .copyable-actions {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
+  flex-shrink: 0;
 }
 
 /* Random Data Button Styles */

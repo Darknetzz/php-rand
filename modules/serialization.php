@@ -25,13 +25,17 @@
                     </div>
                     <div class="col-12 col-lg-6 d-flex flex-column">
                         <label class="form-label mb-3"><strong style="font-size: 1.1rem;">Output</strong></label>
-                        <div class="responseDiv flex-grow-1" id="serializationresponse" style="border: 2px solid #495057; padding: 20px; min-height: 320px; max-height: 540px; overflow-y: auto; background: linear-gradient(135deg, rgba(0, 184, 255, 0.12) 0%, rgba(32, 201, 151, 0.1) 100%); border-radius: 0.5rem; font-family: monospace; font-size: 0.95rem; white-space: pre-wrap; word-break: break-word; box-shadow: 0 6px 16px rgba(0,0,0,0.25);">
+                        <div class="copyable-content flex-grow-1 d-flex flex-column" style="min-height: 320px; padding: 0; background: linear-gradient(135deg, rgba(0, 184, 255, 0.12) 0%, rgba(32, 201, 151, 0.1) 100%); border: 2px solid #495057; border-radius: 0.5rem; box-shadow: 0 6px 16px rgba(0,0,0,0.25);">
+                        <div class="responseDiv copyable-body flex-grow-1" id="serializationresponse" style="padding: 20px; min-height: 200px; max-height: 500px; overflow-y: auto; background: transparent; border: none; border-radius: 0; box-shadow: none; font-family: monospace; font-size: 0.95rem; white-space: pre-wrap; word-break: break-word; user-select: all;">
                             <div style="opacity: 0.5; text-align: center; padding-top: 120px;">
                                 <div style="font-size: 3rem; margin-bottom: 10px;">🧾</div>
                                 <div>Converted output will appear here...</div>
                             </div>
                         </div>
-                        <button type="button" class="btn btn-sm btn-outline-light mt-2" style="width: 100%; border: 1px solid #e9ecef;" onclick="copyToClipboard('serializationresponse', this)"><?= icon("files") ?> Copy Output</button>
+                        <div class="copyable-actions" style="padding: 8px 14px; border-top: 1px solid rgba(255,255,255,0.12);">
+                        <button type="button" class="btn btn-sm btn-outline-light" style="width: 100%; border: 1px solid #e9ecef;" onclick="copyToClipboard('serializationresponse', this)"><?= icon("files") ?> Copy Output</button>
+                        </div>
+                        </div>
                     </div>
                 </div>
 

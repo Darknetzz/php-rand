@@ -1798,8 +1798,8 @@ function copyableOutput($content, $label = "", $useAsInput = null) {
     $html .= "<strong class='copyable-label'>$label</strong>";
   }
   
-  $html .= "<div class='copyable-stack'>";
-  $html .= "  <div class='copyable-content' id='$uniqueId'>";
+  $html .= "<div class='copyable-content'>";
+  $html .= "  <div class='copyable-body' id='$uniqueId'>";
   $html .= htmlspecialchars($content ?? '');
   $html .= "  </div>";
   $html .= "  <div class='copyable-actions'>";

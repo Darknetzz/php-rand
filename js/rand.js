@@ -693,12 +693,13 @@ function renderBrowserInfoHtml(info) {
     const rawJson = JSON.stringify(info, null, 2);
     let html = renderBrowserSections(info);
     html += "<div class='card border-secondary mt-3'>";
-    html += "<h5 class='card-header d-flex justify-content-between align-items-center'>";
-    html += "<span>Raw JSON</span>";
-    html += "<button type='button' class='btn btn-sm btn-outline-light' onclick='copyToClipboard(\"browserInfoJson\", this)'><i class='bi bi-clipboard'></i> Copy JSON</button>";
-    html += "</h5>";
+    html += "<h5 class='card-header'><span>Raw JSON</span></h5>";
     html += "<div class='card-body'>";
-    html += "<pre id='browserInfoJson' style='white-space: pre-wrap; word-break: break-word; margin-bottom: 0;'>" + htmlEscape(rawJson) + "</pre>";
+    html += "<div class='copyable-content'>";
+    html += "<pre class='copyable-body' id='browserInfoJson' style='margin: 0; font-family: inherit; font-size: inherit;'>" + htmlEscape(rawJson) + "</pre>";
+    html += "<div class='copyable-actions'>";
+    html += "<button type='button' class='btn btn-sm btn-outline-light' onclick='copyToClipboard(\"browserInfoJson\", this)' style='white-space: nowrap; border: 1px solid #e9ecef;'><i class='bi bi-clipboard'></i> Copy JSON</button>";
+    html += "</div></div>";
     html += "</div></div>";
     return html;
 }
@@ -740,8 +741,8 @@ function buildClientKeyOutput(items, title) {
         const encoded = "data:text/plain;charset=utf-8," + encodeURIComponent(item.content);
         html += "<div style='margin-bottom:15px;'>";
         html += "<strong class='copyable-label'>" + htmlEscape(item.label) + "</strong>";
-        html += "<div class='copyable-stack'>";
-        html += "<div class='copyable-content' id='" + htmlEscape(copyId) + "'>" + htmlEscape(item.content) + "</div>";
+        html += "<div class='copyable-content'>";
+        html += "<div class='copyable-body' id='" + htmlEscape(copyId) + "'>" + htmlEscape(item.content) + "</div>";
         html += "<div class='copyable-actions'>";
         html += "<button type='button' class='btn btn-sm btn-outline-light' onclick=\"copyToClipboard('" + htmlEscape(copyId) + "', this)\" style='white-space: nowrap; border: 1px solid #e9ecef;\">";
         html += "<i class='bi bi-files'></i> Copy";
