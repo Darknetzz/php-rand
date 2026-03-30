@@ -555,7 +555,7 @@ function resolve_numgen_digit_range(array $req): ?array {
 }
 
 function numgen_type_supports_large_values(string $type): bool {
-  return in_array($type, ['any', 'odd', 'even', 'palindromic'], true);
+  return in_array($type, ['any', 'odd', 'even', 'palindromic', 'prime', 'composite'], true);
 }
 
 function normalize_unsigned_integer_string($value): ?string {
@@ -587,7 +587,7 @@ function compare_unsigned_integer_strings(string $left, string $right): int {
 }
 
 function numgen_large_gmp_available(): bool {
-  return function_exists('gmp_init') && function_exists('gmp_cmp') && function_exists('gmp_pow') && function_exists('gmp_random_range');
+  return function_exists('gmp_init') && function_exists('gmp_cmp') && function_exists('gmp_pow') && function_exists('gmp_random_range') && function_exists('gmp_prob_prime');
 }
 
 function numgen_large_type_count_for_digits(int $numDigits, string $type) {
@@ -678,7 +678,85 @@ function random_palindromic_string_with_digits(int $numDigits): string {
   return $left . $right;
 }
 
+/**
+ * Primality test for a non-negative integer string (decimal digits). Requires GMP.
+ */
+function is_prime_gmp_string(string $digits): bool {
+  $n = normalize_unsigned_integer_string($digits);
+  if ($n === null || $n === '0' || $n === '1') {
+    return false;
+  }
+  if (!function_exists('gmp_prob_prime')) {
+    return false;
+  }
+  $last = substr($n, -1);
+  if ($last !== '1' && $last !== '3' && $last !== '5' && $last !== '7' && $last !== '9' && $n !== '2' && $n !== '5') {
+    return false;
+  }
+  return gmp_prob_prime(gmp_init($n, 10), 10) > 0;
+}
+
+/**
+ * True if the decimal string is an integer > 1 and composite (requires GMP).
+ */
+function is_composite_gmp_string(string $digits): bool {
+  $n = normalize_unsigned_integer_string($digits);
+  if ($n === null || $n === '0' || $n === '1') {
+    return false;
+  }
+  if (!function_exists('gmp_prob_prime')) {
+    return false;
+  }
+  return gmp_prob_prime(gmp_init($n, 10), 10) === 0;
+}
+
+/**
+ * Random prime with digit count in [minDigits, maxDigits] (uniform length choice matches "any" weights).
+ */
+function random_large_prime_string(int $minDigits, int $maxDigits) {
+  $maxAttempts = 50000;
+  if ($minDigits < 1 || $maxDigits < 1 || $minDigits > $maxDigits || $maxDigits > max_configurable_numgen_digits()) {
+    return alert('Invalid large-number digit range.', 'danger');
+  }
+  for ($attempt = 0; $attempt < $maxAttempts; $attempt++) {
+    $numDigits = $minDigits === $maxDigits ? $minDigits : random_large_numgen_digit_length($minDigits, $maxDigits, 'any');
+    if ($numDigits === 1) {
+      $oneDigitPrimes = ['2', '3', '5', '7'];
+      return $oneDigitPrimes[mt_rand(0, 3)];
+    }
+    $candidate = random_numeric_string_with_parity($numDigits, 'odd');
+    if (is_prime_gmp_string($candidate)) {
+      return $candidate;
+    }
+  }
+  return alert("No prime found after {$maxAttempts} tries. Try a different digit range.", 'warning');
+}
+
+/**
+ * Random composite with digit count in [minDigits, maxDigits] (uniform length choice matches "any" weights).
+ */
+function random_large_composite_string(int $minDigits, int $maxDigits) {
+  $maxAttempts = 50000;
+  if ($minDigits < 1 || $maxDigits < 1 || $minDigits > $maxDigits || $maxDigits > max_configurable_numgen_digits()) {
+    return alert('Invalid large-number digit range.', 'danger');
+  }
+  for ($attempt = 0; $attempt < $maxAttempts; $attempt++) {
+    $numDigits = $minDigits === $maxDigits ? $minDigits : random_large_numgen_digit_length($minDigits, $maxDigits, 'any');
+    $candidate = random_numeric_string_with_digits($numDigits);
+    if (is_composite_gmp_string($candidate)) {
+      return $candidate;
+    }
+  }
+  return alert("No composite found after {$maxAttempts} tries. Try a different digit range.", 'warning');
+}
+
 function random_large_numgen_value_by_digits(int $minDigits, int $maxDigits, string $type = 'any') {
+  if ($type === 'prime') {
+    return random_large_prime_string($minDigits, $maxDigits);
+  }
+  if ($type === 'composite') {
+    return random_large_composite_string($minDigits, $maxDigits);
+  }
   $numDigits = $minDigits === $maxDigits ? $minDigits : random_large_numgen_digit_length($minDigits, $maxDigits, $type);
   if ($type === 'odd' || $type === 'even') {
     return random_numeric_string_with_parity($numDigits, $type);
