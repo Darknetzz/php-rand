@@ -1872,8 +1872,34 @@ function crypto_signature_digest_for_key($key): int {
     return OPENSSL_ALGO_SHA256;
 }
 
+/**
+ * Algorithm argument for openssl_sign/openssl_verify. PHP 8.4+ expects 0 for pure Ed25519/Ed448 (not a digest OID).
+ *
+ * @param OpenSSLAsymmetricKey|resource $key
+ */
+function crypto_openssl_sign_verify_algorithm_for_key($key): int {
+    if (PHP_VERSION_ID >= 80400) {
+        $d = openssl_pkey_get_details($key);
+        if (is_array($d)) {
+            $type = $d['type'] ?? null;
+            if (defined('OPENSSL_KEYTYPE_ED25519') && $type === OPENSSL_KEYTYPE_ED25519) {
+                return 0;
+            }
+            if (defined('OPENSSL_KEYTYPE_ED448') && $type === OPENSSL_KEYTYPE_ED448) {
+                return 0;
+            }
+            if (isset($d['ed25519']) || isset($d['ed448'])) {
+                return 0;
+            }
+        }
+    }
+
+    return crypto_signature_digest_for_key($key);
+}
+
 function crypto_digest_label(int $algo): string {
     return match ($algo) {
+        0 => 'Ed25519/Ed448 (native)',
         OPENSSL_ALGO_SHA384 => 'SHA-384',
         OPENSSL_ALGO_SHA512 => 'SHA-512',
         OPENSSL_ALGO_SHA256 => 'SHA-256',
@@ -1889,6 +1915,36 @@ function crypto_openssl_key_type_is_rsa($key): bool {
 }
 
 /**
+ * RSA / RSA-PSS keys: OpenSSL 3 RSA-PSS may surface as type -1 in openssl_pkey_get_details() until PHP maps EVP_PKEY_RSA_PSS.
+ *
+ * @param OpenSSLAsymmetricKey|resource $key
+ */
+function crypto_openssl_key_may_be_rsa_for_pss_retry($key): bool {
+    $d = openssl_pkey_get_details($key);
+    if (!is_array($d)) {
+        return false;
+    }
+    $t = $d['type'] ?? null;
+    if ($t === OPENSSL_KEYTYPE_RSA) {
+        return true;
+    }
+    if (defined('OPENSSL_KEYTYPE_RSA_PSS') && $t === OPENSSL_KEYTYPE_RSA_PSS) {
+        return true;
+    }
+    if ($t === OPENSSL_KEYTYPE_EC || $t === OPENSSL_KEYTYPE_DSA || $t === OPENSSL_KEYTYPE_DH) {
+        return false;
+    }
+    if (defined('OPENSSL_KEYTYPE_ED25519') && ($t === OPENSSL_KEYTYPE_ED25519 || $t === OPENSSL_KEYTYPE_X25519)) {
+        return false;
+    }
+    if (defined('OPENSSL_KEYTYPE_ED448') && ($t === OPENSSL_KEYTYPE_ED448 || $t === OPENSSL_KEYTYPE_X448)) {
+        return false;
+    }
+
+    return $t === -1;
+}
+
+/**
  * PKCS#1 v1.5 RSASSA first; for RSA keys, retry with RSASSA-PSS when v1.5 is refused (PHP 8.5+).
  *
  * @param OpenSSLAsymmetricKey|resource $privateKey
@@ -1899,7 +1955,7 @@ function crypto_openssl_sign_rsa_padding_fallback(string $message, string &$sign
     if (@openssl_sign($message, $signature, $privateKey, $digestAlgorithm)) {
         return ['ok' => true, 'rsa_padding' => crypto_openssl_key_type_is_rsa($privateKey) ? 'pkcs1' : null];
     }
-    if (!crypto_openssl_key_type_is_rsa($privateKey)) {
+    if (!crypto_openssl_key_may_be_rsa_for_pss_retry($privateKey)) {
         return ['ok' => false];
     }
     if (PHP_VERSION_ID < 80500 || !defined('OPENSSL_PKCS1_PSS_PADDING')) {
@@ -1922,7 +1978,7 @@ function crypto_openssl_verify_rsa_padding_fallback(string $message, string $sig
     if ($r === 1 || $r === -1) {
         return $r;
     }
-    if (!crypto_openssl_key_type_is_rsa($publicKey)) {
+    if (!crypto_openssl_key_may_be_rsa_for_pss_retry($publicKey)) {
         return 0;
     }
     if (PHP_VERSION_ID < 80500 || !defined('OPENSSL_PKCS1_PSS_PADDING')) {
@@ -2265,12 +2321,12 @@ function handle_keypair_sign_verify(array $req): string {
             return formatOutput('Could not load private key (check PEM and passphrase).', type: 'danger');
         }
 
-        $digest = crypto_signature_digest_for_key($res);
+        $digest = crypto_openssl_sign_verify_algorithm_for_key($res);
         $digestLabel = crypto_digest_label($digest);
         $sig = '';
         $signed = crypto_openssl_sign_rsa_padding_fallback($message, $sig, $res, $digest);
         if (!$signed['ok']) {
-            $hint = (crypto_openssl_key_type_is_rsa($res) && PHP_VERSION_ID < 80500)
+            $hint = (crypto_openssl_key_may_be_rsa_for_pss_retry($res) && PHP_VERSION_ID < 80500)
                 ? ' RSA PSS-only keys need PHP 8.5+ for RSASSA-PSS signing here.'
                 : '';
 
@@ -2321,7 +2377,7 @@ function handle_keypair_sign_verify(array $req): string {
             return formatOutput('Could not load public key PEM.', type: 'danger');
         }
 
-        $digest = crypto_signature_digest_for_key($pub);
+        $digest = crypto_openssl_sign_verify_algorithm_for_key($pub);
         $ok = crypto_openssl_verify_rsa_padding_fallback($message, $sig, $pub, $digest);
         if ($ok === 1) {
             return formatOutput(

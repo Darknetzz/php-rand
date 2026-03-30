@@ -4,7 +4,7 @@
     <div class="card border-0 mb-4" style="background: linear-gradient(135deg, rgba(32, 201, 151, 0.15) 0%, rgba(13, 110, 253, 0.15) 100%);">
         <div class="card-body text-center py-5">
             <h1 class="display-3 mb-3" style="font-weight: 700;">
-                <?= icon("dice-".mt_rand(1,6), 3) ?> RAND
+                <?= icon("dice-".mt_rand(1,6), 3) ?> RAND<span class="text-muted small">OM</span>
             </h1>
             <p class="lead text-muted mb-4" style="font-size: 1.3rem;">
                 Your Swiss Army Knife for Random Generation, Encoding, Cryptography & Data Transformation
