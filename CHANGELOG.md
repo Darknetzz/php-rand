@@ -12,7 +12,7 @@ All notable changes to this project are documented in this file.
 - **Key tooling** – Client-side WebCrypto key output now includes **Copy** next to **Download** (same copyable layout as server). **SSH Key Generator** adds **Verify keys** (PEM/OpenSSH public, PEM private, optional passphrase, OpenSSL checks, `ssh-keygen -l` fingerprint when available, public/private match). **Private/Public Keys** adds **Sign or verify a message** (OpenSSL `openssl_sign` / `openssl_verify`, digest chosen per key type).
 
 <details>
-<summary>📋 More information (click to expand)</summary>
+<summary>📋 Detailed Changes (click to expand)</summary>
 
 #### Number Generator
 - **Digit limits** – Configurable digit inputs allow up to **50** digits; full native-int digit ranges are capped by `PHP_INT_MAX` (typically **18** digits for a complete min–max digit span on 64-bit builds). Explicit `int` bounds elsewhere remain limited by the length of `PHP_INT_MAX` (typically **19** digits).
