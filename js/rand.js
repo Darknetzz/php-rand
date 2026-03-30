@@ -51,14 +51,937 @@ function updateTime(tz = null) {
 /* ===================================================================== */
 /*                           FUNCTION: showData                          */
 /* ===================================================================== */
+function initSshKeyOutputFormatUi($root) {
+    $root.find(".crypto-ssh-key-output-card").each(function() {
+        const $card = $(this);
+        const $sel = $card.find(".crypto-ssh-output-format");
+        if (!$sel.length) {
+            return;
+        }
+        function syncFormat() {
+            const v = $sel.val();
+            $card.find(".crypto-ssh-output-panels .crypto-ssh-output-panel").each(function() {
+                $(this).toggleClass("d-none", $(this).attr("data-format") !== v);
+            });
+        }
+        $sel.off("change.sshKeyOutFmt").on("change.sshKeyOutFmt", syncFormat);
+        syncFormat();
+    });
+}
+
 function showData(obj, data) {
     if (obj.is("div")) {
         obj.html(data);
+        if (obj.find(".crypto-ssh-key-output-card").length) {
+            initSshKeyOutputFormatUi(obj);
+        }
     } else if (obj.is("code-input")) {
         obj.val(data.trim());
     } else {
         data = data.replace(/<(.|\n)*?>/g, '');
         obj.val(data.trim());
+    }
+}
+
+/* ===================================================================== */
+/*                       FUNCTION: buildLoadingHtml                       */
+/* ===================================================================== */
+function buildLoadingHtml(message = "Generating...") {
+    return '<div class="tool-loading"><div class="spinner-border text-primary tool-loading-spinner" role="status"><span class="visually-hidden">Loading...</span></div><p class="tool-loading-text">' + message + '</p></div>';
+}
+
+/* ===================================================================== */
+/*                      FUNCTION: loadScriptOnce                          */
+/* ===================================================================== */
+window._assetPromises = window._assetPromises || {};
+function loadScriptOnce(src) {
+    const key = "script:" + src;
+    if (window._assetPromises[key]) {
+        return window._assetPromises[key];
+    }
+    const deferred = $.Deferred();
+    const existing = document.querySelector('script[src="' + src + '"]');
+    if (existing) {
+        deferred.resolve();
+    } else {
+        const script = document.createElement("script");
+        script.src = src;
+        script.async = true;
+        script.onload = () => deferred.resolve();
+        script.onerror = () => deferred.reject(new Error("Failed to load script: " + src));
+        document.head.appendChild(script);
+    }
+    window._assetPromises[key] = deferred.promise();
+    return window._assetPromises[key];
+}
+
+/* ===================================================================== */
+/*                       FUNCTION: loadStyleOnce                          */
+/* ===================================================================== */
+function loadStyleOnce(href) {
+    const key = "style:" + href;
+    if (window._assetPromises[key]) {
+        return window._assetPromises[key];
+    }
+    const deferred = $.Deferred();
+    const existing = document.querySelector('link[rel="stylesheet"][href="' + href + '"]');
+    if (existing) {
+        deferred.resolve();
+    } else {
+        const link = document.createElement("link");
+        link.rel = "stylesheet";
+        link.href = href;
+        link.onload = () => deferred.resolve();
+        link.onerror = () => deferred.reject(new Error("Failed to load stylesheet: " + href));
+        document.head.appendChild(link);
+    }
+    window._assetPromises[key] = deferred.promise();
+    return window._assetPromises[key];
+}
+
+/* ===================================================================== */
+/*                    FUNCTION: ensureMarkdownAssets                      */
+/* ===================================================================== */
+function ensureMarkdownAssets() {
+    return $.when(
+        loadScriptOnce("https://cdn.jsdelivr.net/npm/marked/lib/marked.umd.js"),
+        loadStyleOnce("https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/dark.min.css"),
+        loadScriptOnce("https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js")
+    );
+}
+
+/* ===================================================================== */
+/*                    FUNCTION: ensureCodeInputAssets                     */
+/* ===================================================================== */
+function ensureCodeInputAssets() {
+    return $.when(
+        loadStyleOnce("https://cdn.jsdelivr.net/npm/@webcoder49/code-input@2.7.1/code-input.min.css"),
+        loadScriptOnce("https://cdn.jsdelivr.net/npm/@webcoder49/code-input@2.7.1/code-input.min.js"),
+        loadScriptOnce("js/hljs_autodetect.js"),
+        loadScriptOnce("js/hljs_indent.js"),
+        loadStyleOnce("https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/dark.min.css"),
+        loadScriptOnce("https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js")
+    );
+}
+
+/* ===================================================================== */
+/*                     FUNCTION: initCodeInputTemplate                    */
+/* ===================================================================== */
+window._codeInputTemplateReady = window._codeInputTemplateReady || false;
+function initCodeInputTemplate() {
+    if (window._codeInputTemplateReady) {
+        return;
+    }
+    if (typeof codeInput === "undefined" || typeof hljs === "undefined") {
+        return;
+    }
+    codeInput.registerTemplate("default", codeInput.templates.hljs(hljs, [
+        new codeInput.plugins.Autodetect(),
+        new codeInput.plugins.Indent(true, 2)
+    ]));
+    window._codeInputTemplateReady = true;
+}
+
+/* ===================================================================== */
+/*                    FUNCTION: ensureEnhancersForScope                   */
+/* ===================================================================== */
+function ensureEnhancersForScope($scope) {
+    const hasCodeInput = $scope.find("code-input").length > 0;
+    if (!hasCodeInput) {
+        return $.Deferred().resolve().promise();
+    }
+    return ensureCodeInputAssets().done(function() {
+        initCodeInputTemplate();
+    });
+}
+
+/* ===================================================================== */
+/*                        FUNCTION: submitToolForm                        */
+/* ===================================================================== */
+function submitToolForm($form, options = {}) {
+    var form = $form;
+    var responseObj = options.responseObj || form.find(".responseDiv");
+    var responseType = options.responseType || form.data("responsetype") || "html";
+    var action = options.action || form.data("action") || form.find("input[name=action]").val();
+    var url = options.url || form.attr("action") || "gen.php";
+    var data = options.data || form.serialize();
+    var loadingMessage = options.loadingMessage || "Generating...";
+    var onSuccess = options.onSuccess || function(dataOut) { showData(responseObj, dataOut); };
+    var onError = options.onError || function(xhr) {
+        var message = responseType === "html"
+            ? "<div class='alert alert-danger'>Error: " + xhr.statusText + "</div>"
+            : "Error: " + xhr.statusText;
+        showData(responseObj, message);
+    };
+
+    setFormVal(form, "responsetype", responseType);
+    if (action) {
+        setFormVal(form, "action", action);
+    }
+
+    if (responseObj.length === 0) {
+        $("#error").html("<br><div class='alert alert-danger'>No response object found.</div>").show();
+        return;
+    }
+    $("#error").hide();
+
+    showData(responseObj, buildLoadingHtml(loadingMessage));
+
+    $.ajax({
+        type: "POST",
+        url: url,
+        data: data,
+        success: onSuccess,
+        error: onError
+    });
+}
+
+function arrayBufferToBase64(buffer) {
+    const bytes = new Uint8Array(buffer);
+    let binary = "";
+    for (let i = 0; i < bytes.byteLength; i++) {
+        binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary);
+}
+
+function derToPem(buffer, label) {
+    const base64 = arrayBufferToBase64(buffer);
+    const wrapped = base64.match(/.{1,64}/g)?.join("\n") || base64;
+    return "-----BEGIN " + label + "-----\n" + wrapped + "\n-----END " + label + "-----\n";
+}
+
+function htmlEscape(text) {
+    return $("<div>").text(text).html();
+}
+
+function capabilityAvailable(value) {
+    return value !== undefined && value !== null;
+}
+
+function normalizeCapabilityValue(value) {
+    if (value === undefined || value === null || value === "") {
+        return "N/A";
+    }
+    if (typeof value === "boolean") {
+        return value ? "Yes" : "No";
+    }
+    if (Array.isArray(value)) {
+        return value.length ? value.join(", ") : "N/A";
+    }
+    if (typeof value === "object") {
+        try {
+            return JSON.stringify(value);
+        } catch (error) {
+            return "N/A";
+        }
+    }
+    return String(value);
+}
+
+function mapToCollectorItems(entries) {
+    return entries.map(function(entry) {
+        return {
+            key: entry.key,
+            label: entry.label,
+            value: normalizeCapabilityValue(entry.value),
+            available: capabilityAvailable(entry.value),
+            error: entry.error || null
+        };
+    });
+}
+
+function collectBaseBrowserInfo() {
+    const nav = navigator || {};
+    const tzName = (Intl && Intl.DateTimeFormat) ? Intl.DateTimeFormat().resolvedOptions().timeZone : null;
+    const conn = nav.connection || nav.mozConnection || nav.webkitConnection || null;
+
+    const userAgentDataBrands = (nav.userAgentData && Array.isArray(nav.userAgentData.brands))
+        ? nav.userAgentData.brands.map(function(brand) {
+            return brand.brand + " " + brand.version;
+        })
+        : null;
+
+    return {
+        generatedAt: new Date().toISOString(),
+        sections: [
+            {
+                key: "browser",
+                title: "Browser",
+                items: mapToCollectorItems([
+                    { key: "userAgent", label: "User Agent", value: nav.userAgent || null },
+                    { key: "platform", label: "Platform", value: nav.platform || null },
+                    { key: "vendor", label: "Vendor", value: nav.vendor || null },
+                    { key: "product", label: "Product", value: nav.product || null },
+                    { key: "cookieEnabled", label: "Cookies Enabled", value: nav.cookieEnabled },
+                    { key: "doNotTrack", label: "Do Not Track", value: nav.doNotTrack || null },
+                    { key: "webdriver", label: "Webdriver", value: nav.webdriver },
+                    { key: "onLine", label: "Online", value: nav.onLine }
+                ])
+            },
+            {
+                key: "uaHints",
+                title: "User-Agent Hints",
+                items: mapToCollectorItems([
+                    { key: "brands", label: "Brands", value: userAgentDataBrands },
+                    { key: "mobile", label: "Mobile", value: nav.userAgentData ? nav.userAgentData.mobile : null },
+                    { key: "platform", label: "UA Platform", value: nav.userAgentData ? nav.userAgentData.platform : null }
+                ])
+            },
+            {
+                key: "localeTime",
+                title: "Locale & Time",
+                items: mapToCollectorItems([
+                    { key: "language", label: "Language", value: nav.language || null },
+                    { key: "languages", label: "Languages", value: nav.languages || null },
+                    { key: "timezone", label: "Timezone", value: tzName || null },
+                    { key: "timezoneOffsetMinutes", label: "Timezone Offset (minutes)", value: new Date().getTimezoneOffset() },
+                    { key: "currentLocalTime", label: "Current Local Time", value: new Date().toString() }
+                ])
+            },
+            {
+                key: "screen",
+                title: "Screen & Viewport",
+                items: mapToCollectorItems([
+                    { key: "screenWidth", label: "Screen Width", value: window.screen ? window.screen.width : null },
+                    { key: "screenHeight", label: "Screen Height", value: window.screen ? window.screen.height : null },
+                    { key: "availWidth", label: "Available Width", value: window.screen ? window.screen.availWidth : null },
+                    { key: "availHeight", label: "Available Height", value: window.screen ? window.screen.availHeight : null },
+                    { key: "colorDepth", label: "Color Depth", value: window.screen ? window.screen.colorDepth : null },
+                    { key: "pixelDepth", label: "Pixel Depth", value: window.screen ? window.screen.pixelDepth : null },
+                    { key: "innerWidth", label: "Viewport Width", value: window.innerWidth || null },
+                    { key: "innerHeight", label: "Viewport Height", value: window.innerHeight || null },
+                    { key: "devicePixelRatio", label: "Device Pixel Ratio", value: window.devicePixelRatio || null }
+                ])
+            },
+            {
+                key: "hardware",
+                title: "Hardware",
+                items: mapToCollectorItems([
+                    { key: "hardwareConcurrency", label: "CPU Threads", value: nav.hardwareConcurrency || null },
+                    { key: "deviceMemory", label: "Device Memory (GB, hint)", value: nav.deviceMemory || null },
+                    { key: "maxTouchPoints", label: "Max Touch Points", value: nav.maxTouchPoints || null }
+                ])
+            },
+            {
+                key: "network",
+                title: "Network Hints",
+                items: mapToCollectorItems([
+                    { key: "effectiveType", label: "Effective Type", value: conn ? conn.effectiveType : null },
+                    { key: "downlink", label: "Downlink (Mbps)", value: conn ? conn.downlink : null },
+                    { key: "rtt", label: "RTT (ms)", value: conn ? conn.rtt : null },
+                    { key: "saveData", label: "Save-Data", value: conn ? conn.saveData : null }
+                ])
+            },
+            {
+                key: "capabilities",
+                title: "Capabilities",
+                items: mapToCollectorItems([
+                    { key: "clipboard", label: "Clipboard API", value: !!(nav.clipboard && nav.clipboard.writeText) },
+                    { key: "serviceWorker", label: "Service Worker", value: !!nav.serviceWorker },
+                    { key: "geolocation", label: "Geolocation API", value: !!nav.geolocation },
+                    { key: "notifications", label: "Notifications API", value: ("Notification" in window) },
+                    { key: "bluetooth", label: "Web Bluetooth", value: !!nav.bluetooth },
+                    { key: "usb", label: "WebUSB", value: !!nav.usb },
+                    { key: "nfc", label: "WebNFC", value: !!nav.nfc },
+                    { key: "webgpu", label: "WebGPU", value: !!nav.gpu },
+                    { key: "webAssembly", label: "WebAssembly", value: ("WebAssembly" in window) },
+                    { key: "sharedWorker", label: "SharedWorker", value: ("SharedWorker" in window) },
+                    { key: "indexedDb", label: "IndexedDB", value: ("indexedDB" in window) },
+                    { key: "localStorage", label: "localStorage", value: ("localStorage" in window) },
+                    { key: "sessionStorage", label: "sessionStorage", value: ("sessionStorage" in window) },
+                    { key: "crypto", label: "WebCrypto", value: !!(window.crypto && window.crypto.subtle) }
+                ])
+            }
+        ]
+    };
+}
+
+function collectWebGlInfo() {
+    const section = { key: "webgl", title: "WebGL", items: [] };
+    const canvas = document.createElement("canvas");
+    const gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+    if (!gl) {
+        section.items = mapToCollectorItems([
+            { key: "supported", label: "WebGL Supported", value: false }
+        ]);
+        return section;
+    }
+
+    let renderer = null;
+    let vendor = null;
+    try {
+        const ext = gl.getExtension("WEBGL_debug_renderer_info");
+        if (ext) {
+            renderer = gl.getParameter(ext.UNMASKED_RENDERER_WEBGL);
+            vendor = gl.getParameter(ext.UNMASKED_VENDOR_WEBGL);
+        }
+    } catch (error) {
+        renderer = null;
+        vendor = null;
+    }
+
+    section.items = mapToCollectorItems([
+        { key: "supported", label: "WebGL Supported", value: true },
+        { key: "version", label: "WebGL Version", value: gl.getParameter(gl.VERSION) || null },
+        { key: "shadingLanguageVersion", label: "Shading Language Version", value: gl.getParameter(gl.SHADING_LANGUAGE_VERSION) || null },
+        { key: "renderer", label: "Renderer", value: renderer },
+        { key: "vendor", label: "Vendor", value: vendor }
+    ]);
+    return section;
+}
+
+async function collectPermissionsSection() {
+    const section = { key: "permissions", title: "Permissions", items: [] };
+    if (!navigator.permissions || !navigator.permissions.query) {
+        section.items = mapToCollectorItems([
+            { key: "supported", label: "Permissions API", value: false }
+        ]);
+        return section;
+    }
+
+    const permissionNames = [
+        "geolocation",
+        "notifications",
+        "microphone",
+        "camera",
+        "clipboard-read",
+        "clipboard-write"
+    ];
+    const items = [{ key: "supported", label: "Permissions API", value: true }];
+
+    for (const name of permissionNames) {
+        try {
+            const status = await navigator.permissions.query({ name: name });
+            items.push({
+                key: name,
+                label: name,
+                value: status && status.state ? status.state : null
+            });
+        } catch (error) {
+            items.push({
+                key: name,
+                label: name,
+                value: null,
+                error: "Unsupported or blocked"
+            });
+        }
+    }
+
+    section.items = mapToCollectorItems(items);
+    return section;
+}
+
+async function collectWebRtcSection() {
+    const section = { key: "webrtc", title: "WebRTC Candidates", items: [] };
+    if (typeof RTCPeerConnection === "undefined") {
+        section.items = mapToCollectorItems([
+            { key: "supported", label: "RTCPeerConnection", value: false }
+        ]);
+        return section;
+    }
+
+    const localCandidates = [];
+    let candidateError = null;
+
+    try {
+        const pc = new RTCPeerConnection({ iceServers: [] });
+        pc.createDataChannel("probe");
+        pc.onicecandidate = function(event) {
+            if (!event || !event.candidate || !event.candidate.candidate) {
+                return;
+            }
+            const candidate = event.candidate.candidate;
+            const parts = candidate.split(" ");
+            if (parts.length >= 8) {
+                localCandidates.push({
+                    protocol: parts[2] || null,
+                    address: parts[4] || null,
+                    port: parts[5] || null,
+                    type: parts[7] || null
+                });
+            }
+        };
+
+        const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        await new Promise(function(resolve) { setTimeout(resolve, 1200); });
+        pc.close();
+    } catch (error) {
+        candidateError = error && error.message ? error.message : "Failed to collect WebRTC candidates.";
+    }
+
+    section.items = mapToCollectorItems([
+        { key: "supported", label: "RTCPeerConnection", value: true },
+        { key: "candidateCount", label: "Candidate Count", value: localCandidates.length },
+        { key: "candidates", label: "Candidates", value: localCandidates.length ? localCandidates : null },
+        { key: "error", label: "Probe Error", value: candidateError }
+    ]);
+    return section;
+}
+
+async function collectPublicIpSection() {
+    const section = { key: "publicIp", title: "Public IP (External)", items: [] };
+    try {
+        const response = await fetch("https://api.ipify.org?format=json", { method: "GET" });
+        const data = await response.json();
+        section.items = mapToCollectorItems([
+            { key: "ip", label: "Public IP", value: data && data.ip ? data.ip : null }
+        ]);
+    } catch (error) {
+        section.items = mapToCollectorItems([
+            { key: "ip", label: "Public IP", value: null, error: "Lookup failed" }
+        ]);
+    }
+    return section;
+}
+
+async function collectBrowserInfo(options) {
+    const opts = options || {};
+    const info = collectBaseBrowserInfo();
+    info.sections.push(collectWebGlInfo());
+
+    if (opts.includePermissions) {
+        info.sections.push(await collectPermissionsSection());
+    }
+    if (opts.includeWebRtc) {
+        info.sections.push(await collectWebRtcSection());
+    }
+    if (opts.includePublicIp) {
+        info.sections.push(await collectPublicIpSection());
+    }
+
+    return info;
+}
+
+function getClientCryptoEnvironment() {
+    const subtle = window.crypto && window.crypto.subtle;
+    return {
+        hasSubtle: !!subtle,
+        secure: !!window.isSecureContext
+    };
+}
+
+/** True when browser client-side key generation (auto/client) can run. */
+function clientCryptoClientGenerationAvailable() {
+    const env = getClientCryptoEnvironment();
+    return env.secure && env.hasSubtle;
+}
+
+/**
+ * Single HTTPS / WebCrypto warning for key generators and crypto diagnostics.
+ * @param {string} marginClass - Bootstrap margin on the alert (e.g. mb-2, mb-3).
+ * @returns {string} Empty when client generation is available; otherwise one alert with icon.
+ */
+function buildClientCryptoWarningBannerHtml(marginClass) {
+    if (clientCryptoClientGenerationAvailable()) {
+        return "";
+    }
+    marginClass = marginClass || "mb-3";
+    const env = getClientCryptoEnvironment();
+    let detail = "";
+    if (!env.secure && !env.hasSubtle) {
+        detail = "This page is not a secure context (use HTTPS or <code>localhost</code>) and <code>window.crypto.subtle</code> is unavailable.";
+    } else if (!env.secure) {
+        detail = "This page is not a secure context. Browsers restrict WebCrypto on plain HTTP; use HTTPS or <code>localhost</code>.";
+    } else {
+        detail = "<code>window.crypto.subtle</code> is not available in this browser.";
+    }
+    return "<div class=\"alert alert-warning " + marginClass + " d-flex align-items-start gap-2\" role=\"alert\">" +
+        "<i class=\"bi bi-exclamation-triangle-fill flex-shrink-0 mt-1\" aria-hidden=\"true\"></i>" +
+        "<div><strong>Client-side generation unavailable.</strong> " + detail +
+        " <strong>Generation mode is set to server-side only.</strong> Auto and client-only are disabled until this environment supports WebCrypto.</div>" +
+        "</div>";
+}
+
+/** Force server mode and disable auto/client when WebCrypto cannot be used. */
+function applyKeygenGenerationModeConstraints($scope) {
+    const $forms = ($scope && $scope.length)
+        ? $scope.find("form[data-action='keypair_generate'], form[data-action='ssh_keygen']")
+        : $("form[data-action='keypair_generate'], form[data-action='ssh_keygen']");
+    const canUseClient = clientCryptoClientGenerationAvailable();
+    $forms.each(function() {
+        const $form = $(this);
+        const $sel = $form.find("select[name='generation_mode']");
+        if (!$sel.length) {
+            return;
+        }
+        const $auto = $sel.find("option[value='auto']");
+        const $client = $sel.find("option[value='client']");
+        if (canUseClient) {
+            $auto.prop("disabled", false);
+            $client.prop("disabled", false);
+        } else {
+            $auto.prop("disabled", true);
+            $client.prop("disabled", true);
+            $sel.val("server");
+        }
+        updatePassphraseStateForForm($form);
+    });
+}
+
+function refreshClientCryptoGeneratorUi($scope) {
+    const $targets = ($scope && $scope.length)
+        ? $scope.find(".client-crypto-generator-banner")
+        : $(".client-crypto-generator-banner");
+    const html = buildClientCryptoWarningBannerHtml("mb-2");
+    $targets.each(function() {
+        $(this).html(html);
+    });
+    applyKeygenGenerationModeConstraints($scope);
+}
+
+function buildClientCryptoDiagnosticsHtml() {
+    const env = getClientCryptoEnvironment();
+
+    const items = [
+        { label: "WebCrypto available", value: env.hasSubtle ? "Yes" : "No" },
+        { label: "Secure context (HTTPS / localhost)", value: env.secure ? "Yes" : "No" },
+        { label: "User agent", value: (navigator && navigator.userAgent) || "N/A" }
+    ];
+
+    let html = "<div class='card border-info mt-3 mb-3'><h5 class='card-header'>Client-side Crypto Diagnostics (Browser)</h5><div class='card-body'>";
+    html += "<p class='mb-3 text-muted'>Basic browser-side crypto/runtime signals. Detailed browser diagnostics are available in the Browser Inspector tool.</p>";
+
+    html += buildClientCryptoWarningBannerHtml("mb-3");
+
+    html += "<div class='table-responsive'><table class='table table-dark table-striped mb-0'><thead><tr><th>Field</th><th>Value</th></tr></thead><tbody>";
+    items.forEach(function(item) {
+        html += "<tr><td style='width: 30%;'><code>" + htmlEscape(item.label) + "</code></td><td>" + htmlEscape(item.value) + "</td></tr>";
+    });
+    html += "</tbody></table></div>";
+
+    if (env.secure && env.hasSubtle) {
+        html += "<div class='alert alert-success mb-0' role='alert'><strong>Client-side crypto OK.</strong> HTTPS (or localhost) and WebCrypto are available; browser key generation can run when you choose client or auto mode.</div>";
+    }
+
+    html += "</div></div>";
+    return html;
+}
+
+function buildBrowserInspectorStatusBadgeHtml(item) {
+    if (item.error) {
+        const full = String(item.error);
+        const short = full.length > 56 ? full.slice(0, 53) + "…" : full;
+        return "<span class='badge bg-danger text-white' title=\"" + htmlEscape(full) + "\">" + htmlEscape(short) + "</span>";
+    }
+    if (!item.available) {
+        return "<span class='badge bg-secondary text-white'>N/A</span>";
+    }
+    const raw = item.value === undefined || item.value === null ? "" : String(item.value).trim();
+    const lower = raw.toLowerCase();
+    if (lower === "granted") {
+        return "<span class='badge bg-success text-white'>Granted</span>";
+    }
+    if (lower === "denied") {
+        return "<span class='badge bg-danger text-white'>Denied</span>";
+    }
+    if (lower === "prompt") {
+        return "<span class='badge bg-warning text-dark'>Prompt</span>";
+    }
+    if (raw === "Yes") {
+        return "<span class='badge bg-success text-white'>Yes</span>";
+    }
+    if (raw === "No") {
+        return "<span class='badge bg-secondary text-white'>No</span>";
+    }
+    return "<span class='badge bg-success text-white'>OK</span>";
+}
+
+function renderBrowserSections(info) {
+    const sections = Array.isArray(info.sections) ? info.sections : [];
+    let html = "<div class='mb-3'><strong>Generated:</strong> " + htmlEscape(info.generatedAt || "") + "</div>";
+
+    sections.forEach(function(section) {
+        html += "<div class='card border-info mb-3'>";
+        html += "<h5 class='card-header'>" + htmlEscape(section.title || section.key || "Section") + "</h5>";
+        html += "<div class='card-body p-0'>";
+        html += "<div class='table-responsive'><table class='table table-dark table-striped mb-0'><thead><tr><th>Field</th><th>Value</th><th>Status</th></tr></thead><tbody>";
+        (section.items || []).forEach(function(item) {
+            html += "<tr>";
+            html += "<td style='width: 30%;'><code>" + htmlEscape(item.label || item.key || "") + "</code></td>";
+            html += "<td style='white-space: pre-wrap; word-break: break-word;'>" + htmlEscape(item.value) + "</td>";
+            html += "<td style='width: 18%; white-space: nowrap;'>" + buildBrowserInspectorStatusBadgeHtml(item) + "</td>";
+            html += "</tr>";
+        });
+        html += "</tbody></table></div></div></div>";
+    });
+
+    return html;
+}
+
+function renderBrowserInfoHtml(info) {
+    const rawJson = JSON.stringify(info, null, 2);
+    let html = renderBrowserSections(info);
+    html += "<div class='card border-secondary mt-3'>";
+    html += "<h5 class='card-header'><span>Raw JSON</span></h5>";
+    html += "<div class='card-body'>";
+    html += "<div class='copyable-content'>";
+    html += "<pre class='copyable-body' id='browserInfoJson' style='margin: 0; font-family: inherit; font-size: inherit;'>" + htmlEscape(rawJson) + "</pre>";
+    html += "<div class='copyable-actions'>";
+    html += "<button type='button' class='btn btn-sm btn-outline-light' onclick='copyToClipboard(\"browserInfoJson\", this)' style='white-space: nowrap; border: 1px solid #e9ecef;'><i class='bi bi-clipboard'></i> Copy JSON</button>";
+    html += "</div></div>";
+    html += "</div></div>";
+    return html;
+}
+
+async function maybeHandleBrowserInspector(form, responseObj) {
+    const action = (form.data("action") || "").toLowerCase();
+    if (action !== "browser_inspect") {
+        return false;
+    }
+
+    showData(responseObj, buildLoadingHtml("Detecting browser details..."));
+
+    try {
+        const info = await collectBrowserInfo({
+            includePermissions: form.find("[name='include_permissions']").is(":checked"),
+            includeWebRtc: form.find("[name='include_webrtc']").is(":checked"),
+            includePublicIp: form.find("[name='include_public_ip']").is(":checked")
+        });
+        showData(responseObj, renderBrowserInfoHtml(info));
+    } catch (error) {
+        const message = error && error.message ? error.message : "Failed to inspect browser details.";
+        showData(responseObj, "<div class='alert alert-danger'>" + htmlEscape(message) + "</div>");
+    }
+
+    return true;
+}
+
+function newClientCopyableElementId() {
+    if (window.crypto && typeof window.crypto.randomUUID === "function") {
+        return "copy_" + window.crypto.randomUUID().replace(/-/g, "");
+    }
+    return "copy_cli_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 12);
+}
+
+function buildClientKeyOutput(items, title) {
+    let html = "<div class='card border-info mb-3'><h5 class='card-header'>" + htmlEscape(title) + "</h5><div class='card-body'>";
+    items.forEach(function(item) {
+        const copyId = newClientCopyableElementId();
+        const encoded = "data:text/plain;charset=utf-8," + encodeURIComponent(item.content);
+        html += "<div style='margin-bottom:15px;'>";
+        html += "<strong class='copyable-label'>" + htmlEscape(item.label) + "</strong>";
+        html += "<div class='copyable-content'>";
+        html += "<div class='copyable-body' id='" + htmlEscape(copyId) + "'>" + htmlEscape(item.content) + "</div>";
+        html += "<div class='copyable-actions'>";
+        html += "<button type='button' class='btn btn-sm btn-outline-light' onclick=\"copyToClipboard('" + htmlEscape(copyId) + "', this)\" style='white-space: nowrap; border: 1px solid #e9ecef;\">";
+        html += "<i class='bi bi-files'></i> Copy";
+        html += "</button>";
+        html += "<a class='btn btn-outline-light btn-sm' download='" + htmlEscape(item.filename) + "' href='" + encoded + "' style='white-space: nowrap; border: 1px solid #e9ecef;'>";
+        html += "<i class='bi bi-download'></i> Download " + htmlEscape(item.label);
+        html += "</a></div></div></div>";
+    });
+    html += "</div></div>";
+    return html;
+}
+
+/** SSH client output: public only in panels; private always visible (matches server when no OpenSSH). */
+function buildClientSshKeyOutput(slotItems, title) {
+    const publicSlotLabels = {
+        "pem-public": "PEM",
+        "openssh-public": "OpenSSH (one-line)"
+    };
+    const publicOrder = ["pem-public", "openssh-public"];
+    const bySlot = {};
+    slotItems.forEach(function(it) {
+        bySlot[it.slot] = it;
+    });
+
+    const presentPublic = [];
+    publicOrder.forEach(function(slot) {
+        if (bySlot[slot]) {
+            presentPublic.push(slot);
+        }
+    });
+    const publicCount = presentPublic.length;
+
+    let selectRow = "";
+    if (publicCount > 1) {
+        let optionsHtml = "";
+        presentPublic.forEach(function(slot) {
+            optionsHtml += "<option value=\"" + htmlEscape(slot) + "\">" + htmlEscape(publicSlotLabels[slot]) + "</option>";
+        });
+        selectRow = "<div class=\"mb-3 crypto-ssh-public-format-row d-flex flex-wrap align-items-center gap-2\">"
+            + "<label class=\"form-label mb-0 me-1\"><strong>Public key output</strong></label>"
+            + "<select class=\"form-select form-select-lg crypto-ssh-output-format\" style=\"max-width:22rem\">"
+            + optionsHtml
+            + "</select></div>";
+    }
+
+    let panelsHtml = "";
+    let isFirst = true;
+    presentPublic.forEach(function(slot) {
+        const item = bySlot[slot];
+        const copyId = newClientCopyableElementId();
+        const encoded = "data:text/plain;charset=utf-8," + encodeURIComponent(item.content);
+        let panelClass = "crypto-ssh-output-panel";
+        if (publicCount > 1 && !isFirst) {
+            panelClass += " d-none";
+        }
+        isFirst = false;
+        panelsHtml += "<div class=\"" + panelClass + "\" data-format=\"" + htmlEscape(slot) + "\">";
+        panelsHtml += "<div style='margin-bottom:15px;'>";
+        panelsHtml += "<strong class='copyable-label'>" + htmlEscape(item.label) + "</strong>";
+        panelsHtml += "<div class='copyable-content'>";
+        panelsHtml += "<div class='copyable-body' id='" + htmlEscape(copyId) + "'>" + htmlEscape(item.content) + "</div>";
+        panelsHtml += "<div class='copyable-actions'>";
+        panelsHtml += "<button type='button' class='btn btn-sm btn-outline-light' onclick=\"copyToClipboard('" + htmlEscape(copyId) + "', this)\" style='white-space: nowrap; border: 1px solid #e9ecef;\">";
+        panelsHtml += "<i class='bi bi-files'></i> Copy</button>";
+        panelsHtml += "<a class='btn btn-outline-light btn-sm' download='" + htmlEscape(item.filename) + "' href='" + encoded + "' style='white-space: nowrap; border: 1px solid #e9ecef;'>";
+        panelsHtml += "<i class='bi bi-download'></i> Download " + htmlEscape(item.label);
+        panelsHtml += "</a></div></div></div></div>";
+    });
+
+    let privateHtml = "";
+    const priv = bySlot["private-pem"];
+    if (priv) {
+        const copyId = newClientCopyableElementId();
+        const encoded = "data:text/plain;charset=utf-8," + encodeURIComponent(priv.content);
+        privateHtml = "<div class=\"crypto-ssh-private-block mt-3 pt-3 border-top border-secondary\">";
+        privateHtml += "<div style='margin-bottom:15px;'>";
+        privateHtml += "<strong class='copyable-label'>" + htmlEscape(priv.label) + "</strong>";
+        privateHtml += "<div class='copyable-content'>";
+        privateHtml += "<div class='copyable-body' id='" + htmlEscape(copyId) + "'>" + htmlEscape(priv.content) + "</div>";
+        privateHtml += "<div class='copyable-actions'>";
+        privateHtml += "<button type='button' class='btn btn-sm btn-outline-light' onclick=\"copyToClipboard('" + htmlEscape(copyId) + "', this)\" style='white-space: nowrap; border: 1px solid #e9ecef;\">";
+        privateHtml += "<i class='bi bi-files'></i> Copy</button>";
+        privateHtml += "<a class='btn btn-outline-light btn-sm' download='" + htmlEscape(priv.filename) + "' href='" + encoded + "' style='white-space: nowrap; border: 1px solid #e9ecef;'>";
+        privateHtml += "<i class='bi bi-download'></i> Download " + htmlEscape(priv.label);
+        privateHtml += "</a></div></div></div></div>";
+    }
+
+    return "<div class=\"card border-info mb-3 crypto-ssh-key-output-card\" data-crypto-ssh-output>"
+        + "<h5 class=\"card-header\">" + htmlEscape(title) + "</h5>"
+        + "<div class=\"card-body\">"
+        + selectRow
+        + "<div class=\"crypto-ssh-output-panels\">" + panelsHtml + "</div>"
+        + privateHtml
+        + "</div></div>";
+}
+
+async function clientGeneratePemPair(algorithm, rsaBits, ecdsaCurve) {
+    const subtle = window.crypto && window.crypto.subtle;
+    if (!subtle) throw new Error("WebCrypto is unavailable in this browser.");
+
+    let algo;
+    if (algorithm === "rsa") {
+        algo = {
+            name: "RSA-PSS",
+            modulusLength: rsaBits,
+            publicExponent: new Uint8Array([1, 0, 1]),
+            hash: "SHA-256"
+        };
+    } else if (algorithm === "ecdsa") {
+        const namedCurve = ecdsaCurve === "secp384r1" ? "P-384" : (ecdsaCurve === "secp521r1" ? "P-521" : "P-256");
+        algo = { name: "ECDSA", namedCurve: namedCurve };
+    } else if (algorithm === "ed25519") {
+        algo = { name: "Ed25519" };
+    } else {
+        throw new Error("Unsupported client algorithm: " + algorithm);
+    }
+
+    const keyPair = await subtle.generateKey(algo, true, ["sign", "verify"]);
+    const privatePkcs8 = await subtle.exportKey("pkcs8", keyPair.privateKey);
+    const publicSpki = await subtle.exportKey("spki", keyPair.publicKey);
+
+    return {
+        privatePem: derToPem(privatePkcs8, "PRIVATE KEY"),
+        publicPem: derToPem(publicSpki, "PUBLIC KEY")
+    };
+}
+
+async function maybeHandleClientSideKeygen(form, responseObj) {
+    const action = form.data("action") || "";
+    if (action !== "keypair_generate" && action !== "ssh_keygen") {
+        return false;
+    }
+
+    const mode = (form.find("[name='generation_mode']").val() || "server").toLowerCase();
+    if (mode === "server") {
+        return false;
+    }
+
+    const passphrase = (form.find("[name='passphrase']").val() || "").trim();
+    const isSsh = action === "ssh_keygen";
+    if (passphrase !== "") {
+        if (mode === "auto") return false;
+        showData(responseObj, "<div class='alert alert-warning'>Client-side mode does not support private-key passphrase encryption yet. Use server mode.</div>");
+        return true;
+    }
+
+    if (isSsh && mode === "auto") {
+        // Prefer server for SSH in auto mode so OpenSSH output is always included.
+        return false;
+    }
+
+    const subtle = window.crypto && window.crypto.subtle;
+    if (!subtle) {
+        if (mode === "auto") return false;
+        showData(responseObj, "<div class='alert alert-danger'>WebCrypto is unavailable in this browser. Use server mode.</div>");
+        return true;
+    }
+
+    const selected = form.find("[name='algorithm']").val() || "ed25519";
+    const rsaBits = parseInt(form.find("[name='rsa_bits']").val() || "4096", 10);
+    const ecdsaCurve = form.find("[name='ecdsa_curve']").val() || "prime256v1";
+    const list = selected === "all-available" ? ["rsa", "ecdsa", "ed25519"] : [selected];
+
+    let output = "";
+    let generatedCount = 0;
+    for (const algorithm of list) {
+        try {
+            const pair = await clientGeneratePemPair(algorithm, rsaBits, ecdsaCurve);
+            const suffix = algorithm === "rsa" ? ("-" + rsaBits) : (algorithm === "ecdsa" ? ("-" + ecdsaCurve) : "");
+            if (isSsh) {
+                output += "<div class='alert alert-warning'>OpenSSH one-line public keys are not generated in the browser—public PEM and private PEM are shown; use server mode for OpenSSH + PEM public together.</div>";
+                const slotItems = [
+                    { slot: "pem-public", label: algorithm.toUpperCase() + " Public Key (PEM)", content: pair.publicPem, filename: "public-" + algorithm + suffix + ".pem" },
+                    { slot: "private-pem", label: algorithm.toUpperCase() + " Private Key (PEM)", content: pair.privatePem, filename: "private-" + algorithm + suffix + ".pem" }
+                ];
+                output += buildClientSshKeyOutput(slotItems, algorithm.toUpperCase() + " Client-side SSH Key Material");
+            } else {
+                const items = [
+                    { label: algorithm.toUpperCase() + " Public Key (PEM)", content: pair.publicPem, filename: "public-" + algorithm + suffix + ".pem" },
+                    { label: algorithm.toUpperCase() + " Private Key (PEM)", content: pair.privatePem, filename: "private-" + algorithm + suffix + ".pem" }
+                ];
+                output += buildClientKeyOutput(items, algorithm.toUpperCase() + " Client-side Keypair");
+            }
+            generatedCount++;
+        } catch (err) {
+            if (mode === "auto") {
+                continue;
+            }
+            output += "<div class='alert alert-warning'>" + htmlEscape((algorithm.toUpperCase() + ": " + (err && err.message ? err.message : "Client generation failed."))) + "</div>";
+        }
+    }
+
+    if (generatedCount === 0) {
+        if (mode === "auto") return false;
+        showData(responseObj, output || "<div class='alert alert-danger'>No keys were generated client-side.</div>");
+        return true;
+    }
+
+    output = "<div class='alert alert-info'>Generated via browser WebCrypto (client-side).</div>" + output;
+    showData(responseObj, output);
+    return true;
+}
+
+function updatePassphraseStateForForm($form) {
+    const mode = ($form.find("[name='generation_mode']").val() || "").toLowerCase();
+    const $pass = $form.find("input[name='passphrase']");
+    if (!$pass.length) return;
+
+    const isClientOnly = mode === "client";
+    if (isClientOnly) {
+        $pass.val("");
+        $pass.prop("disabled", true);
+        $pass.attr("placeholder", "Disabled in client-side mode; use server/auto for passphrase protection");
+    } else {
+        $pass.prop("disabled", false);
+        if ($pass.attr("data-original-placeholder")) {
+            $pass.attr("placeholder", $pass.attr("data-original-placeholder"));
+        }
     }
 }
 
@@ -75,24 +998,171 @@ function setFormVal(form, name = "action", value = "") {
     $(form).append(hiddenInput);
 }
 
+const ACTIVE_MODULE_STORAGE_KEY = "rand.activeModule";
+
+function normalizeModuleHash(value) {
+    const moduleName = (value || "").replace(/^#/, "").trim();
+    return moduleName ? ("#" + moduleName) : "";
+}
+
+function persistActiveModule(hashValue) {
+    const normalizedHash = normalizeModuleHash(hashValue);
+    if (!normalizedHash) {
+        return;
+    }
+    try {
+        window.localStorage.setItem(ACTIVE_MODULE_STORAGE_KEY, normalizedHash);
+    } catch (error) {
+        // localStorage can be unavailable in privacy-restricted contexts.
+    }
+}
+
+function getPreferredInitialModule() {
+    const hashModule = normalizeModuleHash(window.location.hash);
+    if (hashModule) {
+        return hashModule;
+    }
+    try {
+        const storedModule = normalizeModuleHash(window.localStorage.getItem(ACTIVE_MODULE_STORAGE_KEY));
+        if (storedModule) {
+            return storedModule;
+        }
+    } catch (error) {
+        // Ignore storage read errors and fallback to dashboard.
+    }
+    return "#dashboard";
+}
+
+/* ===================================================================== */
+/*                        FUNCTION: initCsrFormUi                         */
+/* ===================================================================== */
+function initCsrFormUi($scope) {
+    if (!$scope.find("#csrForm").length) {
+        return;
+    }
+    const algEl = document.getElementById("csrAlgorithm");
+    const rsaWrap = document.getElementById("csrOptRsa");
+    const ecdsaWrap = document.getElementById("csrOptEcdsa");
+    if (!algEl || !rsaWrap || !ecdsaWrap) {
+        return;
+    }
+    function syncCsrKeyOptions() {
+        const v = algEl.value;
+        rsaWrap.classList.toggle("d-none", v !== "rsa");
+        ecdsaWrap.classList.toggle("d-none", v !== "ecdsa");
+    }
+    $(algEl).off("change.csrKeyOpts").on("change.csrKeyOpts", syncCsrKeyOptions);
+    syncCsrKeyOptions();
+}
+
+/* ===================================================================== */
+/*                      FUNCTION: initKeypairSignFormUi                   */
+/* ===================================================================== */
+function initKeypairSignFormUi($scope) {
+    if (!$scope.find("#keypairSignForm").length) {
+        return;
+    }
+    const modeEl = document.getElementById("keypairSignMode");
+    if (!modeEl) {
+        return;
+    }
+    function syncKeypairSignVisibility() {
+        const mode = (modeEl.value || "sign").toLowerCase();
+        $scope.find(".keypair-sign-only").toggleClass("d-none", mode !== "sign");
+        $scope.find(".keypair-verify-only").toggleClass("d-none", mode !== "verify");
+    }
+    $(modeEl).off("change.keypairSign").on("change.keypairSign", syncKeypairSignVisibility);
+    syncKeypairSignVisibility();
+}
+
 /* ===================================================================== */
 /*                           FUNCTION: navigate                          */
 /* ===================================================================== */
 function navigate(to) {
+    console.log("[navigate] Navigating to: " + to);
 
-    console.log("[navigate] Navigating to: " + to)
+    const moduleName = (to || "").replace(/^#/, "");
+    if (!moduleName) {
+        return;
+    }
+    const normalizedTo = "#" + moduleName;
+
+    persistActiveModule(normalizedTo);
+    if (window.location.hash !== normalizedTo) {
+        history.replaceState(null, "", normalizedTo);
+    }
 
     // Reset all nav links
     var navLinks = $(".link.nav-link");
     navLinks.prop("class", "link nav-link");
 
     // Set this nav link as active
-    var navLink = $(`.link.nav-link[href='${to}']`);
+    var navLink = $(`.link.nav-link[href='${normalizedTo}']`);
     navLink.prop("class", "link nav-link link-success active");
 
-    $(".content").hide();
-    $(to).fadeIn();
+    const showTarget = function() {
+        $(".content").hide();
+        $(normalizedTo).fadeIn();
+        addRandomDataButtons($(normalizedTo));
+        initCsrFormUi($(normalizedTo));
+        initKeypairSignFormUi($(normalizedTo));
+        refreshClientCryptoGeneratorUi($(normalizedTo));
+    };
 
+    if ($(normalizedTo).length) {
+        showTarget();
+        return;
+    }
+
+    loadModule(moduleName)
+        .done(function() {
+            showTarget();
+        })
+        .fail(function(xhr) {
+            const message = xhr && xhr.responseText
+                ? xhr.responseText
+                : "<div class='alert alert-danger'>Failed to load module: " + moduleName + ".</div>";
+            $("#error").html("<br>" + message).show();
+        });
+}
+
+/* ===================================================================== */
+/*                         FUNCTION: loadModule                           */
+/* ===================================================================== */
+function loadModule(moduleName) {
+    const selector = "#" + moduleName;
+    if ($(selector).length) {
+        return ensureEnhancersForScope($(selector));
+    }
+
+    const $container = $(".container.pt-5").first();
+    const $placeholder = $("<div>", {
+        id: moduleName + "_loading",
+        class: "content",
+        html: buildLoadingHtml("Loading " + moduleName.replace(/_/g, " ") + "...")
+    });
+    $container.append($placeholder);
+
+    const beforeLoad = moduleName === "markdown"
+        ? ensureMarkdownAssets()
+        : $.Deferred().resolve().promise();
+
+    return beforeLoad.then(function() {
+        return $.ajax({
+            type: "GET",
+            url: "load_module.php",
+            data: { module: moduleName },
+            cache: true
+        }).done(function(html) {
+            $placeholder.replaceWith(html);
+            addRandomDataButtons($(selector));
+            ensureEnhancersForScope($(selector));
+        }).fail(function() {
+            $placeholder.remove();
+        });
+    }).fail(function() {
+        $placeholder.remove();
+    });
 }
 
 /* ===================================================================== */
@@ -163,11 +1233,7 @@ $(document).ready(function() {
     /* ===================================================================== */
     /*                               Code Input                              */
     /* ===================================================================== */
-    // hljs.highlightAll();
-    codeInput.registerTemplate("default", codeInput.templates.hljs(hljs, [
-        new codeInput.plugins.Autodetect(),
-        new codeInput.plugins.Indent(true, 2) // 2 spaces indentation
-    ] /* Array of plugins (see below) */ ));
+    ensureEnhancersForScope($(".content:visible").first());
     $(".code").on("paste", function() {
         this.style.height = "auto";
     });
@@ -188,7 +1254,7 @@ $(document).ready(function() {
     /*                              Form submit                              */
     /* ===================================================================== */
     //function submitForm(formname, responseid) {
-    $(".form").submit(function(e) {
+    $(document).on("submit", ".form", async function(e) {
         e.preventDefault(); // avoid to execute the actual submit of the form.
 
         var form = $(this);
@@ -230,47 +1296,44 @@ $(document).ready(function() {
         //   responseType = "html";
         // }
 
-        // Send form
-        var url = form.attr('action');
-        var responseObj = form.find(".responseDiv");
-
         var btnName = $("button[clicked=true]").prop("name");
         var btnValue = $("button[clicked=true]").val();
-
-        var serializeForm = form.serialize() + "&" + btnName + "=" + btnValue;
+        var serializeForm = form.serialize();
+        if (btnName && btnValue !== undefined) {
+            serializeForm += "&" + btnName + "=" + btnValue;
+        }
         console.log("[submitForm] Sending form: " + serializeForm);
-
-        if (responseObj.length == 0) {
-            console.log("[submitForm] No response object found.");
-            $("#error").html("<br><div class='alert alert-danger'>No response object found.</div>");
-            $("#error").show();
+        const handledBrowserInspector = await maybeHandleBrowserInspector(form, form.find(".responseDiv"));
+        if (handledBrowserInspector) {
+            randomizeDice();
             return;
-        } else {
-            $("#error").hide();
+        }
+        const handledClientSide = await maybeHandleClientSideKeygen(form, form.find(".responseDiv"));
+        if (handledClientSide) {
+            randomizeDice();
+            return;
         }
 
-        // AJAX call
+        const responseDiv = form.find(".responseDiv");
+        const submitOpts = {
+            data: serializeForm,
+            responseType: responsetype,
+            loadingMessage: "Generating..."
+        };
+        if ((form.data("action") || "") === "crypto_diagnostics") {
+            submitOpts.onSuccess = function(dataOut) {
+                showData(responseDiv, dataOut);
+                // After server HTML is in the response div, fill #clientCryptoDiagnosticsRoot (ajaxSuccess ran too early).
+                setTimeout(function() {
+                    const $root = $("#clientCryptoDiagnosticsRoot");
+                    if ($root.length) {
+                        $root.html(buildClientCryptoDiagnosticsHtml());
+                    }
+                }, 0);
+            };
+        }
 
-        $.ajax({
-            type: "POST",
-            url: url,
-            data: serializeForm, // serializes the form's elements.
-            beforeSend: function() {
-                showData(responseObj, '<div class="text-center py-5"><div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;"><span class="visually-hidden">Loading...</span></div><p class="text-muted">Generating...</p></div>'); // show loading spinner
-            },
-            error: function(data) {
-                console.log(data);
-                if (responsetype == "html") {
-                    showData(responseObj, "<div class='alert alert-danger'>Error: " + data
-                        .statusText + "</div>");
-                } else {
-                    showData(responseObj, "Error: " + data.statusText);
-                }
-            },
-            success: function(data) {
-                showData(responseObj, data);
-            }
-        });
+        submitToolForm(form, submitOpts);
         randomizeDice();
     });
 
@@ -344,20 +1407,16 @@ $(document).ready(function() {
     /* ===================================================================== */
     /*                      Navigation (and hash check)                      */
     /* ===================================================================== */
-    if (window.location.hash != '' && window.location.hash != undefined) {
-        // Hash is set on page load, so navigate to it
-        var hash = window.location.hash;
-        var afterhash = hash.replace('#', '');
-        navigate(hash);
-        console.log("Hash detected: " + hash + ", setting nav" + afterhash + " parent as the active tab.");
-    } else {
-        navigate("#dashboard");
-    }
+    var initialModule = getPreferredInitialModule();
+    var initialModuleName = initialModule.replace('#', '');
+    navigate(initialModule);
+    console.log("Initial module: " + initialModule + ", setting nav " + initialModuleName + " as the active tab.");
 
     /* ===================================================================== */
     /*                               Click link                              */
     /* ===================================================================== */
-    $(".link").click(function() {
+    $(".link").click(function(e) {
+        e.preventDefault();
         var elementToShow = $(this).attr("href");
 
         navigate(elementToShow);
@@ -373,6 +1432,16 @@ $(document).ready(function() {
         }
     });
 
+    // Keep passphrase inputs in sync with generation mode for keypair/SSH forms
+    $(document).on("change", "[name='generation_mode']", function() {
+        const $form = $(this).closest("form");
+        updatePassphraseStateForForm($form);
+    });
+
+    // Initialize state on any already-rendered forms
+    $("form[data-action='keypair_generate'], form[data-action='ssh_keygen']").each(function() {
+        updatePassphraseStateForForm($(this));
+    });
 
     // turn off all autocomplete
     $(".form-control").prop("autocomplete", "off");
@@ -383,24 +1452,31 @@ $(document).ready(function() {
     /*                            Changelog modal                            */
     /* ===================================================================== */
     var changelog = $("#changelogMarkdown");
-    
-    // Get the raw markdown text and decode HTML entities so raw <details> tags are visible to marked
-    let markdownText = changelog.text();
-    const decodeHtml = (str) => $('<textarea/>').html(str).text();
-    markdownText = decodeHtml(markdownText);
-
-    // Parse with marked (GFM with line breaks)
-    marked.setOptions({
-        breaks: true,
-        gfm: true
+    $("#changelogModal").on("show.bs.modal", function() {
+        changelog.html(buildLoadingHtml("Loading changelog…"));
+        $.ajax({
+            type: "GET",
+            url: "changelog.php",
+            cache: false
+        }).done(function(markdownText) {
+            ensureMarkdownAssets().done(function() {
+                marked.setOptions({
+                    breaks: true,
+                    gfm: true
+                });
+                changelog.html(marked.parse(markdownText));
+            }).fail(function() {
+                changelog.html("<pre>" + $("<div>").text(markdownText).html() + "</pre>");
+            });
+        }).fail(function() {
+            changelog.html("<div class='alert alert-danger'>Failed to load changelog.</div>");
+        });
     });
-
-    changelog.html(marked.parse(markdownText));
 
     /* ===================================================================== */
     /*                      Add Random Data Buttons                          */
     /* ===================================================================== */
-    addRandomDataButtons();
+    addRandomDataButtons($(".content:visible").first());
 
 }); // document.ready
 
@@ -726,7 +1802,8 @@ function generateRandomData(type, placeholder = '', $input = null) {
 /* ===================================================================== */
 /*                   FUNCTION: addRandomDataButtons                      */
 /* ===================================================================== */
-function addRandomDataButtons() {
+function addRandomDataButtons($root = null) {
+    const $scope = ($root && $root.length) ? $root : $(document);
     // Find all text inputs, number inputs, and textareas that don't already have a random button
     const selectors = [
         'input[type="text"]:not([readonly]):not([disabled])',
@@ -734,7 +1811,7 @@ function addRandomDataButtons() {
         'textarea:not([readonly]):not([disabled])'
     ];
 
-    $(selectors.join(',')).each(function() {
+    $scope.find(selectors.join(',')).each(function() {
         const $input = $(this);
         
         // Skip if already has a random button
@@ -745,6 +1822,10 @@ function addRandomDataButtons() {
         // Skip certain inputs (checkboxes, hidden, etc.)
         const skipIds = ['enablebordercheckbox', 'enablefilterscheckbox', 'enabledebugcheckbox'];
         if (skipIds.includes($input.attr('id'))) {
+            return;
+        }
+
+        if ($input.closest('[data-no-random-buttons]').length > 0) {
             return;
         }
 
@@ -804,4 +1885,20 @@ function addRandomDataButtons() {
         // Append button after input
         $input.after($btn);
     });
+}
+
+/* ===================================================================== */
+/*                      FUNCTION: checkDuplicateIds                       */
+/* ===================================================================== */
+function checkDuplicateIds() {
+    const idCount = {};
+    $('[id]').each(function() {
+        const id = this.id;
+        idCount[id] = (idCount[id] || 0) + 1;
+    });
+
+    const duplicates = Object.keys(idCount).filter(id => idCount[id] > 1);
+    if (duplicates.length > 0) {
+        console.warn('[duplicate-id-check] Duplicate IDs found:', duplicates);
+    }
 }

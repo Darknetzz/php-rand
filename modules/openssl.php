@@ -21,7 +21,7 @@
                 Encrypt and decrypt data using OpenSSL. Always use secure keys and initialization vectors in production environments.
             </div>
 
-            <form class="form" action="gen.php" method="POST" id="openssl" data-action="openssl">
+            <form class="form" action="gen.php" method="POST" id="opensslForm" data-action="openssl">
                 <?php
                   $openssl   = null;
                   $key       = null;

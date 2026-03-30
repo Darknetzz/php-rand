@@ -47,7 +47,7 @@ $timeZoneSelector = function($inputName = "timezone") {
                 <span style="display: inline-block; margin-top: 4px;">Easily convert time values between seconds, minutes, hours, days, weeks, months, and years.</span>
             </div>
 
-            <form class="form" action="gen.php" method="POST" id="datetime" data-action="datetime">
+            <form class="form" action="gen.php" method="POST" id="datetimeForm" data-action="datetime">
                 <div class="row g-4 mb-4">
                     <div class="col-12 col-md-6">
                         <label class="form-label mb-3"><strong>From</strong></label>

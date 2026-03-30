@@ -1,4 +1,11 @@
 <div id="hash" class="content">
+    <?php
+    $selectedHashAlgo = $_POST['hashalgo'] ?? 'all';
+    $selectedHashRounds = isset($_POST['hashrounds']) ? (int) $_POST['hashrounds'] : 1;
+    if ($selectedHashRounds < 1) {
+        $selectedHashRounds = 1;
+    }
+    ?>
     <div class="card card-primary">
         <h1 class="card-header">🔑 Hash Generator</h1>
         <div class="card-body">
@@ -27,20 +34,36 @@
 
                 <!-- Algorithm Selection -->
                 <div class="row g-3 mb-4">
-                    <div class="col-12 col-md-8">
+                    <div class="col-12 col-md-6">
                         <label for="hashalgoSelect" class="form-label"><strong>Hash Algorithm</strong></label>
                         <select name="hashalgo" class="form-select form-select-lg" id="hashalgoSelect" style="font-family: monospace; border: 2px solid #20c997;">
-                            <option value='all'>🔄 All Available Algorithms</option>
+                            <option value='all' <?= $selectedHashAlgo === 'all' ? 'selected' : '' ?>>🔄 All Available Algorithms</option>
                             <option disabled>─────────────────────</option>
                             <?php
                             foreach (hash_algos() as $algo) {
-                                echo "<option value='$algo'>$algo</option>";
+                                $selected = $selectedHashAlgo === $algo ? 'selected' : '';
+                                echo "<option value='$algo' $selected>$algo</option>";
                             }
                             ?>
                         </select>
                         <div class="form-text">Select a specific algorithm or generate all hashes at once</div>
                     </div>
-                    <div class="col-12 col-md-4 d-flex align-items-end">
+                    <div class="col-12 col-md-3">
+                        <label for="hashRounds" class="form-label"><strong>Rounds</strong></label>
+                        <input
+                            type="number"
+                            name="hashrounds"
+                            id="hashRounds"
+                            min="1"
+                            max="1000"
+                            step="1"
+                            class="form-control form-control-lg"
+                            value="<?= htmlspecialchars((string)$selectedHashRounds) ?>"
+                            style="font-family: monospace; border: 2px solid #20c997;"
+                        >
+                        <div class="form-text">Apply the selected hash repeatedly</div>
+                    </div>
+                    <div class="col-12 col-md-3 d-flex align-items-end">
                         <?= submitBtn("hasher", "action", "🔑 Generate Hash", "key-fill", "lg") ?>
                     </div>
                 </div>

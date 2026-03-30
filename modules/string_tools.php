@@ -41,14 +41,17 @@
 
                     <div class="col-lg-6 d-flex flex-column">
                         <label class="form-label mb-3"><strong style="font-size: 1.1rem;">Output</strong></label>
-                        <div class="responseDiv flex-grow-1" id="strtoolsresponse" style="margin:0; border: 2px solid #495057; padding:20px; min-height: 320px; max-height: 520px; overflow-y: auto; background: linear-gradient(135deg, rgba(108, 92, 231, 0.12) 0%, rgba(13, 110, 253, 0.08) 100%); border-radius: 0.5rem; font-family: monospace; white-space: pre-wrap; word-break: break-word; font-size: 0.95rem; box-shadow: 0 6px 16px rgba(0,0,0,0.25);">
+                        <div class="copyable-content flex-grow-1 d-flex flex-column" style="min-height: 320px; padding: 0; background: linear-gradient(135deg, rgba(108, 92, 231, 0.12) 0%, rgba(13, 110, 253, 0.08) 100%); border: 2px solid #495057; border-radius: 0.5rem; box-shadow: 0 6px 16px rgba(0,0,0,0.25); font-size: 0.95rem;">
+                        <div class="responseDiv copyable-body flex-grow-1" id="strtoolsresponse" style="margin:0; padding:20px; min-height: 200px; max-height: 480px; overflow-y: auto; background: transparent; border: none; border-radius: 0; box-shadow: none; font-family: monospace; white-space: pre-wrap; word-break: break-word; user-select: all;">
                           <div style="opacity: 0.55; text-align: center; padding-top: 110px;">
                             <div style="font-size: 3rem; margin-bottom: 10px;">🧵</div>
                             <div>Processed output will appear here...</div>
                           </div>
                         </div>
-
-                        <button type="button" class="btn btn-sm btn-outline-light mt-2 copyOutput" data-target="#strtoolsresponse" style="width: 100%; border: 1px solid #e9ecef;"><?= icon("files") ?> Copy Output</button>
+                        <div class="copyable-actions" style="padding: 8px 14px; border-top: 1px solid rgba(255,255,255,0.12);">
+                        <button type="button" class="btn btn-sm btn-outline-light copyOutput" data-target="#strtoolsresponse" style="width: 100%; border: 1px solid #e9ecef;"><?= icon("files") ?> Copy Output</button>
+                        </div>
+                        </div>
                     </div>
                 </div>
 
@@ -352,35 +355,29 @@ $(document).ready(function() {
             return;
         }
 
-        // Show loading
         var responseDiv = $("#strtoolsresponse");
-        responseDiv.html('<div class="text-center py-5"><div class="spinner-border text-primary mb-3" role="status" style="width: 2rem; height: 2rem;"><span class="visually-hidden">Loading...</span></div></div>');
+        var formData = form.serialize() + "&tool=" + tool;
+        submitToolForm(form, {
+            data: formData,
+            action: "stringtools",
+            responseObj: responseDiv,
+            loadingMessage: "Processing text...",
+            onSuccess: function(data) {
+                responseDiv.html(data);
 
-        // Add delay for visibility
-        setTimeout(function() {
-            var formData = form.serialize() + "&tool=" + tool;
-            
-            $.ajax({
-                type: "POST",
-                url: "gen.php",
-                data: formData,
-                success: function(data) {
-                    responseDiv.html(data);
-                    
-                    // If auto-apply is checked, update input
-                    if ($("#outputToTextbox").is(":checked")) {
-                        var outputText = data.replace(/<[^>]*>/g, '').trim();
-                        history.push(input);
-                        historyIndex++;
-                        $("#strtoolsinput").val(outputText);
-                        updateCharCount();
-                    }
-                },
-                error: function() {
-                    responseDiv.html('<div class="alert alert-danger mb-0">Error processing request</div>');
+                // If auto-apply is checked, update input
+                if ($("#outputToTextbox").is(":checked")) {
+                    var outputText = data.replace(/<[^>]*>/g, '').trim();
+                    history.push(input);
+                    historyIndex++;
+                    $("#strtoolsinput").val(outputText);
+                    updateCharCount();
                 }
-            });
-        }, 300);
+            },
+            onError: function() {
+                responseDiv.html('<div class="alert alert-danger mb-0">Error processing request</div>');
+            }
+        });
     });
 
     /* ───────────────────────────────────────────────────────────────────── */

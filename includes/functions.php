@@ -465,18 +465,77 @@ function submitBtn(string $value = "", string $name = "action", string $text = "
  * Convert a digit range to a numeric range [from, to].
  * 1 digit = 1–9, 2 digits = 10–99, etc.
  *
- * @param int $minDigits Minimum number of digits (1–20)
- * @param int $maxDigits Maximum number of digits (1–20)
+ * @param int $minDigits Minimum number of digits
+ * @param int $maxDigits Maximum number of digits
  * @return array{0: int, 1: int}|null [from, to] or null if invalid
  */
+function max_configurable_numgen_digits(): int {
+  return 50;
+}
+
+function max_supported_numgen_digits(): int {
+  $maxIntString = (string) PHP_INT_MAX;
+  $digitCount = strlen($maxIntString);
+  if ($maxIntString === str_repeat('9', $digitCount)) {
+    return $digitCount;
+  }
+  return $digitCount - 1;
+}
+
+function max_native_numgen_value_digits(): int {
+  return strlen((string) PHP_INT_MAX);
+}
+
+function resolve_numgen_digit_bounds(array $req): ?array {
+  $mode = isset($req['numgen_digit_mode']) && $req['numgen_digit_mode'] === 'fixed' ? 'fixed' : 'range';
+  $maxDigitsAllowed = max_configurable_numgen_digits();
+
+  if ($mode === 'fixed' && isset($req['numgendigits'])) {
+    $digits = (int) $req['numgendigits'];
+    if ($digits >= 1 && $digits <= $maxDigitsAllowed) {
+      return [$digits, $digits];
+    }
+    return null;
+  }
+
+  $minDigits = isset($req['numgenmindig']) ? (int) $req['numgenmindig'] : 0;
+  $maxDigits = isset($req['numgenmaxdig']) ? (int) $req['numgenmaxdig'] : 0;
+  if ($minDigits < 1 || $maxDigits < 1 || $minDigits > $maxDigits || $maxDigits > $maxDigitsAllowed) {
+    return null;
+  }
+
+  return [$minDigits, $maxDigits];
+}
+
+function pow10_int_or_null(int $exp): ?int {
+  if ($exp < 0) {
+    return null;
+  }
+  $value = 1;
+  for ($i = 0; $i < $exp; $i++) {
+    if ($value > intdiv(PHP_INT_MAX, 10)) {
+      return null;
+    }
+    $value *= 10;
+  }
+  return $value;
+}
+
 function digit_range_to_numeric(int $minDigits, int $maxDigits): ?array {
   $minDigits = (int) $minDigits;
   $maxDigits = (int) $maxDigits;
-  if ($minDigits < 1 || $maxDigits < 1 || $minDigits > 20 || $maxDigits > 20 || $minDigits > $maxDigits) {
+  $maxSupportedDigits = max_supported_numgen_digits();
+  if ($minDigits < 1 || $maxDigits < 1 || $minDigits > $maxDigits || $maxDigits > $maxSupportedDigits) {
     return null;
   }
-  $from = (int) pow(10, $minDigits - 1);
-  $to   = (int) (pow(10, $maxDigits) - 1);
+
+  $from = pow10_int_or_null($minDigits - 1);
+  $toPow = pow10_int_or_null($maxDigits);
+  if ($from === null || $toPow === null) {
+    return null;
+  }
+  $to = $toPow - 1;
+
   return [$from, $to];
 }
 
@@ -487,21 +546,232 @@ function digit_range_to_numeric(int $minDigits, int $maxDigits): ?array {
  * @return array{0: int, 1: int}|null [from, to] or null if invalid
  */
 function resolve_numgen_digit_range(array $req): ?array {
-  $mode = isset($req['numgen_digit_mode']) && $req['numgen_digit_mode'] === 'fixed' ? 'fixed' : 'range';
-  if ($mode === 'fixed' && isset($req['numgendigits'])) {
-    $d = (int) $req['numgendigits'];
-    if ($d >= 1 && $d <= 20) {
-      return digit_range_to_numeric($d, $d);
-    }
+  $bounds = resolve_numgen_digit_bounds($req);
+  if ($bounds === null) {
     return null;
   }
-  $minDig = isset($req['numgenmindig']) ? (int) $req['numgenmindig'] : 0;
-  $maxDig = isset($req['numgenmaxdig']) ? (int) $req['numgenmaxdig'] : 0;
-  return digit_range_to_numeric($minDig, $maxDig);
+  [$minDigits, $maxDigits] = $bounds;
+  return digit_range_to_numeric($minDigits, $maxDigits);
+}
+
+function numgen_type_supports_large_values(string $type): bool {
+  return in_array($type, ['any', 'odd', 'even', 'palindromic', 'prime', 'composite'], true);
+}
+
+function normalize_unsigned_integer_string($value): ?string {
+  if (!is_string($value) && !is_int($value)) {
+    return null;
+  }
+  $normalized = trim((string) $value);
+  if ($normalized === '' || !ctype_digit($normalized)) {
+    return null;
+  }
+  $normalized = ltrim($normalized, '0');
+  return $normalized === '' ? '0' : $normalized;
+}
+
+function compare_unsigned_integer_strings(string $left, string $right): int {
+  $leftNormalized = normalize_unsigned_integer_string($left);
+  $rightNormalized = normalize_unsigned_integer_string($right);
+  if ($leftNormalized === null || $rightNormalized === null) {
+    throw new InvalidArgumentException('Unsigned integer string expected.');
+  }
+  if (function_exists('gmp_cmp')) {
+    return gmp_cmp(gmp_init($leftNormalized, 10), gmp_init($rightNormalized, 10));
+  }
+  $lengthCompare = strlen($leftNormalized) <=> strlen($rightNormalized);
+  if ($lengthCompare !== 0) {
+    return $lengthCompare;
+  }
+  return strcmp($leftNormalized, $rightNormalized) <=> 0;
+}
+
+function numgen_large_gmp_available(): bool {
+  return function_exists('gmp_init') && function_exists('gmp_cmp') && function_exists('gmp_pow') && function_exists('gmp_random_range') && function_exists('gmp_prob_prime');
+}
+
+function numgen_large_type_count_for_digits(int $numDigits, string $type) {
+  if ($numDigits < 1) {
+    return gmp_init(0, 10);
+  }
+  if ($type === 'any') {
+    return gmp_mul(gmp_init(9, 10), gmp_pow(10, $numDigits - 1));
+  }
+  if ($type === 'odd') {
+    if ($numDigits === 1) {
+      return gmp_init(5, 10);
+    }
+    return gmp_mul(gmp_init(45, 10), gmp_pow(10, $numDigits - 2));
+  }
+  if ($type === 'even') {
+    if ($numDigits === 1) {
+      return gmp_init(4, 10);
+    }
+    return gmp_mul(gmp_init(45, 10), gmp_pow(10, $numDigits - 2));
+  }
+  if ($type === 'palindromic') {
+    return gmp_mul(gmp_init(9, 10), gmp_pow(10, (int) ceil($numDigits / 2) - 1));
+  }
+  return gmp_init(0, 10);
+}
+
+function random_large_numgen_digit_length(int $minDigits, int $maxDigits, string $type): int {
+  $weights = [];
+  $total = gmp_init(0, 10);
+  for ($digits = $minDigits; $digits <= $maxDigits; $digits++) {
+    $weight = numgen_large_type_count_for_digits($digits, $type);
+    $weights[$digits] = $weight;
+    $total = gmp_add($total, $weight);
+  }
+
+  $pick = gmp_random_range(gmp_init(0, 10), gmp_sub($total, gmp_init(1, 10)));
+  $running = gmp_init(0, 10);
+  foreach ($weights as $digits => $weight) {
+    $running = gmp_add($running, $weight);
+    if (gmp_cmp($pick, $running) < 0) {
+      return (int) $digits;
+    }
+  }
+
+  return $maxDigits;
+}
+
+function random_numeric_string_with_digits(int $numDigits): string {
+  if ($numDigits <= 0) {
+    return '0';
+  }
+  $result = (string) mt_rand(1, 9);
+  for ($i = 1; $i < $numDigits; $i++) {
+    $result .= (string) mt_rand(0, 9);
+  }
+  return $result;
+}
+
+function random_numeric_string_with_parity(int $numDigits, string $type): string {
+  $choices = $type === 'even' ? [0, 2, 4, 6, 8] : [1, 3, 5, 7, 9];
+  if ($numDigits <= 0) {
+    return '0';
+  }
+  if ($numDigits === 1) {
+    $singleDigitChoices = $type === 'even' ? [2, 4, 6, 8] : [1, 3, 5, 7, 9];
+    return (string) $singleDigitChoices[mt_rand(0, count($singleDigitChoices) - 1)];
+  }
+
+  $result = (string) mt_rand(1, 9);
+  for ($i = 1; $i < $numDigits - 1; $i++) {
+    $result .= (string) mt_rand(0, 9);
+  }
+  $result .= (string) $choices[mt_rand(0, count($choices) - 1)];
+  return $result;
+}
+
+function random_palindromic_string_with_digits(int $numDigits): string {
+  if ($numDigits <= 0) {
+    return '0';
+  }
+  $half = (int) ceil($numDigits / 2);
+  $left = (string) mt_rand(1, 9);
+  for ($i = 1; $i < $half; $i++) {
+    $left .= (string) mt_rand(0, 9);
+  }
+  $right = strrev($numDigits % 2 === 1 ? substr($left, 0, -1) : $left);
+  return $left . $right;
 }
 
 /**
- * Check if an integer is prime (trial division).
+ * Primality test for a non-negative integer string (decimal digits). Requires GMP.
+ */
+function is_prime_gmp_string(string $digits): bool {
+  $n = normalize_unsigned_integer_string($digits);
+  if ($n === null || $n === '0' || $n === '1') {
+    return false;
+  }
+  if (!function_exists('gmp_prob_prime')) {
+    return false;
+  }
+  $last = substr($n, -1);
+  if ($last !== '1' && $last !== '3' && $last !== '5' && $last !== '7' && $last !== '9' && $n !== '2' && $n !== '5') {
+    return false;
+  }
+  return gmp_prob_prime(gmp_init($n, 10), 10) > 0;
+}
+
+/**
+ * True if the decimal string is an integer > 1 and composite (requires GMP).
+ */
+function is_composite_gmp_string(string $digits): bool {
+  $n = normalize_unsigned_integer_string($digits);
+  if ($n === null || $n === '0' || $n === '1') {
+    return false;
+  }
+  if (!function_exists('gmp_prob_prime')) {
+    return false;
+  }
+  return gmp_prob_prime(gmp_init($n, 10), 10) === 0;
+}
+
+/**
+ * Random prime with digit count in [minDigits, maxDigits] (uniform length choice matches "any" weights).
+ */
+function random_large_prime_string(int $minDigits, int $maxDigits) {
+  $maxAttempts = 50000;
+  if ($minDigits < 1 || $maxDigits < 1 || $minDigits > $maxDigits || $maxDigits > max_configurable_numgen_digits()) {
+    return alert('Invalid large-number digit range.', 'danger');
+  }
+  for ($attempt = 0; $attempt < $maxAttempts; $attempt++) {
+    $numDigits = $minDigits === $maxDigits ? $minDigits : random_large_numgen_digit_length($minDigits, $maxDigits, 'any');
+    if ($numDigits === 1) {
+      $oneDigitPrimes = ['2', '3', '5', '7'];
+      return $oneDigitPrimes[mt_rand(0, 3)];
+    }
+    $candidate = random_numeric_string_with_parity($numDigits, 'odd');
+    if (is_prime_gmp_string($candidate)) {
+      return $candidate;
+    }
+  }
+  return alert("No prime found after {$maxAttempts} tries. Try a different digit range.", 'warning');
+}
+
+/**
+ * Random composite with digit count in [minDigits, maxDigits] (uniform length choice matches "any" weights).
+ */
+function random_large_composite_string(int $minDigits, int $maxDigits) {
+  $maxAttempts = 50000;
+  if ($minDigits < 1 || $maxDigits < 1 || $minDigits > $maxDigits || $maxDigits > max_configurable_numgen_digits()) {
+    return alert('Invalid large-number digit range.', 'danger');
+  }
+  for ($attempt = 0; $attempt < $maxAttempts; $attempt++) {
+    $numDigits = $minDigits === $maxDigits ? $minDigits : random_large_numgen_digit_length($minDigits, $maxDigits, 'any');
+    $candidate = random_numeric_string_with_digits($numDigits);
+    if (is_composite_gmp_string($candidate)) {
+      return $candidate;
+    }
+  }
+  return alert("No composite found after {$maxAttempts} tries. Try a different digit range.", 'warning');
+}
+
+function random_large_numgen_value_by_digits(int $minDigits, int $maxDigits, string $type = 'any') {
+  if ($type === 'prime') {
+    return random_large_prime_string($minDigits, $maxDigits);
+  }
+  if ($type === 'composite') {
+    return random_large_composite_string($minDigits, $maxDigits);
+  }
+  $numDigits = $minDigits === $maxDigits ? $minDigits : random_large_numgen_digit_length($minDigits, $maxDigits, $type);
+  if ($type === 'odd' || $type === 'even') {
+    return random_numeric_string_with_parity($numDigits, $type);
+  }
+  if ($type === 'palindromic') {
+    return random_palindromic_string_with_digits($numDigits);
+  }
+  return random_numeric_string_with_digits($numDigits);
+}
+
+/**
+ * Check if an integer is prime.
+ *
+ * Uses GMP probabilistic testing when the extension is available (fast for large n).
+ * Falls back to trial division up to sqrt(n) otherwise.
  *
  * @param int $n Integer to check (must be >= 2 for true result)
  * @return bool True if prime, false otherwise
@@ -515,6 +785,10 @@ function is_prime(int $n): bool {
   }
   if ($n % 2 === 0) {
     return false;
+  }
+  if (function_exists('gmp_prob_prime')) {
+    $r = gmp_prob_prime(gmp_init($n), 10);
+    return $r > 0;
   }
   $limit = (int) floor(sqrt($n));
   for ($d = 3; $d <= $limit; $d += 2) {
@@ -608,8 +882,9 @@ function numGen(int $from, int $to, ?string $seed = null, string $type = 'any') 
   $from = (int)$from;
   $to   = (int)$to;
 
-  if (strlen((string)$from) > 20 || strlen((string)$to) > 20) {
-    die("Please use numbers with less than 20 digits.");
+  $maxDigits = max_native_numgen_value_digits();
+  if (strlen((string)$from) > $maxDigits || strlen((string)$to) > $maxDigits) {
+    die("Please use numbers with at most {$maxDigits} digits.");
   }
   if (is_numeric($from) === FALSE || is_numeric($to) === FALSE) {
       die("All values must be numeric!");
@@ -635,13 +910,23 @@ function numGen(int $from, int $to, ?string $seed = null, string $type = 'any') 
     $rangeSize = $to - $from + 1;
     $maxPrimeAttempts = 50000;
     if ($rangeSize > 100000) {
-      // Large range: sample random numbers and test for primality (avoids building huge list)
+      // Large range: sample random numbers and test for primality (avoids building huge list).
+      // When the range starts at 3+, only sample odd candidates (saves ~half the checks; evens are never prime except 2).
       $from = max(2, $from);
       if ($from > $to) {
         return alert("No prime numbers in the range $from–$to.", "warning");
       }
       for ($attempt = 0; $attempt < $maxPrimeAttempts; $attempt++) {
-        $n = mt_rand($from, $to);
+        if ($from >= 3) {
+          $oddLow = $from % 2 === 1 ? $from : $from + 1;
+          $oddHigh = $to % 2 === 1 ? $to : $to - 1;
+          if ($oddLow > $oddHigh) {
+            continue;
+          }
+          $n = $oddLow + 2 * mt_rand(0, (int) (($oddHigh - $oddLow) / 2));
+        } else {
+          $n = mt_rand($from, $to);
+        }
         if (is_prime($n)) {
           return $n;
         }
@@ -1503,24 +1788,28 @@ function joinNumGenResults(array $results, string $separator): string {
  * @param string $content The content to display and copy.
  * @param string $label Optional label for the output.
  * @param array|null $useAsInput Optional: ['inputName' => string, 'swapNames' => [name1, name2]?, 'setSelectName' => string?, 'setSelectValue' => string?]
+ * @param string|null $extraActionsHtml Optional HTML (e.g. download link) appended after Copy, before Use as input.
  * @return string HTML for the copyable output.
  */
-function copyableOutput($content, $label = "", $useAsInput = null) {
+function copyableOutput($content, $label = "", $useAsInput = null, ?string $extraActionsHtml = null) {
   $uniqueId = "copy_" . uniqid();
   $html = "";
   
   if (!empty($label)) {
-    $html .= "<strong style='display: block; margin-bottom: 8px;'>$label</strong>";
+    $html .= "<strong class='copyable-label'>$label</strong>";
   }
   
-  $html .= "<div style='display: flex; gap: 10px; align-items: stretch; flex-wrap: wrap;'>";
-  $html .= "  <div style='flex: 1; min-width: 200px; background-color: #0f172a; color: #e9ecef; padding: 14px; border-radius: 0.4rem; font-family: monospace; font-size: 0.95rem; word-break: break-all; white-space: pre-wrap; user-select: all; overflow-y: auto; max-height: 320px; border: 1px solid #334155; box-shadow: 0 6px 14px rgba(0,0,0,0.25);' id='$uniqueId'>";
+  $html .= "<div class='copyable-content'>";
+  $html .= "  <div class='copyable-body' id='$uniqueId'>";
   $html .= htmlspecialchars($content ?? '');
   $html .= "  </div>";
-  $html .= "  <div style='display: flex; gap: 6px; align-self: flex-start; flex-shrink: 0;'>";
+  $html .= "  <div class='copyable-actions'>";
   $html .= "  <button type='button' class='btn btn-sm btn-outline-light' onclick=\"copyToClipboard('$uniqueId', this)\" style='white-space: nowrap; border: 1px solid #e9ecef;'>";
   $html .= "    <i class='bi bi-files'></i> Copy";
   $html .= "  </button>";
+  if ($extraActionsHtml !== null && $extraActionsHtml !== '') {
+    $html .= $extraActionsHtml;
+  }
   if (is_array($useAsInput) && !empty($useAsInput['inputName'])) {
     $inputName = $useAsInput['inputName'];
     $attrs = ' class="btn btn-sm btn-outline-info btn-use-as-input" data-copyable-id="' . htmlspecialchars($uniqueId) . '" data-input-name="' . htmlspecialchars($inputName) . '"';
@@ -1683,28 +1972,45 @@ function validateInput($value, $rules = []) {
  */
 function getLatestChangelogVersion(): ?array {
     $changelogPath = __DIR__ . '/../CHANGELOG.md';
-    
-    if (!file_exists($changelogPath)) {
+
+    // is_readable avoids file_get_contents when the process cannot read the file
+    // (file_exists alone is true for unreadable files and still emits warnings).
+    if (!is_readable($changelogPath)) {
         return null;
     }
-    
+
     $content = file_get_contents($changelogPath);
     if ($content === false) {
         return null;
     }
-    
-    // Match the first version header: ## **v1.2.3** (date) or ## [v1.2.3] (date)
-    if (!preg_match('/^## (?:\*\*v([\d.]+)\*\*|\[v([\d.]+)\])\s*\((.+?)\)$/m', $content, $versionMatches)) {
+
+    // Skip [Unreleased]; use the first dated release section (dashboard "new in" strip).
+    $parts = preg_split('/\n---\n/', $content);
+    $releasedBody = null;
+    $version = null;
+    $date = null;
+    foreach ($parts as $part) {
+        $part = trim($part);
+        if (preg_match('/^## \[v([\d.]+)\]\s*\((.+?)\)\s*\R(.*)$/s', $part, $m)) {
+            $version = 'v' . $m[1];
+            $date = $m[2];
+            $releasedBody = $m[3];
+            break;
+        }
+        if (preg_match('/^## \*\*v([\d.]+)\*\*\s*\((.+?)\)\s*\R(.*)$/s', $part, $m)) {
+            $version = 'v' . $m[1];
+            $date = $m[2];
+            $releasedBody = $m[3];
+            break;
+        }
+    }
+    if ($version === null || $releasedBody === null) {
         return null;
     }
-    $version = 'v' . ($versionMatches[1] ?: $versionMatches[2]);
-    $date = $versionMatches[3];
 
-    // Extract major features section (### Major Features or ### 🎉 Major Features)
     $features = [];
-    if (preg_match('/### (?:🎉\s*)?Major Features\s*\n((?:- .+?\n?)+?)(?=\n<details|\n---|\n###|$)/s', $content, $featuresMatch)) {
+    if (preg_match('/### (?:🎉\s*)?Major Features\s*\n((?:- .+?\n?)+?)(?=\n<details|\n###|$)/s', $releasedBody, $featuresMatch)) {
         $featuresText = $featuresMatch[1];
-        // Bullet format: - **Title** - Description or - **Title** – Description
         if (preg_match_all('/- \*\*(.+?)\*\* [\-–] (.+?)(?:\n|$)/u', $featuresText, $featureMatches, PREG_SET_ORDER)) {
             foreach ($featureMatches as $match) {
                 $features[] = [
@@ -1714,7 +2020,7 @@ function getLatestChangelogVersion(): ?array {
             }
         }
     }
-    
+
     return [
         'version' => $version,
         'date' => $date,

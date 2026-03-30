@@ -22,6 +22,12 @@ if [[ ! -f docker-image.config ]]; then
 fi
 source docker-image.config
 
+# Optional overrides for release automation
+IMAGE="${IMAGE_OVERRIDE:-$IMAGE}"
+TAG="${TAG_OVERRIDE:-$TAG}"
+VERSION="${VERSION_OVERRIDE:-$VERSION}"
+GHCR_IMAGE="${GHCR_IMAGE_OVERRIDE:-$GHCR_IMAGE}"
+
 # Prefer .env.local (never in repo history, so survives pulls/merges); fallback to .env
 [[ -f .env.local ]] && source .env.local
 [[ -f .env ]] && source .env

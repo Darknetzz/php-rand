@@ -123,6 +123,61 @@ th.tablehead,
   background-color: #1e1e1e;
 }
 
+/* Shared tool response + output helpers */
+.tool-loading {
+  text-align: center;
+  padding: 3rem 0;
+}
+
+.tool-loading-spinner {
+  width: 3rem;
+  height: 3rem;
+  margin-bottom: 0.75rem;
+}
+
+.tool-loading-text {
+  color: var(--bs-secondary-color, #adb5bd);
+}
+
+.copyable-label {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.copyable-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  min-width: 200px;
+  background-color: #0f172a;
+  color: #e9ecef;
+  padding: 14px;
+  border-radius: 0.4rem;
+  font-family: monospace;
+  font-size: 0.95rem;
+  border: 1px solid #334155;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.25);
+}
+
+.copyable-body {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  word-break: break-all;
+  white-space: pre-wrap;
+  user-select: all;
+  overflow-y: auto;
+  max-height: 320px;
+}
+
+.copyable-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+}
+
 /* Random Data Button Styles */
 .input-with-random-btn {
   position: relative;

@@ -1,0 +1,6 @@
+# Deny HTTP access to environment files (secrets).
+<IfModule mod_authz_core.c>
+  <FilesMatch "^\.env">
+    Require all denied
+  </FilesMatch>
+</IfModule>

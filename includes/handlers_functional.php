@@ -17,6 +17,7 @@ function getHandlerRegistry(): array {
     return [
         'stringgen' => 'handle_stringgen',
         'hash' => 'handle_hash',
+        'hasher' => 'handle_hash',
         'numgen' => 'handle_numgen',
         'base' => 'handle_base',
         'hex' => 'handle_hex',
@@ -36,8 +37,18 @@ function getHandlerRegistry(): array {
         'calc' => 'handle_calculator',
         'currency' => 'handle_currency',
         'qrcode' => 'handle_qrcode',
+        'logo_generate' => 'handle_logo_generate',
         'regex' => 'handle_regex',
         'brainfuck' => 'handle_brainfuck',
+        'genid' => 'handle_genid',
+        'jwt' => 'handle_jwt',
+        'ssh_keygen' => 'handle_ssh_keygen',
+        'keypair_generate' => 'handle_keypair_generate',
+        'csr_generate' => 'handle_csr_generate',
+        'pem_openssh_convert' => 'handle_pem_openssh_convert',
+        'crypto_diagnostics' => 'handle_crypto_diagnostics',
+        'ssh_key_verify' => 'handle_ssh_key_verify',
+        'keypair_sign_verify' => 'handle_keypair_sign_verify',
     ];
 }
 
@@ -190,8 +201,8 @@ function req_int_validated(array $request, string $key, ?int $min = null, ?int $
  * @param array|null $useAsInput Optional use-as-input button config for two-way converters
  * @return string HTML formatted copyable output element
  */
-function output_copyable(string $content, string $label = "", ?array $useAsInput = null): string {
-    return "<div style='margin-bottom: 15px;'>" . copyableOutput($content, $label, $useAsInput) . "</div>";
+function output_copyable(string $content, string $label = "", ?array $useAsInput = null, ?string $extraActionsHtml = null): string {
+    return "<div style='margin-bottom: 15px;'>" . copyableOutput($content, $label, $useAsInput, $extraActionsHtml) . "</div>";
 }
 
 // ============================================================================
@@ -301,6 +312,9 @@ function handle_hash(array $req): string {
     if (strlen($input) > 100000) {
         return formatOutput("Input text must be at most 100,000 characters.", type: "danger");
     }
+
+    $hashRounds = isset($req['hashrounds']) ? (int) $req['hashrounds'] : 1;
+    $hashRounds = max(1, min(1000, $hashRounds));
     
     $hashalgo = req_get($req, 'hashalgo', 'all');
     
@@ -314,9 +328,14 @@ function handle_hash(array $req): string {
         : hash_algos();
 
     $output = "";
+    $useAsInput = ['inputName' => 'hash'];
     foreach ($types as $type) {
-        $hashValue = hash($type, $input);
-        $output .= output_copyable($hashValue, $type);
+        $hashValue = (string) $input;
+        for ($round = 0; $round < $hashRounds; $round++) {
+            $hashValue = hash($type, $hashValue);
+        }
+        $label = $hashRounds > 1 ? "$type ({$hashRounds} rounds)" : $type;
+        $output .= output_copyable($hashValue, $label, $useAsInput);
     }
     
     return formatOutput($output);
@@ -333,13 +352,27 @@ function handle_hash(array $req): string {
  */
 function handle_numgen(array $req): string {
     $rangeMode = isset($req['numgenrangemode']) && $req['numgenrangemode'] === 'digits' ? 'digits' : 'numeric';
+    $minDigits = null;
+    $maxDigits = null;
+    $useLargeDigitPath = false;
 
     if ($rangeMode === 'digits') {
-        $range = resolve_numgen_digit_range($req);
-        if ($range === null) {
-            return formatOutput("Invalid digit range. Use 1–20 for fixed length, or min ≤ max for range.", type: "danger");
+        $digitBounds = resolve_numgen_digit_bounds($req);
+        if ($digitBounds === null) {
+            $maxDigitsAllowed = max_configurable_numgen_digits();
+            return formatOutput("Invalid digit range. Use digits 1-{$maxDigitsAllowed} and ensure min <= max.", type: "danger");
         }
-        [$from, $to] = $range;
+        [$minDigits, $maxDigits] = $digitBounds;
+        $useLargeDigitPath = $maxDigits > max_supported_numgen_digits();
+
+        if (!$useLargeDigitPath) {
+            $range = digit_range_to_numeric($minDigits, $maxDigits);
+            if ($range === null) {
+                $maxDigitsAllowed = max_supported_numgen_digits();
+                return formatOutput("Invalid digit range. Use digits 1-{$maxDigitsAllowed} and ensure min <= max.", type: "danger");
+            }
+            [$from, $to] = $range;
+        }
     } else {
         // Validate 'from' parameter
         $fromValidation = req_int_validated($req, 'numgenfrom', -1000000000, 1000000000);
@@ -366,6 +399,15 @@ function handle_numgen(array $req): string {
     $type = isset($req['numgentype']) && in_array($req['numgentype'], $allowedTypes, true)
         ? $req['numgentype']
         : 'any';
+
+    if ($useLargeDigitPath && !numgen_type_supports_large_values($type)) {
+        $nativeDigits = max_supported_numgen_digits();
+        $largeCap = max_configurable_numgen_digits();
+        return formatOutput("Type '{$type}' is only supported up to {$nativeDigits} digits. For digit ranges above that (up to {$largeCap} digits), use any, odd, even, palindromic, prime, or composite (requires GMP).", type: "danger");
+    }
+    if ($useLargeDigitPath && !numgen_large_gmp_available()) {
+        return formatOutput("Large digit generation requires the GMP PHP extension (including gmp_prob_prime).", type: "danger");
+    }
 
     // Resolve seed: validate custom seed if provided; invalid → use generated seed + warning
     $seed = null;
@@ -400,6 +442,15 @@ function handle_numgen(array $req): string {
 
     $results = [];
     for ($i = 0; $i < $qty; $i++) {
+        if ($useLargeDigitPath) {
+            $result = random_large_numgen_value_by_digits($minDigits, $maxDigits, $type);
+            if (is_string($result) && str_contains($result, "alert alert-")) {
+                return $result;
+            }
+            $results[] = $result;
+            continue;
+        }
+
         $result = numGen($from, $to, null, $type);
         if (is_string($result)) {
             return $result;
@@ -812,6 +863,185 @@ function handle_stringtools(array $req): string {
     }
 
     return formatOutput(nl2br($string));
+}
+
+/**
+ * Parse #RRGGBB color to RGB tuple.
+ *
+ * @return array{0:int,1:int,2:int}
+ */
+function logo_hex_to_rgb(string $hex, string $fallback = '#1f2937'): array {
+    $value = trim($hex);
+    if (!preg_match('/^#[0-9a-fA-F]{6}$/', $value)) {
+        $value = $fallback;
+    }
+    return [
+        hexdec(substr($value, 1, 2)),
+        hexdec(substr($value, 3, 2)),
+        hexdec(substr($value, 5, 2)),
+    ];
+}
+
+function logo_get_fonts(): array {
+    $fonts = glob(APP_ROOT . DIRSEP . 'fonts' . DIRSEP . '*.ttf');
+    return is_array($fonts) ? $fonts : [];
+}
+
+function logo_pick_font(string $fontFile): ?string {
+    $fonts = logo_get_fonts();
+    if (empty($fonts)) {
+        return null;
+    }
+    foreach ($fonts as $fontPath) {
+        if (basename($fontPath) === $fontFile) {
+            return $fontPath;
+        }
+    }
+    return $fonts[0];
+}
+
+function logo_build_png_data_uri($image): string {
+    ob_start();
+    imagepng($image);
+    $binary = (string) ob_get_clean();
+    return 'data:image/png;base64,' . base64_encode($binary);
+}
+
+function logo_draw_background($image, int $width, int $height, string $style, array $bgRgb, array $accentRgb): void {
+    if ($style === 'gradient') {
+        for ($y = 0; $y < $height; $y++) {
+            $t = $height > 1 ? ($y / ($height - 1)) : 0;
+            $r = (int) round($bgRgb[0] + ($accentRgb[0] - $bgRgb[0]) * $t);
+            $g = (int) round($bgRgb[1] + ($accentRgb[1] - $bgRgb[1]) * $t);
+            $b = (int) round($bgRgb[2] + ($accentRgb[2] - $bgRgb[2]) * $t);
+            $line = imagecolorallocate($image, $r, $g, $b);
+            imageline($image, 0, $y, $width, $y, $line);
+        }
+        return;
+    }
+
+    $bg = imagecolorallocate($image, $bgRgb[0], $bgRgb[1], $bgRgb[2]);
+    imagefilledrectangle($image, 0, 0, $width, $height, $bg);
+}
+
+/**
+ * Handle logo generator requests.
+ *
+ * @param array $req Request array containing logo configuration options
+ * @return string HTML preview with download link
+ */
+function handle_logo_generate(array $req): string {
+    if (!extension_loaded('gd')) {
+        return formatOutput("GD extension is required for logo generation.", type: "danger");
+    }
+
+    $text = trim((string) req_get($req, 'logo_text', 'Rand'));
+    if ($text === '') {
+        $text = 'Rand';
+    }
+    $text = mb_substr($text, 0, 40);
+
+    $width = max(128, min(1600, req_int($req, 'logo_width', 512)));
+    $height = max(128, min(1600, req_int($req, 'logo_height', 512)));
+    $fontSize = max(12, min(220, req_int($req, 'logo_font_size', 96)));
+    $shape = (string) req_get($req, 'logo_shape', 'rounded');
+    $style = (string) req_get($req, 'logo_style', 'gradient');
+    $uppercase = req_bool($req, 'logo_uppercase');
+    $useInitials = req_bool($req, 'logo_initials');
+    $border = max(0, min(24, req_int($req, 'logo_border', 0)));
+    $fontFile = (string) req_get($req, 'logo_font', '');
+
+    $displayText = $uppercase ? mb_strtoupper($text) : $text;
+    if ($useInitials) {
+        $parts = preg_split('/\s+/', trim($displayText)) ?: [];
+        $initials = '';
+        foreach ($parts as $part) {
+            if ($part !== '') {
+                $initials .= mb_substr($part, 0, 1);
+            }
+        }
+        $displayText = $initials !== '' ? mb_substr($initials, 0, 4) : mb_substr($displayText, 0, 3);
+    }
+
+    $bgRgb = logo_hex_to_rgb((string) req_get($req, 'logo_bg_color', '#111827'));
+    $accentRgb = logo_hex_to_rgb((string) req_get($req, 'logo_accent_color', '#1d4ed8'));
+    $textRgb = logo_hex_to_rgb((string) req_get($req, 'logo_text_color', '#ffffff'), '#ffffff');
+    $borderRgb = logo_hex_to_rgb((string) req_get($req, 'logo_border_color', '#ffffff'), '#ffffff');
+
+    $image = imagecreatetruecolor($width, $height);
+    imagealphablending($image, true);
+    imagesavealpha($image, true);
+
+    logo_draw_background($image, $width, $height, $style, $bgRgb, $accentRgb);
+
+    if ($shape === 'circle') {
+        $mask = imagecreatetruecolor($width, $height);
+        $transparent = imagecolorallocatealpha($mask, 0, 0, 0, 127);
+        imagefill($mask, 0, 0, $transparent);
+        imagealphablending($mask, true);
+        $white = imagecolorallocate($mask, 255, 255, 255);
+        imagefilledellipse($mask, (int) ($width / 2), (int) ($height / 2), $width, $height, $white);
+        imagecolortransparent($mask, $transparent);
+        imagecopymerge($image, $mask, 0, 0, 0, 0, $width, $height, 100);
+        imagedestroy($mask);
+    } elseif ($shape === 'rounded') {
+        $radius = (int) max(12, min((int) floor(min($width, $height) * 0.15), 80));
+        $overlay = imagecreatetruecolor($width, $height);
+        imagesavealpha($overlay, true);
+        $trans = imagecolorallocatealpha($overlay, 0, 0, 0, 127);
+        imagefill($overlay, 0, 0, $trans);
+        $fill = imagecolorallocate($overlay, 255, 255, 255);
+        imagefilledrectangle($overlay, $radius, 0, $width - $radius, $height, $fill);
+        imagefilledrectangle($overlay, 0, $radius, $width, $height - $radius, $fill);
+        imagefilledellipse($overlay, $radius, $radius, $radius * 2, $radius * 2, $fill);
+        imagefilledellipse($overlay, $width - $radius, $radius, $radius * 2, $radius * 2, $fill);
+        imagefilledellipse($overlay, $radius, $height - $radius, $radius * 2, $radius * 2, $fill);
+        imagefilledellipse($overlay, $width - $radius, $height - $radius, $radius * 2, $radius * 2, $fill);
+        imagecolortransparent($overlay, $trans);
+        imagecopymerge($image, $overlay, 0, 0, 0, 0, $width, $height, 100);
+        imagedestroy($overlay);
+    }
+
+    if ($border > 0) {
+        $borderColor = imagecolorallocate($image, $borderRgb[0], $borderRgb[1], $borderRgb[2]);
+        for ($i = 0; $i < $border; $i++) {
+            imagerectangle($image, $i, $i, $width - 1 - $i, $height - 1 - $i, $borderColor);
+        }
+    }
+
+    $fontColor = imagecolorallocate($image, $textRgb[0], $textRgb[1], $textRgb[2]);
+    $fontPath = logo_pick_font($fontFile);
+    if ($fontPath !== null && function_exists('imagettfbbox') && function_exists('imagettftext')) {
+        $bbox = imagettfbbox($fontSize, 0, $fontPath, $displayText);
+        $textWidth = (int) abs(($bbox[2] ?? 0) - ($bbox[0] ?? 0));
+        $textHeight = (int) abs(($bbox[7] ?? 0) - ($bbox[1] ?? 0));
+        $x = (int) floor(($width - $textWidth) / 2);
+        $y = (int) floor(($height + $textHeight) / 2);
+        imagettftext($image, $fontSize, 0, $x, $y, $fontColor, $fontPath, $displayText);
+    } else {
+        $font = 5;
+        $textWidth = imagefontwidth($font) * strlen($displayText);
+        $textHeight = imagefontheight($font);
+        $x = (int) floor(($width - $textWidth) / 2);
+        $y = (int) floor(($height - $textHeight) / 2);
+        imagestring($image, $font, $x, $y, $displayText, $fontColor);
+    }
+
+    $dataUri = logo_build_png_data_uri($image);
+    imagedestroy($image);
+
+    $safeDataUri = htmlspecialchars($dataUri, ENT_QUOTES, 'UTF-8');
+    $safeAlt = htmlspecialchars($displayText, ENT_QUOTES, 'UTF-8');
+    $filenameBase = preg_replace('/[^a-zA-Z0-9_-]+/', '-', strtolower($displayText)) ?: 'logo';
+    $filename = $filenameBase . '.png';
+
+    $output = "<div style='text-align:center; padding:12px;'>";
+    $output .= "<img src='{$safeDataUri}' alt='{$safeAlt}' style='max-width:100%; height:auto; border-radius:8px; border:1px solid #334155;' />";
+    $output .= "<div style='margin-top:12px;'>";
+    $output .= "<a class='btn btn-primary btn-sm' href='{$safeDataUri}' download='" . htmlspecialchars($filename, ENT_QUOTES, 'UTF-8') . "'>" . icon('download') . " Download PNG</a>";
+    $output .= "</div>";
+    $output .= "</div>";
+    return $output;
 }
 
 /**
@@ -1276,5 +1506,1273 @@ function executeBrainfuck(string $code, string $input = ''): array {
     ];
 }
 
+/**
+ * Handle ID generator requests (UUIDv4, ULID, NanoID)
+ *
+ * @param array $req Request array containing: 'idtype', 'idqty', 'nanoid_length', 'id_uppercase'
+ * @return string Formatted HTML with generated IDs
+ */
+function handle_genid(array $req): string {
+    $idType = req_get($req, 'idtype', 'uuid4');
+    $allowedTypes = ['uuid4', 'ulid', 'nanoid'];
+    if (!in_array($idType, $allowedTypes, true)) {
+        return formatOutput("Invalid ID type selected.", type: "danger");
+    }
+
+    $qty = req_int($req, 'idqty', 1);
+    $qty = max(1, min(500, $qty));
+
+    $nanoLength = req_int($req, 'nanoid_length', 21);
+    $nanoLength = max(6, min(128, $nanoLength));
+
+    $uppercase = req_bool($req, 'id_uppercase');
+    $ids = [];
+    for ($i = 0; $i < $qty; $i++) {
+        $id = match ($idType) {
+            'uuid4' => gen_uuid4(),
+            'ulid' => gen_ulid(),
+            'nanoid' => gen_nanoid($nanoLength),
+            default => '',
+        };
+        $ids[] = $uppercase ? strtoupper($id) : $id;
+    }
+
+    $label = strtoupper($idType) . ($idType === 'nanoid' ? " ({$nanoLength} chars)" : "");
+    $output = output_copyable(implode("\n", $ids), $label);
+    $output .= "<div style='margin-top: 8px; font-size: 0.85rem; opacity: 0.75;'>Generated <strong>{$qty}</strong> ID" . ($qty > 1 ? "s" : "") . ".</div>";
+
+    return $output;
+}
+
+function crypto_available_key_algorithms(): array {
+    $algorithms = ['rsa', 'ecdsa'];
+    if (defined('OPENSSL_KEYTYPE_ED25519')) {
+        $algorithms[] = 'ed25519';
+    }
+    return $algorithms;
+}
+
+function crypto_resolve_requested_algorithms(string $selected): array {
+    $available = crypto_available_key_algorithms();
+    if ($selected === 'all-available') {
+        return $available;
+    }
+    if (in_array($selected, $available, true)) {
+        return [$selected];
+    }
+    return [];
+}
+
+function crypto_make_key_config(string $algorithm, int $rsaBits = 4096, string $curve = 'prime256v1'): ?array {
+    if ($algorithm === 'rsa') {
+        $bits = in_array($rsaBits, [2048, 3072, 4096], true) ? $rsaBits : 4096;
+        return [
+            'private_key_type' => OPENSSL_KEYTYPE_RSA,
+            'private_key_bits' => $bits,
+        ];
+    }
+
+    if ($algorithm === 'ecdsa') {
+        $allowedCurves = ['prime256v1', 'secp384r1', 'secp521r1'];
+        $resolvedCurve = in_array($curve, $allowedCurves, true) ? $curve : 'prime256v1';
+        return [
+            'private_key_type' => OPENSSL_KEYTYPE_EC,
+            'curve_name' => $resolvedCurve,
+        ];
+    }
+
+    if ($algorithm === 'ed25519') {
+        if (!defined('OPENSSL_KEYTYPE_ED25519')) {
+            return null;
+        }
+        return [
+            'private_key_type' => OPENSSL_KEYTYPE_ED25519,
+        ];
+    }
+
+    return null;
+}
+
+function crypto_generate_keypair(string $algorithm, int $rsaBits = 4096, string $curve = 'prime256v1', string $passphrase = ''): array {
+    $config = crypto_make_key_config($algorithm, $rsaBits, $curve);
+    if ($config === null) {
+        return ['ok' => false, 'error' => "Algorithm {$algorithm} is not available on this host."];
+    }
+
+    $privateKey = openssl_pkey_new($config);
+    if ($privateKey === false) {
+        return ['ok' => false, 'error' => "Unable to generate {$algorithm} keypair."];
+    }
+
+    $exportOptions = [];
+    if ($passphrase !== '') {
+        $exportOptions = ['cipher' => 'aes-256-cbc'];
+    }
+
+    $privatePem = '';
+    $privateExported = openssl_pkey_export($privateKey, $privatePem, $passphrase, $exportOptions);
+    if ($privateExported === false || $privatePem === '') {
+        return ['ok' => false, 'error' => "Unable to export private key for {$algorithm}."];
+    }
+
+    $details = openssl_pkey_get_details($privateKey);
+    if (!is_array($details) || empty($details['key'])) {
+        return ['ok' => false, 'error' => "Unable to export public key for {$algorithm}."];
+    }
+
+    return [
+        'ok' => true,
+        'algorithm' => $algorithm,
+        'private_pem' => $privatePem,
+        'public_pem' => $details['key'],
+    ];
+}
+
+function crypto_data_download_link(string $filename, string $content, string $label): string {
+    $href = 'data:text/plain;charset=utf-8,' . rawurlencode($content);
+    $safeHref = htmlspecialchars($href, ENT_QUOTES, 'UTF-8');
+    $safeFilename = htmlspecialchars($filename, ENT_QUOTES, 'UTF-8');
+    $safeLabel = htmlspecialchars($label, ENT_QUOTES, 'UTF-8');
+    return "<a class='btn btn-outline-light btn-sm' href='{$safeHref}' download='{$safeFilename}' style='white-space: nowrap; border: 1px solid #e9ecef;'>" . icon('download') . " {$safeLabel}</a>";
+}
+
+function crypto_render_key_output(array $items, string $title): string {
+    $safeTitle = htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
+    $output = "<div class='card border-info mb-3'><h5 class='card-header'>{$safeTitle}</h5><div class='card-body'>";
+
+    foreach ($items as $item) {
+        $rawLabel = (string) ($item['label'] ?? '');
+        $label = htmlspecialchars($rawLabel, ENT_QUOTES, 'UTF-8');
+        $content = (string) ($item['content'] ?? '');
+        $filename = (string) ($item['filename'] ?? '');
+        $extraDl = $filename !== '' ? crypto_data_download_link($filename, $content, 'Download ' . $rawLabel) : null;
+        $output .= output_copyable($content, $label, null, $extraDl);
+    }
+
+    $output .= "</div></div>";
+    return $output;
+}
+
+/**
+ * SSH keygen: public PEM vs OpenSSH selectable; private PEM always shown below.
+ *
+ * @param list<array{label: string, content: string, filename?: string, ssh_output_slot: string}> $items
+ */
+function crypto_render_ssh_key_output(array $items, string $title): string {
+    $publicSlots = ['pem-public', 'openssh-public'];
+    $publicSlotLabels = [
+        'pem-public' => 'PEM',
+        'openssh-public' => 'OpenSSH (one-line)',
+    ];
+    $bySlot = [];
+    foreach ($items as $item) {
+        $slot = (string) ($item['ssh_output_slot'] ?? '');
+        if ($slot === '') {
+            continue;
+        }
+        $bySlot[$slot] = $item;
+    }
+
+    $safeTitle = htmlspecialchars($title, ENT_QUOTES, 'UTF-8');
+    $output = "<div class='card border-info mb-3 crypto-ssh-key-output-card' data-crypto-ssh-output><h5 class='card-header'>{$safeTitle}</h5><div class='card-body'>";
+
+    $presentPublic = [];
+    foreach ($publicSlots as $slot) {
+        if (isset($bySlot[$slot])) {
+            $presentPublic[] = $slot;
+        }
+    }
+    $publicCount = count($presentPublic);
+
+    if ($publicCount > 1) {
+        $output .= '<div class="mb-3 crypto-ssh-public-format-row d-flex flex-wrap align-items-center gap-2">';
+        $output .= '<label class="form-label mb-0 me-1"><strong>Public key output</strong></label>';
+        $output .= '<select class="form-select form-select-lg crypto-ssh-output-format" style="max-width: 22rem;">';
+        foreach ($presentPublic as $slot) {
+            $sEsc = htmlspecialchars($slot, ENT_QUOTES, 'UTF-8');
+            $lbl = htmlspecialchars((string) ($publicSlotLabels[$slot] ?? $slot), ENT_QUOTES, 'UTF-8');
+            $output .= "<option value=\"{$sEsc}\">{$lbl}</option>";
+        }
+        $output .= '</select></div>';
+    }
+
+    $output .= '<div class="crypto-ssh-output-panels">';
+    $first = true;
+    foreach ($presentPublic as $slot) {
+        $item = $bySlot[$slot];
+        $rawLabel = (string) ($item['label'] ?? '');
+        $label = htmlspecialchars($rawLabel, ENT_QUOTES, 'UTF-8');
+        $content = (string) ($item['content'] ?? '');
+        $filename = (string) ($item['filename'] ?? '');
+        $sEsc = htmlspecialchars($slot, ENT_QUOTES, 'UTF-8');
+        $panelClass = 'crypto-ssh-output-panel';
+        if ($publicCount > 1 && !$first) {
+            $panelClass .= ' d-none';
+        }
+        $first = false;
+
+        $extraDl = $filename !== '' ? crypto_data_download_link($filename, $content, 'Download ' . $rawLabel) : null;
+        $output .= "<div class=\"{$panelClass}\" data-format=\"{$sEsc}\">";
+        $output .= output_copyable($content, $label, null, $extraDl);
+        $output .= '</div>';
+    }
+    $output .= '</div>';
+
+    if (isset($bySlot['private-pem'])) {
+        $priv = $bySlot['private-pem'];
+        $rawPl = (string) ($priv['label'] ?? '');
+        $pl = htmlspecialchars($rawPl, ENT_QUOTES, 'UTF-8');
+        $pc = (string) ($priv['content'] ?? '');
+        $pf = (string) ($priv['filename'] ?? '');
+        $extraPriv = $pf !== '' ? crypto_data_download_link($pf, $pc, 'Download ' . $rawPl) : null;
+        $output .= "<div class='crypto-ssh-private-block mt-3 pt-3 border-top border-secondary'>";
+        $output .= output_copyable($pc, $pl, null, $extraPriv);
+        $output .= '</div>';
+    }
+
+    $output .= '</div></div>';
+
+    return $output;
+}
+
+function crypto_ssh_pack_string(string $value): string {
+    return pack('N', strlen($value)) . $value;
+}
+
+function crypto_ssh_pack_mpint(string $value): string {
+    $value = ltrim($value, "\x00");
+    if ($value === '') {
+        return pack('N', 0);
+    }
+    if ((ord($value[0]) & 0x80) !== 0) {
+        $value = "\x00" . $value;
+    }
+    return pack('N', strlen($value)) . $value;
+}
+
+function crypto_openssh_curve_name(string $curve): ?string {
+    return match ($curve) {
+        'prime256v1' => 'nistp256',
+        'secp384r1' => 'nistp384',
+        'secp521r1' => 'nistp521',
+        default => null,
+    };
+}
+
+function crypto_public_pem_to_openssh(string $publicPem, string $comment = ''): array {
+    $publicHandle = openssl_pkey_get_public($publicPem);
+    if ($publicHandle === false) {
+        return ['ok' => false, 'error' => 'Unable to parse public key PEM for OpenSSH conversion.'];
+    }
+
+    $details = openssl_pkey_get_details($publicHandle);
+    if (!is_array($details)) {
+        return ['ok' => false, 'error' => 'Unable to read public key details for OpenSSH conversion.'];
+    }
+
+    if (($details['type'] ?? null) === OPENSSL_KEYTYPE_RSA && isset($details['rsa']['e'], $details['rsa']['n'])) {
+        $blob = crypto_ssh_pack_string('ssh-rsa')
+            . crypto_ssh_pack_mpint($details['rsa']['e'])
+            . crypto_ssh_pack_mpint($details['rsa']['n']);
+        $line = 'ssh-rsa ' . base64_encode($blob);
+        if ($comment !== '') {
+            $line .= ' ' . $comment;
+        }
+        return ['ok' => true, 'line' => $line, 'type' => 'ssh-rsa'];
+    }
+
+    if (($details['type'] ?? null) === OPENSSL_KEYTYPE_EC && isset($details['ec']['curve_name'], $details['ec']['x'], $details['ec']['y'])) {
+        $sshCurve = crypto_openssh_curve_name((string) $details['ec']['curve_name']);
+        if ($sshCurve === null) {
+            return ['ok' => false, 'error' => 'Unsupported ECDSA curve for OpenSSH export.'];
+        }
+        $point = "\x04" . $details['ec']['x'] . $details['ec']['y'];
+        $algo = 'ecdsa-sha2-' . $sshCurve;
+        $blob = crypto_ssh_pack_string($algo)
+            . crypto_ssh_pack_string($sshCurve)
+            . crypto_ssh_pack_string($point);
+        $line = $algo . ' ' . base64_encode($blob);
+        if ($comment !== '') {
+            $line .= ' ' . $comment;
+        }
+        return ['ok' => true, 'line' => $line, 'type' => $algo];
+    }
+
+    if (isset($details['ed25519']['pub_key']) && is_string($details['ed25519']['pub_key'])) {
+        $raw = $details['ed25519']['pub_key'];
+        if (strlen($raw) === 32) {
+            $blob = crypto_ssh_pack_string('ssh-ed25519') . crypto_ssh_pack_string($raw);
+            $line = 'ssh-ed25519 ' . base64_encode($blob);
+            if ($comment !== '') {
+                $line .= ' ' . $comment;
+            }
+            return ['ok' => true, 'line' => $line, 'type' => 'ssh-ed25519'];
+        }
+    }
+
+    return ['ok' => false, 'error' => 'OpenSSH export is unavailable for this key type on current OpenSSL/PHP build.'];
+}
+
+function crypto_openssh_to_pem_with_ssh_keygen(string $opensshLine): array {
+    if (!function_exists('shell_exec')) {
+        return ['ok' => false, 'error' => 'shell_exec() is disabled on this server.'];
+    }
+
+    $sshKeygenPath = trim((string) @shell_exec('command -v ssh-keygen 2>/dev/null'));
+    if ($sshKeygenPath === '') {
+        return ['ok' => false, 'error' => 'ssh-keygen is not available on this host.'];
+    }
+
+    $tempBase = tempnam(sys_get_temp_dir(), 'sshpub_');
+    if ($tempBase === false) {
+        return ['ok' => false, 'error' => 'Unable to create temporary file for conversion.'];
+    }
+    $inputPath = $tempBase . '.pub';
+    @rename($tempBase, $inputPath);
+
+    if (@file_put_contents($inputPath, trim($opensshLine) . PHP_EOL) === false) {
+        @unlink($inputPath);
+        return ['ok' => false, 'error' => 'Unable to write temporary OpenSSH key file.'];
+    }
+
+    $cmd = escapeshellarg($sshKeygenPath) . ' -f ' . escapeshellarg($inputPath) . ' -e -m PKCS8 2>&1';
+    $output = (string) @shell_exec($cmd);
+    @unlink($inputPath);
+
+    if (strpos($output, 'BEGIN PUBLIC KEY') === false) {
+        $trimmed = trim($output);
+        return ['ok' => false, 'error' => $trimmed !== '' ? $trimmed : 'Unable to convert OpenSSH key to PEM via ssh-keygen.'];
+    }
+
+    return ['ok' => true, 'pem' => trim($output) . PHP_EOL];
+}
+
+/** @param resource $key */
+function crypto_signature_digest_for_key($key): int {
+    $d = openssl_pkey_get_details($key);
+    if (!is_array($d)) {
+        return OPENSSL_ALGO_SHA256;
+    }
+    $type = $d['type'] ?? null;
+    if ($type === OPENSSL_KEYTYPE_RSA) {
+        return OPENSSL_ALGO_SHA256;
+    }
+    if ($type === OPENSSL_KEYTYPE_EC) {
+        $curve = (string) ($d['ec']['curve_name'] ?? '');
+        return match ($curve) {
+            'secp384r1' => OPENSSL_ALGO_SHA384,
+            'secp521r1' => OPENSSL_ALGO_SHA512,
+            default => OPENSSL_ALGO_SHA256,
+        };
+    }
+    if (defined('OPENSSL_KEYTYPE_ED25519') && $type === OPENSSL_KEYTYPE_ED25519) {
+        return OPENSSL_ALGO_SHA512;
+    }
+    if (isset($d['ed25519'])) {
+        return OPENSSL_ALGO_SHA512;
+    }
+
+    return OPENSSL_ALGO_SHA256;
+}
+
+function crypto_digest_label(int $algo): string {
+    return match ($algo) {
+        OPENSSL_ALGO_SHA384 => 'SHA-384',
+        OPENSSL_ALGO_SHA512 => 'SHA-512',
+        OPENSSL_ALGO_SHA256 => 'SHA-256',
+        default => 'SHA-256',
+    };
+}
+
+function crypto_pem_public_from_private_pem(string $privatePem, string $passphrase = ''): ?string {
+    $res = openssl_pkey_get_private($privatePem, $passphrase !== '' ? $passphrase : '');
+    if ($res === false) {
+        return null;
+    }
+    $d = openssl_pkey_get_details($res);
+    if (!is_array($d) || empty($d['key'])) {
+        return null;
+    }
+
+    return (string) $d['key'];
+}
+
+function crypto_pem_strings_equal(string $a, string $b): bool {
+    $norm = static function (string $s): string {
+        return trim(preg_replace('/\s+/', "\n", $s));
+    };
+
+    return $norm($a) === $norm($b);
+}
+
+/**
+ * @return array{ok: bool, summary?: string, bits?: int, error?: string}
+ */
+function crypto_verify_pem_public(string $pem): array {
+    $res = openssl_pkey_get_public($pem);
+    if ($res === false) {
+        return ['ok' => false, 'error' => 'Not a valid PEM public key (or unsupported format).'];
+    }
+    $d = openssl_pkey_get_details($res);
+    if (!is_array($d)) {
+        return ['ok' => false, 'error' => 'Unable to read public key details.'];
+    }
+    $type = $d['type'] ?? null;
+    if ($type === OPENSSL_KEYTYPE_RSA) {
+        $bits = (int) ($d['bits'] ?? 0);
+
+        return ['ok' => true, 'summary' => 'RSA', 'bits' => $bits];
+    }
+    if ($type === OPENSSL_KEYTYPE_EC) {
+        $curve = (string) ($d['ec']['curve_name'] ?? 'unknown');
+
+        return ['ok' => true, 'summary' => 'ECDSA (' . $curve . ')', 'bits' => (int) ($d['bits'] ?? 0)];
+    }
+    if (defined('OPENSSL_KEYTYPE_ED25519') && $type === OPENSSL_KEYTYPE_ED25519) {
+        return ['ok' => true, 'summary' => 'Ed25519', 'bits' => 256];
+    }
+    if (isset($d['ed25519'])) {
+        return ['ok' => true, 'summary' => 'Ed25519', 'bits' => 256];
+    }
+
+    return ['ok' => true, 'summary' => 'Asymmetric key (type ' . (string) $type . ')', 'bits' => (int) ($d['bits'] ?? 0)];
+}
+
+/**
+ * @return array{ok: bool, summary?: string, bits?: int, encrypted?: bool, error?: string}
+ */
+function crypto_verify_pem_private(string $pem, string $passphrase = ''): array {
+    $res = openssl_pkey_get_private($pem, $passphrase !== '' ? $passphrase : '');
+    if ($res === false) {
+        return ['ok' => false, 'error' => 'Not a valid PEM private key, wrong passphrase, or unsupported format.'];
+    }
+    $d = openssl_pkey_get_details($res);
+    if (!is_array($d)) {
+        return ['ok' => false, 'error' => 'Unable to read private key details.'];
+    }
+    $encrypted = strpos($pem, 'ENCRYPTED') !== false || strpos($pem, 'Proc-Type: 4,ENCRYPTED') !== false;
+    $type = $d['type'] ?? null;
+    if ($type === OPENSSL_KEYTYPE_RSA) {
+        $bits = (int) ($d['bits'] ?? 0);
+
+        return ['ok' => true, 'summary' => 'RSA', 'bits' => $bits, 'encrypted' => $encrypted];
+    }
+    if ($type === OPENSSL_KEYTYPE_EC) {
+        $curve = (string) ($d['ec']['curve_name'] ?? 'unknown');
+
+        return ['ok' => true, 'summary' => 'ECDSA (' . $curve . ')', 'bits' => (int) ($d['bits'] ?? 0), 'encrypted' => $encrypted];
+    }
+    if (defined('OPENSSL_KEYTYPE_ED25519') && $type === OPENSSL_KEYTYPE_ED25519) {
+        return ['ok' => true, 'summary' => 'Ed25519', 'bits' => 256, 'encrypted' => $encrypted];
+    }
+    if (isset($d['ed25519'])) {
+        return ['ok' => true, 'summary' => 'Ed25519', 'bits' => 256, 'encrypted' => $encrypted];
+    }
+
+    return ['ok' => true, 'summary' => 'Private key (type ' . (string) $type . ')', 'bits' => (int) ($d['bits'] ?? 0), 'encrypted' => $encrypted];
+}
+
+/**
+ * @return array{ok: bool, lines?: list<string>, error?: string}
+ */
+function crypto_ssh_keygen_inspect_openssh_line(string $opensshLine): array {
+    if (!function_exists('shell_exec')) {
+        return ['ok' => false, 'error' => 'shell_exec() is disabled; cannot run ssh-keygen.'];
+    }
+    $sshKeygenPath = trim((string) @shell_exec('command -v ssh-keygen 2>/dev/null'));
+    if ($sshKeygenPath === '') {
+        return ['ok' => false, 'error' => 'ssh-keygen is not available on this host.'];
+    }
+    $line = trim($opensshLine);
+    if ($line === '' || strpos($line, "\n") !== false) {
+        return ['ok' => false, 'error' => 'Provide a single-line OpenSSH public key (e.g. ssh-ed25519 AAAA...).'];
+    }
+
+    $tempBase = tempnam(sys_get_temp_dir(), 'sshchk_');
+    if ($tempBase === false) {
+        return ['ok' => false, 'error' => 'Unable to create temporary file.'];
+    }
+    $pubPath = $tempBase . '.pub';
+    @rename($tempBase, $pubPath);
+    if (@file_put_contents($pubPath, $line . PHP_EOL) === false) {
+        @unlink($pubPath);
+
+        return ['ok' => false, 'error' => 'Unable to write temporary key file.'];
+    }
+
+    $cmd = escapeshellarg($sshKeygenPath) . ' -l -E sha256 -f ' . escapeshellarg($pubPath) . ' 2>&1';
+    $out = (string) @shell_exec($cmd);
+    @unlink($pubPath);
+    $out = trim($out);
+    if ($out === '' || strpos(strtolower($out), 'error') !== false || strpos($out, 'not a public key') !== false) {
+        return ['ok' => false, 'error' => $out !== '' ? $out : 'ssh-keygen could not read this public key.'];
+    }
+
+    $lines = array_values(array_filter(array_map('trim', preg_split('/\r\n|\n|\r/', $out))));
+
+    return ['ok' => true, 'lines' => $lines];
+}
+
+/**
+ * Split a single "public key" paste into PEM vs OpenSSH, or return an error (auto mode only).
+ *
+ * @return array{pem: string, openssh: string, detected: ?string, error: ?string}
+ */
+function crypto_classify_verify_public_key(string $raw, string $mode): array {
+    $raw = trim($raw);
+    $empty = ['pem' => '', 'openssh' => '', 'detected' => null, 'error' => null];
+    if ($raw === '') {
+        return $empty;
+    }
+
+    $mode = strtolower($mode);
+    if (!in_array($mode, ['auto', 'pem', 'openssh'], true)) {
+        $mode = 'auto';
+    }
+
+    if ($mode === 'pem') {
+        return ['pem' => $raw, 'openssh' => '', 'detected' => 'pem', 'error' => null];
+    }
+    if ($mode === 'openssh') {
+        $lines = preg_split('/\r\n|\n|\r/', $raw);
+        $first = '';
+        foreach ($lines as $ln) {
+            $ln = trim((string) $ln);
+            if ($ln !== '') {
+                $first = $ln;
+                break;
+            }
+        }
+
+        return ['pem' => '', 'openssh' => $first, 'detected' => 'openssh', 'error' => $first === '' ? 'OpenSSH public key line is empty.' : null];
+    }
+
+    if (preg_match('/-----BEGIN\s+(?:RSA\s+)?PUBLIC\s+KEY-----/i', $raw)
+        || preg_match('/-----BEGIN\s+EC\s+PUBLIC\s+KEY-----/i', $raw)) {
+        return ['pem' => $raw, 'openssh' => '', 'detected' => 'pem', 'error' => null];
+    }
+
+    $lines = preg_split('/\r\n|\n|\r/', $raw);
+    $first = '';
+    foreach ($lines as $ln) {
+        $ln = trim((string) $ln);
+        if ($ln !== '') {
+            $first = $ln;
+            break;
+        }
+    }
+    if ($first !== '' && preg_match('/^(ssh-rsa|ssh-ed25519|ssh-dss|ecdsa-sha2-[a-z0-9]+)\s+[A-Za-z0-9+/]+=*(\s+.*)?$/', $first)) {
+        return ['pem' => '', 'openssh' => $first, 'detected' => 'openssh', 'error' => null];
+    }
+
+    return [
+        'pem' => '',
+        'openssh' => '',
+        'detected' => null,
+        'error' => 'Could not tell if this is PEM or an OpenSSH public line. Choose <strong>PEM</strong> or <strong>OpenSSH one-line</strong> under Public key format, or check the paste.',
+    ];
+}
+
+function handle_ssh_key_verify(array $req): string {
+    $maxLen = 524288;
+    $publicUnified = trim((string) req_get($req, 'verify_public_input', ''));
+    $publicFormat = strtolower((string) req_get($req, 'verify_public_format', 'auto'));
+    $publicPemLegacy = trim((string) req_get($req, 'verify_public_pem', ''));
+    $publicOpensshLegacy = trim((string) req_get($req, 'verify_openssh_public', ''));
+    $privatePem = trim((string) req_get($req, 'verify_private_pem', ''));
+    $pass = trim((string) req_get($req, 'verify_private_passphrase', ''));
+
+    $publicPem = '';
+    $publicOpenssh = '';
+    $detectNote = '';
+
+    if ($publicUnified !== '') {
+        if ($publicPemLegacy !== '' || $publicOpensshLegacy !== '') {
+            return formatOutput('Use either the single <strong>Public key</strong> field or the legacy split fields, not both.', type: 'danger');
+        }
+        if (strlen($publicUnified) > $maxLen) {
+            return formatOutput('Key material is too large.', type: 'danger');
+        }
+        $classified = crypto_classify_verify_public_key($publicUnified, $publicFormat);
+        if (($classified['error'] ?? null) !== null && (string) $classified['error'] !== '') {
+            return formatOutput((string) $classified['error'], type: 'danger');
+        }
+        $publicPem = (string) $classified['pem'];
+        $publicOpenssh = (string) $classified['openssh'];
+        if ($publicFormat === 'auto' && ($classified['detected'] ?? null) !== null) {
+            $detectNote = $classified['detected'] === 'pem' ? 'PEM public' : 'OpenSSH one-line';
+        }
+    } else {
+        $publicPem = $publicPemLegacy;
+        $publicOpenssh = $publicOpensshLegacy;
+    }
+
+    if (strlen($publicPem) > $maxLen || strlen($publicOpenssh) > $maxLen || strlen($privatePem) > $maxLen) {
+        return formatOutput('Key material is too large.', type: 'danger');
+    }
+
+    if ($publicPem === '' && $publicOpenssh === '' && $privatePem === '') {
+        return formatOutput('Paste at least one of: a public key (PEM or OpenSSH), or a PEM private key.', type: 'danger');
+    }
+
+    $intro = 'Validation uses OpenSSL on the server and <code>ssh-keygen</code> for OpenSSH fingerprints when available. Private keys are not stored. Results follow the same order as the form (public checks, then private).';
+    if ($detectNote !== '') {
+        $intro .= ' <strong>Auto-detected public format:</strong> ' . htmlspecialchars($detectNote, ENT_QUOTES, 'UTF-8') . '.';
+    }
+    $output = formatOutput($intro, type: 'info');
+
+    $derivedPublic = null;
+    $privateSection = '';
+    if ($privatePem !== '') {
+        $pv = crypto_verify_pem_private($privatePem, $pass);
+        if (!$pv['ok']) {
+            $privateSection = formatOutput('<strong>PEM private key:</strong> ' . htmlspecialchars((string) $pv['error'], ENT_QUOTES, 'UTF-8'), type: 'danger');
+        } else {
+            $enc = !empty($pv['encrypted']) ? 'yes' : 'no';
+            $bits = (int) ($pv['bits'] ?? 0);
+            $privateSection = formatOutput(
+                '<strong>PEM private key:</strong> valid — ' . htmlspecialchars((string) $pv['summary'], ENT_QUOTES, 'UTF-8')
+                . ($bits > 0 ? ' — ' . $bits . ' bits' : '')
+                . ' — passphrase protected: ' . $enc,
+                type: 'success'
+            );
+            $derivedPublic = crypto_pem_public_from_private_pem($privatePem, $pass);
+        }
+    }
+
+    $publicPemSection = '';
+    if ($publicPem !== '') {
+        $pub = crypto_verify_pem_public($publicPem);
+        if (!$pub['ok']) {
+            $publicPemSection = formatOutput('<strong>PEM public key:</strong> ' . htmlspecialchars((string) $pub['error'], ENT_QUOTES, 'UTF-8'), type: 'danger');
+        } else {
+            $bits = (int) ($pub['bits'] ?? 0);
+            $publicPemSection = formatOutput(
+                '<strong>PEM public key:</strong> valid — ' . htmlspecialchars((string) $pub['summary'], ENT_QUOTES, 'UTF-8')
+                . ($bits > 0 ? ' — ' . $bits . ' bits' : ''),
+                type: 'success'
+            );
+        }
+    }
+
+    $opensshSection = '';
+    if ($publicOpenssh !== '') {
+        $insp = crypto_ssh_keygen_inspect_openssh_line($publicOpenssh);
+        if (!$insp['ok']) {
+            $opensshSection = formatOutput('<strong>OpenSSH public key:</strong> ' . htmlspecialchars((string) $insp['error'], ENT_QUOTES, 'UTF-8'), type: 'warning');
+        } else {
+            $joined = htmlspecialchars(implode("\n", $insp['lines'] ?? []), ENT_QUOTES, 'UTF-8');
+            $opensshSection = formatOutput('<strong>OpenSSH public key (ssh-keygen -l):</strong><pre class="mb-0" style="white-space:pre-wrap;">' . $joined . '</pre>', type: 'success');
+        }
+    }
+
+    $output .= $publicPemSection . $opensshSection . $privateSection;
+
+    if ($derivedPublic !== null && $publicPem !== '') {
+        $match = crypto_pem_strings_equal($derivedPublic, $publicPem);
+        $output .= formatOutput(
+            '<strong>PEM public vs private:</strong> ' . ($match ? 'public key matches the private key.' : 'public key does <em>not</em> match the private key.'),
+            type: $match ? 'success' : 'danger'
+        );
+    }
+
+    if ($derivedPublic !== null && $publicOpenssh !== '') {
+        $conv = crypto_openssh_to_pem_with_ssh_keygen($publicOpenssh);
+        if (($conv['ok'] ?? false) !== true) {
+            $output .= formatOutput(
+                '<strong>OpenSSH public vs private:</strong> could not convert OpenSSH line to PEM to compare — '
+                . htmlspecialchars((string) ($conv['error'] ?? 'unknown error'), ENT_QUOTES, 'UTF-8'),
+                type: 'warning'
+            );
+        } else {
+            $pemFromSsh = (string) $conv['pem'];
+            $match = crypto_pem_strings_equal($derivedPublic, $pemFromSsh);
+            $output .= formatOutput(
+                '<strong>OpenSSH public vs private:</strong> ' . ($match ? 'OpenSSH public key matches the private key.' : 'OpenSSH public key does <em>not</em> match the private key.'),
+                type: $match ? 'success' : 'danger'
+            );
+        }
+    }
+
+    return $output;
+}
+
+function handle_keypair_sign_verify(array $req): string {
+    $mode = strtolower((string) req_get($req, 'keypair_sign_mode', 'sign'));
+    $message = (string) req_get($req, 'keypair_message', '');
+    $maxMsg = 262144;
+    if (strlen($message) > $maxMsg) {
+        return formatOutput('Message is too large (max ' . $maxMsg . ' bytes).', type: 'danger');
+    }
+
+    if ($mode === 'sign') {
+        $privPem = trim((string) req_get($req, 'keypair_private_pem', ''));
+        $pass = trim((string) req_get($req, 'keypair_private_passphrase', ''));
+        if ($privPem === '') {
+            return formatOutput('Private key PEM is required to sign.', type: 'danger');
+        }
+
+        $res = openssl_pkey_get_private($privPem, $pass !== '' ? $pass : '');
+        if ($res === false) {
+            return formatOutput('Could not load private key (check PEM and passphrase).', type: 'danger');
+        }
+
+        $digest = crypto_signature_digest_for_key($res);
+        $digestLabel = crypto_digest_label($digest);
+        $sig = '';
+        if (!@openssl_sign($message, $sig, $res, $digest)) {
+            return formatOutput('Signing failed for this key type (RSA/EC/Ed25519 required). RSA-PSS-only keys from some tools may not sign with OpenSSL here.', type: 'danger');
+        }
+
+        $b64 = base64_encode($sig);
+        $info = formatOutput(
+            'Signed with OpenSSL using <strong>' . htmlspecialchars($digestLabel, ENT_QUOTES, 'UTF-8') . '</strong> (chosen for this key type). Verify with the matching public key and the same message.',
+            type: 'info'
+        );
+
+        return $info . crypto_render_key_output([
+            [
+                'label' => 'Signature (base64)',
+                'content' => $b64,
+                'filename' => 'signature.b64.txt',
+            ],
+        ], 'Sign result');
+    }
+
+    if ($mode === 'verify') {
+        $pubPem = trim((string) req_get($req, 'keypair_public_pem', ''));
+        $sigB64 = trim((string) req_get($req, 'keypair_signature_b64', ''));
+        if ($pubPem === '') {
+            return formatOutput('Public key PEM is required to verify.', type: 'danger');
+        }
+        if ($sigB64 === '') {
+            return formatOutput('Signature (base64) is required.', type: 'danger');
+        }
+
+        $sig = base64_decode($sigB64, true);
+        if ($sig === false || $sig === '') {
+            return formatOutput('Signature is not valid base64.', type: 'danger');
+        }
+
+        $pub = openssl_pkey_get_public($pubPem);
+        if ($pub === false) {
+            return formatOutput('Could not load public key PEM.', type: 'danger');
+        }
+
+        $digest = crypto_signature_digest_for_key($pub);
+        $ok = openssl_verify($message, $sig, $pub, $digest);
+        if ($ok === 1) {
+            return formatOutput(
+                '<strong>Signature valid.</strong> Digest: ' . htmlspecialchars(crypto_digest_label($digest), ENT_QUOTES, 'UTF-8'),
+                type: 'success'
+            );
+        }
+        if ($ok === 0) {
+            return formatOutput('Signature does <strong>not</strong> verify (wrong key, message, or signature).', type: 'danger');
+        }
+
+        return formatOutput('OpenSSL could not verify (error).', type: 'danger');
+    }
+
+    return formatOutput('Invalid mode. Use sign or verify.', type: 'danger');
+}
+
+function handle_keypair_generate(array $req): string {
+    $mode = (string) req_get($req, 'generation_mode', 'server');
+    $mode = strtolower($mode) ?: 'server';
+
+    $algorithmRequest = req_get($req, 'algorithm', 'ed25519');
+    $algorithm = is_string($algorithmRequest) ? $algorithmRequest : 'ed25519';
+    $algorithms = crypto_resolve_requested_algorithms($algorithm);
+    if (empty($algorithms)) {
+        return formatOutput("No supported algorithm selected for key generation.", type: "danger");
+    }
+
+    $passphrase = trim((string) req_get($req, 'passphrase', ''));
+    if (strlen($passphrase) > 256) {
+        return formatOutput("Passphrase must be at most 256 characters.", type: "danger");
+    }
+
+    $rsaBits = req_int($req, 'rsa_bits', 4096);
+    $curve = (string) req_get($req, 'ecdsa_curve', 'prime256v1');
+
+    $modeLabel = $mode === 'client'
+        ? 'client-only (WebCrypto)'
+        : ($mode === 'auto' ? 'auto (resolved to server-side OpenSSL for this run)' : 'server-side (OpenSSL)');
+    $output = formatOutput(
+        "Keypair generation mode: " . htmlspecialchars($modeLabel, ENT_QUOTES, 'UTF-8'),
+        type: "info"
+    );
+    foreach ($algorithms as $algo) {
+        $result = crypto_generate_keypair($algo, $rsaBits, $curve, $passphrase);
+        if (!$result['ok']) {
+            $output .= formatOutput((string) $result['error'], type: "warning");
+            continue;
+        }
+
+        $suffix = $algo === 'rsa' ? "-{$rsaBits}" : ($algo === 'ecdsa' ? "-{$curve}" : '');
+        $items = [
+            [
+                'label' => strtoupper($algo) . ' Public Key (PEM)',
+                'content' => (string) $result['public_pem'],
+                'filename' => "public-{$algo}{$suffix}.pem",
+            ],
+            [
+                'label' => strtoupper($algo) . ' Private Key (PEM)',
+                'content' => (string) $result['private_pem'],
+                'filename' => "private-{$algo}{$suffix}.pem",
+            ],
+        ];
+        $output .= crypto_render_key_output($items, strtoupper($algo) . " Keypair");
+    }
+
+    return $output === '' ? formatOutput("Unable to generate any keypairs.", type: "danger") : $output;
+}
+
+function handle_pem_openssh_convert(array $req): string {
+    $mode = (string) req_get($req, 'convert_mode', 'pem_to_openssh');
+    $comment = trim((string) req_get($req, 'ssh_comment', 'generated-by-phprand'));
+    if (strlen($comment) > 200) {
+        return formatOutput("SSH comment must be at most 200 characters.", type: "danger");
+    }
+
+    if ($mode === 'pem_to_openssh') {
+        $pem = trim((string) req_get($req, 'public_pem', ''));
+        if ($pem === '') {
+            return formatOutput("Public PEM input is required.", type: "danger");
+        }
+        $converted = crypto_public_pem_to_openssh($pem, $comment);
+        if (($converted['ok'] ?? false) !== true) {
+            return formatOutput((string) ($converted['error'] ?? 'Conversion failed.'), type: "danger");
+        }
+        return crypto_render_key_output([
+            [
+                'label' => 'OpenSSH Public Key',
+                'content' => (string) $converted['line'],
+                'filename' => 'converted.pub',
+            ],
+        ], 'PEM -> OpenSSH');
+    }
+
+    if ($mode === 'openssh_to_pem') {
+        $openssh = trim((string) req_get($req, 'openssh_public', ''));
+        if ($openssh === '') {
+            return formatOutput("OpenSSH public key input is required.", type: "danger");
+        }
+        $converted = crypto_openssh_to_pem_with_ssh_keygen($openssh);
+        if (($converted['ok'] ?? false) !== true) {
+            return formatOutput((string) ($converted['error'] ?? 'Conversion failed.'), type: "danger");
+        }
+        return crypto_render_key_output([
+            [
+                'label' => 'PEM Public Key',
+                'content' => (string) $converted['pem'],
+                'filename' => 'converted-public.pem',
+            ],
+        ], 'OpenSSH -> PEM');
+    }
+
+    return formatOutput("Invalid converter mode selected.", type: "danger");
+}
+
+function handle_crypto_diagnostics(array $req): string {
+    $algorithms = crypto_available_key_algorithms();
+    $rows = [];
+    $okBadge = "<span class='badge bg-success text-white'>" . icon('check-circle') . " OK</span>";
+    $warnBadge = "<span class='badge bg-warning text-dark'>" . icon('exclamation-triangle') . " Warning</span>";
+    $errBadge = "<span class='badge bg-danger text-white'>" . icon('x-circle') . " Error</span>";
+
+    foreach (['rsa', 'ecdsa', 'ed25519'] as $algo) {
+        if (!in_array($algo, $algorithms, true)) {
+            $rows[] = "<tr><td>" . strtoupper($algo) . "</td><td>{$warnBadge}</td><td>{$warnBadge}</td></tr>";
+            continue;
+        }
+        $generated = crypto_generate_keypair($algo);
+        if (($generated['ok'] ?? false) !== true) {
+            $rows[] = "<tr><td>" . strtoupper($algo) . "</td><td>{$errBadge}</td><td>{$warnBadge}</td></tr>";
+            continue;
+        }
+        $openssh = crypto_public_pem_to_openssh((string) $generated['public_pem']);
+        $opensshStatus = (($openssh['ok'] ?? false) === true) ? $okBadge : $warnBadge;
+        $rows[] = "<tr><td>" . strtoupper($algo) . "</td><td>{$okBadge}</td><td>{$opensshStatus}</td></tr>";
+    }
+
+    $sshKeygenPath = function_exists('shell_exec')
+        ? trim((string) @shell_exec('command -v ssh-keygen 2>/dev/null'))
+        : '';
+    $sshKeygenStatus = $sshKeygenPath !== ''
+        ? "<span class='badge bg-success text-white me-2'>" . icon('check-circle') . " OK</span><code>" . htmlspecialchars($sshKeygenPath, ENT_QUOTES, 'UTF-8') . "</code>"
+        : "<span class='badge bg-warning text-dark'>" . icon('exclamation-triangle') . " Not found</span>";
+
+    $output = "<div class='card border-info mb-3'><h5 class='card-header'>Crypto Runtime Diagnostics (Server)</h5><div class='card-body'>";
+    $output .= "<div class='mb-3'><strong>Available key algorithms:</strong> " . htmlspecialchars(implode(', ', $algorithms), ENT_QUOTES, 'UTF-8') . "</div>";
+    $output .= "<div class='mb-3'><strong>ssh-keygen binary:</strong> {$sshKeygenStatus}</div>";
+    $output .= "<div class='table-responsive'><table class='table table-dark table-striped'><thead><tr><th>Algorithm</th><th>OpenSSL Keygen</th><th>OpenSSH Export</th></tr></thead><tbody>" . implode('', $rows) . "</tbody></table></div>";
+    $output .= "</div></div>";
+
+    // Placeholder container for client-side diagnostics; populated by JS on the crypto diagnostics page.
+    $output .= "<div id='clientCryptoDiagnosticsRoot' class='mt-3'></div>";
+
+    return $output;
+}
+
+function handle_ssh_keygen(array $req): string {
+    $mode = (string) req_get($req, 'generation_mode', 'server');
+    $mode = strtolower($mode) ?: 'server';
+    $comment = trim((string) req_get($req, 'ssh_comment', 'generated-by-phprand'));
+    if ($comment !== '' && strlen($comment) > 200) {
+        return formatOutput("SSH comment must be at most 200 characters.", type: "danger");
+    }
+
+    $algorithmRequest = req_get($req, 'algorithm', 'ed25519');
+    $algorithm = is_string($algorithmRequest) ? $algorithmRequest : 'ed25519';
+    $algorithms = crypto_resolve_requested_algorithms($algorithm);
+    if (empty($algorithms)) {
+        return formatOutput("No supported algorithm selected for key generation.", type: "danger");
+    }
+
+    $passphrase = trim((string) req_get($req, 'passphrase', ''));
+    if (strlen($passphrase) > 256) {
+        return formatOutput("Passphrase must be at most 256 characters.", type: "danger");
+    }
+
+    $rsaBits = req_int($req, 'rsa_bits', 4096);
+    $curve = (string) req_get($req, 'ecdsa_curve', 'prime256v1');
+
+    $modeLabel = $mode === 'client'
+        ? 'client-only (WebCrypto)'
+        : ($mode === 'auto' ? 'auto (server-preferred for SSH / OpenSSH output)' : 'server-side (OpenSSL)');
+
+    $output = '';
+    $output .= formatOutput(
+        "SSH generation mode: " . htmlspecialchars($modeLabel, ENT_QUOTES, 'UTF-8'),
+        type: "info"
+    );
+    $output .= formatOutput(
+        "Generated PEM key material and OpenSSH public keys when supported. Comment: " . htmlspecialchars($comment, ENT_QUOTES, 'UTF-8'),
+        type: "info"
+    );
+
+    foreach ($algorithms as $algo) {
+        $result = crypto_generate_keypair($algo, $rsaBits, $curve, $passphrase);
+        if (!$result['ok']) {
+            $output .= formatOutput((string) $result['error'], type: "warning");
+            continue;
+        }
+
+        $suffix = $algo === 'rsa' ? "-{$rsaBits}" : ($algo === 'ecdsa' ? "-{$curve}" : '');
+        $publicPem = (string) $result['public_pem'];
+        $items = [
+            [
+                'label' => strtoupper($algo) . ' Public Key (PEM)',
+                'content' => $publicPem,
+                'filename' => "public-{$algo}{$suffix}.pem",
+                'ssh_output_slot' => 'pem-public',
+            ],
+        ];
+
+        $sshLine = crypto_public_pem_to_openssh($publicPem, $comment);
+        if (($sshLine['ok'] ?? false) === true) {
+            $items[] = [
+                'label' => strtoupper($algo) . ' Public Key (OpenSSH)',
+                'content' => (string) $sshLine['line'],
+                'filename' => "public-{$algo}{$suffix}.pub",
+                'ssh_output_slot' => 'openssh-public',
+            ];
+        } else {
+            $output .= formatOutput(
+                strtoupper($algo) . ': ' . (string) ($sshLine['error'] ?? 'OpenSSH export unavailable.'),
+                type: "warning"
+            );
+        }
+
+        $items[] = [
+            'label' => strtoupper($algo) . ' Private Key (PEM)',
+            'content' => (string) $result['private_pem'],
+            'filename' => "private-{$algo}{$suffix}.pem",
+            'ssh_output_slot' => 'private-pem',
+        ];
+
+        $output .= crypto_render_ssh_key_output($items, strtoupper($algo) . ' SSH Key Material');
+    }
+
+    return $output;
+}
+
+function handle_csr_generate(array $req): string {
+    $algorithm = (string) req_get($req, 'algorithm', 'rsa');
+    if ($algorithm === 'all-available') {
+        $algorithm = 'rsa';
+    }
+    $resolved = crypto_resolve_requested_algorithms($algorithm);
+    if (empty($resolved)) {
+        return formatOutput("Selected algorithm is not supported for CSR generation.", type: "danger");
+    }
+    $algorithm = $resolved[0];
+
+    $passphrase = trim((string) req_get($req, 'passphrase', ''));
+    if (strlen($passphrase) > 256) {
+        return formatOutput("Passphrase must be at most 256 characters.", type: "danger");
+    }
+
+    $rsaBits = req_int($req, 'rsa_bits', 4096);
+    $curve = (string) req_get($req, 'ecdsa_curve', 'prime256v1');
+    $keyResult = crypto_generate_keypair($algorithm, $rsaBits, $curve, $passphrase);
+    if (!$keyResult['ok']) {
+        return formatOutput((string) $keyResult['error'], type: "danger");
+    }
+
+    $cn = trim((string) req_get($req, 'csr_cn', ''));
+    if ($cn === '') {
+        return formatOutput("Common Name (CN) is required for CSR generation.", type: "danger");
+    }
+
+    $dn = [
+        'commonName' => $cn,
+        'organizationName' => trim((string) req_get($req, 'csr_o', '')),
+        'organizationalUnitName' => trim((string) req_get($req, 'csr_ou', '')),
+        'countryName' => trim((string) req_get($req, 'csr_c', '')),
+        'stateOrProvinceName' => trim((string) req_get($req, 'csr_st', '')),
+        'localityName' => trim((string) req_get($req, 'csr_l', '')),
+        'emailAddress' => trim((string) req_get($req, 'csr_email', '')),
+    ];
+    $dn = array_filter($dn, fn($v) => $v !== '');
+
+    $privateHandle = openssl_pkey_get_private((string) $keyResult['private_pem'], $passphrase);
+    if ($privateHandle === false) {
+        return formatOutput("Unable to load generated private key for CSR creation.", type: "danger");
+    }
+
+    $csr = openssl_csr_new($dn, $privateHandle, ['digest_alg' => 'sha256']);
+    if ($csr === false) {
+        return formatOutput("Unable to generate CSR with provided subject fields.", type: "danger");
+    }
+
+    $csrPem = '';
+    if (!openssl_csr_export($csr, $csrPem) || $csrPem === '') {
+        return formatOutput("Unable to export CSR in PEM format.", type: "danger");
+    }
+
+    $suffix = $algorithm === 'rsa' ? "-{$rsaBits}" : ($algorithm === 'ecdsa' ? "-{$curve}" : '');
+    $items = [
+        [
+            'label' => "CSR (PEM)",
+            'content' => $csrPem,
+            'filename' => "request-{$algorithm}{$suffix}.csr.pem",
+        ],
+        [
+            'label' => strtoupper($algorithm) . " Public Key (PEM)",
+            'content' => (string) $keyResult['public_pem'],
+            'filename' => "public-{$algorithm}{$suffix}.pem",
+        ],
+        [
+            'label' => strtoupper($algorithm) . " Private Key (PEM)",
+            'content' => (string) $keyResult['private_pem'],
+            'filename' => "private-{$algorithm}{$suffix}.pem",
+        ],
+    ];
+
+    return crypto_render_key_output($items, "CSR + Key Material");
+}
+
+/**
+ * Handle JWT requests: decode, verify, and sign (HMAC algorithms)
+ *
+ * @param array $req Request array containing JWT inputs
+ * @return string Formatted HTML with JWT results
+ */
+function handle_jwt(array $req): string {
+    $mode = req_get($req, 'jwt_mode', 'decode');
+    $allowedModes = ['decode', 'verify', 'sign'];
+    if (!in_array($mode, $allowedModes, true)) {
+        return formatOutput("Invalid JWT mode selected.", type: "danger");
+    }
+
+    if ($mode === 'sign') {
+        $secret = (string) req_get($req, 'jwt_secret', '');
+        if ($secret === '') {
+            return formatOutput("Secret is required for signing.", type: "danger");
+        }
+
+        $alg = req_get($req, 'jwt_alg', 'HS256');
+        if (!in_array($alg, ['HS256', 'HS384', 'HS512'], true)) {
+            return formatOutput("Only HS256/HS384/HS512 are supported for signing.", type: "danger");
+        }
+
+        $payloadJson = trim((string) req_get($req, 'jwt_payload', ''));
+        if ($payloadJson === '') {
+            return formatOutput("Payload JSON is required for signing.", type: "danger");
+        }
+        $payload = json_decode($payloadJson, true);
+        if (!is_array($payload)) {
+            return formatOutput("Payload must be valid JSON object.", type: "danger");
+        }
+
+        $headerJson = trim((string) req_get($req, 'jwt_header', ''));
+        $header = ['typ' => 'JWT', 'alg' => $alg];
+        if ($headerJson !== '') {
+            $customHeader = json_decode($headerJson, true);
+            if (!is_array($customHeader)) {
+                return formatOutput("Header must be valid JSON object.", type: "danger");
+            }
+            $header = array_merge($header, $customHeader);
+            $header['alg'] = $alg;
+        }
+
+        $token = jwt_build_hmac($header, $payload, $secret, $alg);
+        return output_copyable($token, "Signed JWT", ['inputName' => 'jwt_token']);
+    }
+
+    $token = trim((string) req_get($req, 'jwt_token', ''));
+    if ($token === '') {
+        return formatOutput("JWT token is required.", type: "danger");
+    }
+
+    $parts = explode('.', $token);
+    if (count($parts) !== 3) {
+        return formatOutput("Invalid JWT format. Expected header.payload.signature", type: "danger");
+    }
+
+    [$headerB64, $payloadB64, $sigB64] = $parts;
+    $headerJson = jwt_b64url_decode($headerB64);
+    $payloadJson = jwt_b64url_decode($payloadB64);
+    if ($headerJson === false || $payloadJson === false) {
+        return formatOutput("Invalid base64url section in token.", type: "danger");
+    }
+
+    $header = json_decode($headerJson, true);
+    $payload = json_decode($payloadJson, true);
+    if (!is_array($header) || !is_array($payload)) {
+        return formatOutput("JWT header/payload must be valid JSON.", type: "danger");
+    }
+
+    $output = output_copyable(json_encode($header, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES), "Header");
+    $output .= output_copyable(json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES), "Payload", ['inputName' => 'jwt_payload']);
+    $output .= output_copyable($sigB64, "Signature (base64url)");
+
+    if ($mode === 'verify') {
+        $secret = (string) req_get($req, 'jwt_secret', '');
+        if ($secret === '') {
+            return $output . formatOutput("Secret is required to verify signature.", type: "warning");
+        }
+        $alg = (string) ($header['alg'] ?? '');
+        if (!in_array($alg, ['HS256', 'HS384', 'HS512'], true)) {
+            return $output . formatOutput("Verify currently supports HMAC JWTs only (HS256/HS384/HS512).", type: "warning");
+        }
+        $isValid = jwt_verify_hmac($token, $secret, $alg);
+        $output .= formatOutput(
+            $isValid ? "Signature is valid ({$alg})." : "Signature verification failed ({$alg}).",
+            type: $isValid ? "success" : "danger"
+        );
+
+        if (isset($payload['exp']) && is_numeric($payload['exp'])) {
+            $expired = time() >= (int) $payload['exp'];
+            $output .= formatOutput(
+                $expired ? "Token is expired (exp claim)." : "Token is not expired (exp claim).",
+                type: $expired ? "warning" : "info"
+            );
+        }
+    }
+
+    return $output;
+}
+
+function jwt_build_hmac(array $header, array $payload, string $secret, string $alg): string {
+    $headerEncoded = jwt_b64url_encode(json_encode($header, JSON_UNESCAPED_SLASHES));
+    $payloadEncoded = jwt_b64url_encode(json_encode($payload, JSON_UNESCAPED_SLASHES));
+    $signingInput = $headerEncoded . "." . $payloadEncoded;
+    $signature = jwt_sign_hmac($signingInput, $secret, $alg);
+    return $signingInput . "." . jwt_b64url_encode($signature);
+}
+
+function jwt_verify_hmac(string $token, string $secret, string $alg): bool {
+    $parts = explode('.', $token);
+    if (count($parts) !== 3) {
+        return false;
+    }
+    [$headerB64, $payloadB64, $signatureB64] = $parts;
+    $expected = jwt_sign_hmac($headerB64 . "." . $payloadB64, $secret, $alg);
+    $provided = jwt_b64url_decode($signatureB64);
+    if ($provided === false) {
+        return false;
+    }
+    return hash_equals($expected, $provided);
+}
+
+function jwt_sign_hmac(string $data, string $secret, string $alg): string {
+    $hashAlgo = match ($alg) {
+        'HS256' => 'sha256',
+        'HS384' => 'sha384',
+        'HS512' => 'sha512',
+        default => 'sha256',
+    };
+    return hash_hmac($hashAlgo, $data, $secret, true);
+}
+
+function jwt_b64url_encode(string $input): string {
+    return rtrim(strtr(base64_encode($input), '+/', '-_'), '=');
+}
+
+function jwt_b64url_decode(string $input): string|false {
+    $padding = strlen($input) % 4;
+    if ($padding > 0) {
+        $input .= str_repeat('=', 4 - $padding);
+    }
+    return base64_decode(strtr($input, '-_', '+/'), true);
+}
+
+function gen_uuid4(): string {
+    $data = random_bytes(16);
+    $data[6] = chr((ord($data[6]) & 0x0f) | 0x40);
+    $data[8] = chr((ord($data[8]) & 0x3f) | 0x80);
+    return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
+}
+
+function gen_ulid(): string {
+    $timeMs = (int) floor(microtime(true) * 1000);
+    $timeBytes = '';
+    for ($i = 5; $i >= 0; $i--) {
+        $timeBytes .= chr(($timeMs >> ($i * 8)) & 0xff);
+    }
+    $randomBytes = random_bytes(10);
+    return ulid_encode_crockford($timeBytes . $randomBytes);
+}
+
+function ulid_encode_crockford(string $bytes): string {
+    $alphabet = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+    $bits = '';
+    for ($i = 0; $i < strlen($bytes); $i++) {
+        $bits .= str_pad(decbin(ord($bytes[$i])), 8, '0', STR_PAD_LEFT);
+    }
+    $bits = str_pad($bits, 130, '0', STR_PAD_LEFT);
+    $encoded = '';
+    for ($i = 0; $i < 130; $i += 5) {
+        $chunk = substr($bits, $i, 5);
+        $encoded .= $alphabet[bindec($chunk)];
+    }
+    return substr($encoded, 0, 26);
+}
+
+function gen_nanoid(int $length = 21): string {
+    $alphabet = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-_';
+    $alphabetLength = strlen($alphabet);
+    $mask = (2 << (int) floor(log($alphabetLength - 1, 2))) - 1;
+    $step = (int) ceil(1.6 * $mask * $length / $alphabetLength);
+    $id = '';
+
+    while (strlen($id) < $length) {
+        $bytes = random_bytes($step);
+        for ($i = 0; $i < $step; $i++) {
+            $index = ord($bytes[$i]) & $mask;
+            if ($index < $alphabetLength) {
+                $id .= $alphabet[$index];
+                if (strlen($id) === $length) {
+                    break;
+                }
+            }
+        }
+    }
+    return $id;
+}
+
 // Additional handlers can be added here following the same pattern...
-// handle_ip, handle_urlencode, handle_htmlentities, handle_minify, etc.

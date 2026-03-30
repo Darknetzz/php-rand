@@ -2,11 +2,11 @@
 
 # VAR: $navbarItems
 $navbarItems = [
-    // "dashboard" => [
-    //     "name"       => "dashboard",
-    //     "formalName" => "Dashboard",
-    //     "icon"       => icon('speedometer2')
-    // ],
+    "dashboard" => [
+        "name"       => "dashboard",
+        "formalName" => "Dashboard",
+        "icon"       => icon('speedometer2')
+    ],
     "generators" => [
         "name"       => "generators",
         "formalName" => "Generators",
@@ -31,6 +31,11 @@ $navbarItems = [
                 "name"       => "qrcode",
                 "formalName" => "QR Code Generator",
                 "icon"       => icon('qr-code')
+            ],
+            "gen_id" => [
+                "name"       => "gen_id",
+                "formalName" => "ID Generator",
+                "icon"       => icon('hash')
             ],
             "spin_the_wheel" => [
                 "name"       => "spin_the_wheel",
@@ -58,6 +63,36 @@ $navbarItems = [
                 "name"       => "rot",
                 "formalName" => "ROT Cipher",
                 "icon"       => icon('arrow-repeat')
+            ],
+            "jwt" => [
+                "name"       => "jwt",
+                "formalName" => "JWT Inspector",
+                "icon"       => icon('shield-lock')
+            ],
+            "keypair" => [
+                "name"       => "keypair",
+                "formalName" => "Private/Public Keys",
+                "icon"       => icon('key-fill')
+            ],
+            "ssh_keygen" => [
+                "name"       => "ssh_keygen",
+                "formalName" => "SSH Key Generator",
+                "icon"       => icon('terminal-fill')
+            ],
+            "csr" => [
+                "name"       => "csr",
+                "formalName" => "CSR Generator",
+                "icon"       => icon('file-earmark-lock')
+            ],
+            "pem_openssh" => [
+                "name"       => "pem_openssh",
+                "formalName" => "PEM/OpenSSH Converter",
+                "icon"       => icon('arrow-left-right')
+            ],
+            "crypto_diagnostics" => [
+                "name"       => "crypto_diagnostics",
+                "formalName" => "Crypto Diagnostics",
+                "icon"       => icon('activity')
             ],
         ],
     ],
@@ -118,20 +153,37 @@ $navbarItems = [
                 "formalName" => "Metaphone",
                 "icon"       => icon("soundwave")
             ],
-            "units" => [
-                "name"       => "units",
-                "formalName" => "Units",
-                "icon"       => icon('rulers')
+            "brainfuck" => [
+                "name"       => "brainfuck",
+                "formalName" => "Brainfuck Converter",
+                "icon"       => icon('code-slash')
+            ],
+        ],
+    ],
+    "math" => [
+        "name"       => "math",
+        "formalName" => "Math",
+        "icon"       => icon('infinity'),
+        "subitems" => [
+            "calculator" => [
+                "name"       => "calculator",
+                "formalName" => "Calculator",
+                "icon"       => icon('calculator')
             ],
             "currency" => [
                 "name"       => "currency",
                 "formalName" => "Currency Converter",
                 "icon"       => icon('currency-exchange')
             ],
-            "brainfuck" => [
-                "name"       => "brainfuck",
-                "formalName" => "Brainfuck Converter",
-                "icon"       => icon('code-slash')
+            "units" => [
+                "name"       => "units",
+                "formalName" => "Units",
+                "icon"       => icon('rulers')
+            ],
+            "datetime" => [
+                "name"       => "datetime",
+                "formalName" => "Date & Time",
+                "icon"       => icon('calendar')
             ],
         ],
     ],
@@ -140,16 +192,6 @@ $navbarItems = [
         "formalName" => "Miscellaneous",
         "icon"       => icon('briefcase'),
         "subitems" => [
-            "calculator" => [
-                "name"       => "calculator",
-                "formalName" => "Calculator",
-                "icon"       => icon('calculator')
-            ],
-            "datetime" => [
-                "name"       => "datetime",
-                "formalName" => "Date & Time",
-                "icon"       => icon('calendar')
-            ],
             "networking" => [
                 "name"       => "networking",
                 "formalName" => "Network Tools",
@@ -169,6 +211,11 @@ $navbarItems = [
                 "name"       => "regex",
                 "formalName" => "Regex Tester",
                 "icon"       => icon("regex"),
+            ],
+            "browser" => [
+                "name"       => "browser",
+                "formalName" => "Browser",
+                "icon"       => icon("browser-chrome"),
             ],
         ],
     ],

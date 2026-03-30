@@ -1,5 +1,5 @@
-# Use official PHP (latest stable) with Apache (includes latest Apache 2.x)
-FROM php:8.3-apache
+# Official PHP 8.5 + Apache; GMP is built via docker-php-ext-install (same role as php8.5-gmp on Debian).
+FROM php:8.5-apache
 
 # php-rand version (set at build time via --build-arg PHP_RAND_VERSION=v1.2.5)
 ARG PHP_RAND_VERSION=dev
@@ -9,12 +9,14 @@ ENV PHP_RAND_VERSION=${PHP_RAND_VERSION}
 RUN printf '%s\n' '#!/bin/sh' 'echo "php-rand ${PHP_RAND_VERSION:-unknown}"' 'exec "$@"' > /usr/local/bin/docker-entrypoint.sh \
     && chmod +x /usr/local/bin/docker-entrypoint.sh
 
-# Install system dependencies and common PHP extensions (adjust as needed)
+# Install system dependencies and common PHP extensions (adjust as needed).
+# PHP 8.5: OPcache is built-in; do not use docker-php-ext-install opcache (it fails).
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-        libzip-dev libicu-dev libonig-dev libpng-dev libjpeg-dev libfreetype6-dev libxml2-dev git unzip \
+        libzip-dev libicu-dev libonig-dev libpng-dev libjpeg-dev libfreetype6-dev libxml2-dev libgmp-dev git unzip \
+        openssh-client \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j$(nproc) pdo pdo_mysql mysqli intl zip gd opcache \
+    && docker-php-ext-install pdo pdo_mysql mysqli intl zip gd gmp \
     && a2enmod rewrite headers expires \
     && rm -rf /var/lib/apt/lists/*
 

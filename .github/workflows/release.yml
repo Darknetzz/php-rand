@@ -1,0 +1,51 @@
+name: Create GitHub Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract changelog section for tag
+        id: notes
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF_NAME}"
+          # Literal "## [v1.2.10]" must not use regex "[v1.2.10]" (that is a character class in awk).
+          awk -v tag="$TAG" '
+            BEGIN { capture = 0; found = 0; prefix = "## [" tag "]" }
+            /^## \[/ {
+              if (capture == 1) {
+                exit
+              }
+            }
+            index($0, prefix) == 1 {
+              capture = 1
+              found = 1
+            }
+            capture == 1 {
+              print
+            }
+            END {
+              if (found == 0) {
+                exit 1
+              }
+            }
+          ' CHANGELOG.md > release-section.md
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.ref_name }}
+          body_path: release-section.md
