@@ -9,7 +9,8 @@ ENV PHP_RAND_VERSION=${PHP_RAND_VERSION}
 RUN printf '%s\n' '#!/bin/sh' 'echo "php-rand ${PHP_RAND_VERSION:-unknown}"' 'exec "$@"' > /usr/local/bin/docker-entrypoint.sh \
     && chmod +x /usr/local/bin/docker-entrypoint.sh
 
-# Install system dependencies and common PHP extensions (adjust as needed)
+# Install system dependencies and common PHP extensions (adjust as needed).
+# PHP 8.5: OPcache is built-in; do not use docker-php-ext-install opcache (it fails).
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         libzip-dev libicu-dev libonig-dev libpng-dev libjpeg-dev libfreetype6-dev libxml2-dev libgmp-dev git unzip \
