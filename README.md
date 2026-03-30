@@ -202,11 +202,15 @@ What it does:
 - optionally pushes branch + tag after an explicit confirmation prompt
 - **GitHub Release + Docker Hub / GHCR images:** pushing the tag runs `.github/workflows/release.yml` and `docker-release.yml`. You normally do **not** need `gh` or `docker-pushimage.sh` unless Actions are off or you want an immediate local registry push.
 - after a successful push, prompts (from `/dev/tty`, not stdin) to run `gh release create` and `./docker-pushimage.sh` — default is **Y** (Enter accepts) so a normal push is not cut short after `git`
-- if you already pushed the tag but skipped those steps: `./scripts/release.sh 1.2.10 --publish-only`
+- then prompts to **merge `dev` into `main` and push** (default **Y**) so the default branch matches the release line; override branch names with `RELEASE_BRANCH` / `MAIN_BRANCH` if needed
+- if you already pushed the tag but skipped those steps: `./scripts/release.sh 1.2.10 --publish-only` (includes the same `gh`, Docker, and merge prompts when run from `dev`)
+
+**Why GitHub might still show an older “Latest” release:** the badge uses **GitHub Releases**, not tags only. You need either a successful `release.yml` run on tag push or `gh release create`. If that step failed earlier, create the release with `--publish-only` or from the Releases UI.
 
 Environment toggles:
 - `CREATE_GH_RELEASE=1` — after push, run `gh release create` with changelog notes (skipped if the release already exists, e.g. CI created it first)
 - `PUBLISH_DOCKER=1` — after push, run `./docker-pushimage.sh` (uses updated `docker-image.config`; still uses your Docker Hub / `.env` credentials)
+- `MERGE_RELEASE_TO_MAIN=1` — after the above, merge `dev` into `main` and push (non-interactive; combine with other toggles as needed)
 
 Common options:
 - `./scripts/release.sh --help` to show usage
