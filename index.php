@@ -80,7 +80,7 @@ include_once("modules/dashboard.php");
 
                     <h4 class="h6">Processed on server (submitted to <code>gen.php</code>)</h4>
                     <p class="text-muted small mb-3">
-                        Most tools (generators, crypto, encoding, convert, and misc tools) send input to the server and return results immediately.
+                        Most tools (generators, crypto, encoding, text &amp; data, math, and misc tools) send input to the server and return results immediately.
                     </p>
 
                     <h4 class="h6">Client-side only</h4>

@@ -125,7 +125,7 @@ $navbarItems = [
     ],
     "convert" => [
         "name"      => "convert",
-        "formalName" => "Convert",
+        "formalName" => "Text & Data",
         "icon"      => icon('arrow-left-right'),
         "subitems" => [
             "string_tools" => [
