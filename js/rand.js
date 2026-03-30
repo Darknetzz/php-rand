@@ -726,13 +726,29 @@ async function maybeHandleBrowserInspector(form, responseObj) {
     return true;
 }
 
+function newClientCopyableElementId() {
+    if (window.crypto && typeof window.crypto.randomUUID === "function") {
+        return "copy_" + window.crypto.randomUUID().replace(/-/g, "");
+    }
+    return "copy_cli_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 12);
+}
+
 function buildClientKeyOutput(items, title) {
     let html = "<div class='card border-info mb-3'><h5 class='card-header'>" + htmlEscape(title) + "</h5><div class='card-body'>";
     items.forEach(function(item) {
+        const copyId = newClientCopyableElementId();
         const encoded = "data:text/plain;charset=utf-8," + encodeURIComponent(item.content);
-        html += "<div style='margin-bottom:14px;'><strong>" + htmlEscape(item.label) + "</strong></div>";
-        html += "<textarea class='form-control' style='min-height:120px; font-family:monospace; margin-bottom:8px;' readonly>" + htmlEscape(item.content) + "</textarea>";
-        html += "<a class='btn btn-outline-light btn-sm mb-3' download='" + htmlEscape(item.filename) + "' href='" + encoded + "'><i class='bi bi-download'></i> Download " + htmlEscape(item.label) + "</a>";
+        html += "<div style='margin-bottom:15px;'>";
+        html += "<strong class='copyable-label'>" + htmlEscape(item.label) + "</strong>";
+        html += "<div class='copyable-stack'>";
+        html += "<div class='copyable-content' id='" + htmlEscape(copyId) + "'>" + htmlEscape(item.content) + "</div>";
+        html += "<div class='copyable-actions'>";
+        html += "<button type='button' class='btn btn-sm btn-outline-light' onclick=\"copyToClipboard('" + htmlEscape(copyId) + "', this)\" style='white-space: nowrap; border: 1px solid #e9ecef;\">";
+        html += "<i class='bi bi-files'></i> Copy";
+        html += "</button>";
+        html += "<a class='btn btn-outline-light btn-sm' download='" + htmlEscape(item.filename) + "' href='" + encoded + "'>";
+        html += "<i class='bi bi-download'></i> Download " + htmlEscape(item.label);
+        html += "</a></div></div></div>";
     });
     html += "</div></div>";
     return html;
