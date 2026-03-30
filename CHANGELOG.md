@@ -52,14 +52,10 @@ _Add entries here during development; rotate into a dated release section when t
 ## [v1.2.9] (2026-03-26)
 
 ### Major Features
-- **Performance: faster initial page load** - Reduced initial payload by lazy-loading tool modules, deferring non-critical scripts, and loading changelog content on demand.
-- **On-demand frontend libraries** - `marked`, `highlight.js`, and `code-input` are now loaded only when needed by active modules/features.
-- **Production deployment guidance** - Added server-side compression and cache-header recommendations for Nginx/Apache.
-- **New cryptography modules** - Added `Private/Public Keys`, `SSH Key Generator`, and `CSR Generator` under Cryptography.
-- **OpenSSH public key export** - SSH generator now emits true OpenSSH public key lines (RSA/ECDSA, Ed25519 when runtime details are available) in addition to PEM.
-- **Hybrid key generation mode** - Added client-side WebCrypto generation mode with server fallback for compatibility-sensitive flows.
-- **New key utilities** - Added `PEM/OpenSSH Converter` and `Crypto Diagnostics` modules for format conversion and runtime capability checks.
-- **Logo generator rewrite** - Replaced the old `php-logogen` dependency with a new built-in Logo Generator module in this repository.
+- **Faster initial load** – Lazy-loaded tool modules, deferred non-critical scripts, AJAX changelog; `marked`, `highlight.js`, and `code-input` load only when a visible module needs them.
+- **Cryptography suite** – Keypair, SSH, CSR, PEM/OpenSSH converter, and diagnostics modules; OpenSSH public key export; hybrid WebCrypto with server fallback.
+- **Deployment** – README guidance for gzip/brotli and cache headers (Nginx/Apache).
+- **Logo generator** – Built-in module replaces the `php-logogen` submodule.
 
 <details>
 <summary>📋 Detailed Changes (click to expand)</summary>
