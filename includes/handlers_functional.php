@@ -47,6 +47,8 @@ function getHandlerRegistry(): array {
         'csr_generate' => 'handle_csr_generate',
         'pem_openssh_convert' => 'handle_pem_openssh_convert',
         'crypto_diagnostics' => 'handle_crypto_diagnostics',
+        'ssh_key_verify' => 'handle_ssh_key_verify',
+        'keypair_sign_verify' => 'handle_keypair_sign_verify',
     ];
 }
 
@@ -1762,6 +1764,343 @@ function crypto_openssh_to_pem_with_ssh_keygen(string $opensshLine): array {
     }
 
     return ['ok' => true, 'pem' => trim($output) . PHP_EOL];
+}
+
+/** @param resource $key */
+function crypto_signature_digest_for_key($key): int {
+    $d = openssl_pkey_get_details($key);
+    if (!is_array($d)) {
+        return OPENSSL_ALGO_SHA256;
+    }
+    $type = $d['type'] ?? null;
+    if ($type === OPENSSL_KEYTYPE_RSA) {
+        return OPENSSL_ALGO_SHA256;
+    }
+    if ($type === OPENSSL_KEYTYPE_EC) {
+        $curve = (string) ($d['ec']['curve_name'] ?? '');
+        return match ($curve) {
+            'secp384r1' => OPENSSL_ALGO_SHA384,
+            'secp521r1' => OPENSSL_ALGO_SHA512,
+            default => OPENSSL_ALGO_SHA256,
+        };
+    }
+    if (defined('OPENSSL_KEYTYPE_ED25519') && $type === OPENSSL_KEYTYPE_ED25519) {
+        return OPENSSL_ALGO_SHA512;
+    }
+    if (isset($d['ed25519'])) {
+        return OPENSSL_ALGO_SHA512;
+    }
+
+    return OPENSSL_ALGO_SHA256;
+}
+
+function crypto_digest_label(int $algo): string {
+    return match ($algo) {
+        OPENSSL_ALGO_SHA384 => 'SHA-384',
+        OPENSSL_ALGO_SHA512 => 'SHA-512',
+        OPENSSL_ALGO_SHA256 => 'SHA-256',
+        default => 'SHA-256',
+    };
+}
+
+function crypto_pem_public_from_private_pem(string $privatePem, string $passphrase = ''): ?string {
+    $res = openssl_pkey_get_private($privatePem, $passphrase !== '' ? $passphrase : '');
+    if ($res === false) {
+        return null;
+    }
+    $d = openssl_pkey_get_details($res);
+    if (!is_array($d) || empty($d['key'])) {
+        return null;
+    }
+
+    return (string) $d['key'];
+}
+
+function crypto_pem_strings_equal(string $a, string $b): bool {
+    $norm = static function (string $s): string {
+        return trim(preg_replace('/\s+/', "\n", $s));
+    };
+
+    return $norm($a) === $norm($b);
+}
+
+/**
+ * @return array{ok: bool, summary?: string, bits?: int, error?: string}
+ */
+function crypto_verify_pem_public(string $pem): array {
+    $res = openssl_pkey_get_public($pem);
+    if ($res === false) {
+        return ['ok' => false, 'error' => 'Not a valid PEM public key (or unsupported format).'];
+    }
+    $d = openssl_pkey_get_details($res);
+    if (!is_array($d)) {
+        return ['ok' => false, 'error' => 'Unable to read public key details.'];
+    }
+    $type = $d['type'] ?? null;
+    if ($type === OPENSSL_KEYTYPE_RSA) {
+        $bits = (int) ($d['bits'] ?? 0);
+
+        return ['ok' => true, 'summary' => 'RSA', 'bits' => $bits];
+    }
+    if ($type === OPENSSL_KEYTYPE_EC) {
+        $curve = (string) ($d['ec']['curve_name'] ?? 'unknown');
+
+        return ['ok' => true, 'summary' => 'ECDSA (' . $curve . ')', 'bits' => (int) ($d['bits'] ?? 0)];
+    }
+    if (defined('OPENSSL_KEYTYPE_ED25519') && $type === OPENSSL_KEYTYPE_ED25519) {
+        return ['ok' => true, 'summary' => 'Ed25519', 'bits' => 256];
+    }
+    if (isset($d['ed25519'])) {
+        return ['ok' => true, 'summary' => 'Ed25519', 'bits' => 256];
+    }
+
+    return ['ok' => true, 'summary' => 'Asymmetric key (type ' . (string) $type . ')', 'bits' => (int) ($d['bits'] ?? 0)];
+}
+
+/**
+ * @return array{ok: bool, summary?: string, bits?: int, encrypted?: bool, error?: string}
+ */
+function crypto_verify_pem_private(string $pem, string $passphrase = ''): array {
+    $res = openssl_pkey_get_private($pem, $passphrase !== '' ? $passphrase : '');
+    if ($res === false) {
+        return ['ok' => false, 'error' => 'Not a valid PEM private key, wrong passphrase, or unsupported format.'];
+    }
+    $d = openssl_pkey_get_details($res);
+    if (!is_array($d)) {
+        return ['ok' => false, 'error' => 'Unable to read private key details.'];
+    }
+    $encrypted = strpos($pem, 'ENCRYPTED') !== false || strpos($pem, 'Proc-Type: 4,ENCRYPTED') !== false;
+    $type = $d['type'] ?? null;
+    if ($type === OPENSSL_KEYTYPE_RSA) {
+        $bits = (int) ($d['bits'] ?? 0);
+
+        return ['ok' => true, 'summary' => 'RSA', 'bits' => $bits, 'encrypted' => $encrypted];
+    }
+    if ($type === OPENSSL_KEYTYPE_EC) {
+        $curve = (string) ($d['ec']['curve_name'] ?? 'unknown');
+
+        return ['ok' => true, 'summary' => 'ECDSA (' . $curve . ')', 'bits' => (int) ($d['bits'] ?? 0), 'encrypted' => $encrypted];
+    }
+    if (defined('OPENSSL_KEYTYPE_ED25519') && $type === OPENSSL_KEYTYPE_ED25519) {
+        return ['ok' => true, 'summary' => 'Ed25519', 'bits' => 256, 'encrypted' => $encrypted];
+    }
+    if (isset($d['ed25519'])) {
+        return ['ok' => true, 'summary' => 'Ed25519', 'bits' => 256, 'encrypted' => $encrypted];
+    }
+
+    return ['ok' => true, 'summary' => 'Private key (type ' . (string) $type . ')', 'bits' => (int) ($d['bits'] ?? 0), 'encrypted' => $encrypted];
+}
+
+/**
+ * @return array{ok: bool, lines?: list<string>, error?: string}
+ */
+function crypto_ssh_keygen_inspect_openssh_line(string $opensshLine): array {
+    if (!function_exists('shell_exec')) {
+        return ['ok' => false, 'error' => 'shell_exec() is disabled; cannot run ssh-keygen.'];
+    }
+    $sshKeygenPath = trim((string) @shell_exec('command -v ssh-keygen 2>/dev/null'));
+    if ($sshKeygenPath === '') {
+        return ['ok' => false, 'error' => 'ssh-keygen is not available on this host.'];
+    }
+    $line = trim($opensshLine);
+    if ($line === '' || strpos($line, "\n") !== false) {
+        return ['ok' => false, 'error' => 'Provide a single-line OpenSSH public key (e.g. ssh-ed25519 AAAA...).'];
+    }
+
+    $tempBase = tempnam(sys_get_temp_dir(), 'sshchk_');
+    if ($tempBase === false) {
+        return ['ok' => false, 'error' => 'Unable to create temporary file.'];
+    }
+    $pubPath = $tempBase . '.pub';
+    @rename($tempBase, $pubPath);
+    if (@file_put_contents($pubPath, $line . PHP_EOL) === false) {
+        @unlink($pubPath);
+
+        return ['ok' => false, 'error' => 'Unable to write temporary key file.'];
+    }
+
+    $cmd = escapeshellarg($sshKeygenPath) . ' -l -E sha256 -f ' . escapeshellarg($pubPath) . ' 2>&1';
+    $out = (string) @shell_exec($cmd);
+    @unlink($pubPath);
+    $out = trim($out);
+    if ($out === '' || strpos(strtolower($out), 'error') !== false || strpos($out, 'not a public key') !== false) {
+        return ['ok' => false, 'error' => $out !== '' ? $out : 'ssh-keygen could not read this public key.'];
+    }
+
+    $lines = array_values(array_filter(array_map('trim', preg_split('/\r\n|\n|\r/', $out))));
+
+    return ['ok' => true, 'lines' => $lines];
+}
+
+function handle_ssh_key_verify(array $req): string {
+    $maxLen = 524288;
+    $publicPem = trim((string) req_get($req, 'verify_public_pem', ''));
+    $publicOpenssh = trim((string) req_get($req, 'verify_openssh_public', ''));
+    $privatePem = trim((string) req_get($req, 'verify_private_pem', ''));
+    $pass = trim((string) req_get($req, 'verify_private_passphrase', ''));
+
+    if (strlen($publicPem) > $maxLen || strlen($publicOpenssh) > $maxLen || strlen($privatePem) > $maxLen) {
+        return formatOutput('Key material is too large.', type: 'danger');
+    }
+
+    if ($publicPem === '' && $publicOpenssh === '' && $privatePem === '') {
+        return formatOutput('Paste at least one of: PEM public key, OpenSSH public key line, or PEM private key.', type: 'danger');
+    }
+
+    $output = formatOutput(
+        'Validation uses OpenSSL on the server and <code>ssh-keygen</code> for OpenSSH fingerprints when available. Private keys are not stored.',
+        type: 'info'
+    );
+
+    $derivedPublic = null;
+    if ($privatePem !== '') {
+        $pv = crypto_verify_pem_private($privatePem, $pass);
+        if (!$pv['ok']) {
+            $output .= formatOutput('<strong>PEM private key:</strong> ' . htmlspecialchars((string) $pv['error'], ENT_QUOTES, 'UTF-8'), type: 'danger');
+        } else {
+            $enc = !empty($pv['encrypted']) ? 'yes' : 'no';
+            $bits = (int) ($pv['bits'] ?? 0);
+            $output .= formatOutput(
+                '<strong>PEM private key:</strong> valid — ' . htmlspecialchars((string) $pv['summary'], ENT_QUOTES, 'UTF-8')
+                . ($bits > 0 ? ' — ' . $bits . ' bits' : '')
+                . ' — passphrase protected: ' . $enc,
+                type: 'success'
+            );
+            $derivedPublic = crypto_pem_public_from_private_pem($privatePem, $pass);
+        }
+    }
+
+    if ($publicPem !== '') {
+        $pub = crypto_verify_pem_public($publicPem);
+        if (!$pub['ok']) {
+            $output .= formatOutput('<strong>PEM public key:</strong> ' . htmlspecialchars((string) $pub['error'], ENT_QUOTES, 'UTF-8'), type: 'danger');
+        } else {
+            $bits = (int) ($pub['bits'] ?? 0);
+            $output .= formatOutput(
+                '<strong>PEM public key:</strong> valid — ' . htmlspecialchars((string) $pub['summary'], ENT_QUOTES, 'UTF-8')
+                . ($bits > 0 ? ' — ' . $bits . ' bits' : ''),
+                type: 'success'
+            );
+        }
+    }
+
+    if ($publicOpenssh !== '') {
+        $insp = crypto_ssh_keygen_inspect_openssh_line($publicOpenssh);
+        if (!$insp['ok']) {
+            $output .= formatOutput('<strong>OpenSSH public key:</strong> ' . htmlspecialchars((string) $insp['error'], ENT_QUOTES, 'UTF-8'), type: 'warning');
+        } else {
+            $joined = htmlspecialchars(implode("\n", $insp['lines'] ?? []), ENT_QUOTES, 'UTF-8');
+            $output .= formatOutput('<strong>OpenSSH public key (ssh-keygen -l):</strong><pre class="mb-0" style="white-space:pre-wrap;">' . $joined . '</pre>', type: 'success');
+        }
+    }
+
+    if ($derivedPublic !== null && $publicPem !== '') {
+        $match = crypto_pem_strings_equal($derivedPublic, $publicPem);
+        $output .= formatOutput(
+            '<strong>PEM public vs private:</strong> ' . ($match ? 'public key matches the private key.' : 'public key does <em>not</em> match the private key.'),
+            type: $match ? 'success' : 'danger'
+        );
+    }
+
+    if ($derivedPublic !== null && $publicOpenssh !== '') {
+        $conv = crypto_openssh_to_pem_with_ssh_keygen($publicOpenssh);
+        if (($conv['ok'] ?? false) !== true) {
+            $output .= formatOutput(
+                '<strong>OpenSSH public vs private:</strong> could not convert OpenSSH line to PEM to compare — '
+                . htmlspecialchars((string) ($conv['error'] ?? 'unknown error'), ENT_QUOTES, 'UTF-8'),
+                type: 'warning'
+            );
+        } else {
+            $pemFromSsh = (string) $conv['pem'];
+            $match = crypto_pem_strings_equal($derivedPublic, $pemFromSsh);
+            $output .= formatOutput(
+                '<strong>OpenSSH public vs private:</strong> ' . ($match ? 'OpenSSH public key matches the private key.' : 'OpenSSH public key does <em>not</em> match the private key.'),
+                type: $match ? 'success' : 'danger'
+            );
+        }
+    }
+
+    return $output;
+}
+
+function handle_keypair_sign_verify(array $req): string {
+    $mode = strtolower((string) req_get($req, 'keypair_sign_mode', 'sign'));
+    $message = (string) req_get($req, 'keypair_message', '');
+    $maxMsg = 262144;
+    if (strlen($message) > $maxMsg) {
+        return formatOutput('Message is too large (max ' . $maxMsg . ' bytes).', type: 'danger');
+    }
+
+    if ($mode === 'sign') {
+        $privPem = trim((string) req_get($req, 'keypair_private_pem', ''));
+        $pass = trim((string) req_get($req, 'keypair_private_passphrase', ''));
+        if ($privPem === '') {
+            return formatOutput('Private key PEM is required to sign.', type: 'danger');
+        }
+
+        $res = openssl_pkey_get_private($privPem, $pass !== '' ? $pass : '');
+        if ($res === false) {
+            return formatOutput('Could not load private key (check PEM and passphrase).', type: 'danger');
+        }
+
+        $digest = crypto_signature_digest_for_key($res);
+        $digestLabel = crypto_digest_label($digest);
+        $sig = '';
+        if (!@openssl_sign($message, $sig, $res, $digest)) {
+            return formatOutput('Signing failed for this key type (RSA/EC/Ed25519 required). RSA-PSS-only keys from some tools may not sign with OpenSSL here.', type: 'danger');
+        }
+
+        $b64 = base64_encode($sig);
+        $info = formatOutput(
+            'Signed with OpenSSL using <strong>' . htmlspecialchars($digestLabel, ENT_QUOTES, 'UTF-8') . '</strong> (chosen for this key type). Verify with the matching public key and the same message.',
+            type: 'info'
+        );
+
+        return $info . crypto_render_key_output([
+            [
+                'label' => 'Signature (base64)',
+                'content' => $b64,
+                'filename' => 'signature.b64.txt',
+            ],
+        ], 'Sign result');
+    }
+
+    if ($mode === 'verify') {
+        $pubPem = trim((string) req_get($req, 'keypair_public_pem', ''));
+        $sigB64 = trim((string) req_get($req, 'keypair_signature_b64', ''));
+        if ($pubPem === '') {
+            return formatOutput('Public key PEM is required to verify.', type: 'danger');
+        }
+        if ($sigB64 === '') {
+            return formatOutput('Signature (base64) is required.', type: 'danger');
+        }
+
+        $sig = base64_decode($sigB64, true);
+        if ($sig === false || $sig === '') {
+            return formatOutput('Signature is not valid base64.', type: 'danger');
+        }
+
+        $pub = openssl_pkey_get_public($pubPem);
+        if ($pub === false) {
+            return formatOutput('Could not load public key PEM.', type: 'danger');
+        }
+
+        $digest = crypto_signature_digest_for_key($pub);
+        $ok = openssl_verify($message, $sig, $pub, $digest);
+        if ($ok === 1) {
+            return formatOutput(
+                '<strong>Signature valid.</strong> Digest: ' . htmlspecialchars(crypto_digest_label($digest), ENT_QUOTES, 'UTF-8'),
+                type: 'success'
+            );
+        }
+        if ($ok === 0) {
+            return formatOutput('Signature does <strong>not</strong> verify (wrong key, message, or signature).', type: 'danger');
+        }
+
+        return formatOutput('OpenSSL could not verify (error).', type: 'danger');
+    }
+
+    return formatOutput('Invalid mode. Use sign or verify.', type: 'danger');
 }
 
 function handle_keypair_generate(array $req): string {

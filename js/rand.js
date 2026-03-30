@@ -944,6 +944,26 @@ function initCsrFormUi($scope) {
 }
 
 /* ===================================================================== */
+/*                      FUNCTION: initKeypairSignFormUi                   */
+/* ===================================================================== */
+function initKeypairSignFormUi($scope) {
+    if (!$scope.find("#keypairSignForm").length) {
+        return;
+    }
+    const modeEl = document.getElementById("keypairSignMode");
+    if (!modeEl) {
+        return;
+    }
+    function syncKeypairSignVisibility() {
+        const mode = (modeEl.value || "sign").toLowerCase();
+        $scope.find(".keypair-sign-only").toggleClass("d-none", mode !== "sign");
+        $scope.find(".keypair-verify-only").toggleClass("d-none", mode !== "verify");
+    }
+    $(modeEl).off("change.keypairSign").on("change.keypairSign", syncKeypairSignVisibility);
+    syncKeypairSignVisibility();
+}
+
+/* ===================================================================== */
 /*                           FUNCTION: navigate                          */
 /* ===================================================================== */
 function navigate(to) {
@@ -973,6 +993,7 @@ function navigate(to) {
         $(normalizedTo).fadeIn();
         addRandomDataButtons($(normalizedTo));
         initCsrFormUi($(normalizedTo));
+        initKeypairSignFormUi($(normalizedTo));
         refreshClientCryptoGeneratorUi($(normalizedTo));
     };
 

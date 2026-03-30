@@ -90,6 +90,38 @@
                     <div style="opacity: 0.55;">Generated PEM keys, OpenSSH public key lines, and download buttons will appear here.</div>
                 </div>
             </form>
+
+            <hr class="my-5 border-secondary">
+
+            <h2 class="h4 mb-3">🔎 Verify keys</h2>
+            <p class="text-muted mb-4">
+                Check that PEM keys parse in OpenSSL, optionally confirm a public key matches a private key, and run <code>ssh-keygen -l</code> on an OpenSSH public line when <code>ssh-keygen</code> is available. Paste any combination of fields.
+            </p>
+            <form class="form" action="gen.php" method="POST" id="sshVerifyForm" data-action="ssh_key_verify">
+                <div class="mb-3">
+                    <label for="verifyPublicPem" class="form-label"><strong>Public key (PEM)</strong></label>
+                    <textarea class="form-control font-monospace" id="verifyPublicPem" name="verify_public_pem" rows="5" placeholder="-----BEGIN PUBLIC KEY-----"></textarea>
+                </div>
+                <div class="mb-3">
+                    <label for="verifyOpensshPublic" class="form-label"><strong>Public key (OpenSSH, one line)</strong></label>
+                    <textarea class="form-control font-monospace" id="verifyOpensshPublic" name="verify_openssh_public" rows="2" placeholder="ssh-ed25519 AAAA... comment"></textarea>
+                </div>
+                <div class="mb-3">
+                    <label for="verifyPrivatePem" class="form-label"><strong>Private key (PEM)</strong></label>
+                    <textarea class="form-control font-monospace" id="verifyPrivatePem" name="verify_private_pem" rows="6" placeholder="-----BEGIN PRIVATE KEY-----"></textarea>
+                </div>
+                <div class="mb-4">
+                    <label for="verifyPrivatePassphrase" class="form-label"><strong>Private key passphrase</strong></label>
+                    <input type="text" class="form-control form-control-lg" id="verifyPrivatePassphrase" name="verify_private_passphrase" placeholder="If the private key is encrypted" autocomplete="off">
+                </div>
+                <div class="d-flex gap-3 flex-wrap mb-4">
+                    <?= submitBtn("ssh_key_verify", "action", "Verify keys", "check2-circle", "lg") ?>
+                </div>
+                <label class="form-label mb-2"><strong>Verification output</strong></label>
+                <div class="responseDiv" id="sshVerifyFormresponse" style="border: 2px solid #495057; padding: 20px; min-height: 120px; border-radius: 0.5rem;">
+                    <div style="opacity: 0.55;">Results appear here.</div>
+                </div>
+            </form>
         </div>
     </div>
 </div>
