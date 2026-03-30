@@ -12,6 +12,12 @@
         $fontOptions = "<option value=''>No TTF fonts found (fallback mode)</option>";
     }
     ?>
+    <style>
+        #gen_image .logo-gen-table tr.logo-gen-section-header > td {
+            background-color: rgba(13, 110, 253, 0.12);
+            background-color: rgba(var(--tblr-primary-rgb), 0.14);
+        }
+    </style>
     <div class="card card-primary">
         <h1 class="card-header"><?= icon("image", 1, 2) ?> Logo Generator</h1>
         <div class="card-body">
@@ -37,10 +43,10 @@
 
                 <label class="form-label mb-2"><strong>2 · Options</strong></label>
                 <div class="table-responsive border rounded mb-4">
-                    <table class="table table-hover align-middle mb-0">
+                    <table class="table logo-gen-table table-hover align-middle mb-0">
                         <tbody>
-                            <tr class="table-light">
-                                <td colspan="4" class="py-2 small text-uppercase text-muted fw-semibold">Content &amp; size</td>
+                            <tr class="logo-gen-section-header">
+                                <td colspan="4" class="py-2 small text-uppercase fw-semibold text-body-secondary">Content &amp; size</td>
                             </tr>
                             <tr>
                                 <th scope="row" class="text-nowrap" style="width: 11rem;">
@@ -69,8 +75,8 @@
                                     Use similar values for squares, different for banners.
                                 </td>
                             </tr>
-                            <tr class="table-light">
-                                <td colspan="4" class="py-2 small text-uppercase text-muted fw-semibold">Look</td>
+                            <tr class="logo-gen-section-header">
+                                <td colspan="4" class="py-2 small text-uppercase fw-semibold text-body-secondary">Look</td>
                             </tr>
                             <tr>
                                 <th scope="row" class="text-nowrap">Background style</th>
@@ -103,8 +109,8 @@
                                     <span id="logoBorderHint" class="small text-muted">0–24 px (color below)</span>
                                 </td>
                             </tr>
-                            <tr class="table-light">
-                                <td colspan="4" class="py-2 small text-uppercase text-muted fw-semibold">Colors</td>
+                            <tr class="logo-gen-section-header">
+                                <td colspan="4" class="py-2 small text-uppercase fw-semibold text-body-secondary">Colors</td>
                             </tr>
                             <tr>
                                 <th scope="row" class="text-nowrap align-top pt-3">
@@ -132,8 +138,8 @@
                                     </div>
                                 </td>
                             </tr>
-                            <tr class="table-light">
-                                <td colspan="4" class="py-2 small text-uppercase text-muted fw-semibold">Font &amp; text behavior</td>
+                            <tr class="logo-gen-section-header">
+                                <td colspan="4" class="py-2 small text-uppercase fw-semibold text-body-secondary">Font &amp; text behavior</td>
                             </tr>
                             <tr>
                                 <th scope="row" class="text-nowrap">Typeface</th>
