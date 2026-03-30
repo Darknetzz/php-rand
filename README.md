@@ -197,16 +197,15 @@ Use the interactive release helper:
 What it does:
 - rotates `CHANGELOG.md` from `## [Unreleased]` into `## [vX.Y.Z] (YYYY-MM-DD)`
 - recreates a fresh `Unreleased` template
-- creates a release commit and annotated tag (`vX.Y.Z`)
+- sets `VERSION=vX.Y.Z` in `docker-image.config` so local Docker builds match the release
+- creates a release commit and annotated tag (`vX.Y.Z`; commit includes `CHANGELOG.md` and `docker-image.config`)
 - optionally pushes branch + tag after an explicit confirmation prompt
-- optionally creates a GitHub release via `gh`
-- when a `v*` tag is pushed, GitHub Actions automatically publishes Docker images
+- **GitHub Release + Docker Hub / GHCR images:** pushing the tag runs `.github/workflows/release.yml` and `docker-release.yml`. You normally do **not** need `gh` or `docker-pushimage.sh` unless Actions are off or you want an immediate local registry push.
+- after a successful push, optionally runs `gh release create` (see below) or `./docker-pushimage.sh`
 
 Environment toggles:
-- `PUSH_REMOTE=1` to pre-enable push flow (still requires confirmation)
-- `REMOTE_NAME=origin` to set the push remote
-- `CREATE_GH_RELEASE=1` to auto-create GitHub release via `gh`
-- `PUBLISH_DOCKER=1` to include Docker publish prompt (`VERSION_OVERRIDE=vX.Y.Z ./docker-pushimage.sh`)
+- `CREATE_GH_RELEASE=1` — after push, run `gh release create` with changelog notes (skipped if the release already exists, e.g. CI created it first)
+- `PUBLISH_DOCKER=1` — after push, run `./docker-pushimage.sh` (uses updated `docker-image.config`; still uses your Docker Hub / `.env` credentials)
 
 Common options:
 - `./scripts/release.sh --help` to show usage
