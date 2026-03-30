@@ -690,7 +690,10 @@ function random_large_numgen_value_by_digits(int $minDigits, int $maxDigits, str
 }
 
 /**
- * Check if an integer is prime (trial division).
+ * Check if an integer is prime.
+ *
+ * Uses GMP probabilistic testing when the extension is available (fast for large n).
+ * Falls back to trial division up to sqrt(n) otherwise.
  *
  * @param int $n Integer to check (must be >= 2 for true result)
  * @return bool True if prime, false otherwise
@@ -704,6 +707,10 @@ function is_prime(int $n): bool {
   }
   if ($n % 2 === 0) {
     return false;
+  }
+  if (function_exists('gmp_prob_prime')) {
+    $r = gmp_prob_prime(gmp_init($n), 10);
+    return $r > 0;
   }
   $limit = (int) floor(sqrt($n));
   for ($d = 3; $d <= $limit; $d += 2) {
@@ -825,13 +832,23 @@ function numGen(int $from, int $to, ?string $seed = null, string $type = 'any') 
     $rangeSize = $to - $from + 1;
     $maxPrimeAttempts = 50000;
     if ($rangeSize > 100000) {
-      // Large range: sample random numbers and test for primality (avoids building huge list)
+      // Large range: sample random numbers and test for primality (avoids building huge list).
+      // When the range starts at 3+, only sample odd candidates (saves ~half the checks; evens are never prime except 2).
       $from = max(2, $from);
       if ($from > $to) {
         return alert("No prime numbers in the range $from–$to.", "warning");
       }
       for ($attempt = 0; $attempt < $maxPrimeAttempts; $attempt++) {
-        $n = mt_rand($from, $to);
+        if ($from >= 3) {
+          $oddLow = $from % 2 === 1 ? $from : $from + 1;
+          $oddHigh = $to % 2 === 1 ? $to : $to - 1;
+          if ($oddLow > $oddHigh) {
+            continue;
+          }
+          $n = $oddLow + 2 * mt_rand(0, (int) (($oddHigh - $oddLow) / 2));
+        } else {
+          $n = mt_rand($from, $to);
+        }
         if (is_prime($n)) {
           return $n;
         }

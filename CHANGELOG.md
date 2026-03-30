@@ -17,6 +17,7 @@ All notable changes to this project are documented in this file.
 - **Digit limits** – Configurable digit inputs allow up to **50** digits; full native-int digit ranges are capped by `PHP_INT_MAX` (typically **18** digits for a complete min–max digit span on 64-bit builds). Explicit `int` bounds elsewhere remain limited by the length of `PHP_INT_MAX` (typically **19** digits).
 - **Large-number path** – `handle_numgen()` routes oversized digit requests to string-based generation with GMP-backed length selection so min–max digit ranges stay distribution-consistent with the old numeric-range behavior.
 - **UI** – `modules/gen_number.php` reflects the 50-digit cap, explains native vs large-digit behavior, and disables native-only filter options when the selected digit range exceeds the native safe limit.
+- **Prime performance** – `is_prime()` uses `gmp_prob_prime()` when GMP is available instead of trial division to √n (much faster for large integers). Large-range random prime sampling skips even candidates when the range starts at 3+.
 
 </details>
 
