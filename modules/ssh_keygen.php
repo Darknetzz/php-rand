@@ -90,10 +90,14 @@
                     <div style="opacity: 0.55;">Generated PEM keys, OpenSSH public key lines, and download buttons will appear here.</div>
                 </div>
             </form>
+        </div>
+    </div>
 
-            <hr class="my-5 border-secondary">
-
-            <h2 class="h4 mb-3">🔎 Verify keys</h2>
+    <div class="card card-primary mt-4">
+        <div class="card-header">
+            <h2 class="card-title mb-0">🔎 Verify SSH / PEM keys</h2>
+        </div>
+        <div class="card-body">
             <p class="text-muted mb-4">
                 Check that PEM keys parse in OpenSSL, optionally confirm a public key matches a private key, and run <code>ssh-keygen -l</code> on an OpenSSH public line when <code>ssh-keygen</code> is available. Paste any combination of fields.
             </p>

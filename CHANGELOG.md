@@ -9,6 +9,7 @@ All notable changes to this project are documented in this file.
 ### Major Features
 - **Number Generator: up to 50 digits (digit mode)** – For digit ranges that exceed native PHP integer bounds, generation uses a dedicated large-number path (requires the **GMP** extension, including `gmp_prob_prime`). Supported types include **any**, **odd**, **even**, **palindromic**, **prime**, and **composite**. **Square** and **Fibonacci** remain limited to the server’s native integer range.
 - **Deployment** – Docker image now builds PHP with **GMP** (`libgmp-dev` + `gmp` extension). README documents the `gmp` requirement and large-digit behavior.
+- **Key tooling** – Client-side WebCrypto key output now includes **Copy** next to **Download** (same copyable layout as server). **SSH Key Generator** adds **Verify keys** (PEM/OpenSSH public, PEM private, optional passphrase, OpenSSL checks, `ssh-keygen -l` fingerprint when available, public/private match). **Private/Public Keys** adds **Sign or verify a message** (OpenSSL `openssl_sign` / `openssl_verify`, digest chosen per key type).
 
 <details>
 <summary>📋 Detailed Changes (click to expand)</summary>
@@ -19,6 +20,22 @@ All notable changes to this project are documented in this file.
 - **UI** – `modules/gen_number.php` reflects the 50-digit cap, explains native vs large-digit behavior, and disables native-only filter options when the selected digit range exceeds the native safe limit.
 - **Prime performance** – `is_prime()` uses `gmp_prob_prime()` when GMP is available instead of trial division to √n (much faster for large integers). Large-range random prime sampling skips even candidates when the range starts at 3+.
 - **Large-digit primes and composites** – Digit mode above the native-int limit can generate random **prime** and **composite** values as decimal strings using `gmp_prob_prime()` (rejection sampling).
+
+</details>
+
+<details>
+<summary>📋 Key tools: copy, verify, sign (click to expand)</summary>
+
+#### Client key output
+- **`js/rand.js`** – `buildClientKeyOutput()` uses the same `copyable-label` / `copyable-stack` / `copyable-content` pattern as server `copyableOutput`, with per-block IDs for `copyToClipboard()`.
+
+#### SSH key verification
+- **`modules/ssh_keygen.php`** – Second form posts `action=ssh_key_verify` with fields for PEM public, one-line OpenSSH public, PEM private, and optional passphrase.
+- **`includes/handlers_functional.php`** – `handle_ssh_key_verify()` plus helpers (`crypto_verify_pem_public`, `crypto_verify_pem_private`, `crypto_ssh_keygen_inspect_openssh_line`, pair matching via `crypto_pem_public_from_private_pem` and OpenSSH→PEM conversion where applicable). Registered in `getHandlerRegistry()`.
+
+#### PEM sign and verify
+- **`modules/keypair.php`** – Sign/verify section with mode select, shared message field; `initKeypairSignFormUi()` in `js/rand.js` toggles sign-only vs verify-only fields when the module is shown.
+- **`includes/handlers_functional.php`** – `handle_keypair_sign_verify()` (`keypair_sign_mode` sign|verify), `crypto_signature_digest_for_key()`, `crypto_digest_label()`; outputs copyable base64 signature via existing `crypto_render_key_output()`.
 
 </details>
 

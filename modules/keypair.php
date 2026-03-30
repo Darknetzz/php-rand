@@ -68,10 +68,14 @@
                     <div style="opacity: 0.55;">Generated private/public PEM keys and download buttons will appear here.</div>
                 </div>
             </form>
+        </div>
+    </div>
 
-            <hr class="my-5 border-secondary">
-
-            <h2 class="h4 mb-3">✍️ Sign or verify a message</h2>
+    <div class="card card-primary mt-4">
+        <div class="card-header">
+            <h2 class="card-title mb-0">✍️ Sign or verify a message</h2>
+        </div>
+        <div class="card-body">
             <p class="text-muted mb-4">
                 Sign arbitrary text with a PEM private key, or verify a base64 signature with the matching PEM public key. Uses OpenSSL (<span class="text-nowrap">SHA-256</span> for RSA, curve-appropriate hashes for ECDSA, <span class="text-nowrap">SHA-512</span> for Ed25519). Keys are processed on the server only for this request.
             </p>
