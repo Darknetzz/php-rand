@@ -1979,19 +1979,34 @@ function getLatestChangelogVersion(): ?array {
     if ($content === false) {
         return null;
     }
-    
-    // Match the first version header: ## **v1.2.3** (date) or ## [v1.2.3] (date)
-    if (!preg_match('/^## (?:\*\*v([\d.]+)\*\*|\[v([\d.]+)\])\s*\((.+?)\)$/m', $content, $versionMatches)) {
+
+    // Skip [Unreleased]; use the first dated release section (dashboard "new in" strip).
+    $parts = preg_split('/\n---\n/', $content);
+    $releasedBody = null;
+    $version = null;
+    $date = null;
+    foreach ($parts as $part) {
+        $part = trim($part);
+        if (preg_match('/^## \[v([\d.]+)\]\s*\((.+?)\)\s*\R(.*)$/s', $part, $m)) {
+            $version = 'v' . $m[1];
+            $date = $m[2];
+            $releasedBody = $m[3];
+            break;
+        }
+        if (preg_match('/^## \*\*v([\d.]+)\*\*\s*\((.+?)\)\s*\R(.*)$/s', $part, $m)) {
+            $version = 'v' . $m[1];
+            $date = $m[2];
+            $releasedBody = $m[3];
+            break;
+        }
+    }
+    if ($version === null || $releasedBody === null) {
         return null;
     }
-    $version = 'v' . ($versionMatches[1] ?: $versionMatches[2]);
-    $date = $versionMatches[3];
 
-    // Extract major features section (### Major Features or ### 🎉 Major Features)
     $features = [];
-    if (preg_match('/### (?:🎉\s*)?Major Features\s*\n((?:- .+?\n?)+?)(?=\n<details|\n---|\n###|$)/s', $content, $featuresMatch)) {
+    if (preg_match('/### (?:🎉\s*)?Major Features\s*\n((?:- .+?\n?)+?)(?=\n<details|\n###|$)/s', $releasedBody, $featuresMatch)) {
         $featuresText = $featuresMatch[1];
-        // Bullet format: - **Title** - Description or - **Title** – Description
         if (preg_match_all('/- \*\*(.+?)\*\* [\-–] (.+?)(?:\n|$)/u', $featuresText, $featureMatches, PREG_SET_ORDER)) {
             foreach ($featureMatches as $match) {
                 $features[] = [
@@ -2001,7 +2016,7 @@ function getLatestChangelogVersion(): ?array {
             }
         }
     }
-    
+
     return [
         'version' => $version,
         'date' => $date,

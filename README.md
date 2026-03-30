@@ -191,7 +191,7 @@ For detailed documentation, feature guides, and implementation details, see:
 Use the interactive release helper:
 
 ```bash
-./scripts/release.sh 1.2.9
+./scripts/release.sh 1.2.10
 ```
 
 What it does:
@@ -210,7 +210,7 @@ Environment toggles:
 
 Common options:
 - `./scripts/release.sh --help` to show usage
-- `./scripts/release.sh 1.2.9 --dry-run` to preview actions only
+- `./scripts/release.sh 1.2.10 --dry-run` to preview actions only
 - `./scripts/extract_changelog_section.sh --help` to show extraction script usage
 
 CI Docker publish requirements:

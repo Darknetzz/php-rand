@@ -7,9 +7,19 @@ All notable changes to this project are documented in this file.
 ## [Unreleased]
 
 ### Major Features
+
+_Add entries here during development; rotate into a dated release section when tagging._
+
+---
+
+## [v1.2.10] (2026-03-30)
+
+### Major Features
 - **Number Generator: up to 50 digits (digit mode)** – For digit ranges that exceed native PHP integer bounds, generation uses a dedicated large-number path (requires the **GMP** extension, including `gmp_prob_prime`). Supported types include **any**, **odd**, **even**, **palindromic**, **prime**, and **composite**. **Square** and **Fibonacci** remain limited to the server’s native integer range.
-- **Deployment** – Docker image now builds PHP with **GMP** (`libgmp-dev` + `gmp` extension). README documents the `gmp` requirement and large-digit behavior.
-- **Key tooling** – Client-side WebCrypto key output now includes **Copy** next to **Download** (same copyable layout as server). **SSH Key Generator** adds **Verify keys** (PEM/OpenSSH public, PEM private, optional passphrase, OpenSSL checks, `ssh-keygen -l` fingerprint when available, public/private match). **Private/Public Keys** adds **Sign or verify a message** (OpenSSL `openssl_sign` / `openssl_verify`, digest chosen per key type).
+- **Deployment** – Docker image builds with **GMP** (`libgmp-dev` + `gmp` extension). README documents the `gmp` requirement and large-digit behavior.
+- **SSH / PEM cryptography** – **Verify** SSH or PEM material (unified public paste with auto-detect or forced PEM vs OpenSSH, optional private PEM and passphrase, `ssh-keygen -l` when available). **SSH generator** results use a **Public key output** control (PEM vs OpenSSH one-line when both exist) and always show the **private key** below. **Private/Public Keys** adds **Sign or verify a message** (server-side OpenSSL). **Client WebCrypto** key output gains the same copy UI as the server.
+- **Key material ordering** – Generated SSH, keypair, and CSR bundles list **public** (and OpenSSH when present) before **private** to align with verify workflows.
+- **Changelog modal** – Loads a fresh `CHANGELOG.md` on each open (`changelog.php` revalidation-friendly cache headers; AJAX without long-lived browser cache).
 
 <details>
 <summary>📋 Detailed Changes (click to expand)</summary>
@@ -20,14 +30,21 @@ All notable changes to this project are documented in this file.
 - **UI** – `modules/gen_number.php` reflects the 50-digit cap, explains native vs large-digit behavior, and disables native-only filter options when the selected digit range exceeds the native safe limit.
 - **Prime performance** – `is_prime()` uses `gmp_prob_prime()` when GMP is available instead of trial division to √n (much faster for large integers). Large-range random prime sampling skips even candidates when the range starts at 3+.
 - **Large-digit primes and composites** – Digit mode above the native-int limit can generate random **prime** and **composite** values as decimal strings using `gmp_prob_prime()` (rejection sampling).
+#### SSH generator and verification
+- **Verify UI** – Second card on `modules/ssh_keygen.php`; unified **Public key** field with **Public key format** (auto / PEM / OpenSSH); optional PEM private and passphrase; verify results follow form field order.
+- **Classification** - `crypto_classify_verify_public_key()` routes paste to PEM vs OpenSSH; legacy `verify_public_pem` / `verify_openssh_public` still honored when `verify_public_input` is empty.
+- **Generator output** - `crypto_render_ssh_key_output()`: **Public key output** `<select>` toggles PEM vs OpenSSH panels only; private PEM in `crypto-ssh-private-block`; no selector when only PEM public exists; `initSshKeyOutputFormatUi()` scopes toggles to `.crypto-ssh-output-panels`.
+- **Client** - `buildClientSshKeyOutput()` mirrors layout (browser: public PEM + private only; OpenSSH line requires server mode).
 #### Client key output
-- **WebCrypto copy UI** - `buildClientKeyOutput()` in `js/rand.js` now mirrors server `copyableOutput` styling (`copyable-label`, `copyable-stack`, `copyable-content`) with per-block IDs for `copyToClipboard()`.
-#### SSH key verification
-- **Module UI** - `modules/ssh_keygen.php` adds a verify card; form posts `action=ssh_key_verify` with fields for PEM public, one-line OpenSSH public, PEM private, and optional passphrase.
-- **Backend** - `handle_ssh_key_verify()` in `includes/handlers_functional.php` plus helpers (`crypto_verify_pem_public`, `crypto_verify_pem_private`, `crypto_ssh_keygen_inspect_openssh_line`, pair matching via `crypto_pem_public_from_private_pem` and OpenSSH→PEM conversion where applicable); action registered in `getHandlerRegistry()`.
+- **WebCrypto copy UI** - `buildClientKeyOutput()` in `js/rand.js` mirrors server `copyableOutput` styling with per-block IDs for `copyToClipboard()`.
+#### Key export ordering
+- **Handlers** - `handle_ssh_keygen()`, `handle_keypair_generate()`, and `handle_csr_generate()` emit public/OpenSSH before private.
 #### PEM sign and verify
-- **Module UI** - `modules/keypair.php` adds a sign/verify card with mode select and shared message field; `initKeypairSignFormUi()` in `js/rand.js` toggles sign-only vs verify-only fields when the module is shown.
-- **Backend** - `handle_keypair_sign_verify()` (`keypair_sign_mode` sign|verify), `crypto_signature_digest_for_key()`, `crypto_digest_label()`; copyable base64 signature output via existing `crypto_render_key_output()`.
+- **Module UI** - `modules/keypair.php` sign/verify card; `initKeypairSignFormUi()` toggles sign vs verify fields; verify card separated as its own card on the page.
+- **Backend** - `handle_keypair_sign_verify()`, `crypto_signature_digest_for_key()`, `crypto_digest_label()`; handlers `ssh_key_verify` and `keypair_sign_verify` registered in `getHandlerRegistry()`.
+#### Changelog
+- **`changelog.php`** - `Cache-Control: private, no-cache, must-revalidate` instead of long `max-age` for the markdown payload.
+- **`js/rand.js`** - Changelog modal refetches on every show (`cache: false`); removed one-shot `changelogLoaded` gate; loading state while fetching.
 
 </details>
 
