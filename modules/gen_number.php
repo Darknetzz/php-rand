@@ -6,6 +6,7 @@
             <form class="form" action="gen.php" method="POST" id="numgen" data-action="numgen">
                 
                 <?php
+                $maxDigitLimit      = max_supported_numgen_digits();
                 $numgenRangeMode    = isset($_POST['numgenrangemode']) ? $_POST['numgenrangemode'] : 'numeric';
                 $numgenDigitMode   = isset($_POST['numgen_digit_mode']) ? $_POST['numgen_digit_mode'] : 'range';
                 $fixedDigits       = isset($_POST['numgendigits']) ? (int)$_POST['numgendigits'] : 2;
@@ -48,20 +49,20 @@
                         <div class="numgen-digit-fixed row g-3" style="display: none;">
                             <div class="col-md-6">
                                 <label class="form-label">Number of digits</label>
-                                <input type="number" name="numgendigits" class="form-control form-control-lg" value="<?= max(1, min(20, (int)$fixedDigits)) ?>" min="1" max="20" placeholder="2" style="font-family: monospace; font-size: 1.5rem;">
+                                <input type="number" name="numgendigits" class="form-control form-control-lg" value="<?= max(1, min($maxDigitLimit, (int)$fixedDigits)) ?>" min="1" max="<?= $maxDigitLimit ?>" placeholder="2" style="font-family: monospace; font-size: 1.5rem;">
                             </div>
                         </div>
                         <div class="numgen-digit-range row g-3" style="display: none;">
                             <div class="col-md-6">
                                 <label class="form-label">Min digits</label>
-                                <input type="number" name="numgenmindig" class="form-control form-control-lg" value="<?= (int)$minDig ?>" min="1" max="20" placeholder="1" style="font-family: monospace; font-size: 1.5rem;">
+                                <input type="number" name="numgenmindig" class="form-control form-control-lg" value="<?= max(1, min($maxDigitLimit, (int)$minDig)) ?>" min="1" max="<?= $maxDigitLimit ?>" placeholder="1" style="font-family: monospace; font-size: 1.5rem;">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Max digits</label>
-                                <input type="number" name="numgenmaxdig" class="form-control form-control-lg" value="<?= (int)$maxDig ?>" min="1" max="20" placeholder="5" style="font-family: monospace; font-size: 1.5rem;">
+                                <input type="number" name="numgenmaxdig" class="form-control form-control-lg" value="<?= max(1, min($maxDigitLimit, (int)$maxDig)) ?>" min="1" max="<?= $maxDigitLimit ?>" placeholder="5" style="font-family: monospace; font-size: 1.5rem;">
                             </div>
                         </div>
-                        <small class="text-muted">e.g. fixed 4 digits → 1000–9999; range 2–4 → 10 to 9,999</small>
+                        <small class="text-muted">e.g. fixed 4 digits → 1000–9999; range 2–4 → 10 to 9,999 (max <?= $maxDigitLimit ?> digits on this server)</small>
                     </div>
                     <div class="col-12">
                         <label class="form-label">Number type</label>

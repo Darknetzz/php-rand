@@ -469,6 +469,10 @@ function submitBtn(string $value = "", string $name = "action", string $text = "
  * @param int $maxDigits Maximum number of digits
  * @return array{0: int, 1: int}|null [from, to] or null if invalid
  */
+function max_supported_numgen_digits(): int {
+  return strlen((string) PHP_INT_MAX);
+}
+
 function pow10_int_or_null(int $exp): ?int {
   if ($exp < 0) {
     return null;
@@ -486,7 +490,8 @@ function pow10_int_or_null(int $exp): ?int {
 function digit_range_to_numeric(int $minDigits, int $maxDigits): ?array {
   $minDigits = (int) $minDigits;
   $maxDigits = (int) $maxDigits;
-  if ($minDigits < 1 || $maxDigits < 1 || $minDigits > $maxDigits) {
+  $maxSupportedDigits = max_supported_numgen_digits();
+  if ($minDigits < 1 || $maxDigits < 1 || $minDigits > $maxDigits || $maxDigits > $maxSupportedDigits) {
     return null;
   }
 
@@ -628,8 +633,9 @@ function numGen(int $from, int $to, ?string $seed = null, string $type = 'any') 
   $from = (int)$from;
   $to   = (int)$to;
 
-  if (strlen((string)$from) > 20 || strlen((string)$to) > 20) {
-    die("Please use numbers with less than 20 digits.");
+  $maxDigits = max_supported_numgen_digits();
+  if (strlen((string)$from) > $maxDigits || strlen((string)$to) > $maxDigits) {
+    die("Please use numbers with at most {$maxDigits} digits.");
   }
   if (is_numeric($from) === FALSE || is_numeric($to) === FALSE) {
       die("All values must be numeric!");
