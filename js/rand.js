@@ -1340,15 +1340,12 @@ $(document).ready(function() {
     /*                            Changelog modal                            */
     /* ===================================================================== */
     var changelog = $("#changelogMarkdown");
-    var changelogLoaded = false;
     $("#changelogModal").on("show.bs.modal", function() {
-        if (changelogLoaded) {
-            return;
-        }
+        changelog.html(buildLoadingHtml("Loading changelog…"));
         $.ajax({
             type: "GET",
             url: "changelog.php",
-            cache: true
+            cache: false
         }).done(function(markdownText) {
             ensureMarkdownAssets().done(function() {
                 marked.setOptions({
@@ -1356,10 +1353,8 @@ $(document).ready(function() {
                     gfm: true
                 });
                 changelog.html(marked.parse(markdownText));
-                changelogLoaded = true;
             }).fail(function() {
                 changelog.html("<pre>" + $("<div>").text(markdownText).html() + "</pre>");
-                changelogLoaded = true;
             });
         }).fail(function() {
             changelog.html("<div class='alert alert-danger'>Failed to load changelog.</div>");

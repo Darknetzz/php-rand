@@ -13,5 +13,6 @@ if (!is_readable($path)) {
 }
 
 header('Content-Type: text/markdown; charset=utf-8');
-header('Cache-Control: public, max-age=3600');
+// Fresh changelog after edits; avoid long-lived CDN/browser caches on this dynamic endpoint.
+header('Cache-Control: private, no-cache, must-revalidate');
 readfile($path);

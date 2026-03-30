@@ -20,13 +20,14 @@ All notable changes to this project are documented in this file.
 - **UI** – `modules/gen_number.php` reflects the 50-digit cap, explains native vs large-digit behavior, and disables native-only filter options when the selected digit range exceeds the native safe limit.
 - **Prime performance** – `is_prime()` uses `gmp_prob_prime()` when GMP is available instead of trial division to √n (much faster for large integers). Large-range random prime sampling skips even candidates when the range starts at 3+.
 - **Large-digit primes and composites** – Digit mode above the native-int limit can generate random **prime** and **composite** values as decimal strings using `gmp_prob_prime()` (rejection sampling).
-
-#### Key tools (copy, verify, sign)
-- **`js/rand.js`** – `buildClientKeyOutput()` uses the same `copyable-label` / `copyable-stack` / `copyable-content` pattern as server `copyableOutput`, with per-block IDs for `copyToClipboard()`.
-- **`modules/ssh_keygen.php`** – Verify card: form posts `action=ssh_key_verify` with fields for PEM public, one-line OpenSSH public, PEM private, and optional passphrase.
-- **`includes/handlers_functional.php`** – `handle_ssh_key_verify()` plus helpers (`crypto_verify_pem_public`, `crypto_verify_pem_private`, `crypto_ssh_keygen_inspect_openssh_line`, pair matching via `crypto_pem_public_from_private_pem` and OpenSSH→PEM conversion where applicable). Registered in `getHandlerRegistry()`.
-- **`modules/keypair.php`** – Sign/verify card: mode select, shared message field; `initKeypairSignFormUi()` in `js/rand.js` toggles sign-only vs verify-only fields when the module is shown.
-- **`includes/handlers_functional.php`** – `handle_keypair_sign_verify()` (`keypair_sign_mode` sign|verify), `crypto_signature_digest_for_key()`, `crypto_digest_label()`; outputs copyable base64 signature via existing `crypto_render_key_output()`.
+#### Client key output
+- **WebCrypto copy UI** - `buildClientKeyOutput()` in `js/rand.js` now mirrors server `copyableOutput` styling (`copyable-label`, `copyable-stack`, `copyable-content`) with per-block IDs for `copyToClipboard()`.
+#### SSH key verification
+- **Module UI** - `modules/ssh_keygen.php` adds a verify card; form posts `action=ssh_key_verify` with fields for PEM public, one-line OpenSSH public, PEM private, and optional passphrase.
+- **Backend** - `handle_ssh_key_verify()` in `includes/handlers_functional.php` plus helpers (`crypto_verify_pem_public`, `crypto_verify_pem_private`, `crypto_ssh_keygen_inspect_openssh_line`, pair matching via `crypto_pem_public_from_private_pem` and OpenSSH→PEM conversion where applicable); action registered in `getHandlerRegistry()`.
+#### PEM sign and verify
+- **Module UI** - `modules/keypair.php` adds a sign/verify card with mode select and shared message field; `initKeypairSignFormUi()` in `js/rand.js` toggles sign-only vs verify-only fields when the module is shown.
+- **Backend** - `handle_keypair_sign_verify()` (`keypair_sign_mode` sign|verify), `crypto_signature_digest_for_key()`, `crypto_digest_label()`; copyable base64 signature output via existing `crypto_render_key_output()`.
 
 </details>
 
