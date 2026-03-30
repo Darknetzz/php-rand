@@ -99,16 +99,23 @@
         </div>
         <div class="card-body">
             <p class="text-muted mb-4">
-                Check that PEM keys parse in OpenSSL, optionally confirm a public key matches a private key, and run <code>ssh-keygen -l</code> on an OpenSSH public line when <code>ssh-keygen</code> is available. Paste any combination of fields.
+                Paste a <strong>public</strong> key as PEM or as a single-line OpenSSH line (<code>ssh-rsa</code> / <code>ssh-ed25519</code> / <code>ecdsa-sha2-…</code>). Format is <strong>auto-detected</strong> when possible; use the dropdown if detection is wrong. Add a PEM <strong>private</strong> key to check that public and private match. <code>ssh-keygen -l</code> runs when available for OpenSSH material.
             </p>
             <form class="form" action="gen.php" method="POST" id="sshVerifyForm" data-action="ssh_key_verify">
-                <div class="mb-3">
-                    <label for="verifyPublicPem" class="form-label"><strong>Public key (PEM)</strong></label>
-                    <textarea class="form-control font-monospace" id="verifyPublicPem" name="verify_public_pem" rows="5" placeholder="-----BEGIN PUBLIC KEY-----"></textarea>
+                <div class="row g-3 mb-3">
+                    <div class="col-12 col-md-6">
+                        <label for="verifyPublicFormat" class="form-label"><strong>Public key format</strong></label>
+                        <select name="verify_public_format" id="verifyPublicFormat" class="form-select form-select-lg">
+                            <option value="auto" selected>Auto-detect</option>
+                            <option value="pem">PEM (BEGIN PUBLIC KEY …)</option>
+                            <option value="openssh">OpenSSH one-line</option>
+                        </select>
+                        <div class="form-text">Use a fixed format if auto-detect fails on an unusual paste.</div>
+                    </div>
                 </div>
                 <div class="mb-3">
-                    <label for="verifyOpensshPublic" class="form-label"><strong>Public key (OpenSSH, one line)</strong></label>
-                    <textarea class="form-control font-monospace" id="verifyOpensshPublic" name="verify_openssh_public" rows="2" placeholder="ssh-ed25519 AAAA... comment"></textarea>
+                    <label for="verifyPublicInput" class="form-label"><strong>Public key</strong></label>
+                    <textarea class="form-control font-monospace" id="verifyPublicInput" name="verify_public_input" rows="6" placeholder="-----BEGIN PUBLIC KEY----- … or ssh-ed25519 AAAA… comment"></textarea>
                 </div>
                 <div class="mb-3">
                     <label for="verifyPrivatePem" class="form-label"><strong>Private key (PEM)</strong></label>

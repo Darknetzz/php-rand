@@ -1932,25 +1932,113 @@ function crypto_ssh_keygen_inspect_openssh_line(string $opensshLine): array {
     return ['ok' => true, 'lines' => $lines];
 }
 
+/**
+ * Split a single "public key" paste into PEM vs OpenSSH, or return an error (auto mode only).
+ *
+ * @return array{pem: string, openssh: string, detected: ?string, error: ?string}
+ */
+function crypto_classify_verify_public_key(string $raw, string $mode): array {
+    $raw = trim($raw);
+    $empty = ['pem' => '', 'openssh' => '', 'detected' => null, 'error' => null];
+    if ($raw === '') {
+        return $empty;
+    }
+
+    $mode = strtolower($mode);
+    if (!in_array($mode, ['auto', 'pem', 'openssh'], true)) {
+        $mode = 'auto';
+    }
+
+    if ($mode === 'pem') {
+        return ['pem' => $raw, 'openssh' => '', 'detected' => 'pem', 'error' => null];
+    }
+    if ($mode === 'openssh') {
+        $lines = preg_split('/\r\n|\n|\r/', $raw);
+        $first = '';
+        foreach ($lines as $ln) {
+            $ln = trim((string) $ln);
+            if ($ln !== '') {
+                $first = $ln;
+                break;
+            }
+        }
+
+        return ['pem' => '', 'openssh' => $first, 'detected' => 'openssh', 'error' => $first === '' ? 'OpenSSH public key line is empty.' : null];
+    }
+
+    if (preg_match('/-----BEGIN\s+(?:RSA\s+)?PUBLIC\s+KEY-----/i', $raw)
+        || preg_match('/-----BEGIN\s+EC\s+PUBLIC\s+KEY-----/i', $raw)) {
+        return ['pem' => $raw, 'openssh' => '', 'detected' => 'pem', 'error' => null];
+    }
+
+    $lines = preg_split('/\r\n|\n|\r/', $raw);
+    $first = '';
+    foreach ($lines as $ln) {
+        $ln = trim((string) $ln);
+        if ($ln !== '') {
+            $first = $ln;
+            break;
+        }
+    }
+    if ($first !== '' && preg_match('/^(ssh-rsa|ssh-ed25519|ssh-dss|ecdsa-sha2-[a-z0-9]+)\s+[A-Za-z0-9+/]+=*(\s+.*)?$/', $first)) {
+        return ['pem' => '', 'openssh' => $first, 'detected' => 'openssh', 'error' => null];
+    }
+
+    return [
+        'pem' => '',
+        'openssh' => '',
+        'detected' => null,
+        'error' => 'Could not tell if this is PEM or an OpenSSH public line. Choose <strong>PEM</strong> or <strong>OpenSSH one-line</strong> under Public key format, or check the paste.',
+    ];
+}
+
 function handle_ssh_key_verify(array $req): string {
     $maxLen = 524288;
-    $publicPem = trim((string) req_get($req, 'verify_public_pem', ''));
-    $publicOpenssh = trim((string) req_get($req, 'verify_openssh_public', ''));
+    $publicUnified = trim((string) req_get($req, 'verify_public_input', ''));
+    $publicFormat = strtolower((string) req_get($req, 'verify_public_format', 'auto'));
+    $publicPemLegacy = trim((string) req_get($req, 'verify_public_pem', ''));
+    $publicOpensshLegacy = trim((string) req_get($req, 'verify_openssh_public', ''));
     $privatePem = trim((string) req_get($req, 'verify_private_pem', ''));
     $pass = trim((string) req_get($req, 'verify_private_passphrase', ''));
+
+    $publicPem = '';
+    $publicOpenssh = '';
+    $detectNote = '';
+
+    if ($publicUnified !== '') {
+        if ($publicPemLegacy !== '' || $publicOpensshLegacy !== '') {
+            return formatOutput('Use either the single <strong>Public key</strong> field or the legacy split fields, not both.', type: 'danger');
+        }
+        if (strlen($publicUnified) > $maxLen) {
+            return formatOutput('Key material is too large.', type: 'danger');
+        }
+        $classified = crypto_classify_verify_public_key($publicUnified, $publicFormat);
+        if (($classified['error'] ?? null) !== null && (string) $classified['error'] !== '') {
+            return formatOutput((string) $classified['error'], type: 'danger');
+        }
+        $publicPem = (string) $classified['pem'];
+        $publicOpenssh = (string) $classified['openssh'];
+        if ($publicFormat === 'auto' && ($classified['detected'] ?? null) !== null) {
+            $detectNote = $classified['detected'] === 'pem' ? 'PEM public' : 'OpenSSH one-line';
+        }
+    } else {
+        $publicPem = $publicPemLegacy;
+        $publicOpenssh = $publicOpensshLegacy;
+    }
 
     if (strlen($publicPem) > $maxLen || strlen($publicOpenssh) > $maxLen || strlen($privatePem) > $maxLen) {
         return formatOutput('Key material is too large.', type: 'danger');
     }
 
     if ($publicPem === '' && $publicOpenssh === '' && $privatePem === '') {
-        return formatOutput('Paste at least one of: PEM public key, OpenSSH public key line, or PEM private key.', type: 'danger');
+        return formatOutput('Paste at least one of: a public key (PEM or OpenSSH), or a PEM private key.', type: 'danger');
     }
 
-    $output = formatOutput(
-        'Validation uses OpenSSL on the server and <code>ssh-keygen</code> for OpenSSH fingerprints when available. Private keys are not stored. Results follow the same order as the form fields above.',
-        type: 'info'
-    );
+    $intro = 'Validation uses OpenSSL on the server and <code>ssh-keygen</code> for OpenSSH fingerprints when available. Private keys are not stored. Results follow the same order as the form (public checks, then private).';
+    if ($detectNote !== '') {
+        $intro .= ' <strong>Auto-detected public format:</strong> ' . htmlspecialchars($detectNote, ENT_QUOTES, 'UTF-8') . '.';
+    }
+    $output = formatOutput($intro, type: 'info');
 
     $derivedPublic = null;
     $privateSection = '';
