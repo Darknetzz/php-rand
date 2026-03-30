@@ -983,7 +983,6 @@ function handle_logo_generate(array $req): string {
         imagefilledellipse($mask, (int) ($width / 2), (int) ($height / 2), $width, $height, $white);
         imagecolortransparent($mask, $transparent);
         imagecopymerge($image, $mask, 0, 0, 0, 0, $width, $height, 100);
-        imagedestroy($mask);
     } elseif ($shape === 'rounded') {
         $radius = (int) max(12, min((int) floor(min($width, $height) * 0.15), 80));
         $overlay = imagecreatetruecolor($width, $height);
@@ -999,7 +998,6 @@ function handle_logo_generate(array $req): string {
         imagefilledellipse($overlay, $width - $radius, $height - $radius, $radius * 2, $radius * 2, $fill);
         imagecolortransparent($overlay, $trans);
         imagecopymerge($image, $overlay, 0, 0, 0, 0, $width, $height, 100);
-        imagedestroy($overlay);
     }
 
     if ($border > 0) {
@@ -1028,7 +1026,6 @@ function handle_logo_generate(array $req): string {
     }
 
     $dataUri = logo_build_png_data_uri($image);
-    imagedestroy($image);
 
     $safeDataUri = htmlspecialchars($dataUri, ENT_QUOTES, 'UTF-8');
     $safeAlt = htmlspecialchars($displayText, ENT_QUOTES, 'UTF-8');
@@ -1884,6 +1881,57 @@ function crypto_digest_label(int $algo): string {
     };
 }
 
+/** @param OpenSSLAsymmetricKey|resource $key */
+function crypto_openssl_key_type_is_rsa($key): bool {
+    $d = openssl_pkey_get_details($key);
+
+    return is_array($d) && ($d['type'] ?? null) === OPENSSL_KEYTYPE_RSA;
+}
+
+/**
+ * PKCS#1 v1.5 RSASSA first; for RSA keys, retry with RSASSA-PSS when v1.5 is refused (PHP 8.5+).
+ *
+ * @param OpenSSLAsymmetricKey|resource $privateKey
+ * @return array{ok: true, rsa_padding: 'pkcs1'|'pss'|null}|array{ok: false}
+ */
+function crypto_openssl_sign_rsa_padding_fallback(string $message, string &$signature, $privateKey, int $digestAlgorithm): array {
+    $signature = '';
+    if (@openssl_sign($message, $signature, $privateKey, $digestAlgorithm)) {
+        return ['ok' => true, 'rsa_padding' => crypto_openssl_key_type_is_rsa($privateKey) ? 'pkcs1' : null];
+    }
+    if (!crypto_openssl_key_type_is_rsa($privateKey)) {
+        return ['ok' => false];
+    }
+    if (PHP_VERSION_ID < 80500 || !defined('OPENSSL_PKCS1_PSS_PADDING')) {
+        return ['ok' => false];
+    }
+    if (@openssl_sign($message, $signature, $privateKey, $digestAlgorithm, OPENSSL_PKCS1_PSS_PADDING)) {
+        return ['ok' => true, 'rsa_padding' => 'pss'];
+    }
+
+    return ['ok' => false];
+}
+
+/**
+ * Verify PKCS#1 v1.5 signature; if invalid (0) and RSA, try RSASSA-PSS (PHP 8.5+).
+ *
+ * @param OpenSSLAsymmetricKey|resource $publicKey
+ */
+function crypto_openssl_verify_rsa_padding_fallback(string $message, string $signature, $publicKey, int $digestAlgorithm): int {
+    $r = openssl_verify($message, $signature, $publicKey, $digestAlgorithm);
+    if ($r === 1 || $r === -1) {
+        return $r;
+    }
+    if (!crypto_openssl_key_type_is_rsa($publicKey)) {
+        return 0;
+    }
+    if (PHP_VERSION_ID < 80500 || !defined('OPENSSL_PKCS1_PSS_PADDING')) {
+        return 0;
+    }
+
+    return openssl_verify($message, $signature, $publicKey, $digestAlgorithm, OPENSSL_PKCS1_PSS_PADDING);
+}
+
 function crypto_pem_public_from_private_pem(string $privatePem, string $passphrase = ''): ?string {
     $res = openssl_pkey_get_private($privatePem, $passphrase !== '' ? $passphrase : '');
     if ($res === false) {
@@ -2220,13 +2268,27 @@ function handle_keypair_sign_verify(array $req): string {
         $digest = crypto_signature_digest_for_key($res);
         $digestLabel = crypto_digest_label($digest);
         $sig = '';
-        if (!@openssl_sign($message, $sig, $res, $digest)) {
-            return formatOutput('Signing failed for this key type (RSA/EC/Ed25519 required). RSA-PSS-only keys from some tools may not sign with OpenSSL here.', type: 'danger');
+        $signed = crypto_openssl_sign_rsa_padding_fallback($message, $sig, $res, $digest);
+        if (!$signed['ok']) {
+            $hint = (crypto_openssl_key_type_is_rsa($res) && PHP_VERSION_ID < 80500)
+                ? ' RSA PSS-only keys need PHP 8.5+ for RSASSA-PSS signing here.'
+                : '';
+
+            return formatOutput(
+                'Signing failed for this key type (RSA/EC/Ed25519 required), or the key cannot use the default RSA padding. RSA-PSS-only keys need RSASSA-PSS (PHP 8.5+).' . $hint,
+                type: 'danger'
+            );
         }
 
         $b64 = base64_encode($sig);
+        $paddingHtml = '';
+        if (($signed['rsa_padding'] ?? null) === 'pss') {
+            $paddingHtml = ' <strong>RSA RSASSA-PSS</strong> padding — verify on PHP 8.5+ with the same message and key.';
+        } elseif (($signed['rsa_padding'] ?? null) === 'pkcs1') {
+            $paddingHtml = ' RSA PKCS#1 v1.5 padding.';
+        }
         $info = formatOutput(
-            'Signed with OpenSSL using <strong>' . htmlspecialchars($digestLabel, ENT_QUOTES, 'UTF-8') . '</strong> (chosen for this key type). Verify with the matching public key and the same message.',
+            'Signed with OpenSSL using <strong>' . htmlspecialchars($digestLabel, ENT_QUOTES, 'UTF-8') . '</strong> (chosen for this key type).' . $paddingHtml . ' Verify with the matching public key and the same message.',
             type: 'info'
         );
 
@@ -2260,7 +2322,7 @@ function handle_keypair_sign_verify(array $req): string {
         }
 
         $digest = crypto_signature_digest_for_key($pub);
-        $ok = openssl_verify($message, $sig, $pub, $digest);
+        $ok = crypto_openssl_verify_rsa_padding_fallback($message, $sig, $pub, $digest);
         if ($ok === 1) {
             return formatOutput(
                 '<strong>Signature valid.</strong> Digest: ' . htmlspecialchars(crypto_digest_label($digest), ENT_QUOTES, 'UTF-8'),
