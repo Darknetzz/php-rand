@@ -470,7 +470,7 @@ function submitBtn(string $value = "", string $name = "action", string $text = "
  * @return array{0: int, 1: int}|null [from, to] or null if invalid
  */
 function max_configurable_numgen_digits(): int {
-  return 20;
+  return 50;
 }
 
 function max_supported_numgen_digits(): int {

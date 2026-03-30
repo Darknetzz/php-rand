@@ -400,7 +400,8 @@ function handle_numgen(array $req): string {
 
     if ($useLargeDigitPath && !numgen_type_supports_large_values($type)) {
         $nativeDigits = max_supported_numgen_digits();
-        return formatOutput("Type '{$type}' is only supported up to {$nativeDigits} digits. Use any, odd, even, or palindromic for 20-digit generation.", type: "danger");
+        $largeCap = max_configurable_numgen_digits();
+        return formatOutput("Type '{$type}' is only supported up to {$nativeDigits} digits. Use any, odd, even, or palindromic for digit ranges above that (up to {$largeCap} digits).", type: "danger");
     }
     if ($useLargeDigitPath && !numgen_large_gmp_available()) {
         return formatOutput("Large digit generation requires the GMP PHP extension. Supported large-number types are any, odd, even, and palindromic once GMP is available.", type: "danger");

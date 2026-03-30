@@ -7,12 +7,16 @@ All notable changes to this project are documented in this file.
 ## [Unreleased]
 
 ### Major Features
-- _No user-facing changes yet._
+- **Number Generator: up to 50 digits (digit mode)** – For digit ranges that exceed native PHP integer bounds, generation uses a dedicated large-number path (requires the **GMP** extension). Supported types in that mode are **any**, **odd**, **even**, and **palindromic**. Types that rely on full native integer math (**prime**, **composite**, **square**, **fibonacci**) remain limited to the server’s native range and are rejected with a clear message when the requested digit range is too large.
+- **Deployment** – Docker image now builds PHP with **GMP** (`libgmp-dev` + `gmp` extension). README documents the `gmp` requirement and large-digit behavior.
 
 <details>
 <summary>📋 Detailed Changes (click to expand)</summary>
 
-- _No detailed changes yet._
+#### Number Generator
+- **Digit limits** – Configurable digit inputs allow up to **50** digits; full native-int digit ranges are capped by `PHP_INT_MAX` (typically **18** digits for a complete min–max digit span on 64-bit builds). Explicit `int` bounds elsewhere remain limited by the length of `PHP_INT_MAX` (typically **19** digits).
+- **Large-number path** – `handle_numgen()` routes oversized digit requests to string-based generation with GMP-backed length selection so min–max digit ranges stay distribution-consistent with the old numeric-range behavior.
+- **UI** – `modules/gen_number.php` reflects the 50-digit cap, explains native vs large-digit behavior, and disables native-only filter options when the selected digit range exceeds the native safe limit.
 
 </details>
 

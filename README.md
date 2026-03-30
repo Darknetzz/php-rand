@@ -221,7 +221,7 @@ CI Docker publish requirements:
 
 ### Number Generator Notes
 
-- Digit mode supports up to 20 digits.
+- Digit mode supports up to 50 digits.
 - For values above the native PHP integer range on the current server, supported types are limited to `any`, `odd`, `even`, and `palindromic`.
 - Types such as `prime`, `composite`, `square`, and `fibonacci` still require native integer ranges and will be rejected for oversized digit requests.
 
