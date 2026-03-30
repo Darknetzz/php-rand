@@ -20,11 +20,22 @@
             <?php endif; ?>
         </h1>
         <div class="card-body">
-            <div class="alert alert-warning mb-4">
-                Generate PEM keypairs for SSH usage. Also outputs true OpenSSH public keys when supported by the selected algorithm/runtime.
+            <div class="alert alert-primary border border-primary mb-3" role="note">
+                <div class="d-flex align-items-start gap-2 gap-md-3">
+                    <span class="fs-3 lh-1 text-primary"><?= icon('journal-text') ?></span>
+                    <div>
+                        <strong class="d-block mb-1">You choose which public format to use later</strong>
+                        <p class="mb-0">
+                            Generated material includes <strong>both</strong> a <strong>PEM</strong> public key (<code>BEGIN PUBLIC KEY</code>) and, when this server/runtime supports it, a true <strong>OpenSSH one-line</strong> public key (<code>ssh-ed25519</code> / <code>ssh-rsa</code> / …). They represent the same key—copy the format your host, cloud UI, or <code>authorized_keys</code> expects. The private key is PEM only.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="alert alert-warning mb-3">
+                Server or <strong>Auto</strong> mode is best when you need the OpenSSH line; client-only mode may omit it (see banner below after you pick a mode).
             </div>
 
-            <div class="client-crypto-generator-banner mb-3" aria-live="polite"></div>
+            <div class="client-crypto-generator-banner mb-3 mt-3" aria-live="polite"></div>
 
             <form class="form" action="gen.php" method="POST" id="sshKeygenForm" data-action="ssh_keygen">
                 <div class="row g-3 mb-4">
@@ -87,7 +98,7 @@
 
                 <label class="form-label mb-2"><strong>Output</strong></label>
                 <div class="responseDiv" id="sshKeygenFormresponse" style="border: 2px solid #495057; padding: 20px; min-height: 220px; border-radius: 0.5rem;">
-                    <div style="opacity: 0.55;">Generated PEM keys, OpenSSH public key lines, and download buttons will appear here.</div>
+                    <div style="opacity: 0.55;">Public key as <strong>PEM</strong> and <strong>OpenSSH</strong> (when available), private PEM, copy/download—shown here after generate.</div>
                 </div>
             </form>
         </div>
@@ -99,19 +110,23 @@
         </div>
         <div class="card-body">
             <p class="text-muted mb-4">
-                Paste a <strong>public</strong> key as PEM or as a single-line OpenSSH line (<code>ssh-rsa</code> / <code>ssh-ed25519</code> / <code>ecdsa-sha2-…</code>). Format is <strong>auto-detected</strong> when possible; use the dropdown if detection is wrong. Add a PEM <strong>private</strong> key to check that public and private match. <code>ssh-keygen -l</code> runs when available for OpenSSH material.
+                Paste a <strong>public</strong> key (the same logical key can be PEM or OpenSSH-shaped). Add an optional PEM <strong>private</strong> key to confirm they match. Fingerprinting uses <code>ssh-keygen -l</code> when OpenSSH material is present and <code>ssh-keygen</code> is installed.
             </p>
             <form class="form" action="gen.php" method="POST" id="sshVerifyForm" data-action="ssh_key_verify">
-                <div class="row g-3 mb-3">
-                    <div class="col-12 col-md-6">
-                        <label for="verifyPublicFormat" class="form-label"><strong>Public key format</strong></label>
-                        <select name="verify_public_format" id="verifyPublicFormat" class="form-select form-select-lg">
-                            <option value="auto" selected>Auto-detect</option>
-                            <option value="pem">PEM (BEGIN PUBLIC KEY …)</option>
-                            <option value="openssh">OpenSSH one-line</option>
-                        </select>
-                        <div class="form-text">Use a fixed format if auto-detect fails on an unusual paste.</div>
-                    </div>
+                <div class="rounded-3 border border-warning border-2 p-3 p-md-4 mb-4 bg-warning bg-opacity-10">
+                    <h3 class="h5 text-warning d-flex align-items-center gap-2 mb-2">
+                        <?= icon('sliders') ?>
+                        <span>Choose public key format</span>
+                    </h3>
+                    <p class="text-muted mb-3 mb-md-4">
+                        Tell the tool how to read your paste: <strong>Auto-detect</strong> for normal PEM blocks or standard <code>ssh-*</code> lines, or explicitly <strong>PEM</strong> vs <strong>OpenSSH one-line</strong> if detection misfires.
+                    </p>
+                    <label for="verifyPublicFormat" class="form-label"><strong>Public key encoding</strong></label>
+                    <select name="verify_public_format" id="verifyPublicFormat" class="form-select form-select-lg fw-semibold">
+                        <option value="auto" selected>Auto-detect (recommended)</option>
+                        <option value="pem">Force PEM (BEGIN PUBLIC KEY …)</option>
+                        <option value="openssh">Force OpenSSH one-line (ssh-ed25519 AAAA…)</option>
+                    </select>
                 </div>
                 <div class="mb-3">
                     <label for="verifyPublicInput" class="form-label"><strong>Public key</strong></label>
