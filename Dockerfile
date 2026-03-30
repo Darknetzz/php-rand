@@ -15,7 +15,7 @@ RUN apt-get update \
         libzip-dev libicu-dev libonig-dev libpng-dev libjpeg-dev libfreetype6-dev libxml2-dev libgmp-dev git unzip \
         openssh-client \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j$(nproc) pdo pdo_mysql mysqli intl zip gd gmp opcache \
+    && docker-php-ext-install pdo pdo_mysql mysqli intl zip gd gmp \
     && a2enmod rewrite headers expires \
     && rm -rf /var/lib/apt/lists/*
 
