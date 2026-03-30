@@ -1948,19 +1948,20 @@ function handle_ssh_key_verify(array $req): string {
     }
 
     $output = formatOutput(
-        'Validation uses OpenSSL on the server and <code>ssh-keygen</code> for OpenSSH fingerprints when available. Private keys are not stored.',
+        'Validation uses OpenSSL on the server and <code>ssh-keygen</code> for OpenSSH fingerprints when available. Private keys are not stored. Results follow the same order as the form fields above.',
         type: 'info'
     );
 
     $derivedPublic = null;
+    $privateSection = '';
     if ($privatePem !== '') {
         $pv = crypto_verify_pem_private($privatePem, $pass);
         if (!$pv['ok']) {
-            $output .= formatOutput('<strong>PEM private key:</strong> ' . htmlspecialchars((string) $pv['error'], ENT_QUOTES, 'UTF-8'), type: 'danger');
+            $privateSection = formatOutput('<strong>PEM private key:</strong> ' . htmlspecialchars((string) $pv['error'], ENT_QUOTES, 'UTF-8'), type: 'danger');
         } else {
             $enc = !empty($pv['encrypted']) ? 'yes' : 'no';
             $bits = (int) ($pv['bits'] ?? 0);
-            $output .= formatOutput(
+            $privateSection = formatOutput(
                 '<strong>PEM private key:</strong> valid — ' . htmlspecialchars((string) $pv['summary'], ENT_QUOTES, 'UTF-8')
                 . ($bits > 0 ? ' — ' . $bits . ' bits' : '')
                 . ' — passphrase protected: ' . $enc,
@@ -1970,13 +1971,14 @@ function handle_ssh_key_verify(array $req): string {
         }
     }
 
+    $publicPemSection = '';
     if ($publicPem !== '') {
         $pub = crypto_verify_pem_public($publicPem);
         if (!$pub['ok']) {
-            $output .= formatOutput('<strong>PEM public key:</strong> ' . htmlspecialchars((string) $pub['error'], ENT_QUOTES, 'UTF-8'), type: 'danger');
+            $publicPemSection = formatOutput('<strong>PEM public key:</strong> ' . htmlspecialchars((string) $pub['error'], ENT_QUOTES, 'UTF-8'), type: 'danger');
         } else {
             $bits = (int) ($pub['bits'] ?? 0);
-            $output .= formatOutput(
+            $publicPemSection = formatOutput(
                 '<strong>PEM public key:</strong> valid — ' . htmlspecialchars((string) $pub['summary'], ENT_QUOTES, 'UTF-8')
                 . ($bits > 0 ? ' — ' . $bits . ' bits' : ''),
                 type: 'success'
@@ -1984,15 +1986,18 @@ function handle_ssh_key_verify(array $req): string {
         }
     }
 
+    $opensshSection = '';
     if ($publicOpenssh !== '') {
         $insp = crypto_ssh_keygen_inspect_openssh_line($publicOpenssh);
         if (!$insp['ok']) {
-            $output .= formatOutput('<strong>OpenSSH public key:</strong> ' . htmlspecialchars((string) $insp['error'], ENT_QUOTES, 'UTF-8'), type: 'warning');
+            $opensshSection = formatOutput('<strong>OpenSSH public key:</strong> ' . htmlspecialchars((string) $insp['error'], ENT_QUOTES, 'UTF-8'), type: 'warning');
         } else {
             $joined = htmlspecialchars(implode("\n", $insp['lines'] ?? []), ENT_QUOTES, 'UTF-8');
-            $output .= formatOutput('<strong>OpenSSH public key (ssh-keygen -l):</strong><pre class="mb-0" style="white-space:pre-wrap;">' . $joined . '</pre>', type: 'success');
+            $opensshSection = formatOutput('<strong>OpenSSH public key (ssh-keygen -l):</strong><pre class="mb-0" style="white-space:pre-wrap;">' . $joined . '</pre>', type: 'success');
         }
     }
+
+    $output .= $publicPemSection . $opensshSection . $privateSection;
 
     if ($derivedPublic !== null && $publicPem !== '') {
         $match = crypto_pem_strings_equal($derivedPublic, $publicPem);
@@ -2139,14 +2144,14 @@ function handle_keypair_generate(array $req): string {
         $suffix = $algo === 'rsa' ? "-{$rsaBits}" : ($algo === 'ecdsa' ? "-{$curve}" : '');
         $items = [
             [
-                'label' => strtoupper($algo) . ' Private Key (PEM)',
-                'content' => (string) $result['private_pem'],
-                'filename' => "private-{$algo}{$suffix}.pem",
-            ],
-            [
                 'label' => strtoupper($algo) . ' Public Key (PEM)',
                 'content' => (string) $result['public_pem'],
                 'filename' => "public-{$algo}{$suffix}.pem",
+            ],
+            [
+                'label' => strtoupper($algo) . ' Private Key (PEM)',
+                'content' => (string) $result['private_pem'],
+                'filename' => "private-{$algo}{$suffix}.pem",
             ],
         ];
         $output .= crypto_render_key_output($items, strtoupper($algo) . " Keypair");
@@ -2287,20 +2292,16 @@ function handle_ssh_keygen(array $req): string {
         }
 
         $suffix = $algo === 'rsa' ? "-{$rsaBits}" : ($algo === 'ecdsa' ? "-{$curve}" : '');
+        $publicPem = (string) $result['public_pem'];
         $items = [
             [
-                'label' => strtoupper($algo) . ' Private Key (PEM)',
-                'content' => (string) $result['private_pem'],
-                'filename' => "private-{$algo}{$suffix}.pem",
-            ],
-            [
                 'label' => strtoupper($algo) . ' Public Key (PEM)',
-                'content' => (string) $result['public_pem'],
+                'content' => $publicPem,
                 'filename' => "public-{$algo}{$suffix}.pem",
             ],
         ];
 
-        $sshLine = crypto_public_pem_to_openssh((string) $result['public_pem'], $comment);
+        $sshLine = crypto_public_pem_to_openssh($publicPem, $comment);
         if (($sshLine['ok'] ?? false) === true) {
             $items[] = [
                 'label' => strtoupper($algo) . ' Public Key (OpenSSH)',
@@ -2313,6 +2314,12 @@ function handle_ssh_keygen(array $req): string {
                 type: "warning"
             );
         }
+
+        $items[] = [
+            'label' => strtoupper($algo) . ' Private Key (PEM)',
+            'content' => (string) $result['private_pem'],
+            'filename' => "private-{$algo}{$suffix}.pem",
+        ];
 
         $output .= crypto_render_key_output($items, strtoupper($algo) . " SSH Key Material");
     }
@@ -2382,14 +2389,14 @@ function handle_csr_generate(array $req): string {
             'filename' => "request-{$algorithm}{$suffix}.csr.pem",
         ],
         [
-            'label' => strtoupper($algorithm) . " Private Key (PEM)",
-            'content' => (string) $keyResult['private_pem'],
-            'filename' => "private-{$algorithm}{$suffix}.pem",
-        ],
-        [
             'label' => strtoupper($algorithm) . " Public Key (PEM)",
             'content' => (string) $keyResult['public_pem'],
             'filename' => "public-{$algorithm}{$suffix}.pem",
+        ],
+        [
+            'label' => strtoupper($algorithm) . " Private Key (PEM)",
+            'content' => (string) $keyResult['private_pem'],
+            'filename' => "private-{$algorithm}{$suffix}.pem",
         ],
     ];
 

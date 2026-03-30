@@ -828,8 +828,8 @@ async function maybeHandleClientSideKeygen(form, responseObj) {
             const pair = await clientGeneratePemPair(algorithm, rsaBits, ecdsaCurve);
             const suffix = algorithm === "rsa" ? ("-" + rsaBits) : (algorithm === "ecdsa" ? ("-" + ecdsaCurve) : "");
             const items = [
-                { label: algorithm.toUpperCase() + " Private Key (PEM)", content: pair.privatePem, filename: "private-" + algorithm + suffix + ".pem" },
-                { label: algorithm.toUpperCase() + " Public Key (PEM)", content: pair.publicPem, filename: "public-" + algorithm + suffix + ".pem" }
+                { label: algorithm.toUpperCase() + " Public Key (PEM)", content: pair.publicPem, filename: "public-" + algorithm + suffix + ".pem" },
+                { label: algorithm.toUpperCase() + " Private Key (PEM)", content: pair.privatePem, filename: "private-" + algorithm + suffix + ".pem" }
             ];
             if (isSsh) {
                 output += "<div class='alert alert-warning'>OpenSSH public-key line generation is server-backed for best compatibility. Switch to server mode for full SSH output.</div>";
