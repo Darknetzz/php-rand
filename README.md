@@ -92,13 +92,13 @@ docker run -d -p 12345:80 --name php-rand php-rand
 ### Manual Installation (Without Docker)
 
 Requirements:
-- PHP 8.3+ with extensions: mbstring, mcrypt, gd, yaml, xml
+- PHP 8.3+ with extensions: mbstring, mcrypt, gd, yaml, xml, gmp
 - Web server (Apache, Nginx, etc.) with PHP support
 - Composer (for dependency management)
 
 ```bash
 # Install system dependencies (Ubuntu/Debian)
-sudo apt install -y php8.3-common php8.3-mbstring php8.3-mcrypt php8.3-gd php8.3-yaml php8.3-xml
+sudo apt install -y php8.3-common php8.3-mbstring php8.3-mcrypt php8.3-gd php8.3-yaml php8.3-xml php8.3-gmp
 
 # Clone repository (assuming webroot is /var/www/html)
 cd /var/www/html
@@ -218,6 +218,12 @@ CI Docker publish requirements:
 - GHCR publish uses `GITHUB_TOKEN` automatically
 
 ## Key Features
+
+### Number Generator Notes
+
+- Digit mode supports up to 20 digits.
+- For values above the native PHP integer range on the current server, supported types are limited to `any`, `odd`, `even`, and `palindromic`.
+- Types such as `prime`, `composite`, `square`, and `fibonacci` still require native integer ranges and will be rejected for oversized digit requests.
 
 ### 🎲 Smart Random Data Generation
 Automatic random data buttons for all input fields with context-aware detection:

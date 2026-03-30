@@ -6,7 +6,8 @@
             <form class="form" action="gen.php" method="POST" id="numgen" data-action="numgen">
                 
                 <?php
-                $maxDigitLimit      = max_supported_numgen_digits();
+                $maxDigitLimit      = max_configurable_numgen_digits();
+                $nativeDigitLimit   = max_supported_numgen_digits();
                 $numgenRangeMode    = isset($_POST['numgenrangemode']) ? $_POST['numgenrangemode'] : 'numeric';
                 $numgenDigitMode   = isset($_POST['numgen_digit_mode']) ? $_POST['numgen_digit_mode'] : 'range';
                 $fixedDigits       = isset($_POST['numgendigits']) ? (int)$_POST['numgendigits'] : 2;
@@ -62,7 +63,7 @@
                                 <input type="number" name="numgenmaxdig" class="form-control form-control-lg" value="<?= max(1, min($maxDigitLimit, (int)$maxDig)) ?>" min="1" max="<?= $maxDigitLimit ?>" placeholder="5" style="font-family: monospace; font-size: 1.5rem;">
                             </div>
                         </div>
-                        <small class="text-muted">e.g. fixed 4 digits → 1000–9999; range 2–4 → 10 to 9,999 (max <?= $maxDigitLimit ?> digits on this server)</small>
+                        <small class="text-muted">e.g. fixed 4 digits -> 1000-9999; range 2-4 -> 10 to 9,999 (up to <?= $maxDigitLimit ?> digits, native-int math up to <?= $nativeDigitLimit ?> digits)</small>
                     </div>
                     <div class="col-12">
                         <label class="form-label">Number type</label>
@@ -70,20 +71,22 @@
                         $numgenType = isset($_POST['numgentype']) ? $_POST['numgentype'] : 'any';
                         $allowedTypes = [
                             'any' => 'Any number',
-                            'prime' => 'Prime only',
-                            'composite' => 'Composite only',
+                            'prime' => 'Prime only (native range)',
+                            'composite' => 'Composite only (native range)',
                             'odd' => 'Odd only',
                             'even' => 'Even only',
-                            'square' => 'Perfect square only',
+                            'square' => 'Perfect square only (native range)',
                             'palindromic' => 'Palindromic only',
-                            'fibonacci' => 'Fibonacci only',
+                            'fibonacci' => 'Fibonacci only (native range)',
                         ];
+                        $nativeOnlyTypes = ['prime', 'composite', 'square', 'fibonacci'];
                         ?>
                         <select name="numgentype" class="form-select form-select-lg" style="font-family: monospace;">
                             <?php foreach ($allowedTypes as $value => $label): ?>
-                                <option value="<?= htmlspecialchars($value) ?>" <?= $numgenType === $value ? 'selected' : '' ?>><?= htmlspecialchars($label) ?></option>
+                                <option value="<?= htmlspecialchars($value) ?>" data-native-only="<?= in_array($value, $nativeOnlyTypes, true) ? '1' : '0' ?>" <?= $numgenType === $value ? 'selected' : '' ?>><?= htmlspecialchars($label) ?></option>
                             <?php endforeach; ?>
                         </select>
+                        <small id="numgen_type_hint" class="text-muted">Up to <?= $maxDigitLimit ?> digits supported in digit mode. Above <?= $nativeDigitLimit ?> digits, available types are any, odd, even, and palindromic.</small>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">Quantity</label>
@@ -148,15 +151,38 @@
         var isDigits = $("#numgen_mode_digits").is(":checked");
         $(".numgen-numeric-range").toggle(!isDigits);
         $(".numgen-digits-range").toggle(isDigits);
-        if (isDigits) numgenToggleDigitMode();
+        if (isDigits) {
+            numgenToggleDigitMode();
+        } else {
+            numgenUpdateTypeAvailability();
+        }
     }
     function numgenToggleDigitMode() {
         var isFixed = $("#numgen_digit_fixed").is(":checked");
         $(".numgen-digit-fixed").toggle(isFixed);
         $(".numgen-digit-range").toggle(!isFixed);
+        numgenUpdateTypeAvailability();
+    }
+    function numgenUpdateTypeAvailability() {
+        var isDigits = $("#numgen_mode_digits").is(":checked");
+        var isFixed = $("#numgen_digit_fixed").is(":checked");
+        var nativeDigitLimit = <?= (int) $nativeDigitLimit ?>;
+        var maxDigits = isFixed ? parseInt($("input[name='numgendigits']").val() || "0", 10) : parseInt($("input[name='numgenmaxdig']").val() || "0", 10);
+        var exceedsNative = isDigits && maxDigits > nativeDigitLimit;
+        var $select = $("select[name='numgentype']");
+
+        $select.find("option").each(function() {
+            var nativeOnly = $(this).data("native-only") === 1 || $(this).data("native-only") === "1";
+            $(this).prop("disabled", exceedsNative && nativeOnly);
+        });
+
+        if ($select.find(":selected").prop("disabled")) {
+            $select.val("any");
+        }
     }
     $("input[name='numgenrangemode']").on("change", numgenToggleRangeMode);
     $("input[name='numgen_digit_mode']").on("change", numgenToggleDigitMode);
+    $("input[name='numgendigits'], input[name='numgenmindig'], input[name='numgenmaxdig']").on("input", numgenUpdateTypeAvailability);
     numgenToggleRangeMode();
 
     // Separator preset: show custom input only when "Custom…" is selected

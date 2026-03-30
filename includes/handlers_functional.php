@@ -350,14 +350,27 @@ function handle_hash(array $req): string {
  */
 function handle_numgen(array $req): string {
     $rangeMode = isset($req['numgenrangemode']) && $req['numgenrangemode'] === 'digits' ? 'digits' : 'numeric';
+    $minDigits = null;
+    $maxDigits = null;
+    $useLargeDigitPath = false;
 
     if ($rangeMode === 'digits') {
-        $range = resolve_numgen_digit_range($req);
-        if ($range === null) {
-            $maxDigits = max_supported_numgen_digits();
-            return formatOutput("Invalid digit range. Use digits 1-{$maxDigits} and ensure min <= max.", type: "danger");
+        $digitBounds = resolve_numgen_digit_bounds($req);
+        if ($digitBounds === null) {
+            $maxDigitsAllowed = max_configurable_numgen_digits();
+            return formatOutput("Invalid digit range. Use digits 1-{$maxDigitsAllowed} and ensure min <= max.", type: "danger");
         }
-        [$from, $to] = $range;
+        [$minDigits, $maxDigits] = $digitBounds;
+        $useLargeDigitPath = $maxDigits > max_supported_numgen_digits();
+
+        if (!$useLargeDigitPath) {
+            $range = digit_range_to_numeric($minDigits, $maxDigits);
+            if ($range === null) {
+                $maxDigitsAllowed = max_supported_numgen_digits();
+                return formatOutput("Invalid digit range. Use digits 1-{$maxDigitsAllowed} and ensure min <= max.", type: "danger");
+            }
+            [$from, $to] = $range;
+        }
     } else {
         // Validate 'from' parameter
         $fromValidation = req_int_validated($req, 'numgenfrom', -1000000000, 1000000000);
@@ -384,6 +397,14 @@ function handle_numgen(array $req): string {
     $type = isset($req['numgentype']) && in_array($req['numgentype'], $allowedTypes, true)
         ? $req['numgentype']
         : 'any';
+
+    if ($useLargeDigitPath && !numgen_type_supports_large_values($type)) {
+        $nativeDigits = max_supported_numgen_digits();
+        return formatOutput("Type '{$type}' is only supported up to {$nativeDigits} digits. Use any, odd, even, or palindromic for 20-digit generation.", type: "danger");
+    }
+    if ($useLargeDigitPath && !numgen_large_gmp_available()) {
+        return formatOutput("Large digit generation requires the GMP PHP extension. Supported large-number types are any, odd, even, and palindromic once GMP is available.", type: "danger");
+    }
 
     // Resolve seed: validate custom seed if provided; invalid → use generated seed + warning
     $seed = null;
@@ -418,6 +439,11 @@ function handle_numgen(array $req): string {
 
     $results = [];
     for ($i = 0; $i < $qty; $i++) {
+        if ($useLargeDigitPath) {
+            $results[] = random_large_numgen_value_by_digits($minDigits, $maxDigits, $type);
+            continue;
+        }
+
         $result = numGen($from, $to, null, $type);
         if (is_string($result)) {
             return $result;

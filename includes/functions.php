@@ -469,8 +469,42 @@ function submitBtn(string $value = "", string $name = "action", string $text = "
  * @param int $maxDigits Maximum number of digits
  * @return array{0: int, 1: int}|null [from, to] or null if invalid
  */
+function max_configurable_numgen_digits(): int {
+  return 20;
+}
+
 function max_supported_numgen_digits(): int {
+  $maxIntString = (string) PHP_INT_MAX;
+  $digitCount = strlen($maxIntString);
+  if ($maxIntString === str_repeat('9', $digitCount)) {
+    return $digitCount;
+  }
+  return $digitCount - 1;
+}
+
+function max_native_numgen_value_digits(): int {
   return strlen((string) PHP_INT_MAX);
+}
+
+function resolve_numgen_digit_bounds(array $req): ?array {
+  $mode = isset($req['numgen_digit_mode']) && $req['numgen_digit_mode'] === 'fixed' ? 'fixed' : 'range';
+  $maxDigitsAllowed = max_configurable_numgen_digits();
+
+  if ($mode === 'fixed' && isset($req['numgendigits'])) {
+    $digits = (int) $req['numgendigits'];
+    if ($digits >= 1 && $digits <= $maxDigitsAllowed) {
+      return [$digits, $digits];
+    }
+    return null;
+  }
+
+  $minDigits = isset($req['numgenmindig']) ? (int) $req['numgenmindig'] : 0;
+  $maxDigits = isset($req['numgenmaxdig']) ? (int) $req['numgenmaxdig'] : 0;
+  if ($minDigits < 1 || $maxDigits < 1 || $minDigits > $maxDigits || $maxDigits > $maxDigitsAllowed) {
+    return null;
+  }
+
+  return [$minDigits, $maxDigits];
 }
 
 function pow10_int_or_null(int $exp): ?int {
@@ -512,17 +546,147 @@ function digit_range_to_numeric(int $minDigits, int $maxDigits): ?array {
  * @return array{0: int, 1: int}|null [from, to] or null if invalid
  */
 function resolve_numgen_digit_range(array $req): ?array {
-  $mode = isset($req['numgen_digit_mode']) && $req['numgen_digit_mode'] === 'fixed' ? 'fixed' : 'range';
-  if ($mode === 'fixed' && isset($req['numgendigits'])) {
-    $d = (int) $req['numgendigits'];
-    if ($d >= 1) {
-      return digit_range_to_numeric($d, $d);
-    }
+  $bounds = resolve_numgen_digit_bounds($req);
+  if ($bounds === null) {
     return null;
   }
-  $minDig = isset($req['numgenmindig']) ? (int) $req['numgenmindig'] : 0;
-  $maxDig = isset($req['numgenmaxdig']) ? (int) $req['numgenmaxdig'] : 0;
-  return digit_range_to_numeric($minDig, $maxDig);
+  [$minDigits, $maxDigits] = $bounds;
+  return digit_range_to_numeric($minDigits, $maxDigits);
+}
+
+function numgen_type_supports_large_values(string $type): bool {
+  return in_array($type, ['any', 'odd', 'even', 'palindromic'], true);
+}
+
+function normalize_unsigned_integer_string($value): ?string {
+  if (!is_string($value) && !is_int($value)) {
+    return null;
+  }
+  $normalized = trim((string) $value);
+  if ($normalized === '' || !ctype_digit($normalized)) {
+    return null;
+  }
+  $normalized = ltrim($normalized, '0');
+  return $normalized === '' ? '0' : $normalized;
+}
+
+function compare_unsigned_integer_strings(string $left, string $right): int {
+  $leftNormalized = normalize_unsigned_integer_string($left);
+  $rightNormalized = normalize_unsigned_integer_string($right);
+  if ($leftNormalized === null || $rightNormalized === null) {
+    throw new InvalidArgumentException('Unsigned integer string expected.');
+  }
+  if (function_exists('gmp_cmp')) {
+    return gmp_cmp(gmp_init($leftNormalized, 10), gmp_init($rightNormalized, 10));
+  }
+  $lengthCompare = strlen($leftNormalized) <=> strlen($rightNormalized);
+  if ($lengthCompare !== 0) {
+    return $lengthCompare;
+  }
+  return strcmp($leftNormalized, $rightNormalized) <=> 0;
+}
+
+function numgen_large_gmp_available(): bool {
+  return function_exists('gmp_init') && function_exists('gmp_cmp') && function_exists('gmp_pow') && function_exists('gmp_random_range');
+}
+
+function numgen_large_type_count_for_digits(int $numDigits, string $type) {
+  if ($numDigits < 1) {
+    return gmp_init(0, 10);
+  }
+  if ($type === 'any') {
+    return gmp_mul(gmp_init(9, 10), gmp_pow(10, $numDigits - 1));
+  }
+  if ($type === 'odd') {
+    if ($numDigits === 1) {
+      return gmp_init(5, 10);
+    }
+    return gmp_mul(gmp_init(45, 10), gmp_pow(10, $numDigits - 2));
+  }
+  if ($type === 'even') {
+    if ($numDigits === 1) {
+      return gmp_init(4, 10);
+    }
+    return gmp_mul(gmp_init(45, 10), gmp_pow(10, $numDigits - 2));
+  }
+  if ($type === 'palindromic') {
+    return gmp_mul(gmp_init(9, 10), gmp_pow(10, (int) ceil($numDigits / 2) - 1));
+  }
+  return gmp_init(0, 10);
+}
+
+function random_large_numgen_digit_length(int $minDigits, int $maxDigits, string $type): int {
+  $weights = [];
+  $total = gmp_init(0, 10);
+  for ($digits = $minDigits; $digits <= $maxDigits; $digits++) {
+    $weight = numgen_large_type_count_for_digits($digits, $type);
+    $weights[$digits] = $weight;
+    $total = gmp_add($total, $weight);
+  }
+
+  $pick = gmp_random_range(gmp_init(0, 10), gmp_sub($total, gmp_init(1, 10)));
+  $running = gmp_init(0, 10);
+  foreach ($weights as $digits => $weight) {
+    $running = gmp_add($running, $weight);
+    if (gmp_cmp($pick, $running) < 0) {
+      return (int) $digits;
+    }
+  }
+
+  return $maxDigits;
+}
+
+function random_numeric_string_with_digits(int $numDigits): string {
+  if ($numDigits <= 0) {
+    return '0';
+  }
+  $result = (string) mt_rand(1, 9);
+  for ($i = 1; $i < $numDigits; $i++) {
+    $result .= (string) mt_rand(0, 9);
+  }
+  return $result;
+}
+
+function random_numeric_string_with_parity(int $numDigits, string $type): string {
+  $choices = $type === 'even' ? [0, 2, 4, 6, 8] : [1, 3, 5, 7, 9];
+  if ($numDigits <= 0) {
+    return '0';
+  }
+  if ($numDigits === 1) {
+    $singleDigitChoices = $type === 'even' ? [2, 4, 6, 8] : [1, 3, 5, 7, 9];
+    return (string) $singleDigitChoices[mt_rand(0, count($singleDigitChoices) - 1)];
+  }
+
+  $result = (string) mt_rand(1, 9);
+  for ($i = 1; $i < $numDigits - 1; $i++) {
+    $result .= (string) mt_rand(0, 9);
+  }
+  $result .= (string) $choices[mt_rand(0, count($choices) - 1)];
+  return $result;
+}
+
+function random_palindromic_string_with_digits(int $numDigits): string {
+  if ($numDigits <= 0) {
+    return '0';
+  }
+  $half = (int) ceil($numDigits / 2);
+  $left = (string) mt_rand(1, 9);
+  for ($i = 1; $i < $half; $i++) {
+    $left .= (string) mt_rand(0, 9);
+  }
+  $right = strrev($numDigits % 2 === 1 ? substr($left, 0, -1) : $left);
+  return $left . $right;
+}
+
+function random_large_numgen_value_by_digits(int $minDigits, int $maxDigits, string $type = 'any') {
+  $numDigits = $minDigits === $maxDigits ? $minDigits : random_large_numgen_digit_length($minDigits, $maxDigits, $type);
+  if ($type === 'odd' || $type === 'even') {
+    return random_numeric_string_with_parity($numDigits, $type);
+  }
+  if ($type === 'palindromic') {
+    return random_palindromic_string_with_digits($numDigits);
+  }
+  return random_numeric_string_with_digits($numDigits);
 }
 
 /**
@@ -633,7 +797,7 @@ function numGen(int $from, int $to, ?string $seed = null, string $type = 'any') 
   $from = (int)$from;
   $to   = (int)$to;
 
-  $maxDigits = max_supported_numgen_digits();
+  $maxDigits = max_native_numgen_value_digits();
   if (strlen((string)$from) > $maxDigits || strlen((string)$to) > $maxDigits) {
     die("Please use numbers with at most {$maxDigits} digits.");
   }

@@ -12,9 +12,9 @@ RUN printf '%s\n' '#!/bin/sh' 'echo "php-rand ${PHP_RAND_VERSION:-unknown}"' 'ex
 # Install system dependencies and common PHP extensions (adjust as needed)
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-        libzip-dev libicu-dev libonig-dev libpng-dev libjpeg-dev libfreetype6-dev libxml2-dev git unzip \
+        libzip-dev libicu-dev libonig-dev libpng-dev libjpeg-dev libfreetype6-dev libxml2-dev libgmp-dev git unzip \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j$(nproc) pdo pdo_mysql mysqli intl zip gd opcache \
+    && docker-php-ext-install -j$(nproc) pdo pdo_mysql mysqli intl zip gd gmp opcache \
     && a2enmod rewrite headers expires \
     && rm -rf /var/lib/apt/lists/*
 
