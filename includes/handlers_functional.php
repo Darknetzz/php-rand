@@ -201,8 +201,8 @@ function req_int_validated(array $request, string $key, ?int $min = null, ?int $
  * @param array|null $useAsInput Optional use-as-input button config for two-way converters
  * @return string HTML formatted copyable output element
  */
-function output_copyable(string $content, string $label = "", ?array $useAsInput = null): string {
-    return "<div style='margin-bottom: 15px;'>" . copyableOutput($content, $label, $useAsInput) . "</div>";
+function output_copyable(string $content, string $label = "", ?array $useAsInput = null, ?string $extraActionsHtml = null): string {
+    return "<div style='margin-bottom: 15px;'>" . copyableOutput($content, $label, $useAsInput, $extraActionsHtml) . "</div>";
 }
 
 // ============================================================================
@@ -1633,7 +1633,7 @@ function crypto_data_download_link(string $filename, string $content, string $la
     $safeHref = htmlspecialchars($href, ENT_QUOTES, 'UTF-8');
     $safeFilename = htmlspecialchars($filename, ENT_QUOTES, 'UTF-8');
     $safeLabel = htmlspecialchars($label, ENT_QUOTES, 'UTF-8');
-    return "<a class='btn btn-outline-light btn-sm me-2 mb-2' href='{$safeHref}' download='{$safeFilename}'>" . icon('download') . " {$safeLabel}</a>";
+    return "<a class='btn btn-outline-light btn-sm' href='{$safeHref}' download='{$safeFilename}' style='white-space: nowrap; border: 1px solid #e9ecef;'>" . icon('download') . " {$safeLabel}</a>";
 }
 
 function crypto_render_key_output(array $items, string $title): string {
@@ -1641,13 +1641,12 @@ function crypto_render_key_output(array $items, string $title): string {
     $output = "<div class='card border-info mb-3'><h5 class='card-header'>{$safeTitle}</h5><div class='card-body'>";
 
     foreach ($items as $item) {
-        $label = htmlspecialchars((string) ($item['label'] ?? ''), ENT_QUOTES, 'UTF-8');
+        $rawLabel = (string) ($item['label'] ?? '');
+        $label = htmlspecialchars($rawLabel, ENT_QUOTES, 'UTF-8');
         $content = (string) ($item['content'] ?? '');
         $filename = (string) ($item['filename'] ?? '');
-        $output .= output_copyable($content, $label);
-        if ($filename !== '') {
-            $output .= "<div style='margin-bottom: 16px;'>" . crypto_data_download_link($filename, $content, "Download {$label}") . "</div>";
-        }
+        $extraDl = $filename !== '' ? crypto_data_download_link($filename, $content, 'Download ' . $rawLabel) : null;
+        $output .= output_copyable($content, $label, null, $extraDl);
     }
 
     $output .= "</div></div>";
@@ -1701,7 +1700,8 @@ function crypto_render_ssh_key_output(array $items, string $title): string {
     $first = true;
     foreach ($presentPublic as $slot) {
         $item = $bySlot[$slot];
-        $label = htmlspecialchars((string) ($item['label'] ?? ''), ENT_QUOTES, 'UTF-8');
+        $rawLabel = (string) ($item['label'] ?? '');
+        $label = htmlspecialchars($rawLabel, ENT_QUOTES, 'UTF-8');
         $content = (string) ($item['content'] ?? '');
         $filename = (string) ($item['filename'] ?? '');
         $sEsc = htmlspecialchars($slot, ENT_QUOTES, 'UTF-8');
@@ -1711,25 +1711,22 @@ function crypto_render_ssh_key_output(array $items, string $title): string {
         }
         $first = false;
 
+        $extraDl = $filename !== '' ? crypto_data_download_link($filename, $content, 'Download ' . $rawLabel) : null;
         $output .= "<div class=\"{$panelClass}\" data-format=\"{$sEsc}\">";
-        $output .= output_copyable($content, $label);
-        if ($filename !== '') {
-            $output .= "<div style='margin-bottom: 16px;'>" . crypto_data_download_link($filename, $content, "Download {$label}") . "</div>";
-        }
+        $output .= output_copyable($content, $label, null, $extraDl);
         $output .= '</div>';
     }
     $output .= '</div>';
 
     if (isset($bySlot['private-pem'])) {
         $priv = $bySlot['private-pem'];
-        $pl = htmlspecialchars((string) ($priv['label'] ?? ''), ENT_QUOTES, 'UTF-8');
+        $rawPl = (string) ($priv['label'] ?? '');
+        $pl = htmlspecialchars($rawPl, ENT_QUOTES, 'UTF-8');
         $pc = (string) ($priv['content'] ?? '');
         $pf = (string) ($priv['filename'] ?? '');
+        $extraPriv = $pf !== '' ? crypto_data_download_link($pf, $pc, 'Download ' . $rawPl) : null;
         $output .= "<div class='crypto-ssh-private-block mt-3 pt-3 border-top border-secondary'>";
-        $output .= output_copyable($pc, $pl);
-        if ($pf !== '') {
-            $output .= "<div style='margin-bottom: 16px;'>" . crypto_data_download_link($pf, $pc, "Download {$pl}") . "</div>";
-        }
+        $output .= output_copyable($pc, $pl, null, $extraPriv);
         $output .= '</div>';
     }
 

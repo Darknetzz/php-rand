@@ -1788,9 +1788,10 @@ function joinNumGenResults(array $results, string $separator): string {
  * @param string $content The content to display and copy.
  * @param string $label Optional label for the output.
  * @param array|null $useAsInput Optional: ['inputName' => string, 'swapNames' => [name1, name2]?, 'setSelectName' => string?, 'setSelectValue' => string?]
+ * @param string|null $extraActionsHtml Optional HTML (e.g. download link) appended after Copy, before Use as input.
  * @return string HTML for the copyable output.
  */
-function copyableOutput($content, $label = "", $useAsInput = null) {
+function copyableOutput($content, $label = "", $useAsInput = null, ?string $extraActionsHtml = null) {
   $uniqueId = "copy_" . uniqid();
   $html = "";
   
@@ -1806,6 +1807,9 @@ function copyableOutput($content, $label = "", $useAsInput = null) {
   $html .= "  <button type='button' class='btn btn-sm btn-outline-light' onclick=\"copyToClipboard('$uniqueId', this)\" style='white-space: nowrap; border: 1px solid #e9ecef;'>";
   $html .= "    <i class='bi bi-files'></i> Copy";
   $html .= "  </button>";
+  if ($extraActionsHtml !== null && $extraActionsHtml !== '') {
+    $html .= $extraActionsHtml;
+  }
   if (is_array($useAsInput) && !empty($useAsInput['inputName'])) {
     $inputName = $useAsInput['inputName'];
     $attrs = ' class="btn btn-sm btn-outline-info btn-use-as-input" data-copyable-id="' . htmlspecialchars($uniqueId) . '" data-input-name="' . htmlspecialchars($inputName) . '"';

@@ -768,7 +768,7 @@ function buildClientKeyOutput(items, title) {
         html += "<button type='button' class='btn btn-sm btn-outline-light' onclick=\"copyToClipboard('" + htmlEscape(copyId) + "', this)\" style='white-space: nowrap; border: 1px solid #e9ecef;\">";
         html += "<i class='bi bi-files'></i> Copy";
         html += "</button>";
-        html += "<a class='btn btn-outline-light btn-sm' download='" + htmlEscape(item.filename) + "' href='" + encoded + "'>";
+        html += "<a class='btn btn-outline-light btn-sm' download='" + htmlEscape(item.filename) + "' href='" + encoded + "' style='white-space: nowrap; border: 1px solid #e9ecef;'>";
         html += "<i class='bi bi-download'></i> Download " + htmlEscape(item.label);
         html += "</a></div></div></div>";
     });
@@ -828,7 +828,7 @@ function buildClientSshKeyOutput(slotItems, title) {
         panelsHtml += "<div class='copyable-actions'>";
         panelsHtml += "<button type='button' class='btn btn-sm btn-outline-light' onclick=\"copyToClipboard('" + htmlEscape(copyId) + "', this)\" style='white-space: nowrap; border: 1px solid #e9ecef;\">";
         panelsHtml += "<i class='bi bi-files'></i> Copy</button>";
-        panelsHtml += "<a class='btn btn-outline-light btn-sm' download='" + htmlEscape(item.filename) + "' href='" + encoded + "'>";
+        panelsHtml += "<a class='btn btn-outline-light btn-sm' download='" + htmlEscape(item.filename) + "' href='" + encoded + "' style='white-space: nowrap; border: 1px solid #e9ecef;'>";
         panelsHtml += "<i class='bi bi-download'></i> Download " + htmlEscape(item.label);
         panelsHtml += "</a></div></div></div></div>";
     });
@@ -846,7 +846,7 @@ function buildClientSshKeyOutput(slotItems, title) {
         privateHtml += "<div class='copyable-actions'>";
         privateHtml += "<button type='button' class='btn btn-sm btn-outline-light' onclick=\"copyToClipboard('" + htmlEscape(copyId) + "', this)\" style='white-space: nowrap; border: 1px solid #e9ecef;\">";
         privateHtml += "<i class='bi bi-files'></i> Copy</button>";
-        privateHtml += "<a class='btn btn-outline-light btn-sm' download='" + htmlEscape(priv.filename) + "' href='" + encoded + "'>";
+        privateHtml += "<a class='btn btn-outline-light btn-sm' download='" + htmlEscape(priv.filename) + "' href='" + encoded + "' style='white-space: nowrap; border: 1px solid #e9ecef;'>";
         privateHtml += "<i class='bi bi-download'></i> Download " + htmlEscape(priv.label);
         privateHtml += "</a></div></div></div></div>";
     }
