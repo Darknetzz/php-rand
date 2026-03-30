@@ -2,11 +2,11 @@
 
 # VAR: $navbarItems
 $navbarItems = [
-    // "dashboard" => [
-    //     "name"       => "dashboard",
-    //     "formalName" => "Dashboard",
-    //     "icon"       => icon('speedometer2')
-    // ],
+    "dashboard" => [
+        "name"       => "dashboard",
+        "formalName" => "Dashboard",
+        "icon"       => icon('speedometer2')
+    ],
     "generators" => [
         "name"       => "generators",
         "formalName" => "Generators",
