@@ -465,18 +465,38 @@ function submitBtn(string $value = "", string $name = "action", string $text = "
  * Convert a digit range to a numeric range [from, to].
  * 1 digit = 1–9, 2 digits = 10–99, etc.
  *
- * @param int $minDigits Minimum number of digits (1–20)
- * @param int $maxDigits Maximum number of digits (1–20)
+ * @param int $minDigits Minimum number of digits
+ * @param int $maxDigits Maximum number of digits
  * @return array{0: int, 1: int}|null [from, to] or null if invalid
  */
+function pow10_int_or_null(int $exp): ?int {
+  if ($exp < 0) {
+    return null;
+  }
+  $value = 1;
+  for ($i = 0; $i < $exp; $i++) {
+    if ($value > intdiv(PHP_INT_MAX, 10)) {
+      return null;
+    }
+    $value *= 10;
+  }
+  return $value;
+}
+
 function digit_range_to_numeric(int $minDigits, int $maxDigits): ?array {
   $minDigits = (int) $minDigits;
   $maxDigits = (int) $maxDigits;
-  if ($minDigits < 1 || $maxDigits < 1 || $minDigits > 20 || $maxDigits > 20 || $minDigits > $maxDigits) {
+  if ($minDigits < 1 || $maxDigits < 1 || $minDigits > $maxDigits) {
     return null;
   }
-  $from = (int) pow(10, $minDigits - 1);
-  $to   = (int) (pow(10, $maxDigits) - 1);
+
+  $from = pow10_int_or_null($minDigits - 1);
+  $toPow = pow10_int_or_null($maxDigits);
+  if ($from === null || $toPow === null) {
+    return null;
+  }
+  $to = $toPow - 1;
+
   return [$from, $to];
 }
 
@@ -490,7 +510,7 @@ function resolve_numgen_digit_range(array $req): ?array {
   $mode = isset($req['numgen_digit_mode']) && $req['numgen_digit_mode'] === 'fixed' ? 'fixed' : 'range';
   if ($mode === 'fixed' && isset($req['numgendigits'])) {
     $d = (int) $req['numgendigits'];
-    if ($d >= 1 && $d <= 20) {
+    if ($d >= 1) {
       return digit_range_to_numeric($d, $d);
     }
     return null;

@@ -354,7 +354,7 @@ function handle_numgen(array $req): string {
     if ($rangeMode === 'digits') {
         $range = resolve_numgen_digit_range($req);
         if ($range === null) {
-            return formatOutput("Invalid digit range. Use 1–20 for fixed length, or min ≤ max for range.", type: "danger");
+            return formatOutput("Invalid digit range for this server. Use positive digits where min <= max.", type: "danger");
         }
         [$from, $to] = $range;
     } else {
