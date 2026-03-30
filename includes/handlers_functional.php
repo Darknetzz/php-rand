@@ -401,10 +401,10 @@ function handle_numgen(array $req): string {
     if ($useLargeDigitPath && !numgen_type_supports_large_values($type)) {
         $nativeDigits = max_supported_numgen_digits();
         $largeCap = max_configurable_numgen_digits();
-        return formatOutput("Type '{$type}' is only supported up to {$nativeDigits} digits. Use any, odd, even, or palindromic for digit ranges above that (up to {$largeCap} digits).", type: "danger");
+        return formatOutput("Type '{$type}' is only supported up to {$nativeDigits} digits. For digit ranges above that (up to {$largeCap} digits), use any, odd, even, palindromic, prime, or composite (requires GMP).", type: "danger");
     }
     if ($useLargeDigitPath && !numgen_large_gmp_available()) {
-        return formatOutput("Large digit generation requires the GMP PHP extension. Supported large-number types are any, odd, even, and palindromic once GMP is available.", type: "danger");
+        return formatOutput("Large digit generation requires the GMP PHP extension (including gmp_prob_prime).", type: "danger");
     }
 
     // Resolve seed: validate custom seed if provided; invalid → use generated seed + warning
@@ -441,7 +441,11 @@ function handle_numgen(array $req): string {
     $results = [];
     for ($i = 0; $i < $qty; $i++) {
         if ($useLargeDigitPath) {
-            $results[] = random_large_numgen_value_by_digits($minDigits, $maxDigits, $type);
+            $result = random_large_numgen_value_by_digits($minDigits, $maxDigits, $type);
+            if (is_string($result) && str_contains($result, "alert alert-")) {
+                return $result;
+            }
+            $results[] = $result;
             continue;
         }
 

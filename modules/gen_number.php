@@ -71,22 +71,22 @@
                         $numgenType = isset($_POST['numgentype']) ? $_POST['numgentype'] : 'any';
                         $allowedTypes = [
                             'any' => 'Any number',
-                            'prime' => 'Prime only (native range)',
-                            'composite' => 'Composite only (native range)',
+                            'prime' => 'Prime only',
+                            'composite' => 'Composite only',
                             'odd' => 'Odd only',
                             'even' => 'Even only',
                             'square' => 'Perfect square only (native range)',
                             'palindromic' => 'Palindromic only',
                             'fibonacci' => 'Fibonacci only (native range)',
                         ];
-                        $nativeOnlyTypes = ['prime', 'composite', 'square', 'fibonacci'];
+                        $nativeOnlyTypes = ['square', 'fibonacci'];
                         ?>
                         <select name="numgentype" class="form-select form-select-lg" style="font-family: monospace;">
                             <?php foreach ($allowedTypes as $value => $label): ?>
                                 <option value="<?= htmlspecialchars($value) ?>" data-native-only="<?= in_array($value, $nativeOnlyTypes, true) ? '1' : '0' ?>" <?= $numgenType === $value ? 'selected' : '' ?>><?= htmlspecialchars($label) ?></option>
                             <?php endforeach; ?>
                         </select>
-                        <small id="numgen_type_hint" class="text-muted">Up to <?= $maxDigitLimit ?> digits supported in digit mode. Above <?= $nativeDigitLimit ?> digits, available types are any, odd, even, and palindromic.</small>
+                        <small id="numgen_type_hint" class="text-muted">Up to <?= $maxDigitLimit ?> digits in digit mode. Above <?= $nativeDigitLimit ?> digits, square and Fibonacci are not available; other types use GMP for large values (prime/composite need gmp_prob_prime).</small>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">Quantity</label>

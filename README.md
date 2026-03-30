@@ -222,8 +222,8 @@ CI Docker publish requirements:
 ### Number Generator Notes
 
 - Digit mode supports up to 50 digits.
-- For values above the native PHP integer range on the current server, supported types are limited to `any`, `odd`, `even`, and `palindromic`.
-- Types such as `prime`, `composite`, `square`, and `fibonacci` still require native integer ranges and will be rejected for oversized digit requests.
+- For values above the native PHP integer range on the current server, generation uses **GMP** (including `gmp_prob_prime` for primality). Supported large-digit types include `any`, `odd`, `even`, `palindromic`, `prime`, and `composite`.
+- `square` and `fibonacci` still require native integer ranges and are not available for digit ranges above that limit.
 
 ### 🎲 Smart Random Data Generation
 Automatic random data buttons for all input fields with context-aware detection:
