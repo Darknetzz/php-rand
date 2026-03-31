@@ -8,7 +8,38 @@ All notable changes to this project are documented in this file.
 
 ### Major Features
 
-_Add entries here during development; rotate into a dated release section when tagging._
+- **Navbar and IA updates** – Navigation structure now reflects the `Math` grouping better, labels were clarified (`Convert` -> **Text & Data**), and active-link handling was refactored so current tool context is highlighted more reliably.
+- **Logo Generator upgrade** – `gen_image` received a substantial UI/UX refresh with improved layout, richer interactions, and live preview-focused iteration.
+- **Crypto compatibility hardening** – Added RSA signing/verification padding fallback and broader algorithm compatibility updates (including Ed25519/Ed448 handling paths).
+- **Shared output actions** – `copyableOutput` and related rendering paths now support optional HTML actions and more consistent action/button styling across tools.
+- **Runtime/deployment refresh** – Docker image/runtime config updated for PHP 8.5 + `openssh-client`; release workflow/docs (`README`, workflow, config, ignore rules) were refined to reduce release friction.
+
+<details>
+<summary>📋 Detailed Changes (click to expand)</summary>
+
+#### Navigation and Module Organization
+- **Active state behavior** - Refactored navbar link state handling so current modules are marked more consistently during navigation.
+- **Math grouping** - Updated navbar/module structure to better align math-related entries (including currency/units context) with dashboard category mapping updates.
+- **Naming clarity** - Updated wording in `index.php` and navbar labels to better describe available tool groups.
+
+#### Logo Generator
+- **UI redesign** - Reworked `modules/gen_image.php` with improved structure, styling, and interaction flow.
+- **Live feedback** - Enhanced generation flow to better support iterative logo design with preview-oriented controls.
+
+#### Cryptography
+- **RSA compatibility** - Added OpenSSL padding fallback in signing/verification paths to improve compatibility across environments.
+- **Algorithm handling** - Improved support logic for modern key algorithms including Ed25519/Ed448 handling paths.
+
+#### Shared UX Utilities
+- **Reusable actions** - Extended shared output helpers to accept optional HTML actions, reducing per-module divergence and improving DRY reuse.
+- **Action styling** - Standardized button/link styles around copy/download and related output actions.
+
+#### Infrastructure and Docs
+- **Docker runtime** - Updated Dockerfile and image config for PHP 8.5, removed unused OPcache install steps, and added `openssh-client`.
+- **Release process docs** - Expanded release workflow guidance and environment toggle documentation in `README` and workflow-related files.
+- **Repo hygiene** - Updated ignore rules for local release tooling artifacts.
+
+</details>
 
 ---
 
