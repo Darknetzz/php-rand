@@ -1510,6 +1510,115 @@ $(document).ready(function() {
  * @param {jQuery|string} $input - The input element or container form for additional context
  * @returns {string} Randomly generated data appropriate for the context
  */
+function randomDataGetCompatibleFormBundle($form) {
+    if (!$form || !$form.length) {
+        return null;
+    }
+    let bundle = $form.data("randomDataBundle");
+    if (bundle && typeof bundle === "object") {
+        return bundle;
+    }
+
+    const formAction = String($form.attr("data-action") || "").toLowerCase();
+    const formId = String($form.attr("id") || "").toLowerCase();
+    const randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+    const randomStr = (len) => {
+        const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        let out = "";
+        for (let i = 0; i < len; i++) out += chars.charAt(Math.floor(Math.random() * chars.length));
+        return out;
+    };
+
+    // Shared cryptographic samples used by multiple crypto modules.
+    const sample = {
+        jwtSecret: "your-256-bit-secret",
+        jwtToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
+        jwtPayload: JSON.stringify({
+            sub: "1234567890",
+            name: "John Doe",
+            iat: 1516239022
+        }, null, 2),
+        jwtHeader: JSON.stringify({
+            typ: "JWT",
+            alg: "HS256"
+        }, null, 2),
+        privatePem: "-----BEGIN PRIVATE KEY-----\nMIICdwIBADANBgkqhkiG9w0BAQEFAASCAmEwggJdAgEAAoGBAPAiPsgyjDSODZlQ\nwn753DTvSplSqnzGcqP3pO20yECSlxXO0wM0wsMe6IxH6w5v2ydKd6ZmV0Y4TurD\nBHGtMeqbiRfoSAiJJvORiEZFI7hJEbEKewoErBeFALimkB0HPF+TNW9uMd1/Ok1q\nuIpK3E17lkatAHzdKzlWh/WRD9tdAgMBAAECgYA7/vJcpnRtNQikw460lsyz1Q14\nXTUHU7WUzezBDyfxKi7hXflOlcILag+D7PwHcV755Bsc0fkALFVbRjo4BKOxlCGh\nBTviXkJQpXdebdxnrfGpzcjVK6HC37Zakc92B/3Cx7I8rVr9zGnbSu5MUwwyxn4R\n0Dvy+10BNP/i6SOUaQJBAPhViJT+FlX2d0anU+P6DbZIhAH3VpzHSCYAhoDTzVnq\noVAbNvh9Pgh0Fn0wcwGPsv5AI+zIL0TvDCOdFhB/ltsCQQD3i+iFxjc1ZhkMPxmC\nW4QzZOZfrsZQ/YE05LS5e0YmBW9A7dAHBKdaYyigJaLhulRXnNyUClmM2nOl6Hd8\nNaAnAkEAyhRASo3g+x7OvM3Y9EE8+0JTOY5eCsIXseTnjtnL1wmZLyiWOOshmZtt\n2X2deH3I+CCVm07jOEMWK7zegZpx1QJBAMx6ljTCWeJTFsel67VhUR9+7kkFPq2x\n6aO+c4ZvTK+ld5PDnT3e2zpvhCRdUmFxH7BLU20562TNIhBeqSxBw6sCQBEMwBcj\nn+Brt59NhqVGg9tEZYLkmbs7LRGFuGPT4JfLk1RmU4s1mi6oCptQjgO+24c+Y6op\n23uswjXgpji6Yh8=\n-----END PRIVATE KEY-----",
+        publicPem: "-----BEGIN PUBLIC KEY-----\nMIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDwIj7IMow0jg2ZUMJ++dw070qZ\nUqp8xnKj96TttMhAkpcVztMDNMLDHuiMR+sOb9snSnemZldGOE7qwwRxrTHqm4kX\n6EgIiSbzkYhGRSO4SRGxCnsKBKwXhQC4ppAdBzxfkzVvbjHdfzpNariKStxNe5ZG\nrQB83Ss5Vof1kQ/bXQIDAQAB\n-----END PUBLIC KEY-----",
+        opensshPublic: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAgQDwIj7IMow0jg2ZUMJ++dw070qZUqp8xnKj96TttMhAkpcVztMDNMLDHuiMR+sOb9snSnemZldGOE7qwwRxrTHqm4kX6EgIiSbzkYhGRSO4SRGxCnsKBKwXhQC4ppAdBzxfkzVvbjHdfzpNariKStxNe5ZGrQB83Ss5Vof1kQ/bXQ==",
+        signatureB64: "EcbiXUIHfKBIw83cJb/KA2jrNeSpD3IgO2KBvb2McXvQgWN9J/xBxqNcjbqyratl7pKzI+PhSWVEHVBoCTDf4X4HIV5VReCRmaI6/cAqn09mNvyS9+6DVQlRbruWJUqa6+gMkKSCGwVGpdOVS1fnXGDVewVwR1/MjIG1jn6S5VU=",
+        signMessage: "sample message for signature"
+    };
+
+    bundle = {};
+    if (formAction === "jwt" || formId === "jwtform") {
+        bundle = {
+            kind: "jwt",
+            jwtSecret: sample.jwtSecret,
+            jwtToken: sample.jwtToken,
+            jwtPayload: sample.jwtPayload,
+            jwtHeader: sample.jwtHeader
+        };
+    } else if (formAction === "keypair_sign_verify") {
+        bundle = {
+            kind: "keypair_sign_verify",
+            keypairMessage: sample.signMessage,
+            keypairPrivatePem: sample.privatePem,
+            keypairPublicPem: sample.publicPem,
+            keypairSignatureB64: sample.signatureB64
+        };
+    } else if (formAction === "ssh_key_verify") {
+        bundle = {
+            kind: "ssh_key_verify",
+            verifyPublicPem: sample.publicPem,
+            verifyPublicOpenSsh: sample.opensshPublic + " random-check@" + randomStr(6).toLowerCase(),
+            verifyPrivatePem: sample.privatePem
+        };
+    } else if (formAction === "pem_openssh_convert") {
+        bundle = {
+            kind: "pem_openssh_convert",
+            publicPem: sample.publicPem,
+            opensshPublic: sample.opensshPublic + " generated-by-phprand",
+            sshComment: "generated-by-phprand-" + randomStr(4).toLowerCase()
+        };
+    } else if (formId === "range2cidr") {
+        const a = randomInt(10, 172);
+        const b = randomInt(0, 255);
+        const c = randomInt(0, 255);
+        bundle = {
+            kind: "range2cidr",
+            startIp: a + "." + b + "." + c + ".0",
+            endIp: a + "." + b + "." + c + ".255"
+        };
+    } else if (formId === "subnetmask") {
+        const a = randomInt(10, 172);
+        const b = randomInt(0, 255);
+        const c = randomInt(0, 255);
+        bundle = {
+            kind: "subnetmask",
+            ip: a + "." + b + "." + c + "." + randomInt(2, 253),
+            subnet: "255.255.255.0"
+        };
+    } else if (formAction === "numgen" || formId === "numgen") {
+        const from = randomInt(1, 500);
+        const to = randomInt(from + 1, from + 1000);
+        const minDigits = randomInt(1, 4);
+        const maxDigits = randomInt(minDigits, 8);
+        bundle = {
+            kind: "numgen",
+            from: String(from),
+            to: String(to),
+            minDigits: String(minDigits),
+            maxDigits: String(maxDigits),
+            fixedDigits: String(randomInt(minDigits, maxDigits)),
+            qty: String(randomInt(1, 32)),
+            seed: randomStr(12)
+        };
+    }
+
+    $form.data("randomDataBundle", bundle);
+    return bundle;
+}
+
 function generateRandomData(type, placeholder = '', $input = null) {
     const randomStr = (len) => {
         const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -1637,13 +1746,70 @@ function generateRandomData(type, placeholder = '', $input = null) {
     // Detect form context via $input element
     let formAction = '';
     let formId = '';
+    let inputName = '';
+    let inputId = '';
+    let $form = null;
     if ($input && $input.length) {
-        const $form = $input.closest('form');
+        $form = $input.closest('form');
         if ($form.length) {
             formAction = ($form.attr('data-action') || '').toLowerCase();
             formId = ($form.attr('id') || '').toLowerCase();
         }
+        inputName = ($input.attr("name") || "").toLowerCase();
+        inputId = ($input.attr("id") || "").toLowerCase();
     }
+    const bundle = randomDataGetCompatibleFormBundle($form);
+    // Strict compatibility generators for modules that require related fields.
+    if (bundle && bundle.kind === "jwt") {
+        if (inputName === "jwt_secret") return bundle.jwtSecret;
+        if (inputName === "jwt_token") return bundle.jwtToken;
+        if (inputName === "jwt_payload") return bundle.jwtPayload;
+        if (inputName === "jwt_header") return bundle.jwtHeader;
+    }
+
+    if (bundle && bundle.kind === "keypair_sign_verify") {
+        if (inputName === "keypair_message") return bundle.keypairMessage;
+        if (inputName === "keypair_private_pem") return bundle.keypairPrivatePem;
+        if (inputName === "keypair_public_pem") return bundle.keypairPublicPem;
+        if (inputName === "keypair_signature_b64") return bundle.keypairSignatureB64;
+        if (inputName === "keypair_private_passphrase") return "";
+    }
+
+    if (bundle && bundle.kind === "ssh_key_verify") {
+        if (inputName === "verify_private_pem") return bundle.verifyPrivatePem;
+        if (inputName === "verify_public_input") {
+            const mode = String(($form.find("[name='verify_public_format']").val() || "auto")).toLowerCase();
+            return mode === "pem" ? bundle.verifyPublicPem : bundle.verifyPublicOpenSsh;
+        }
+        if (inputName === "verify_private_passphrase") return "";
+    }
+
+    if (bundle && bundle.kind === "pem_openssh_convert") {
+        if (inputName === "public_pem") return bundle.publicPem;
+        if (inputName === "openssh_public") return bundle.opensshPublic;
+        if (inputName === "ssh_comment") return bundle.sshComment;
+    }
+
+    if (bundle && bundle.kind === "range2cidr") {
+        if (inputName === "startip" || inputId.includes("start")) return bundle.startIp;
+        if (inputName === "endip" || inputId.includes("end")) return bundle.endIp;
+    }
+
+    if (bundle && bundle.kind === "subnetmask") {
+        if (inputName === "ip") return bundle.ip;
+        if (inputName === "subnet") return bundle.subnet;
+    }
+
+    if (bundle && bundle.kind === "numgen") {
+        if (inputName === "numgenfrom") return bundle.from;
+        if (inputName === "numgento") return bundle.to;
+        if (inputName === "numgenmindig") return bundle.minDigits;
+        if (inputName === "numgenmaxdig") return bundle.maxDigits;
+        if (inputName === "numgendigits") return bundle.fixedDigits;
+        if (inputName === "numgenqty") return bundle.qty;
+        if (inputName === "numgenseed") return bundle.seed;
+    }
+
 
     // Detect what type of data to generate based on context
     const placeholderLower = placeholder.toLowerCase();
@@ -1731,6 +1897,18 @@ function generateRandomData(type, placeholder = '', $input = null) {
     // =====================================================================
 
     if (typeLower === 'number') {
+        if ($input && $input.length) {
+            const minAttr = $input.attr("min");
+            const maxAttr = $input.attr("max");
+            const hasMin = minAttr !== undefined && minAttr !== "";
+            const hasMax = maxAttr !== undefined && maxAttr !== "";
+            if (hasMin || hasMax) {
+                const min = hasMin ? parseInt(minAttr, 10) : 0;
+                const max = hasMax ? parseInt(maxAttr, 10) : (min + 1000);
+                const safeMax = max >= min ? max : min;
+                return randomInt(min, safeMax).toString();
+            }
+        }
         return randomInt(1, 1000).toString();
     }
 
