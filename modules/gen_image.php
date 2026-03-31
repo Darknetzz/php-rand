@@ -22,7 +22,7 @@
         <h1 class="card-header"><?= icon("image", 1, 2) ?> Logo Generator</h1>
         <div class="card-body">
             <p class="text-muted mb-4">
-                Pick a <strong>preset</strong> to get a sensible starting point, tweak the table below, then <strong>Generate Logo</strong>.
+                Pick a <strong>preset</strong> or adjust the table below — the <strong>preview updates automatically</strong> as you change options.
             </p>
             <form class="form" action="gen.php" method="POST" id="logoGeneratorForm" data-action="logo_generate">
                 <div class="mb-4">
@@ -169,17 +169,13 @@
                     </table>
                 </div>
 
-                <div class="d-flex gap-3 flex-wrap align-items-center mb-2">
-                    <span class="small text-muted fw-semibold">3 ·</span>
-                    <?= submitBtn("logo_generate", "action", "Generate Logo", "brush-fill", "lg") ?>
-                </div>
                 <div class="mb-4">
                     <small id="logoHintText" class="text-muted">Tip: use <strong>Initials badge</strong> for circular avatars; <strong>Banner</strong> for wide headers.</small>
                 </div>
 
-                <label class="form-label mb-2"><strong>Output</strong></label>
-                <div class="responseDiv border rounded p-4 bg-body-secondary bg-opacity-10" id="logoGeneratorFormresponse" style="min-height: 240px;">
-                    <div class="text-muted" style="opacity: 0.75;">Generated logo preview and download will appear here after you generate.</div>
+                <label class="form-label mb-2"><strong>Live preview</strong></label>
+                <div class="responseDiv border rounded p-4 bg-body-secondary bg-opacity-10" id="liveLogoPreview" style="min-height: 240px;">
+                    <div class="text-muted" style="opacity: 0.75;">Loading preview…</div>
                 </div>
             </form>
         </div>
@@ -188,9 +184,14 @@
 <script>
 (function() {
     const form = document.getElementById("logoGeneratorForm");
-    if (!form) return;
+    if (!form || typeof jQuery === "undefined") return;
 
+    const $form = jQuery(form);
     const hint = document.getElementById("logoHintText");
+    let debounceTimer = null;
+    let activeXhr = null;
+    const DEBOUNCE_MS = 320;
+
     const setVal = (name, value) => {
         const el = form.querySelector('[name="' + name + '"]');
         if (!el) return;
@@ -200,6 +201,54 @@
             el.value = value;
         }
     };
+
+    const runLogoPreview = () => {
+        if (typeof setFormVal !== "function" || typeof showData !== "function") return;
+
+        if (activeXhr) {
+            activeXhr.abort();
+            activeXhr = null;
+        }
+
+        const $response = $form.find(".responseDiv");
+        setFormVal($form, "responsetype", "html");
+        setFormVal($form, "action", $form.data("action") || "logo_generate");
+
+        activeXhr = jQuery.ajax({
+            type: "POST",
+            url: $form.attr("action") || "gen.php",
+            data: $form.serialize(),
+            success: function(html) {
+                activeXhr = null;
+                showData($response, html);
+            },
+            error: function(jqXHR, textStatus) {
+                activeXhr = null;
+                if (textStatus === "abort") return;
+                const msg = (jqXHR && jqXHR.statusText) ? jqXHR.statusText : "request failed";
+                showData($response, "<div class='alert alert-danger'>Preview error: " + msg + "</div>");
+            }
+        });
+    };
+
+    const scheduleLogoPreview = () => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(runLogoPreview, DEBOUNCE_MS);
+    };
+
+    const scheduleLogoPreviewSoon = () => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(runLogoPreview, 0);
+    };
+
+    $form.on("input change", "input:not([type='hidden']), select", scheduleLogoPreview);
+
+    $form.on("submit", function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        scheduleLogoPreviewSoon();
+        return false;
+    });
 
     const setPreset = (preset) => {
         if (preset === "app-icon") {
@@ -212,6 +261,7 @@
             setVal("logo_initials", true);
             setVal("logo_uppercase", true);
             if (hint) hint.textContent = "App icon: square canvas, rounded shape, initials + caps — good for launcher icons.";
+            scheduleLogoPreviewSoon();
             return;
         }
         if (preset === "banner") {
@@ -224,6 +274,7 @@
             setVal("logo_initials", false);
             setVal("logo_uppercase", false);
             if (hint) hint.textContent = "Banner: wide rectangle with full text — headers and cover images.";
+            scheduleLogoPreviewSoon();
             return;
         }
         if (preset === "initials-badge") {
@@ -236,6 +287,7 @@
             setVal("logo_initials", true);
             setVal("logo_uppercase", true);
             if (hint) hint.textContent = "Initials badge: circle, solid fill, visible border — avatars and seals.";
+            scheduleLogoPreviewSoon();
         }
     };
 
@@ -245,7 +297,8 @@
         setVal("logo_accent_color", randomHex());
         setVal("logo_text_color", "#ffffff");
         setVal("logo_border_color", randomHex());
-        if (hint) hint.textContent = "Colors shuffled — click Generate Logo to preview.";
+        if (hint) hint.textContent = "Colors shuffled — preview updating.";
+        scheduleLogoPreviewSoon();
     };
 
     form.querySelectorAll(".logo-preset-btn").forEach((btn) => {
@@ -258,5 +311,7 @@
     if (randomizeBtn) {
         randomizeBtn.addEventListener("click", randomizePalette);
     }
+
+    scheduleLogoPreviewSoon();
 })();
 </script>
