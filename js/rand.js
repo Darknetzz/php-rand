@@ -1092,13 +1092,25 @@ function navigate(to) {
         history.replaceState(null, "", normalizedTo);
     }
 
-    // Reset all nav links
-    var navLinks = $(".link.nav-link");
-    navLinks.prop("class", "link nav-link");
+    // Reset all navbar link states
+    const $navbarLinks = $(".navbar .nav-link, .navbar .dropdown-item.link");
+    $navbarLinks.removeClass("active link-success");
 
-    // Set this nav link as active
-    var navLink = $(`.link.nav-link[href='${normalizedTo}']`);
-    navLink.prop("class", "link nav-link link-success active");
+    // Set direct (top-level) nav link active
+    const $navLink = $(`.link.nav-link[data-show='${moduleName}']`);
+    if ($navLink.length) {
+        $navLink.addClass("link-success active");
+    }
+
+    // Set dropdown item active and highlight its parent dropdown toggle
+    const $dropdownItem = $(`.dropdown-item.link[data-show='${moduleName}']`);
+    if ($dropdownItem.length) {
+        $dropdownItem.addClass("active");
+        $dropdownItem
+            .closest(".nav-item.dropdown")
+            .find("> .nav-link.dropdown-toggle")
+            .addClass("active link-success");
+    }
 
     const showTarget = function() {
         $(".content").hide();
