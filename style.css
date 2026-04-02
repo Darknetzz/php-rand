@@ -327,3 +327,11 @@ th.tablehead,
 .calc-equals:hover {
   background: #a96bb8;
 }
+
+/* Crontab: native <details> disclosure without double marker */
+.crontab-more-options summary {
+  list-style: none;
+}
+.crontab-more-options summary::-webkit-details-marker {
+  display: none;
+}

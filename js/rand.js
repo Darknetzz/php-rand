@@ -2398,6 +2398,13 @@ function addRandomDataButtons($root = null) {
                     if ($tz.length) {
                         $tz.val(b.cronTimezone).trigger('change');
                     }
+                    const serverTz = ($form.attr('data-server-timezone') || '').trim();
+                    if (serverTz && b.cronTimezone !== serverTz) {
+                        const det = document.getElementById('crontabMoreDetails');
+                        if (det) {
+                            det.open = true;
+                        }
+                    }
                 }
             }
             if (formAction === 'shellcheck') {

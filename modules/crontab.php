@@ -1,27 +1,41 @@
 <?php
 $serverTimezone = date_default_timezone_get() ?: 'UTC';
+$effectiveTimezone = isset($_POST['cron_timezone']) && $_POST['cron_timezone'] !== ''
+    ? (string) $_POST['cron_timezone']
+    : $serverTimezone;
 $timezoneOptions = '';
 foreach (DateTimeZone::listIdentifiers() as $timezone) {
-    $selected = $timezone === $serverTimezone ? ' selected' : '';
+    $selected = $timezone === $effectiveTimezone ? ' selected' : '';
     $timezoneOptions .= '<option value="' . htmlspecialchars($timezone, ENT_QUOTES, 'UTF-8') . '"' . $selected . '>'
         . htmlspecialchars($timezone, ENT_QUOTES, 'UTF-8') . '</option>';
 }
 
 $defaultReference = (new DateTime('now'))->format('Y-m-d\TH:i');
+$postedRun = isset($_POST['cron_run_count']) ? (string) $_POST['cron_run_count'] : '';
+$moreOptionsOpen = ($effectiveTimezone !== $serverTimezone)
+    || ($postedRun !== '' && $postedRun !== '8')
+    || !empty($_POST['cron_include_current']);
 ?>
 <div id="crontab" class="content">
     <div class="alert alert-info mb-4">
-        <strong>Understand cron schedules quickly.</strong>
-        Validate standard 5-field cron expressions, see a human-readable explanation, and inspect upcoming run times in your chosen timezone.
-        The full analysis updates automatically as you edit (after a short pause).
+        <strong>Cron at a glance.</strong>
+        Type a standard 5-field expression (or a macro like <code>@daily</code>); results update shortly after you stop typing.
+        Times use the server timezone <code><?= htmlspecialchars($serverTimezone, ENT_QUOTES, 'UTF-8') ?></code>, which is also shown in the analysis panel.
     </div>
     <div class="card card-primary">
         <h1 class="card-header"><?= icon("calendar-event") ?> Crontab Explorer</h1>
         <div class="card-body">
-            <form class="form" action="gen.php" method="POST" id="crontabForm" data-action="crontab">
+            <form
+                class="form"
+                action="gen.php"
+                method="POST"
+                id="crontabForm"
+                data-action="crontab"
+                data-server-timezone="<?= htmlspecialchars($serverTimezone, ENT_QUOTES, 'UTF-8') ?>"
+            >
                 <div class="row g-4 mb-4">
                     <div class="col-12 col-xl-5">
-                        <label for="crontabExpression" class="form-label mb-3"><strong style="font-size: 1.1rem;">Cron Expression</strong></label>
+                        <label for="crontabExpression" class="form-label mb-2"><strong>Cron expression</strong></label>
                         <input
                             type="text"
                             name="cron_expression"
@@ -32,69 +46,77 @@ $defaultReference = (new DateTime('now'))->format('Y-m-d\TH:i');
                             value="<?= htmlspecialchars($_POST['cron_expression'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
                             required
                         >
-                        <div class="form-text mt-2">
-                            Supports macros like <code>@daily</code> and <code>@reboot</code> (Vixie-style one-shot at daemon start), plus advanced syntax such as <code>L</code>, <code>W</code>, and <code>#</code>.
+                        <div class="form-text mt-2 mb-3">
+                            Macros (<code>@daily</code>, <code>@reboot</code>, …) and advanced tokens (<code>L</code>, <code>W</code>, <code>#</code>) are supported.
                         </div>
 
-                        <div class="row g-3 mt-3">
-                            <div class="col-12 col-md-6">
-                                <label for="crontabTimezone" class="form-label mb-2"><strong>Timezone</strong></label>
-                                <select name="cron_timezone" id="crontabTimezone" class="form-select form-select-lg" style="border: 2px solid #495057; max-height: 350px;">
-                                    <?= $timezoneOptions ?>
-                                </select>
+                        <details class="crontab-more-options border border-secondary rounded-3 mb-3" id="crontabMoreDetails"<?= $moreOptionsOpen ? ' open' : '' ?>>
+                            <summary class="px-3 py-2 fw-semibold user-select-none" style="cursor: pointer;">
+                                More options
+                            </summary>
+                            <div class="border-top border-secondary px-3 pt-3 pb-2">
+                                <div class="row g-3">
+                                    <div class="col-12">
+                                        <label for="crontabTimezone" class="form-label mb-1"><strong>Timezone</strong></label>
+                                        <select name="cron_timezone" id="crontabTimezone" class="form-select" style="max-height: 280px;">
+                                            <?= $timezoneOptions ?>
+                                        </select>
+                                        <div class="form-text mt-1">Defaults to the server zone above; change this to explore another region.</div>
+                                    </div>
+                                    <div class="col-12">
+                                        <label for="crontabRunCount" class="form-label mb-1"><strong>Upcoming runs to list</strong></label>
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            max="20"
+                                            step="1"
+                                            name="cron_run_count"
+                                            id="crontabRunCount"
+                                            class="form-control"
+                                            style="font-family: monospace; max-width: 8rem;"
+                                            value="<?= htmlspecialchars($_POST['cron_run_count'] ?? '8', ENT_QUOTES, 'UTF-8') ?>"
+                                        >
+                                    </div>
+                                    <div class="col-12">
+                                        <label for="crontabReferenceTime" class="form-label mb-1"><strong>Reference time</strong></label>
+                                        <input
+                                            type="datetime-local"
+                                            name="cron_reference_time"
+                                            id="crontabReferenceTime"
+                                            class="form-control"
+                                            style="font-family: monospace; max-width: 22rem;"
+                                            value="<?= htmlspecialchars($_POST['cron_reference_time'] ?? $defaultReference, ENT_QUOTES, 'UTF-8') ?>"
+                                        >
+                                        <div class="form-text mt-1">Evaluate “next runs” from this instant (usually leave as now).</div>
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="form-check form-switch">
+                                            <input class="form-check-input" type="checkbox" name="cron_include_current" id="crontabIncludeCurrent" value="1" <?= !empty($_POST['cron_include_current']) ? 'checked' : '' ?>>
+                                            <label class="form-check-label" for="crontabIncludeCurrent">
+                                                Include the reference time when it already matches the schedule
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="col-12 col-md-6">
-                                <label for="crontabRunCount" class="form-label mb-2"><strong>Next Runs</strong></label>
-                                <input
-                                    type="number"
-                                    min="1"
-                                    max="20"
-                                    step="1"
-                                    name="cron_run_count"
-                                    id="crontabRunCount"
-                                    class="form-control form-control-lg"
-                                    style="border: 2px solid #495057; font-family: monospace;"
-                                    value="<?= htmlspecialchars($_POST['cron_run_count'] ?? '8', ENT_QUOTES, 'UTF-8') ?>"
-                                >
+                        </details>
+
+                        <div class="card border-secondary" style="background: rgba(255,255,255,0.03);">
+                            <div class="card-header py-2">
+                                <strong class="small"><?= icon("lightbulb") ?> Examples</strong>
                             </div>
-                        </div>
-
-                        <div class="mt-3">
-                            <label for="crontabReferenceTime" class="form-label mb-2"><strong>Reference Time (Optional)</strong></label>
-                            <input
-                                type="datetime-local"
-                                name="cron_reference_time"
-                                id="crontabReferenceTime"
-                                class="form-control form-control-lg"
-                                style="border: 2px solid #495057; font-family: monospace;"
-                                value="<?= htmlspecialchars($_POST['cron_reference_time'] ?? $defaultReference, ENT_QUOTES, 'UTF-8') ?>"
-                            >
-                            <div class="form-text mt-2">The schedule is evaluated from this point forward. Leave it as “now” to inspect the current schedule.</div>
-                        </div>
-
-                        <div class="form-check form-switch mt-3">
-                            <input class="form-check-input" type="checkbox" name="cron_include_current" id="crontabIncludeCurrent" value="1" <?= !empty($_POST['cron_include_current']) ? 'checked' : '' ?>>
-                            <label class="form-check-label" for="crontabIncludeCurrent">
-                                <strong>Include the reference time if it already matches</strong>
-                            </label>
-                        </div>
-
-                        <div class="card border-secondary mt-4" style="background: rgba(255,255,255,0.03);">
-                            <div class="card-header">
-                                <strong><?= icon("lightbulb") ?> Examples</strong>
-                            </div>
-                            <div class="card-body" style="font-family: monospace;">
-                                <div><code>*/5 * * * *</code> every 5 minutes</div>
-                                <div><code>0 0 * * 0</code> every Sunday at midnight</div>
-                                <div><code>30 2 1 * *</code> monthly at 02:30 on day 1</div>
-                                <div><code>15 14 * * MON-FRI</code> weekdays at 14:15</div>
-                                <div><code>@daily</code> once per day at midnight</div>
+                            <div class="card-body py-2 small" style="font-family: monospace;">
+                                <div class="mb-1"><code>*/5 * * * *</code> — every 5 minutes</div>
+                                <div class="mb-1"><code>0 0 * * 0</code> — Sundays at midnight</div>
+                                <div class="mb-1"><code>30 2 1 * *</code> — 02:30 on the 1st of each month</div>
+                                <div class="mb-1"><code>15 14 * * MON-FRI</code> — weekdays 14:15</div>
+                                <div class="mb-0"><code>@daily</code> — once per day at midnight</div>
                             </div>
                         </div>
                     </div>
 
                     <div class="col-12 col-xl-7 d-flex flex-column">
-                        <label class="form-label mb-3"><strong style="font-size: 1.1rem;">Schedule Analysis</strong></label>
+                        <label class="form-label mb-2"><strong>Schedule analysis</strong></label>
                         <div class="responseDiv flex-grow-1" style="border: 2px solid #495057; padding: 20px; min-height: 480px; max-height: 760px; overflow-y: auto; background: linear-gradient(135deg, rgba(13, 110, 253, 0.08) 0%, rgba(32, 201, 151, 0.08) 100%); border-radius: 0.5rem;">
                             <div style="opacity: 0.55; text-align: center; padding-top: 170px;">
                                 <div style="font-size: 3rem; margin-bottom: 10px;"><?= icon("calendar-event", 2) ?></div>
