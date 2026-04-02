@@ -1528,6 +1528,7 @@ function randomDataGetCompatibleFormBundle($form) {
         for (let i = 0; i < len; i++) out += chars.charAt(Math.floor(Math.random() * chars.length));
         return out;
     };
+    const randomPick = (items) => items[randomInt(0, items.length - 1)];
 
     // Shared cryptographic samples used by multiple crypto modules.
     const sample = {
@@ -1548,6 +1549,28 @@ function randomDataGetCompatibleFormBundle($form) {
         signatureB64: "EcbiXUIHfKBIw83cJb/KA2jrNeSpD3IgO2KBvb2McXvQgWN9J/xBxqNcjbqyratl7pKzI+PhSWVEHVBoCTDf4X4HIV5VReCRmaI6/cAqn09mNvyS9+6DVQlRbruWJUqa6+gMkKSCGwVGpdOVS1fnXGDVewVwR1/MjIG1jn6S5VU=",
         signMessage: "sample message for signature"
     };
+    const regexScenarios = [
+        {
+            pattern: "([a-z0-9._%+-]+)@([a-z0-9.-]+\\.[a-z]{2,})",
+            testString: "Contact alice.smith@example.com or dev-team@test.org for support.",
+            replacement: "$1 at $2"
+        },
+        {
+            pattern: "(\\d{4})-(\\d{2})-(\\d{2})",
+            testString: "Release dates: 2026-04-02, 2025-12-18, and 2024-07-09.",
+            replacement: "$3/$2/$1"
+        },
+        {
+            pattern: "\\b([A-Z][a-z]+)\\s+([A-Z][a-z]+)\\b",
+            testString: "Assigned to John Smith, Jane Miller, and Robert Brown.",
+            replacement: "$2, $1"
+        },
+        {
+            pattern: "\\b(item)-(\\d{3})\\b",
+            testString: "Queued item-104, item-287, and item-931 for review.",
+            replacement: "$1#$2"
+        }
+    ];
 
     bundle = {};
     if (formAction === "jwt" || formId === "jwtform") {
@@ -1612,6 +1635,14 @@ function randomDataGetCompatibleFormBundle($form) {
             fixedDigits: String(randomInt(minDigits, maxDigits)),
             qty: String(randomInt(1, 32)),
             seed: randomStr(12)
+        };
+    } else if (formAction === "regex" || formId === "regexform") {
+        const regexSample = randomPick(regexScenarios);
+        bundle = {
+            kind: "regex",
+            regexPattern: regexSample.pattern,
+            regexTestString: regexSample.testString,
+            regexReplacement: regexSample.replacement
         };
     }
 
@@ -1808,6 +1839,12 @@ function generateRandomData(type, placeholder = '', $input = null) {
         if (inputName === "numgendigits") return bundle.fixedDigits;
         if (inputName === "numgenqty") return bundle.qty;
         if (inputName === "numgenseed") return bundle.seed;
+    }
+
+    if (bundle && bundle.kind === "regex") {
+        if (inputName === "pattern") return bundle.regexPattern;
+        if (inputName === "teststring") return bundle.regexTestString;
+        if (inputName === "replacement") return bundle.regexReplacement;
     }
 
 
