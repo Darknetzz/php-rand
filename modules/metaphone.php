@@ -1,14 +1,13 @@
 <div id="metaphone" class="content">
     <?php $metaphoneInputVal = isset($_POST['metaphone']) ? htmlspecialchars($_POST['metaphone']) : ""; ?>
 
+    <div class="alert alert-info mb-4">
+        <strong>ℹ️ Phonetic Key Generator</strong>
+        <span>Metaphone generates phonetic keys for words, useful for fuzzy matching and sound-alike searches.</span>
+    </div>
     <div class="card card-primary">
         <h1 class="card-header">🔊 Metaphone</h1>
         <div class="card-body">
-            <div class="alert alert-info mb-4">
-                <strong>ℹ️ Phonetic Key Generator</strong>
-                <span>Metaphone generates phonetic keys for words, useful for fuzzy matching and sound-alike searches.</span>
-            </div>
-
             <form class="form" action="gen.php" method="POST" id="metaphoneForm" data-action="metaphone">
                 <div class="row g-4 mb-4">
                     <div class="col-12 col-lg-6">

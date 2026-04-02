@@ -1,13 +1,12 @@
 <div id="binhex" class="content">
 
+    <div class="alert alert-info mb-4">
+        <strong>ℹ️ Binary-to-Text Encoding</strong>
+        Convert between binary and hexadecimal representations. These encodings are used to represent binary data in a text format, ensuring data integrity during storage and transmission.
+    </div>
     <div class="card card-primary">
         <h1 class="card-header">Binary ⟷ Hexadecimal Converter</h1>
         <div class="card-body">
-            <div class="alert alert-info mb-4">
-                <strong>ℹ️ Binary-to-Text Encoding</strong>
-                Convert between binary and hexadecimal representations. These encodings are used to represent binary data in a text format, ensuring data integrity during storage and transmission.
-            </div>
-
             <form class="form" action="gen.php" method="POST" id="binhexForm" data-action="hex">
                 
                 <!-- Input/Output Section -->

@@ -6,13 +6,12 @@
  */
 ?>
 <div id="units" class="content">
+    <div class="alert alert-info mb-4">
+        <strong>Convert between units</strong> — Choose a category, enter a value and source unit, then convert.
+    </div>
     <div class="card card-primary">
         <h1 class="card-header"><?= icon('rulers') ?> Unit Converter</h1>
         <div class="card-body">
-            <div class="alert alert-info mb-4">
-                <strong>Convert between units</strong> — Choose a category, enter a value and source unit, then convert.
-            </div>
-
             <ul class="nav nav-tabs mb-4" id="unitsTab" role="tablist">
                 <li class="nav-item" role="presentation">
                     <button class="nav-link active" id="tab-volume" data-bs-toggle="tab" data-bs-target="#pane-volume" type="button" role="tab"><?= icon('box') ?> Volume</button>

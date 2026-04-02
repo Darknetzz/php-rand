@@ -7,12 +7,12 @@
     $jwtPayloadVal = isset($_POST['jwt_payload']) ? htmlspecialchars($_POST['jwt_payload']) : "{\n  \"sub\": \"1234567890\",\n  \"name\": \"John Doe\",\n  \"iat\": " . time() . "\n}";
     $jwtHeaderVal = isset($_POST['jwt_header']) ? htmlspecialchars($_POST['jwt_header']) : "{\n  \"typ\": \"JWT\"\n}";
     ?>
+    <div class="alert alert-info mb-4">
+        Decode, verify, or sign JWT tokens with HMAC (HS256/HS384/HS512).
+    </div>
     <div class="card card-primary">
         <h1 class="card-header">🔐 JWT Inspector</h1>
         <div class="card-body">
-            <div class="alert alert-info mb-4">
-                Decode, verify, or sign JWT tokens with HMAC (HS256/HS384/HS512).
-            </div>
             <form class="form" action="gen.php" method="POST" id="jwtform" data-action="jwt">
                 <div class="row g-3 mb-4">
                     <div class="col-12 col-md-4">

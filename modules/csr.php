@@ -1,11 +1,10 @@
 <div id="csr" class="content">
+    <div class="alert alert-info mb-4">
+        Generate a certificate signing request (CSR) and matching private/public key material in PEM format.
+    </div>
     <div class="card card-primary">
         <h1 class="card-header">📄 CSR Generator</h1>
         <div class="card-body">
-            <div class="alert alert-info mb-4">
-                Generate a certificate signing request (CSR) and matching private/public key material in PEM format.
-            </div>
-
             <form class="form" action="gen.php" method="POST" id="csrForm" data-action="csr_generate" data-no-random-buttons>
                 <p class="text-secondary small fw-semibold text-uppercase mb-3 border-bottom pb-2">Key type</p>
                 <div class="row row-cols-1 row-cols-lg-2 g-4 mb-4">

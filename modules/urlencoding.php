@@ -1,14 +1,13 @@
 <div id="urlencoding" class="content">
     <?php $urlInputVal = isset($_POST['urlencode']) ? htmlspecialchars($_POST['urlencode']) : ""; ?>
 
+    <div class="alert alert-info mb-4">
+        <strong>ℹ️ Encode & Decode</strong>
+        Paste text or URL-encoded data to see the original, encoded, and decoded forms side by side.
+    </div>
     <div class="card card-primary">
         <h1 class="card-header">🔗 URL Encoding</h1>
         <div class="card-body">
-            <div class="alert alert-info mb-4">
-                <strong>ℹ️ Encode & Decode</strong>
-                Paste text or URL-encoded data to see the original, encoded, and decoded forms side by side.
-            </div>
-
             <form class="form" action="gen.php" method="POST" id="urlencode" data-action="urlencode">
                 <div class="row g-4 mb-4">
                     <div class="col-12 col-lg-6">

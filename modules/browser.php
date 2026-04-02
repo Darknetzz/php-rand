@@ -1,14 +1,13 @@
 <div id="browser" class="content">
+    <div class="alert alert-info mb-4">
+        <h4><?= icon("info-circle", color: "cyan") ?> Information</h4>
+        <p class="mb-0">
+            Detects browser/client capabilities and environment details. Advanced probes are optional and may expose additional network/privacy metadata.
+        </p>
+    </div>
     <div class="card card-primary mb-4">
         <h1 class="card-header"><?= icon("browser-chrome") ?> Browser Client Inspector</h1>
         <div class="card-body">
-            <div class="alert alert-info mb-4">
-                <h4><?= icon("info-circle", color: "cyan") ?> Information</h4>
-                <p class="mb-0">
-                    Detects browser/client capabilities and environment details. Advanced probes are optional and may expose additional network/privacy metadata.
-                </p>
-            </div>
-
             <form class="form" action="gen.php" method="POST" id="browserInspectorForm" data-action="browser_inspect">
                 <input type="hidden" name="action" value="browser_inspect">
 

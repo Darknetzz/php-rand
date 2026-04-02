@@ -6,14 +6,13 @@
         $selectedHashRounds = 1;
     }
     ?>
+    <div class="alert alert-info mb-4">
+        <strong>ℹ️ About Hashing</strong>
+        Generate cryptographic hashes from any input text. Supports MD5, SHA1, SHA256, SHA512, and many more algorithms.
+    </div>
     <div class="card card-primary">
         <h1 class="card-header">🔑 Hash Generator</h1>
         <div class="card-body">
-            <div class="alert alert-info mb-4">
-                <strong>ℹ️ About Hashing</strong>
-                Generate cryptographic hashes from any input text. Supports MD5, SHA1, SHA256, SHA512, and many more algorithms.
-            </div>
-
             <form class="form" action="gen.php" method="POST" id="hasher" data-action="hasher">
                 <!-- Input/Output Section -->
                 <div class="row g-4 mb-4">

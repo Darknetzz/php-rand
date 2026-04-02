@@ -2,14 +2,13 @@
     <?php $minifyInputVal = isset($_POST['input']) ? htmlspecialchars($_POST['input'] ?? '') : ""; ?>
     <?php $minifyTypeVal = isset($_POST['type']) ? htmlspecialchars($_POST['type'] ?? 'js') : "js"; ?>
 
+    <div class="alert alert-info mb-4">
+        <strong>ℹ️ Code Compression</strong>
+        <span>Minify HTML, CSS, and JavaScript to reduce file size and improve load times.</span>
+    </div>
     <div class="card card-primary">
         <h1 class="card-header">⚡ Minify</h1>
         <div class="card-body">
-            <div class="alert alert-info mb-4">
-                <strong>ℹ️ Code Compression</strong>
-                <span>Minify HTML, CSS, and JavaScript to reduce file size and improve load times.</span>
-            </div>
-
             <form id="minifyForm" class="form" action="gen.php" method="POST" data-action="minify">
                 <input type="hidden" name="tool" value="minify">
                 <input type="hidden" name="responsetype" value="text">

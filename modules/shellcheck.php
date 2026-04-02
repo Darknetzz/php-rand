@@ -1,12 +1,11 @@
 <div id="shellcheck" class="content">
+    <div class="alert alert-info mb-4">
+        <strong>Lint shell scripts before you run them.</strong>
+        Paste a shell script to get structured ShellCheck diagnostics with severity, rule IDs, and highlighted locations.
+    </div>
     <div class="card card-primary">
         <h1 class="card-header"><?= icon("terminal") ?> ShellCheck</h1>
         <div class="card-body">
-            <div class="alert alert-info mb-4">
-                <strong>Lint shell scripts before you run them.</strong>
-                Paste a shell script to get structured ShellCheck diagnostics with severity, rule IDs, and highlighted locations.
-            </div>
-
             <form class="form" action="gen.php" method="POST" id="shellcheckForm" data-action="shellcheck">
                 <div class="row g-4 mb-4">
                     <div class="col-12 col-xl-6">

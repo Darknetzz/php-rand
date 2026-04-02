@@ -1,11 +1,11 @@
 <div id="levenshtein" class="content">
+    <div class="alert alert-info mb-4">
+        <h4><?= icon("info-circle", color: "cyan") ?> Information</h4>
+        <p style="margin-bottom: 0;">Calculate the Levenshtein distance between two strings. This is the minimal number of characters you need to insert, delete, or replace to transform one string into another. The algorithm complexity is O(m×n), where m and n are the string lengths.</p>
+    </div>
     <div class="card card-primary">
         <h1 class="card-header">Levenshtein Distance</h1>
         <div class="card-body">
-            <div class="alert alert-info mb-4">
-                <h4><?= icon("info-circle", color: "cyan") ?> Information</h4>
-                <p style="margin-bottom: 0;">Calculate the Levenshtein distance between two strings. This is the minimal number of characters you need to insert, delete, or replace to transform one string into another. The algorithm complexity is O(m×n), where m and n are the string lengths.</p>
-            </div>
             <form class="form" action="gen.php" method="POST" id="levenshteinForm" data-action="levenshtein">
                 <div class="row g-4 mb-4">
                     <div class="col-12 col-lg-6">

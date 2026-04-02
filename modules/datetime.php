@@ -39,14 +39,13 @@ $timeZoneSelector = function($inputName = "timezone") {
 <div id="datetime" class="content">
 
     <!-- TIME CONVERTER -->
+    <div class="alert alert-info mb-4">
+        <strong>ℹ️ Convert Between Units</strong>
+        <span>Easily convert time values between seconds, minutes, hours, days, weeks, months, and years.</span>
+    </div>
     <div class="card card-primary">
         <h1 class="card-header">⏱️ Time Unit Converter</h1>
         <div class="card-body">
-            <div class="alert alert-info mb-4">
-                <strong>ℹ️ Convert Between Units</strong>
-                <span>Easily convert time values between seconds, minutes, hours, days, weeks, months, and years.</span>
-            </div>
-
             <form class="form" action="gen.php" method="POST" id="datetimeForm" data-action="datetime">
                 <div class="row g-4 mb-4">
                     <div class="col-12 col-md-6">

@@ -13,14 +13,13 @@
   }
 ?>
 
+    <div class="alert alert-warning mb-4">
+        <strong>⚠️ Security Notice</strong>
+        Encrypt and decrypt data using OpenSSL. Always use secure keys and initialization vectors in production environments.
+    </div>
     <div class="card card-primary">
         <h1 class="card-header">🔐 OpenSSL Encryption</h1>
         <div class="card card-body">
-            <div class="alert alert-warning mb-4">
-                <strong>⚠️ Security Notice</strong><br>
-                Encrypt and decrypt data using OpenSSL. Always use secure keys and initialization vectors in production environments.
-            </div>
-
             <form class="form" action="gen.php" method="POST" id="opensslForm" data-action="openssl">
                 <?php
                   $openssl   = null;

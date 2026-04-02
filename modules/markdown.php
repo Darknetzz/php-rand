@@ -1,12 +1,11 @@
 <div id="markdown" class="content">
+    <div class="alert alert-info mb-4">
+        <strong>ℹ️ Live Markdown Preview</strong>
+        <span>Uses <a href="https://marked.js.org/" target="_blank" class="alert-link">marked.js</a> and <a href="https://highlightjs.org/" target="_blank" class="alert-link">highlight.js</a> for real-time rendering with syntax highlighting.</span>
+    </div>
     <div class="card card-primary">
         <h1 class="card-header">📝 Markdown Editor</h1>
         <div class="card-body">
-            <div class="alert alert-info mb-4">
-                <strong>ℹ️ Live Markdown Preview</strong>
-                <span>Uses <a href="https://marked.js.org/" target="_blank" class="alert-link">marked.js</a> and <a href="https://highlightjs.org/" target="_blank" class="alert-link">highlight.js</a> for real-time rendering with syntax highlighting.</span>
-            </div>
-            
             <div class="row g-4 mb-4">
                 <div class="col-12 col-lg-6">
                     <label for="markdownTextarea" class="form-label mb-3"><strong style="font-size: 1.1rem;">Markdown Input</strong></label>

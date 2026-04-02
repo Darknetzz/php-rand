@@ -1,12 +1,11 @@
 <div id="rot" class="content">
+    <div class="alert alert-info mb-4">
+        <strong>ℹ️ About ROT Ciphers</strong>
+        ROT (rotation cipher) shifts each letter in the text by a fixed number of positions in the alphabet. ROT13 is the most common variant.
+    </div>
     <div class="card card-primary">
         <h1 class="card-header">🔄 ROT Cipher</h1>
         <div class="card card-body">
-            <div class="alert alert-info mb-4">
-                <strong>ℹ️ About ROT Ciphers</strong>
-                ROT (rotation cipher) shifts each letter in the text by a fixed number of positions in the alphabet. ROT13 is the most common variant.
-            </div>
-
             <form class="form" action="gen.php" method="POST" data-action="rot">
                 <?php
                   if (isset($_POST['rot'])) {

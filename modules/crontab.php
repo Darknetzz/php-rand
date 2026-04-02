@@ -10,15 +10,14 @@ foreach (DateTimeZone::listIdentifiers() as $timezone) {
 $defaultReference = (new DateTime('now'))->format('Y-m-d\TH:i');
 ?>
 <div id="crontab" class="content">
+    <div class="alert alert-info mb-4">
+        <strong>Understand cron schedules quickly.</strong>
+        Validate standard 5-field cron expressions, see a human-readable explanation, and inspect upcoming run times in your chosen timezone.
+        The full analysis updates automatically as you edit (after a short pause).
+    </div>
     <div class="card card-primary">
         <h1 class="card-header"><?= icon("calendar-event") ?> Crontab Explorer</h1>
         <div class="card-body">
-            <div class="alert alert-info mb-4">
-                <strong>Understand cron schedules quickly.</strong>
-                Validate standard 5-field cron expressions, see a human-readable explanation, and inspect upcoming run times in your chosen timezone.
-                The full analysis updates automatically as you edit (after a short pause).
-            </div>
-
             <form class="form" action="gen.php" method="POST" id="crontabForm" data-action="crontab">
                 <div class="row g-4 mb-4">
                     <div class="col-12 col-xl-5">

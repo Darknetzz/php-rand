@@ -5,14 +5,13 @@
         $stripCommentsChecked  = !empty($_POST['stripcomments']) ? 'checked' : '';
     ?>
 
+    <div class="alert alert-info mb-4">
+        <strong>ℹ️ Auto-detect & Convert</strong>
+        Paste JSON, YAML, or XML on the left and choose your target format. Comments starting with # or // can be stripped.
+    </div>
     <div class="card card-primary">
         <h1 class="card-header">🧾 Serialization</h1>
         <div class="card card-body">
-            <div class="alert alert-info mb-4">
-                <strong>ℹ️ Auto-detect & Convert</strong>
-                Paste JSON, YAML, or XML on the left and choose your target format. Comments starting with # or // can be stripped.
-            </div>
-
             <form class="form" action="gen.php" method="POST" id="serializationForm" data-action="serialization" data-responsetype="text">
                 <div class="row g-4 mb-4">
                     <div class="col-12 col-lg-6">

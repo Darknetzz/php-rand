@@ -1,13 +1,12 @@
 <div id="brainfuck" class="content">
+    <div class="alert alert-info mb-4">
+        <strong>ℹ️ About Brainfuck</strong>
+        Brainfuck is an esoteric programming language with only 8 commands: <code>&gt;</code> <code>&lt;</code> <code>+</code> <code>-</code> <code>.</code> <code>,</code> <code>[</code> <code>]</code>.
+        This tool converts between text and Brainfuck code, or executes Brainfuck code.
+    </div>
     <div class="card card-primary">
         <h1 class="card-header">🧠 Brainfuck Converter</h1>
         <div class="card card-body">
-            <div class="alert alert-info mb-4">
-                <strong>ℹ️ About Brainfuck</strong>
-                Brainfuck is an esoteric programming language with only 8 commands: <code>&gt;</code> <code>&lt;</code> <code>+</code> <code>-</code> <code>.</code> <code>,</code> <code>[</code> <code>]</code>.
-                This tool converts between text and Brainfuck code, or executes Brainfuck code.
-            </div>
-
             <form class="form" action="gen.php" method="POST" data-action="brainfuck">
                 <?php
                   $brainfuckInput = $_POST['brainfuck'] ?? '';

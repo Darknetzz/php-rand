@@ -6,6 +6,20 @@
     }
     $sshKeygenAvailable = $sshKeygenPath !== '';
     ?>
+    <div class="alert alert-primary border border-primary mb-3" role="note">
+        <div class="d-flex align-items-start gap-2 gap-md-3">
+            <span class="fs-3 lh-1 text-primary"><?= icon('journal-text') ?></span>
+            <div>
+                <strong class="d-block mb-1">Public vs private in the results</strong>
+                <p class="mb-0">
+                    Each card always shows the <strong>private key</strong> below. When both are available, <strong>Public key output</strong> switches between <strong>PEM</strong> and <strong>OpenSSH (one-line)</strong>—same public key, different encoding.
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="alert alert-warning mb-4">
+        Server or <strong>Auto</strong> mode is best when you need the OpenSSH line; client-only mode may omit it (see banner below after you pick a mode).
+    </div>
     <div class="card card-primary">
         <h1 class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
             <span>🧷 SSH Key Generator</span>
@@ -20,21 +34,6 @@
             <?php endif; ?>
         </h1>
         <div class="card-body">
-            <div class="alert alert-primary border border-primary mb-3" role="note">
-                <div class="d-flex align-items-start gap-2 gap-md-3">
-                    <span class="fs-3 lh-1 text-primary"><?= icon('journal-text') ?></span>
-                    <div>
-                        <strong class="d-block mb-1">Public vs private in the results</strong>
-                        <p class="mb-0">
-                            Each card always shows the <strong>private key</strong> below. When both are available, <strong>Public key output</strong> switches between <strong>PEM</strong> and <strong>OpenSSH (one-line)</strong>—same public key, different encoding.
-                        </p>
-                    </div>
-                </div>
-            </div>
-            <div class="alert alert-warning mb-3">
-                Server or <strong>Auto</strong> mode is best when you need the OpenSSH line; client-only mode may omit it (see banner below after you pick a mode).
-            </div>
-
             <div class="client-crypto-generator-banner mb-3 mt-3" aria-live="polite"></div>
 
             <form class="form" action="gen.php" method="POST" id="sshKeygenForm" data-action="ssh_keygen">
