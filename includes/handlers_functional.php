@@ -1564,7 +1564,7 @@ function handle_crontab_preview(array $req): string {
     $summary = htmlspecialchars((string) $evaluation['summary'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
     $normalized = htmlspecialchars((string) $evaluation['normalized_expression'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 
-    return "<div class='small'><strong>This means:</strong> {$summary} <span class='text-muted'>Normalized: <code>{$normalized}</code></span></div>";
+    return "<div class='small'>{$summary} <span class='text-muted'>Normalized: <code>{$normalized}</code></span></div>";
 }
 
 function shellcheck_level_badge_html(string $level): string {
