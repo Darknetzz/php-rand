@@ -1589,6 +1589,26 @@ function randomDataGetCompatibleFormBundle($form) {
         return out;
     };
     const randomPick = (items) => items[randomInt(0, items.length - 1)];
+    /** Prefer a different item than last time (reduces repeat streaks when shuffling). */
+    const randomPickAvoidRepeat = (items, storageSubkey) => {
+        const n = items.length;
+        if (n === 0) {
+            return null;
+        }
+        if (n === 1) {
+            return items[0];
+        }
+        const key = "randomPickLast_" + storageSubkey;
+        const lastIdx = $form.data(key);
+        let idx = randomInt(0, n - 1);
+        let tries = 0;
+        while (idx === lastIdx && tries < 64) {
+            idx = randomInt(0, n - 1);
+            tries++;
+        }
+        $form.data(key, idx);
+        return items[idx];
+    };
 
     // Shared cryptographic samples used by multiple crypto modules.
     const sample = {
@@ -1632,38 +1652,163 @@ function randomDataGetCompatibleFormBundle($form) {
         }
     ];
     const cronScenarios = [
-        {
-            expression: "*/15 9-17 * * MON-FRI",
-            timezone: "Europe/Stockholm"
-        },
-        {
-            expression: "0 2 1 * *",
-            timezone: "UTC"
-        },
-        {
-            expression: "30 6 * * 1-5",
-            timezone: "America/New_York"
-        },
-        {
-            expression: "@daily",
-            timezone: "Asia/Tokyo"
-        }
+        { expression: "*/15 9-17 * * MON-FRI", timezone: "Europe/Stockholm" },
+        { expression: "0 2 1 * *", timezone: "UTC" },
+        { expression: "30 6 * * 1-5", timezone: "America/New_York" },
+        { expression: "@daily", timezone: "Asia/Tokyo" },
+        { expression: "*/5 * * * *", timezone: "UTC" },
+        { expression: "0 * * * *", timezone: "Europe/London" },
+        { expression: "0 0 * * 0", timezone: "America/Los_Angeles" },
+        { expression: "0 0 * * 6", timezone: "Australia/Sydney" },
+        { expression: "15 14 * * MON-FRI", timezone: "America/Chicago" },
+        { expression: "0 9 * * 1", timezone: "Europe/Berlin" },
+        { expression: "45 23 * * *", timezone: "Pacific/Auckland" },
+        { expression: "0 0 1,15 * *", timezone: "America/Toronto" },
+        { expression: "0 12 * * SUN", timezone: "Africa/Johannesburg" },
+        { expression: "*/10 8-18 * * *", timezone: "Asia/Singapore" },
+        { expression: "0 3 * * 2,4", timezone: "America/Denver" },
+        { expression: "@hourly", timezone: "UTC" },
+        { expression: "@weekly", timezone: "Europe/Paris" },
+        { expression: "@monthly", timezone: "America/Sao_Paulo" },
+        { expression: "0 0 1 1 *", timezone: "UTC" },
+        { expression: "30 2 * * *", timezone: "Asia/Kolkata" },
+        { expression: "0 0 * * 1-5", timezone: "America/Mexico_City" },
+        { expression: "5,25,45 * * * *", timezone: "Europe/Warsaw" },
+        { expression: "0 0-23/2 * * *", timezone: "UTC" },
+        { expression: "0 0 * * SUN#2", timezone: "America/New_York" },
+        { expression: "0 0 L * *", timezone: "UTC" },
+        { expression: "0 0 15W * *", timezone: "America/Vancouver" }
     ];
     const shellcheckScenarios = [
         {
             filename: "deploy.sh",
             shell: "bash",
-            script: "#!/usr/bin/env bash\nfor file in *.log; do\n  echo Processing $file\n  grep ERROR $file\n  rm $file\n done\n"
+            script: "#!/usr/bin/env bash\nfor file in *.log; do\n  echo Processing $file\n  grep ERROR $file\n  rm $file\ndone\n"
         },
         {
             filename: "backup.sh",
             shell: "sh",
-            script: "for archive in $(ls /var/backups); do\n  echo \"$archive\"\ndone\n"
+            script: "#!/bin/sh\nfor archive in $(ls /var/backups); do\n  echo \"$archive\"\ndone\n"
         },
         {
             filename: "check-users.sh",
             shell: "bash",
             script: "#!/usr/bin/env bash\nif [ $USER = root ]; then\n  echo admin mode\nfi\n"
+        },
+        {
+            filename: "parse-json.sh",
+            shell: "bash",
+            script: "#!/usr/bin/env bash\nname=`jq -r .name < config.json`\necho $name\n"
+        },
+        {
+            filename: "read-lines.sh",
+            shell: "bash",
+            script: "#!/usr/bin/env bash\nwhile read line; do\n  echo \"$line\" | wc -c\ndone < input.txt\n"
+        },
+        {
+            filename: "paths.sh",
+            shell: "bash",
+            script: "#!/usr/bin/env bash\npath=\"/tmp/my files/report.txt\"\ncat $path\n"
+        },
+        {
+            filename: "legacy-echo.sh",
+            shell: "sh",
+            script: "#!/bin/sh\necho -n \"done\"\n"
+        },
+        {
+            filename: "find-exec.sh",
+            shell: "bash",
+            script: "#!/usr/bin/env bash\nfind . -name \"*.tmp\" -exec rm {} \\;\n"
+        },
+        {
+            filename: "sudo-tee.sh",
+            shell: "bash",
+            script: "#!/usr/bin/env bash\necho \"config line\" | sudo tee -a /etc/app.conf\n"
+        },
+        {
+            filename: "subshell-cd.sh",
+            shell: "bash",
+            script: "#!/usr/bin/env bash\n(cd /var/log && ls)\npwd\n"
+        },
+        {
+            filename: "array-ish.sh",
+            shell: "sh",
+            script: "#!/bin/sh\nitems=(one two three)\necho ${items[0]}\n"
+        },
+        {
+            filename: "double-grep.sh",
+            shell: "bash",
+            script: "#!/usr/bin/env bash\ncat access.log | grep GET | grep -v health\n"
+        },
+        {
+            filename: "curl-pipe.sh",
+            shell: "bash",
+            script: "#!/usr/bin/env bash\nurl=\"https://example.com/data.json\"\ncurl $url | jq .\n"
+        },
+        {
+            filename: "test-brackets.sh",
+            shell: "bash",
+            script: "#!/usr/bin/env bash\nif [[ $1 == \"yes\" ]]; then\n  echo ok\nfi\n"
+        },
+        {
+            filename: "dash-printf.sh",
+            shell: "dash",
+            script: "#!/bin/dash\nfor i in 1 2 3; do\n  echo $i\ndone\n"
+        },
+        {
+            filename: "ksh-typo.sh",
+            shell: "ksh",
+            script: "#!/bin/ksh\nset -e\ncd /maybe/missing/dir\nls\n"
+        },
+        {
+            filename: "source-args.sh",
+            shell: "bash",
+            script: "#!/usr/bin/env bash\n. ./lib.sh $1\n"
+        },
+        {
+            filename: "seq-printf.sh",
+            shell: "bash",
+            script: "#!/usr/bin/env bash\nfor i in $(seq 1 10); do\n  printf \"%s\\n\" $i\ndone\n"
+        },
+        {
+            filename: "local-wrong.sh",
+            shell: "sh",
+            script: "#!/bin/sh\nfoo() {\n  local x=1\n  echo $x\n}\nfoo\n"
+        },
+        {
+            filename: "mkdir-cd.sh",
+            shell: "bash",
+            script: "#!/usr/bin/env bash\nmkdir -p /tmp/build\ncd /tmp/build || exit 1\nrm -f *.o\n"
+        },
+        {
+            filename: "wget-string.sh",
+            shell: "bash",
+            script: "#!/usr/bin/env bash\nname=\"report 2026.pdf\"\nwget -O \"$name\" https://example.com/file\n"
+        },
+        {
+            filename: "eval-dynamic.sh",
+            shell: "bash",
+            script: "#!/usr/bin/env bash\ncmd=\"echo hello\"\neval $cmd\n"
+        },
+        {
+            filename: "sleep-rand.sh",
+            shell: "bash",
+            script: "#!/usr/bin/env bash\nsleep $RANDOM % 5\necho done\n"
+        },
+        {
+            filename: "docker-run.sh",
+            shell: "bash",
+            script: "#!/usr/bin/env bash\ndocker run --rm -it myimage:latest /bin/bash -c \"apt update && apt install -y curl\"\n"
+        },
+        {
+            filename: "strict-assign.sh",
+            shell: "bash",
+            script: "#!/usr/bin/env bash\nset -u\necho $UNSET_VAR\n"
+        },
+        {
+            filename: "heredoc-tabs.sh",
+            shell: "bash",
+            script: "#!/usr/bin/env bash\ncat <<-EOF\n\tindented line\nEOF\n"
         }
     ];
 
@@ -1740,14 +1885,14 @@ function randomDataGetCompatibleFormBundle($form) {
             regexReplacement: regexSample.replacement
         };
     } else if (formAction === "crontab" || formId === "crontabform") {
-        const cronSample = randomPick(cronScenarios);
+        const cronSample = randomPickAvoidRepeat(cronScenarios, "crontabScenario");
         bundle = {
             kind: "crontab",
             cronExpression: cronSample.expression,
             cronTimezone: cronSample.timezone
         };
     } else if (formAction === "shellcheck" || formId === "shellcheckform") {
-        const shellcheckSample = randomPick(shellcheckScenarios);
+        const shellcheckSample = randomPickAvoidRepeat(shellcheckScenarios, "shellcheckScenario");
         bundle = {
             kind: "shellcheck",
             shellcheckFilename: shellcheckSample.filename,
@@ -2219,12 +2364,38 @@ function addRandomDataButtons($root = null) {
         $btn.on('click', function() {
             const $form = $input.closest('form');
             const formAction = (($form.attr('data-action') || '') + '').toLowerCase();
-            if (formAction === 'crontab') {
+            if (formAction === 'crontab' || formAction === 'shellcheck') {
                 $form.removeData('randomDataBundle');
             }
             const randomData = generateRandomData(inputType, placeholder, $input);
             $input.val(randomData).trigger('change').trigger('input');
-            
+            if (formAction === 'crontab') {
+                const b = $form.data('randomDataBundle');
+                if (b && b.cronTimezone) {
+                    const $tz = $form.find("[name='cron_timezone']");
+                    if ($tz.length) {
+                        $tz.val(b.cronTimezone).trigger('change');
+                    }
+                }
+            }
+            if (formAction === 'shellcheck') {
+                const b = $form.data('randomDataBundle');
+                if (b && b.kind === 'shellcheck') {
+                    const $script = $form.find("[name='shellcheck_script']");
+                    const $fn = $form.find("[name='shellcheck_filename']");
+                    const $sh = $form.find("[name='shellcheck_shell']");
+                    if ($script.length && b.shellcheckScript !== undefined) {
+                        $script.val(b.shellcheckScript).trigger('input');
+                    }
+                    if ($fn.length && b.shellcheckFilename !== undefined) {
+                        $fn.val(b.shellcheckFilename).trigger('change');
+                    }
+                    if ($sh.length && b.shellcheckShell !== undefined) {
+                        $sh.val(b.shellcheckShell).trigger('change');
+                    }
+                }
+            }
+
             // Visual feedback
             const originalHtml = $btn.html();
             $btn.html('<i class="bi bi-check"></i>').addClass('btn-success').removeClass('btn-outline-secondary');
