@@ -2126,6 +2126,7 @@ function generateRandomData(type, placeholder = '', $input = null) {
 
     if (bundle && bundle.kind === "crontab") {
         if (inputName === "cron_expression") return bundle.cronExpression;
+        if (inputName === "cron_timezone") return bundle.cronTimezone;
     }
 
     if (bundle && bundle.kind === "shellcheck") {
@@ -2321,7 +2322,8 @@ function addRandomDataButtons($root = null) {
     const selectors = [
         'input[type="text"]:not([readonly]):not([disabled])',
         'input[type="number"]:not([readonly]):not([disabled])',
-        'textarea:not([readonly]):not([disabled])'
+        'textarea:not([readonly]):not([disabled])',
+        '#crontabTimezone:not([disabled])'
     ];
 
     $scope.find(selectors.join(',')).each(function() {
@@ -2356,7 +2358,9 @@ function addRandomDataButtons($root = null) {
         }
 
         // Get input details
-        const inputType = $input.is('textarea') ? 'textarea' : $input.attr('type');
+        const inputType = $input.is('textarea')
+            ? 'textarea'
+            : ($input.is('select') ? 'select' : $input.attr('type'));
         const placeholder = $input.attr('placeholder') || '';
         const inputId = $input.attr('id') || 'input_' + Math.random().toString(36).substr(2, 9);
         
@@ -2392,18 +2396,11 @@ function addRandomDataButtons($root = null) {
             const randomData = generateRandomData(inputType, placeholder, $input);
             $input.val(randomData).trigger('change').trigger('input');
             if (formAction === 'crontab') {
-                const b = $form.data('randomDataBundle');
-                if (b && b.cronTimezone) {
-                    const $tz = $form.find("[name='cron_timezone']");
-                    if ($tz.length) {
-                        $tz.val(b.cronTimezone).trigger('change');
-                    }
-                    const serverTz = ($form.attr('data-server-timezone') || '').trim();
-                    if (serverTz && b.cronTimezone !== serverTz) {
-                        const det = document.getElementById('crontabMoreDetails');
-                        if (det) {
-                            det.open = true;
-                        }
+                const inputName = ($input.attr('name') || '').toLowerCase();
+                if (inputName === 'cron_timezone') {
+                    const det = document.getElementById('crontabMoreDetails');
+                    if (det) {
+                        det.open = true;
                     }
                 }
             }
