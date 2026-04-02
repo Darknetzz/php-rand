@@ -586,6 +586,186 @@ function handle_hex(array $req): string {
 }
 
 /**
+ * Normalize subnet field: dotted IPv4 mask or /prefix (e.g. /24).
+ */
+function handle_ip_normalize_subnet_mask(string $subnet): ?string {
+    $subnet = trim($subnet);
+    if ($subnet === '') {
+        return null;
+    }
+    if (preg_match('/^\/?(\d{1,2})$/', $subnet, $m)) {
+        $p = (int) $m[1];
+        if ($p < 0 || $p > 32) {
+            return null;
+        }
+        if ($p === 0) {
+            return '0.0.0.0';
+        }
+        if ($p === 32) {
+            return '255.255.255.255';
+        }
+        $mask = (-1 << (32 - $p)) & 0xFFFFFFFF;
+
+        return long2ip($mask);
+    }
+    if (filter_var($subnet, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+        return $subnet;
+    }
+
+    return null;
+}
+
+/**
+ * Render a key/value result table for networking tools.
+ *
+ * @param array<string, string> $rows
+ */
+function handle_ip_kv_table(array $rows): string {
+    $out = '<div class="table-responsive"><table class="table table-dark table-striped table-hover align-middle mb-0" style="border: 1px solid #334155;"><tbody>';
+    foreach ($rows as $k => $v) {
+        $out .= '<tr><th class="text-nowrap" scope="row">' . htmlspecialchars((string) $k, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</th><td style="font-family: monospace;">' . htmlspecialchars((string) $v, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</td></tr>';
+    }
+    $out .= '</tbody></table></div>';
+
+    return $out;
+}
+
+/**
+ * Handle DNS lookup, CIDR/range conversion, and subnet calculator (action ip).
+ *
+ * @param array $req Request with 'tool': dnslookup|cidr2range|range2cidr|subnetmask
+ */
+function handle_ip(array $req): string {
+    $allowedTools = ['dnslookup', 'cidr2range', 'range2cidr', 'subnetmask'];
+    $tool = req_get($req, 'tool');
+    if (!in_array($tool, $allowedTools, true)) {
+        return formatOutput('Invalid networking tool selected.', type: 'danger');
+    }
+
+    if ($tool === 'dnslookup') {
+        $q = trim(req_get($req, 'hostname', ''));
+        if ($q === '') {
+            return formatOutput('Hostname or IP is required.', type: 'danger');
+        }
+        if (strlen($q) > 253 || preg_match('/\s/', $q)) {
+            return formatOutput('Invalid input.', type: 'danger');
+        }
+
+        if (filter_var($q, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_IPV6)) {
+            $ptr = @gethostbyaddr($q);
+            $ptrLabel = ($ptr !== false && $ptr !== $q) ? $ptr : '—';
+
+            return handle_ip_kv_table(['Query' => $q, 'PTR (reverse DNS)' => $ptrLabel]);
+        }
+
+        if (filter_var($q, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME) === false) {
+            return formatOutput('Invalid hostname.', type: 'danger');
+        }
+
+        $ipv4 = [];
+        $ipv6 = [];
+        if (function_exists('dns_get_record')) {
+            foreach (@dns_get_record($q, DNS_A) ?: [] as $rec) {
+                if (!empty($rec['ip'])) {
+                    $ipv4[] = $rec['ip'];
+                }
+            }
+            foreach (@dns_get_record($q, DNS_AAAA) ?: [] as $rec) {
+                if (!empty($rec['ipv6'])) {
+                    $ipv6[] = $rec['ipv6'];
+                }
+            }
+        }
+        $gb = @gethostbyname($q);
+        if ($gb !== $q && filter_var($gb, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+            if (!in_array($gb, $ipv4, true)) {
+                array_unshift($ipv4, $gb);
+            }
+        }
+
+        return handle_ip_kv_table([
+            'Query' => $q,
+            'A (IPv4)' => $ipv4 ? implode(', ', array_unique($ipv4)) : '—',
+            'AAAA (IPv6)' => $ipv6 ? implode(', ', array_unique($ipv6)) : '—',
+        ]);
+    }
+
+    if ($tool === 'cidr2range') {
+        $cidr = trim(req_get($req, 'cidr', ''));
+        if ($cidr === '') {
+            return formatOutput('CIDR is required.', type: 'danger');
+        }
+        if (strlen($cidr) > 128) {
+            return formatOutput('CIDR input is too long.', type: 'danger');
+        }
+        $range = cidr2range($cidr);
+        if ($range === false) {
+            return formatOutput('Invalid CIDR notation.', type: 'danger');
+        }
+
+        return handle_ip_kv_table([
+            'CIDR' => $range['cidr'],
+            'Start' => $range['start'],
+            'End' => $range['end'],
+            'Total addresses' => (string) $range['total'],
+        ]);
+    }
+
+    if ($tool === 'range2cidr') {
+        $start = trim(req_get($req, 'startip', ''));
+        $end = trim(req_get($req, 'endip', ''));
+        if ($start === '' || $end === '') {
+            return formatOutput('Start and end IP are required.', type: 'danger');
+        }
+        if (ip2long($start) !== false && ip2long($end) !== false && ip2long($start) > ip2long($end)) {
+            [$start, $end] = [$end, $start];
+        }
+        $result = range2cidr($start, $end);
+        if ($result === false || empty($result['cidrs'])) {
+            return formatOutput('Invalid IPv4 range.', type: 'danger');
+        }
+
+        return handle_ip_kv_table([
+            'Start' => $result['start'],
+            'End' => $result['end'],
+            'CIDR block(s)' => implode(', ', $result['cidrs']),
+            'Block count' => (string) $result['total'],
+            'IPs in range' => (string) $result['total_ips'],
+        ]);
+    }
+
+    // subnetmask
+    $ip = trim(req_get($req, 'ip', ''));
+    $subnetRaw = trim(req_get($req, 'subnet', ''));
+    if ($ip === '' || $subnetRaw === '') {
+        return formatOutput('IP and subnet (mask or /prefix) are required.', type: 'danger');
+    }
+    if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === false) {
+        return formatOutput('Invalid IPv4 address.', type: 'danger');
+    }
+    $subnet = handle_ip_normalize_subnet_mask($subnetRaw);
+    if ($subnet === null) {
+        return formatOutput('Invalid subnet mask or prefix (use dotted mask or /0–/32).', type: 'danger');
+    }
+    $info = subnetmask($ip, $subnet);
+    if ($info === false) {
+        return formatOutput('Could not compute subnet information.', type: 'danger');
+    }
+
+    return handle_ip_kv_table([
+        'Address' => $ip,
+        'Subnet mask' => $info['subnet'],
+        'CIDR' => $info['cidr'],
+        'Network' => $info['network'],
+        'Broadcast' => $info['broadcast'],
+        'First usable' => $info['start'],
+        'Last usable' => $info['end'],
+        'Usable hosts' => (string) $info['total_ips'],
+        'Total addresses' => (string) $info['total'],
+    ]);
+}
+
+/**
  * Handle ROT cipher requests
  *
  * Performs ROT (rotate cipher) transformation on text. Can apply a single
