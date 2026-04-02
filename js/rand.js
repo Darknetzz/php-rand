@@ -2217,6 +2217,11 @@ function addRandomDataButtons($root = null) {
 
         // Add click handler
         $btn.on('click', function() {
+            const $form = $input.closest('form');
+            const formAction = (($form.attr('data-action') || '') + '').toLowerCase();
+            if (formAction === 'crontab') {
+                $form.removeData('randomDataBundle');
+            }
             const randomData = generateRandomData(inputType, placeholder, $input);
             $input.val(randomData).trigger('change').trigger('input');
             
