@@ -1076,6 +1076,65 @@ function initKeypairSignFormUi($scope) {
 }
 
 /* ===================================================================== */
+/*                      FUNCTION: initCrontabPreviewUi                    */
+/* ===================================================================== */
+function initCrontabPreviewUi($scope) {
+    const $form = $scope.find("#crontabForm");
+    if (!$form.length) {
+        return;
+    }
+
+    const $expression = $form.find("[name='cron_expression']");
+    const $timezone = $form.find("[name='cron_timezone']");
+    const $preview = $form.find("#crontabLivePreview");
+    if (!$expression.length || !$preview.length) {
+        return;
+    }
+
+    const defaultHtml = $preview.html();
+    let timer = $form.data("crontabPreviewTimer");
+
+    function renderDefault() {
+        $preview.html(defaultHtml);
+    }
+
+    function queuePreviewRefresh() {
+        const expression = ($expression.val() || "").trim();
+        if (timer) {
+            clearTimeout(timer);
+        }
+        if (!expression) {
+            renderDefault();
+            return;
+        }
+
+        timer = setTimeout(function() {
+            $preview.html("<span class='text-muted'>Explaining…</span>");
+            $.ajax({
+                type: "POST",
+                url: "gen.php",
+                data: {
+                    action: "crontab_preview",
+                    cron_expression: expression,
+                    cron_timezone: $timezone.val() || "UTC"
+                }
+            }).done(function(html) {
+                $preview.html(html);
+            }).fail(function() {
+                $preview.html("<div class='small text-danger'>Unable to explain this expression right now.</div>");
+            });
+        }, 250);
+
+        $form.data("crontabPreviewTimer", timer);
+    }
+
+    $expression.off("input.crontabPreview").on("input.crontabPreview", queuePreviewRefresh);
+    $timezone.off("change.crontabPreview").on("change.crontabPreview", queuePreviewRefresh);
+
+    queuePreviewRefresh();
+}
+
+/* ===================================================================== */
 /*                           FUNCTION: navigate                          */
 /* ===================================================================== */
 function navigate(to) {
@@ -1118,6 +1177,7 @@ function navigate(to) {
         addRandomDataButtons($(normalizedTo));
         initCsrFormUi($(normalizedTo));
         initKeypairSignFormUi($(normalizedTo));
+        initCrontabPreviewUi($(normalizedTo));
         refreshClientCryptoGeneratorUi($(normalizedTo));
     };
 

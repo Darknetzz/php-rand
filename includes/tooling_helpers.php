@@ -325,3 +325,66 @@ function cron_build_summary(array $parts): string {
 
     return rtrim(implode(' ', array_filter($segments)), '.') . '.';
 }
+
+function cron_evaluate_schedule(
+    string $expression,
+    string $timezone,
+    string $referenceRaw = '',
+    bool $allowCurrent = false,
+    int $runCount = 8
+): array {
+    $expression = trim($expression);
+    if ($expression === '') {
+        return ['ok' => false, 'error' => 'Cron expression is required.'];
+    }
+    if (strlen($expression) > 120) {
+        return ['ok' => false, 'error' => 'Cron expression is too long. Maximum 120 characters allowed.'];
+    }
+
+    if (!in_array($timezone, DateTimeZone::listIdentifiers(), true)) {
+        return ['ok' => false, 'error' => 'Invalid timezone selected.'];
+    }
+
+    $runCount = max(1, min(20, $runCount));
+
+    try {
+        $referenceTime = $referenceRaw !== ''
+            ? new DateTime($referenceRaw, new DateTimeZone($timezone))
+            : new DateTime('now', new DateTimeZone($timezone));
+    } catch (Throwable) {
+        return ['ok' => false, 'error' => 'Reference time is invalid. Use a valid local date/time.'];
+    }
+
+    try {
+        $cron = new \Cron\CronExpression($expression);
+    } catch (Throwable $e) {
+        return ['ok' => false, 'error' => 'Invalid cron expression: ' . $e->getMessage()];
+    }
+
+    try {
+        $parts = $cron->getParts();
+        $normalizedExpression = (string) $cron->getExpression();
+        $summary = cron_build_summary($parts);
+        $isDue = $cron->isDue(clone $referenceTime, $timezone);
+        $previousRun = $cron->getPreviousRunDate(clone $referenceTime, 0, $allowCurrent, $timezone);
+        $nextRuns = $cron->getMultipleRunDates($runCount, clone $referenceTime, false, $allowCurrent, $timezone);
+    } catch (Throwable $e) {
+        return ['ok' => false, 'error' => 'Unable to evaluate this cron expression right now: ' . $e->getMessage()];
+    }
+
+    return [
+        'ok' => true,
+        'expression' => $expression,
+        'timezone' => $timezone,
+        'reference_time' => $referenceTime,
+        'run_count' => $runCount,
+        'allow_current' => $allowCurrent,
+        'cron' => $cron,
+        'parts' => $parts,
+        'normalized_expression' => $normalizedExpression,
+        'summary' => $summary,
+        'is_due' => $isDue,
+        'previous_run' => $previousRun,
+        'next_runs' => $nextRuns,
+    ];
+}

@@ -35,6 +35,17 @@ $defaultReference = (new DateTime('now'))->format('Y-m-d\TH:i');
                         <div class="form-text mt-2">
                             Supports macros like <code>@daily</code> and advanced cron syntax such as <code>L</code>, <code>W</code>, and <code>#</code>.
                         </div>
+                        <div class="card border-secondary mt-3" style="background: rgba(255,255,255,0.03);">
+                            <div class="card-body py-3">
+                                <div class="small text-uppercase text-muted mb-2">Quick Meaning</div>
+                                <div class="small" id="crontabLivePreview">
+                                    <div><code>0 0 1 * *</code> = once a month</div>
+                                    <div><code>0 0 * * 0</code> = once a week</div>
+                                    <div><code>0 0 * * *</code> = once a day</div>
+                                    <div><code>0 * * * *</code> = once an hour</div>
+                                </div>
+                            </div>
+                        </div>
 
                         <div class="row g-3 mt-1">
                             <div class="col-12 col-md-6">

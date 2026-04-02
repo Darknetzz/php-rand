@@ -40,6 +40,7 @@ function getHandlerRegistry(): array {
         'logo_generate' => 'handle_logo_generate',
         'regex' => 'handle_regex',
         'crontab' => 'handle_crontab',
+        'crontab_preview' => 'handle_crontab_preview',
         'brainfuck' => 'handle_brainfuck',
         'genid' => 'handle_genid',
         'jwt' => 'handle_jwt',
@@ -1444,49 +1445,35 @@ function handle_regex(array $req): string {
 }
 
 function handle_crontab(array $req): string {
-    $expression = trim((string) req_get($req, 'cron_expression', ''));
-    if ($expression === '') {
-        return formatOutput("Cron expression is required.", type: "danger");
-    }
-    if (strlen($expression) > 120) {
-        return formatOutput("Cron expression is too long. Maximum 120 characters allowed.", type: "danger");
-    }
-
     $timezone = trim((string) req_get($req, 'cron_timezone', date_default_timezone_get() ?: 'UTC'));
-    if (!in_array($timezone, DateTimeZone::listIdentifiers(), true)) {
-        return formatOutput("Invalid timezone selected.", type: "danger");
-    }
-
     $runCount = req_int($req, 'cron_run_count', 8);
-    $runCount = max(1, min(20, $runCount));
-
     $referenceRaw = trim((string) req_get($req, 'cron_reference_time', ''));
     $allowCurrent = req_bool($req, 'cron_include_current');
 
-    try {
-        $referenceTime = $referenceRaw !== ''
-            ? new DateTime($referenceRaw, new DateTimeZone($timezone))
-            : new DateTime('now', new DateTimeZone($timezone));
-    } catch (Throwable) {
-        return formatOutput("Reference time is invalid. Use a valid local date/time.", type: "danger");
+    $evaluation = cron_evaluate_schedule(
+        (string) req_get($req, 'cron_expression', ''),
+        $timezone,
+        $referenceRaw,
+        $allowCurrent,
+        $runCount
+    );
+    if (($evaluation['ok'] ?? false) !== true) {
+        return formatOutput(
+            htmlspecialchars((string) ($evaluation['error'] ?? 'Unable to evaluate cron expression.'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
+            type: "danger"
+        );
     }
 
-    try {
-        $cron = new \Cron\CronExpression($expression);
-    } catch (Throwable $e) {
-        return formatOutput("Invalid cron expression: " . htmlspecialchars($e->getMessage(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'), type: "danger");
-    }
-
-    try {
-        $parts = $cron->getParts();
-        $normalizedExpression = (string) $cron->getExpression();
-        $summary = cron_build_summary($parts);
-        $isDue = $cron->isDue(clone $referenceTime, $timezone);
-        $previousRun = $cron->getPreviousRunDate(clone $referenceTime, 0, $allowCurrent, $timezone);
-        $nextRuns = $cron->getMultipleRunDates($runCount, clone $referenceTime, false, $allowCurrent, $timezone);
-    } catch (Throwable $e) {
-        return formatOutput("Unable to evaluate this cron expression right now: " . htmlspecialchars($e->getMessage(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'), type: "danger");
-    }
+    $expression = (string) $evaluation['expression'];
+    $parts = $evaluation['parts'];
+    $normalizedExpression = (string) $evaluation['normalized_expression'];
+    $summary = (string) $evaluation['summary'];
+    $isDue = (bool) $evaluation['is_due'];
+    $referenceTime = $evaluation['reference_time'];
+    $previousRun = $evaluation['previous_run'];
+    $nextRuns = $evaluation['next_runs'];
+    $runCount = intval($evaluation['run_count']);
+    $timezone = (string) $evaluation['timezone'];
 
     $fieldMap = [
         ['label' => 'Minute', 'expression' => $parts[0] ?? '*', 'field' => 'minute'],
@@ -1558,6 +1545,26 @@ function handle_crontab(array $req): string {
     }
 
     return $output;
+}
+
+function handle_crontab_preview(array $req): string {
+    $expression = trim((string) req_get($req, 'cron_expression', ''));
+    if ($expression === '') {
+        return "<div class='small text-muted'>Try <code>0 0 * * 0</code> for once a week or <code>0 0 1 * *</code> for once a month.</div>";
+    }
+
+    $timezone = trim((string) req_get($req, 'cron_timezone', date_default_timezone_get() ?: 'UTC'));
+    $evaluation = cron_evaluate_schedule($expression, $timezone, '', false, 1);
+    if (($evaluation['ok'] ?? false) !== true) {
+        return "<div class='small text-danger'>" . icon('exclamation-triangle') . ' '
+            . htmlspecialchars((string) ($evaluation['error'] ?? 'Invalid cron expression.'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')
+            . "</div>";
+    }
+
+    $summary = htmlspecialchars((string) $evaluation['summary'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    $normalized = htmlspecialchars((string) $evaluation['normalized_expression'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+
+    return "<div class='small'><strong>This means:</strong> {$summary} <span class='text-muted'>Normalized: <code>{$normalized}</code></span></div>";
 }
 
 function shellcheck_level_badge_html(string $level): string {
