@@ -1443,6 +1443,12 @@ function handle_regex(array $req): string {
     return $output;
 }
 
+function crontab_human_summary_block(string $summary): string {
+    return '<div class="crontab-human-summary border border-primary border-opacity-25 rounded-3 px-4 py-4 mb-4 text-center bg-primary bg-opacity-10">'
+        . '<p class="mb-0 fs-3 fw-semibold lh-sm">' . htmlspecialchars($summary, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</p>'
+        . '</div>';
+}
+
 function handle_crontab(array $req): string {
     $timezone = trim((string) req_get($req, 'cron_timezone', date_default_timezone_get() ?: 'UTC'));
     $runCount = req_int($req, 'cron_run_count', 8);
@@ -1470,12 +1476,12 @@ function handle_crontab(array $req): string {
 
         $output = '';
         $output .= "<div class='card border-info mb-3'><h5 class='card-header'>Schedule Summary</h5><div class='card-body'>";
+        $output .= crontab_human_summary_block($summary);
         $output .= "<div class='d-flex flex-wrap gap-2 mb-3'>";
         $output .= "<span class='badge bg-info text-white'>" . icon('arrow-repeat') . " One-shot at cron startup</span>";
         $output .= "<span class='badge bg-primary text-white'>" . icon('globe2') . ' ' . htmlspecialchars($timezone, ENT_QUOTES, 'UTF-8') . "</span>";
         $output .= "</div>";
         $output .= "<div class='alert alert-info mb-3'><strong>@reboot</strong> is a Vixie-style crontab extension: the job runs once when the cron daemon starts (often after a system reboot), not on a repeating calendar schedule.</div>";
-        $output .= "<div class='mb-3'><strong>Summary:</strong> " . htmlspecialchars($summary, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "</div>";
         $output .= "<div class='mb-3'><strong>Reference time:</strong> <code>" . htmlspecialchars($referenceTime->format('Y-m-d H:i:s T'), ENT_QUOTES, 'UTF-8') . "</code></div>";
         $output .= copyableOutput('@reboot', 'Expression');
         $output .= "</div></div>";
@@ -1552,12 +1558,12 @@ function handle_crontab(array $req): string {
 
     $output = '';
     $output .= "<div class='card border-info mb-3'><h5 class='card-header'>Schedule Summary</h5><div class='card-body'>";
+    $output .= crontab_human_summary_block($summary);
     $output .= "<div class='d-flex flex-wrap gap-2 mb-3'>{$dueBadge}";
     $output .= "<span class='badge bg-primary text-white'>" . icon('globe2') . ' ' . htmlspecialchars($timezone, ENT_QUOTES, 'UTF-8') . "</span>";
     $output .= "<span class='badge bg-dark text-white'>" . icon('list-ol') . ' ' . intval($runCount) . " future runs</span>";
     $output .= "</div>";
     $output .= $macroNotice;
-    $output .= "<div class='mb-3'><strong>Summary:</strong> " . htmlspecialchars($summary, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "</div>";
     $output .= "<div class='mb-3'><strong>Reference time:</strong> <code>" . htmlspecialchars($referenceTime->format('Y-m-d H:i:s T'), ENT_QUOTES, 'UTF-8') . "</code></div>";
     $output .= "<div class='mb-3'><strong>Previous matching run:</strong> <code>" . htmlspecialchars($previousRun->format('Y-m-d H:i:s T'), ENT_QUOTES, 'UTF-8') . "</code></div>";
     $output .= copyableOutput($normalizedExpression, 'Normalized expression');
