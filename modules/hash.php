@@ -10,7 +10,7 @@
         <h1 class="card-header">🔑 Hash Generator</h1>
         <div class="card-body">
             <div class="alert alert-info mb-4">
-                <strong>ℹ️ About Hashing</strong><br>
+                <strong>ℹ️ About Hashing</strong>
                 Generate cryptographic hashes from any input text. Supports MD5, SHA1, SHA256, SHA512, and many more algorithms.
             </div>
 

@@ -14,7 +14,7 @@ $defaultReference = (new DateTime('now'))->format('Y-m-d\TH:i');
         <h1 class="card-header"><?= icon("calendar-event") ?> Crontab Explorer</h1>
         <div class="card-body">
             <div class="alert alert-info mb-4">
-                <strong>Understand cron schedules quickly.</strong><br>
+                <strong>Understand cron schedules quickly.</strong>
                 Validate standard 5-field cron expressions, see a human-readable explanation, and inspect upcoming run times in your chosen timezone.
                 The full analysis updates automatically as you edit (after a short pause).
             </div>

@@ -3,8 +3,8 @@
         <h1 class="card-header">📝 Markdown Editor</h1>
         <div class="card-body">
             <div class="alert alert-info mb-4">
-                <strong>ℹ️ Live Markdown Preview</strong><br>
-                <span style="display: inline-block; margin-top: 4px;">Uses <a href="https://marked.js.org/" target="_blank" class="alert-link">marked.js</a> and <a href="https://highlightjs.org/" target="_blank" class="alert-link">highlight.js</a> for real-time rendering with syntax highlighting.</span>
+                <strong>ℹ️ Live Markdown Preview</strong>
+                <span>Uses <a href="https://marked.js.org/" target="_blank" class="alert-link">marked.js</a> and <a href="https://highlightjs.org/" target="_blank" class="alert-link">highlight.js</a> for real-time rendering with syntax highlighting.</span>
             </div>
             
             <div class="row g-4 mb-4">

@@ -9,7 +9,7 @@
         <h1 class="card-header">🧾 Serialization</h1>
         <div class="card card-body">
             <div class="alert alert-info mb-4">
-                <strong>ℹ️ Auto-detect & Convert</strong><br>
+                <strong>ℹ️ Auto-detect & Convert</strong>
                 Paste JSON, YAML, or XML on the left and choose your target format. Comments starting with # or // can be stripped.
             </div>
 

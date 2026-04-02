@@ -43,8 +43,8 @@ $timeZoneSelector = function($inputName = "timezone") {
         <h1 class="card-header">⏱️ Time Unit Converter</h1>
         <div class="card-body">
             <div class="alert alert-info mb-4">
-                <strong>ℹ️ Convert Between Units</strong><br>
-                <span style="display: inline-block; margin-top: 4px;">Easily convert time values between seconds, minutes, hours, days, weeks, months, and years.</span>
+                <strong>ℹ️ Convert Between Units</strong>
+                <span>Easily convert time values between seconds, minutes, hours, days, weeks, months, and years.</span>
             </div>
 
             <form class="form" action="gen.php" method="POST" id="datetimeForm" data-action="datetime">

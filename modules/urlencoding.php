@@ -5,7 +5,7 @@
         <h1 class="card-header">🔗 URL Encoding</h1>
         <div class="card-body">
             <div class="alert alert-info mb-4">
-                <strong>ℹ️ Encode & Decode</strong><br>
+                <strong>ℹ️ Encode & Decode</strong>
                 Paste text or URL-encoded data to see the original, encoded, and decoded forms side by side.
             </div>
 

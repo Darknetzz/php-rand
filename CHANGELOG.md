@@ -13,6 +13,9 @@ All notable changes to this project are documented in this file.
 - **Crypto compatibility hardening** – Added RSA signing/verification padding fallback and broader algorithm compatibility updates (including Ed25519/Ed448 handling paths).
 - **Shared output actions** – `copyableOutput` and related rendering paths now support optional HTML actions and more consistent action/button styling across tools.
 - **Runtime/deployment refresh** – Docker image/runtime config updated for PHP 8.5 + `openssh-client`; release workflow/docs (`README`, workflow, config, ignore rules) were refined to reduce release friction.
+- **Crontab Explorer** – New **Misc** tool to validate cron expressions (including macros like `@daily` and Vixie **`@reboot`** as a one-shot at daemon start), human-readable summaries, field breakdown, and timezone-aware previous/next run listings powered by **`dragonmantank/cron-expression`**. The **full analysis** runs automatically on debounced edits (expression, timezone, run count, reference time, include-current); **Analyze Schedule** remains as an explicit action.
+- **ShellCheck** – New **Misc** tool to lint pasted shell scripts via the host **`shellcheck`** binary when available; JSON-backed diagnostics with severity, excerpts, and wiki links. Temp-file linting only (no persistence).
+- **Random shuffle samples** – Crontab and ShellCheck random-data buttons use **larger scenario pools**, **avoid picking the same scenario twice in a row**, and keep **related fields in sync** (cron + timezone; script + filename + shell dialect).
 
 <details>
 <summary>📋 Detailed Changes (click to expand)</summary>
@@ -38,6 +41,18 @@ All notable changes to this project are documented in this file.
 - **Docker runtime** - Updated Dockerfile and image config for PHP 8.5, removed unused OPcache install steps, and added `openssh-client`.
 - **Release process docs** - Expanded release workflow guidance and environment toggle documentation in `README` and workflow-related files.
 - **Repo hygiene** - Updated ignore rules for local release tooling artifacts.
+
+#### Crontab Explorer
+- **UI** - `modules/crontab.php` under **Misc**; navbar entries in `includes/navbar.php`.
+- **Backend** - `handle_crontab()` in `includes/handlers_functional.php`; shared **`cron_evaluate_schedule()`**, humanization helpers, and CLI helpers in `includes/tooling_helpers.php` (loaded from `includes/_includes.php`).
+- **Dependency** - `composer require dragonmantank/cron-expression` for parsing and next/previous run calculation.
+- **`@reboot`** - Handled explicitly (not expressible as five cron fields); dedicated summary and “no periodic next runs” messaging instead of a parser error.
+- **Live analysis** - `initCrontabLiveAnalyzeUi()` in `js/rand.js` POSTs the same payload as **Analyze Schedule** into the main results panel with debouncing and out-of-order response guarding; removed the separate `crontab_preview` action.
+
+#### ShellCheck
+- **UI** - `modules/shellcheck.php` under **Misc** (script textarea, optional filename, dialect, minimum severity).
+- **Backend** - `handle_shellcheck()` runs `shellcheck --format=json1` via `proc_open` (`cli_run_command()` / `cli_find_binary()` in `includes/tooling_helpers.php`); structured HTML cards per finding.
+- **Random samples** - Expanded `shellcheckScenarios` in `js/rand.js` with `randomPickAvoidRepeat()`; shuffle clears the per-form bundle and syncs script, filename, and dialect from the chosen scenario.
 
 </details>
 

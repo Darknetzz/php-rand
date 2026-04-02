@@ -3,7 +3,7 @@
         <h1 class="card-header"><?= icon("terminal") ?> ShellCheck</h1>
         <div class="card-body">
             <div class="alert alert-info mb-4">
-                <strong>Lint shell scripts before you run them.</strong><br>
+                <strong>Lint shell scripts before you run them.</strong>
                 Paste a shell script to get structured ShellCheck diagnostics with severity, rule IDs, and highlighted locations.
             </div>
 

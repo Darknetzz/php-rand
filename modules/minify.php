@@ -6,8 +6,8 @@
         <h1 class="card-header">⚡ Minify</h1>
         <div class="card-body">
             <div class="alert alert-info mb-4">
-                <strong>ℹ️ Code Compression</strong><br>
-                <span style="display: inline-block; margin-top: 4px;">Minify HTML, CSS, and JavaScript to reduce file size and improve load times.</span>
+                <strong>ℹ️ Code Compression</strong>
+                <span>Minify HTML, CSS, and JavaScript to reduce file size and improve load times.</span>
             </div>
 
             <form id="minifyForm" class="form" action="gen.php" method="POST" data-action="minify">

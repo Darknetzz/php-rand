@@ -8,7 +8,7 @@
         <h1 class="card-header">🔍 Regex Tester</h1>
         <div class="card-body">
             <div class="alert alert-info mb-4">
-                <strong>ℹ️ About Regex</strong><br>
+                <strong>ℹ️ About Regex</strong>
                 Test and debug regular expressions in real-time. See matches, groups, and replacements instantly. Supports PHP regex syntax (PCRE).
             </div>
 

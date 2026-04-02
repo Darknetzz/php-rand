@@ -8,7 +8,7 @@
         <h1 class="card-header">🧩 HTML Entities</h1>
         <div class="card-body">
             <div class="alert alert-info mb-4">
-                <strong>ℹ️ Convert & Decode</strong><br>
+                <strong>ℹ️ Convert & Decode</strong>
                 Paste plain text or HTML-encoded strings to get the raw input, encoded entities, and decoded output side by side.
             </div>
 

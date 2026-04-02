@@ -5,8 +5,8 @@
         <h1 class="card-header">🔊 Metaphone</h1>
         <div class="card-body">
             <div class="alert alert-info mb-4">
-                <strong>ℹ️ Phonetic Key Generator</strong><br>
-                <span style="display: inline-block; margin-top: 4px;">Metaphone generates phonetic keys for words, useful for fuzzy matching and sound-alike searches.</span>
+                <strong>ℹ️ Phonetic Key Generator</strong>
+                <span>Metaphone generates phonetic keys for words, useful for fuzzy matching and sound-alike searches.</span>
             </div>
 
             <form class="form" action="gen.php" method="POST" id="metaphoneForm" data-action="metaphone">
