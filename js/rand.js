@@ -1571,6 +1571,41 @@ function randomDataGetCompatibleFormBundle($form) {
             replacement: "$1#$2"
         }
     ];
+    const cronScenarios = [
+        {
+            expression: "*/15 9-17 * * MON-FRI",
+            timezone: "Europe/Stockholm"
+        },
+        {
+            expression: "0 2 1 * *",
+            timezone: "UTC"
+        },
+        {
+            expression: "30 6 * * 1-5",
+            timezone: "America/New_York"
+        },
+        {
+            expression: "@daily",
+            timezone: "Asia/Tokyo"
+        }
+    ];
+    const shellcheckScenarios = [
+        {
+            filename: "deploy.sh",
+            shell: "bash",
+            script: "#!/usr/bin/env bash\nfor file in *.log; do\n  echo Processing $file\n  grep ERROR $file\n  rm $file\n done\n"
+        },
+        {
+            filename: "backup.sh",
+            shell: "sh",
+            script: "for archive in $(ls /var/backups); do\n  echo \"$archive\"\ndone\n"
+        },
+        {
+            filename: "check-users.sh",
+            shell: "bash",
+            script: "#!/usr/bin/env bash\nif [ $USER = root ]; then\n  echo admin mode\nfi\n"
+        }
+    ];
 
     bundle = {};
     if (formAction === "jwt" || formId === "jwtform") {
@@ -1643,6 +1678,21 @@ function randomDataGetCompatibleFormBundle($form) {
             regexPattern: regexSample.pattern,
             regexTestString: regexSample.testString,
             regexReplacement: regexSample.replacement
+        };
+    } else if (formAction === "crontab" || formId === "crontabform") {
+        const cronSample = randomPick(cronScenarios);
+        bundle = {
+            kind: "crontab",
+            cronExpression: cronSample.expression,
+            cronTimezone: cronSample.timezone
+        };
+    } else if (formAction === "shellcheck" || formId === "shellcheckform") {
+        const shellcheckSample = randomPick(shellcheckScenarios);
+        bundle = {
+            kind: "shellcheck",
+            shellcheckFilename: shellcheckSample.filename,
+            shellcheckShell: shellcheckSample.shell,
+            shellcheckScript: shellcheckSample.script
         };
     }
 
@@ -1845,6 +1895,15 @@ function generateRandomData(type, placeholder = '', $input = null) {
         if (inputName === "pattern") return bundle.regexPattern;
         if (inputName === "teststring") return bundle.regexTestString;
         if (inputName === "replacement") return bundle.regexReplacement;
+    }
+
+    if (bundle && bundle.kind === "crontab") {
+        if (inputName === "cron_expression") return bundle.cronExpression;
+    }
+
+    if (bundle && bundle.kind === "shellcheck") {
+        if (inputName === "shellcheck_script") return bundle.shellcheckScript;
+        if (inputName === "shellcheck_filename") return bundle.shellcheckFilename;
     }
 
 

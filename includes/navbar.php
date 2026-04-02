@@ -217,6 +217,16 @@ $navbarItems = [
                 "formalName" => "Browser",
                 "icon"       => icon("browser-chrome"),
             ],
+            "crontab" => [
+                "name"       => "crontab",
+                "formalName" => "Crontab",
+                "icon"       => icon("calendar-event"),
+            ],
+            "shellcheck" => [
+                "name"       => "shellcheck",
+                "formalName" => "ShellCheck",
+                "icon"       => icon("terminal"),
+            ],
         ],
     ],
 ];

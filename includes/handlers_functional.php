@@ -39,9 +39,11 @@ function getHandlerRegistry(): array {
         'qrcode' => 'handle_qrcode',
         'logo_generate' => 'handle_logo_generate',
         'regex' => 'handle_regex',
+        'crontab' => 'handle_crontab',
         'brainfuck' => 'handle_brainfuck',
         'genid' => 'handle_genid',
         'jwt' => 'handle_jwt',
+        'shellcheck' => 'handle_shellcheck',
         'ssh_keygen' => 'handle_ssh_keygen',
         'keypair_generate' => 'handle_keypair_generate',
         'csr_generate' => 'handle_csr_generate',
@@ -1438,6 +1440,307 @@ function handle_regex(array $req): string {
     
     $output .= "</div>";
     
+    return $output;
+}
+
+function handle_crontab(array $req): string {
+    $expression = trim((string) req_get($req, 'cron_expression', ''));
+    if ($expression === '') {
+        return formatOutput("Cron expression is required.", type: "danger");
+    }
+    if (strlen($expression) > 120) {
+        return formatOutput("Cron expression is too long. Maximum 120 characters allowed.", type: "danger");
+    }
+
+    $timezone = trim((string) req_get($req, 'cron_timezone', date_default_timezone_get() ?: 'UTC'));
+    if (!in_array($timezone, DateTimeZone::listIdentifiers(), true)) {
+        return formatOutput("Invalid timezone selected.", type: "danger");
+    }
+
+    $runCount = req_int($req, 'cron_run_count', 8);
+    $runCount = max(1, min(20, $runCount));
+
+    $referenceRaw = trim((string) req_get($req, 'cron_reference_time', ''));
+    $allowCurrent = req_bool($req, 'cron_include_current');
+
+    try {
+        $referenceTime = $referenceRaw !== ''
+            ? new DateTime($referenceRaw, new DateTimeZone($timezone))
+            : new DateTime('now', new DateTimeZone($timezone));
+    } catch (Throwable) {
+        return formatOutput("Reference time is invalid. Use a valid local date/time.", type: "danger");
+    }
+
+    try {
+        $cron = new \Cron\CronExpression($expression);
+    } catch (Throwable $e) {
+        return formatOutput("Invalid cron expression: " . htmlspecialchars($e->getMessage(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'), type: "danger");
+    }
+
+    try {
+        $parts = $cron->getParts();
+        $normalizedExpression = (string) $cron->getExpression();
+        $summary = cron_build_summary($parts);
+        $isDue = $cron->isDue(clone $referenceTime, $timezone);
+        $previousRun = $cron->getPreviousRunDate(clone $referenceTime, 0, $allowCurrent, $timezone);
+        $nextRuns = $cron->getMultipleRunDates($runCount, clone $referenceTime, false, $allowCurrent, $timezone);
+    } catch (Throwable $e) {
+        return formatOutput("Unable to evaluate this cron expression right now: " . htmlspecialchars($e->getMessage(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'), type: "danger");
+    }
+
+    $fieldMap = [
+        ['label' => 'Minute', 'expression' => $parts[0] ?? '*', 'field' => 'minute'],
+        ['label' => 'Hour', 'expression' => $parts[1] ?? '*', 'field' => 'hour'],
+        ['label' => 'Day of month', 'expression' => $parts[2] ?? '*', 'field' => 'dom'],
+        ['label' => 'Month', 'expression' => $parts[3] ?? '*', 'field' => 'month'],
+        ['label' => 'Day of week', 'expression' => $parts[4] ?? '*', 'field' => 'dow'],
+    ];
+
+    $fieldRows = '';
+    foreach ($fieldMap as $field) {
+        $fieldRows .= '<tr>'
+            . '<td><code>' . htmlspecialchars($field['label'], ENT_QUOTES, 'UTF-8') . '</code></td>'
+            . '<td><code>' . htmlspecialchars($field['expression'], ENT_QUOTES, 'UTF-8') . '</code></td>'
+            . '<td>' . htmlspecialchars(cron_describe_field((string) $field['expression'], (string) $field['field']), ENT_QUOTES, 'UTF-8') . '</td>'
+            . '</tr>';
+    }
+
+    $nextRunRows = '';
+    foreach ($nextRuns as $index => $date) {
+        $nextRunRows .= '<tr>'
+            . '<td>' . ($index + 1) . '</td>'
+            . '<td><code>' . htmlspecialchars($date->format('Y-m-d H:i:s T'), ENT_QUOTES, 'UTF-8') . '</code></td>'
+            . '<td>' . htmlspecialchars($date->format('D, j M Y'), ENT_QUOTES, 'UTF-8') . '</td>'
+            . '</tr>';
+    }
+
+    $dueBadge = $isDue
+        ? "<span class='badge bg-success text-white'>" . icon('check-circle') . " Due at reference time</span>"
+        : "<span class='badge bg-secondary text-white'>" . icon('clock') . " Not due at reference time</span>";
+
+    $macroNotice = '';
+    if (str_starts_with($expression, '@') && $normalizedExpression !== $expression) {
+        $macroNotice = "<div class='alert alert-info mb-3'><strong>Macro expanded:</strong> <code>"
+            . htmlspecialchars($expression, ENT_QUOTES, 'UTF-8')
+            . "</code> becomes <code>"
+            . htmlspecialchars($normalizedExpression, ENT_QUOTES, 'UTF-8')
+            . "</code>.</div>";
+    }
+
+    $orSemanticsNotice = '';
+    if (!cron_is_wildcard($parts[2] ?? '*') && !cron_is_wildcard($parts[4] ?? '*')) {
+        $orSemanticsNotice = "<div class='alert alert-warning mb-0'><strong>Day-of-month vs day-of-week:</strong> standard cron treats these as an <strong>OR</strong> match, so the schedule runs when either field matches.</div>";
+    }
+
+    $output = '';
+    $output .= "<div class='card border-info mb-3'><h5 class='card-header'>Schedule Summary</h5><div class='card-body'>";
+    $output .= "<div class='d-flex flex-wrap gap-2 mb-3'>{$dueBadge}";
+    $output .= "<span class='badge bg-primary text-white'>" . icon('globe2') . ' ' . htmlspecialchars($timezone, ENT_QUOTES, 'UTF-8') . "</span>";
+    $output .= "<span class='badge bg-dark text-white'>" . icon('list-ol') . ' ' . intval($runCount) . " future runs</span>";
+    $output .= "</div>";
+    $output .= $macroNotice;
+    $output .= "<div class='mb-3'><strong>Summary:</strong> " . htmlspecialchars($summary, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "</div>";
+    $output .= "<div class='mb-3'><strong>Reference time:</strong> <code>" . htmlspecialchars($referenceTime->format('Y-m-d H:i:s T'), ENT_QUOTES, 'UTF-8') . "</code></div>";
+    $output .= "<div class='mb-3'><strong>Previous matching run:</strong> <code>" . htmlspecialchars($previousRun->format('Y-m-d H:i:s T'), ENT_QUOTES, 'UTF-8') . "</code></div>";
+    $output .= copyableOutput($normalizedExpression, 'Normalized expression');
+    $output .= "</div></div>";
+
+    $output .= "<div class='card border-secondary mb-3'><h5 class='card-header'>Field Breakdown</h5><div class='card-body p-0'>";
+    $output .= "<div class='table-responsive'><table class='table table-dark table-striped mb-0'><thead><tr><th>Field</th><th>Value</th><th>Meaning</th></tr></thead><tbody>{$fieldRows}</tbody></table></div>";
+    $output .= "</div></div>";
+
+    $output .= "<div class='card border-success mb-3'><h5 class='card-header'>Upcoming Run Times</h5><div class='card-body p-0'>";
+    $output .= "<div class='table-responsive'><table class='table table-dark table-striped mb-0'><thead><tr><th>#</th><th>Date/Time</th><th>Day</th></tr></thead><tbody>{$nextRunRows}</tbody></table></div>";
+    $output .= "</div></div>";
+
+    if ($orSemanticsNotice !== '') {
+        $output .= $orSemanticsNotice;
+    }
+
+    return $output;
+}
+
+function shellcheck_level_badge_html(string $level): string {
+    $level = strtolower(trim($level));
+    return match ($level) {
+        'error' => "<span class='badge bg-danger text-white'>error</span>",
+        'warning' => "<span class='badge bg-warning text-dark'>warning</span>",
+        'style' => "<span class='badge bg-info text-dark'>style</span>",
+        default => "<span class='badge bg-secondary text-white'>" . htmlspecialchars($level !== '' ? $level : 'info', ENT_QUOTES, 'UTF-8') . "</span>",
+    };
+}
+
+function shellcheck_excerpt_html(array $lines, array $comment): string {
+    $lineNumber = max(1, intval($comment['line'] ?? 1));
+    $column = max(1, intval($comment['column'] ?? 1));
+    $endColumn = max($column, intval($comment['endColumn'] ?? $column + 1));
+
+    $line = $lines[$lineNumber - 1] ?? '';
+    $line = str_replace("\t", '    ', $line);
+    $pointer = str_repeat(' ', max(0, $column - 1)) . str_repeat('^', max(1, $endColumn - $column));
+
+    return "<pre style='margin: 0; background: #0f172a; color: #e9ecef; padding: 12px; border-radius: 0.5rem; overflow-x: auto;'><code>"
+        . htmlspecialchars($line, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')
+        . "\n"
+        . htmlspecialchars($pointer, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')
+        . "</code></pre>";
+}
+
+function handle_shellcheck(array $req): string {
+    $script = (string) req_get($req, 'shellcheck_script', '');
+    if (trim($script) === '') {
+        return formatOutput("Shell script input is required.", type: "danger");
+    }
+    if (strlen($script) > 200000) {
+        return formatOutput("Shell script input is too large. Maximum 200,000 characters allowed.", type: "danger");
+    }
+
+    $severity = strtolower(trim((string) req_get($req, 'shellcheck_severity', 'info')));
+    $allowedSeverities = ['style', 'info', 'warning', 'error'];
+    if (!in_array($severity, $allowedSeverities, true)) {
+        return formatOutput("Invalid severity selected.", type: "danger");
+    }
+
+    $shell = strtolower(trim((string) req_get($req, 'shellcheck_shell', 'auto')));
+    $allowedShells = ['auto', 'bash', 'sh', 'dash', 'ksh'];
+    if (!in_array($shell, $allowedShells, true)) {
+        return formatOutput("Invalid shell dialect selected.", type: "danger");
+    }
+
+    $filenameInput = trim((string) req_get($req, 'shellcheck_filename', 'snippet.sh'));
+    if (strlen($filenameInput) > 180) {
+        return formatOutput("Filename hint is too long. Maximum 180 characters allowed.", type: "danger");
+    }
+    $displayFilename = basename(str_replace('\\', '/', $filenameInput));
+    $displayFilename = preg_replace('/[^A-Za-z0-9._-]+/', '-', $displayFilename ?? '') ?: 'snippet.sh';
+
+    $shellcheckPath = cli_find_binary('shellcheck');
+    if ($shellcheckPath === '') {
+        return formatOutput("shellcheck is not available on this host.", type: "danger");
+    }
+
+    $tempBase = tempnam(sys_get_temp_dir(), 'shellcheck_');
+    if ($tempBase === false) {
+        return formatOutput("Unable to create a temporary file for linting.", type: "danger");
+    }
+
+    $extension = pathinfo($displayFilename, PATHINFO_EXTENSION);
+    $suffix = $extension !== '' ? '.' . $extension : ($shell === 'bash' ? '.bash' : '.sh');
+    $tempPath = $tempBase . $suffix;
+    if (!@rename($tempBase, $tempPath)) {
+        $tempPath = $tempBase;
+    }
+
+    if (@file_put_contents($tempPath, $script) === false) {
+        @unlink($tempPath);
+        return formatOutput("Unable to write temporary shell script for linting.", type: "danger");
+    }
+
+    $command = [
+        $shellcheckPath,
+        '--format=json1',
+        '--severity=' . $severity,
+    ];
+    if ($shell !== 'auto') {
+        $command[] = '--shell=' . $shell;
+    }
+    $command[] = $tempPath;
+
+    $result = cli_run_command($command);
+    @unlink($tempPath);
+
+    if (($result['ok'] ?? false) !== true) {
+        return formatOutput((string) ($result['error'] ?? 'Unable to run shellcheck.'), type: "danger");
+    }
+
+    $exitCode = intval($result['exit_code'] ?? 1);
+    $stdout = trim((string) ($result['stdout'] ?? ''));
+    $stderr = trim((string) ($result['stderr'] ?? ''));
+
+    if (!in_array($exitCode, [0, 1], true)) {
+        $message = $stderr !== '' ? $stderr : ($stdout !== '' ? $stdout : 'shellcheck returned an unexpected error.');
+        return formatOutput(htmlspecialchars($message, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'), type: "danger");
+    }
+
+    $decoded = $stdout !== '' ? json_decode($stdout, true) : ['comments' => []];
+    if (!is_array($decoded)) {
+        return formatOutput("shellcheck produced unreadable output.", type: "danger");
+    }
+
+    $comments = $decoded['comments'] ?? [];
+    if (!is_array($comments)) {
+        $comments = [];
+    }
+
+    $counts = ['error' => 0, 'warning' => 0, 'info' => 0, 'style' => 0];
+    foreach ($comments as $comment) {
+        $level = strtolower((string) ($comment['level'] ?? 'info'));
+        if (!isset($counts[$level])) {
+            $counts[$level] = 0;
+        }
+        $counts[$level]++;
+    }
+
+    $lines = preg_split("/\r\n|\r|\n/", $script);
+    if (!is_array($lines)) {
+        $lines = [];
+    }
+
+    $output = '';
+    $output .= "<div class='card border-info mb-3'><h5 class='card-header'>ShellCheck Summary</h5><div class='card-body'>";
+    $output .= "<div class='d-flex flex-wrap gap-2 mb-3'>";
+    $output .= "<span class='badge bg-primary text-white'>" . icon('terminal') . ' ' . htmlspecialchars($displayFilename, ENT_QUOTES, 'UTF-8') . "</span>";
+    $output .= "<span class='badge bg-dark text-white'>" . icon('filter') . ' min severity: ' . htmlspecialchars($severity, ENT_QUOTES, 'UTF-8') . "</span>";
+    $output .= "<span class='badge bg-secondary text-white'>" . icon('cpu') . ' shell: ' . htmlspecialchars($shell === 'auto' ? 'auto' : $shell, ENT_QUOTES, 'UTF-8') . "</span>";
+    $output .= "<span class='badge bg-success text-white'>" . icon('check-circle') . ' binary: ' . htmlspecialchars($shellcheckPath, ENT_QUOTES, 'UTF-8') . "</span>";
+    $output .= "</div>";
+    $output .= "<div class='d-flex flex-wrap gap-2'>";
+    foreach (['error', 'warning', 'info', 'style'] as $level) {
+        $badgeClass = match ($level) {
+            'error' => 'bg-danger text-white',
+            'warning' => 'bg-warning text-dark',
+            'info' => 'bg-secondary text-white',
+            default => 'bg-info text-dark',
+        };
+        $output .= "<span class='badge {$badgeClass}'>" . strtoupper($level) . ': ' . intval($counts[$level] ?? 0) . "</span>";
+    }
+    $output .= "</div></div></div>";
+
+    if ($comments === []) {
+        $output .= "<div class='alert alert-success mb-0'><strong>No issues found.</strong> This script passed ShellCheck for the selected severity threshold.</div>";
+        return $output;
+    }
+
+    foreach ($comments as $comment) {
+        $code = intval($comment['code'] ?? 0);
+        $level = strtolower((string) ($comment['level'] ?? 'info'));
+        $lineNumber = max(1, intval($comment['line'] ?? 1));
+        $endLine = max($lineNumber, intval($comment['endLine'] ?? $lineNumber));
+        $column = max(1, intval($comment['column'] ?? 1));
+        $endColumn = max($column, intval($comment['endColumn'] ?? ($column + 1)));
+        $message = (string) ($comment['message'] ?? 'Unknown ShellCheck diagnostic.');
+        $hasFix = !empty($comment['fix']);
+        $wikiUrl = 'https://www.shellcheck.net/wiki/SC' . str_pad((string) $code, 4, '0', STR_PAD_LEFT);
+
+        $output .= "<div class='card border-warning mb-3'><div class='card-header d-flex flex-wrap justify-content-between align-items-center gap-2'>";
+        $output .= "<div><strong><code>SC" . str_pad((string) $code, 4, '0', STR_PAD_LEFT) . "</code></strong></div>";
+        $output .= "<div class='d-flex gap-2 align-items-center'>" . shellcheck_level_badge_html($level);
+        if ($hasFix) {
+            $output .= "<span class='badge bg-success text-white'>autofix available</span>";
+        }
+        $output .= "</div></div><div class='card-body'>";
+        $output .= "<div class='mb-2'>" . htmlspecialchars($message, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "</div>";
+        $output .= "<div class='small text-muted mb-3'>Line " . $lineNumber . ':' . $column;
+        if ($endLine !== $lineNumber || $endColumn !== $column) {
+            $output .= ' to ' . $endLine . ':' . $endColumn;
+        }
+        $output .= "</div>";
+        $output .= shellcheck_excerpt_html($lines, $comment);
+        $output .= "<div class='mt-3'><a href='" . htmlspecialchars($wikiUrl, ENT_QUOTES, 'UTF-8') . "' target='_blank' rel='noopener noreferrer' class='btn btn-sm btn-outline-light'>"
+            . icon('box-arrow-up-right') . " Open SC" . str_pad((string) $code, 4, '0', STR_PAD_LEFT) . " docs</a></div>";
+        $output .= "</div></div>";
+    }
+
     return $output;
 }
 
