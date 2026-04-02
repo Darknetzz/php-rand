@@ -1076,62 +1076,84 @@ function initKeypairSignFormUi($scope) {
 }
 
 /* ===================================================================== */
-/*                      FUNCTION: initCrontabPreviewUi                    */
+/*                    FUNCTION: initCrontabLiveAnalyzeUi                  */
 /* ===================================================================== */
-function initCrontabPreviewUi($scope) {
+function initCrontabLiveAnalyzeUi($scope) {
     const $form = $scope.find("#crontabForm");
     if (!$form.length) {
         return;
     }
 
     const $expression = $form.find("[name='cron_expression']");
-    const $timezone = $form.find("[name='cron_timezone']");
-    const $preview = $form.find("#crontabLivePreview");
-    if (!$expression.length || !$preview.length) {
+    const $responseDiv = $form.find(".responseDiv");
+    if (!$expression.length || !$responseDiv.length) {
         return;
     }
 
-    const defaultHtml = $preview.html();
-    let timer = $form.data("crontabPreviewTimer");
-
-    function renderDefault() {
-        $preview.html(defaultHtml);
+    if ($form.data("crontabPlaceholderHtml") === undefined) {
+        $form.data("crontabPlaceholderHtml", $responseDiv.html());
     }
 
-    function queuePreviewRefresh() {
-        const expression = ($expression.val() || "").trim();
-        if (timer) {
-            clearTimeout(timer);
-        }
-        if (!expression) {
-            renderDefault();
+    let debounceTimer = null;
+    let analyzeSeq = 0;
+
+    function getPlaceholderHtml() {
+        return $form.data("crontabPlaceholderHtml") || "";
+    }
+
+    function runFullAnalyze() {
+        const expr = ($expression.val() || "").trim();
+        if (!expr) {
+            showData($responseDiv, getPlaceholderHtml());
             return;
         }
 
-        timer = setTimeout(function() {
-            $preview.html("<span class='text-muted'>Explaining…</span>");
-            $.ajax({
-                type: "POST",
-                url: "gen.php",
-                data: {
-                    action: "crontab_preview",
-                    cron_expression: expression,
-                    cron_timezone: $timezone.val() || "UTC"
-                }
-            }).done(function(html) {
-                $preview.html(html);
-            }).fail(function() {
-                $preview.html("<div class='small text-danger'>Unable to explain this expression right now.</div>");
-            });
-        }, 250);
+        const myId = ++analyzeSeq;
+        setFormVal($form, "responsetype", "html");
+        setFormVal($form, "action", "crontab");
+        showData($responseDiv, buildLoadingHtml("Analyzing schedule…"));
 
-        $form.data("crontabPreviewTimer", timer);
+        $.ajax({
+            type: "POST",
+            url: $form.attr("action") || "gen.php",
+            data: $form.serialize()
+        }).done(function(html) {
+            if (myId !== analyzeSeq) {
+                return;
+            }
+            showData($responseDiv, html);
+        }).fail(function(xhr) {
+            if (myId !== analyzeSeq) {
+                return;
+            }
+            const message = "<div class='alert alert-danger'>Error: " + xhr.statusText + "</div>";
+            showData($responseDiv, message);
+        });
     }
 
-    $expression.off("input.crontabPreview").on("input.crontabPreview", queuePreviewRefresh);
-    $timezone.off("change.crontabPreview").on("change.crontabPreview", queuePreviewRefresh);
+    function scheduleAnalyze() {
+        if (debounceTimer) {
+            clearTimeout(debounceTimer);
+        }
 
-    queuePreviewRefresh();
+        const expr = ($expression.val() || "").trim();
+        if (!expr) {
+            showData($responseDiv, getPlaceholderHtml());
+            return;
+        }
+
+        debounceTimer = setTimeout(runFullAnalyze, 400);
+    }
+
+    $expression.off(".crontabLiveAnalyze").on("input.crontabLiveAnalyze", scheduleAnalyze);
+    $form.find("[name='cron_timezone'], [name='cron_run_count'], [name='cron_reference_time']")
+        .off(".crontabLiveAnalyze")
+        .on("change.crontabLiveAnalyze input.crontabLiveAnalyze", scheduleAnalyze);
+    $form.find("[name='cron_include_current']")
+        .off(".crontabLiveAnalyze")
+        .on("change.crontabLiveAnalyze", scheduleAnalyze);
+
+    scheduleAnalyze();
 }
 
 /* ===================================================================== */
@@ -1177,7 +1199,7 @@ function navigate(to) {
         addRandomDataButtons($(normalizedTo));
         initCsrFormUi($(normalizedTo));
         initKeypairSignFormUi($(normalizedTo));
-        initCrontabPreviewUi($(normalizedTo));
+        initCrontabLiveAnalyzeUi($(normalizedTo));
         refreshClientCryptoGeneratorUi($(normalizedTo));
     };
 

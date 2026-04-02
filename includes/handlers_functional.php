@@ -40,7 +40,6 @@ function getHandlerRegistry(): array {
         'logo_generate' => 'handle_logo_generate',
         'regex' => 'handle_regex',
         'crontab' => 'handle_crontab',
-        'crontab_preview' => 'handle_crontab_preview',
         'brainfuck' => 'handle_brainfuck',
         'genid' => 'handle_genid',
         'jwt' => 'handle_jwt',
@@ -1577,30 +1576,6 @@ function handle_crontab(array $req): string {
     }
 
     return $output;
-}
-
-function handle_crontab_preview(array $req): string {
-    $expression = trim((string) req_get($req, 'cron_expression', ''));
-    if ($expression === '') {
-        return "<div class='small text-muted'>Try <code>0 0 * * 0</code> for once a week or <code>0 0 1 * *</code> for once a month.</div>";
-    }
-
-    $timezone = trim((string) req_get($req, 'cron_timezone', date_default_timezone_get() ?: 'UTC'));
-    $evaluation = cron_evaluate_schedule($expression, $timezone, '', false, 1);
-    if (($evaluation['ok'] ?? false) !== true) {
-        return "<div class='small text-danger'>" . icon('exclamation-triangle') . ' '
-            . htmlspecialchars((string) ($evaluation['error'] ?? 'Invalid cron expression.'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')
-            . "</div>";
-    }
-
-    $summary = htmlspecialchars((string) $evaluation['summary'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-    if (!empty($evaluation['reboot'])) {
-        return "<div class='small'>{$summary} <span class='text-muted'><code>@reboot</code></span></div>";
-    }
-
-    $normalized = htmlspecialchars((string) $evaluation['normalized_expression'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-
-    return "<div class='small'>{$summary} <span class='text-muted'>Normalized: <code>{$normalized}</code></span></div>";
 }
 
 function shellcheck_level_badge_html(string $level): string {

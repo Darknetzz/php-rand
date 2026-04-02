@@ -16,6 +16,7 @@ $defaultReference = (new DateTime('now'))->format('Y-m-d\TH:i');
             <div class="alert alert-info mb-4">
                 <strong>Understand cron schedules quickly.</strong><br>
                 Validate standard 5-field cron expressions, see a human-readable explanation, and inspect upcoming run times in your chosen timezone.
+                The full analysis updates automatically as you edit (after a short pause).
             </div>
 
             <form class="form" action="gen.php" method="POST" id="crontabForm" data-action="crontab">
@@ -35,19 +36,8 @@ $defaultReference = (new DateTime('now'))->format('Y-m-d\TH:i');
                         <div class="form-text mt-2">
                             Supports macros like <code>@daily</code> and <code>@reboot</code> (Vixie-style one-shot at daemon start), plus advanced syntax such as <code>L</code>, <code>W</code>, and <code>#</code>.
                         </div>
-                        <div class="card border-secondary mt-3" style="background: rgba(255,255,255,0.03);">
-                            <div class="card-body py-3">
-                                <div class="small text-uppercase text-muted mb-2">Quick Meaning</div>
-                                <div class="small" id="crontabLivePreview">
-                                    <div><code>0 0 1 * *</code> = once a month</div>
-                                    <div><code>0 0 * * 0</code> = once a week</div>
-                                    <div><code>0 0 * * *</code> = once a day</div>
-                                    <div><code>0 * * * *</code> = once an hour</div>
-                                </div>
-                            </div>
-                        </div>
 
-                        <div class="row g-3 mt-1">
+                        <div class="row g-3 mt-3">
                             <div class="col-12 col-md-6">
                                 <label for="crontabTimezone" class="form-label mb-2"><strong>Timezone</strong></label>
                                 <select name="cron_timezone" id="crontabTimezone" class="form-select form-select-lg" style="border: 2px solid #495057; max-height: 350px;">
