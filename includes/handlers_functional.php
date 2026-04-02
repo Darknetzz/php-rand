@@ -1464,6 +1464,38 @@ function handle_crontab(array $req): string {
         );
     }
 
+    if (!empty($evaluation['reboot'])) {
+        $summary = (string) $evaluation['summary'];
+        $referenceTime = $evaluation['reference_time'];
+        $timezone = (string) $evaluation['timezone'];
+
+        $output = '';
+        $output .= "<div class='card border-info mb-3'><h5 class='card-header'>Schedule Summary</h5><div class='card-body'>";
+        $output .= "<div class='d-flex flex-wrap gap-2 mb-3'>";
+        $output .= "<span class='badge bg-info text-white'>" . icon('arrow-repeat') . " One-shot at cron startup</span>";
+        $output .= "<span class='badge bg-primary text-white'>" . icon('globe2') . ' ' . htmlspecialchars($timezone, ENT_QUOTES, 'UTF-8') . "</span>";
+        $output .= "</div>";
+        $output .= "<div class='alert alert-info mb-3'><strong>@reboot</strong> is a Vixie-style crontab extension: the job runs once when the cron daemon starts (often after a system reboot), not on a repeating calendar schedule.</div>";
+        $output .= "<div class='mb-3'><strong>Summary:</strong> " . htmlspecialchars($summary, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "</div>";
+        $output .= "<div class='mb-3'><strong>Reference time:</strong> <code>" . htmlspecialchars($referenceTime->format('Y-m-d H:i:s T'), ENT_QUOTES, 'UTF-8') . "</code></div>";
+        $output .= copyableOutput('@reboot', 'Expression');
+        $output .= "</div></div>";
+
+        $output .= "<div class='card border-secondary mb-3'><h5 class='card-header'>Field Breakdown</h5><div class='card-body p-0'>";
+        $output .= "<div class='table-responsive'><table class='table table-dark table-striped mb-0'><tbody>";
+        $output .= "<tr><td colspan='3' class='text-muted'>"
+            . htmlspecialchars('@reboot is not a five-field cron pattern; there are no minute/hour/day/month/day-of-week fields to expand.', ENT_QUOTES, 'UTF-8')
+            . "</td></tr>";
+        $output .= "</tbody></table></div></div>";
+
+        $output .= "<div class='card border-success mb-3'><h5 class='card-header'>Upcoming Run Times</h5><div class='card-body p-0'>";
+        $output .= "<div class='table-responsive'><table class='table table-dark table-striped mb-0'><tbody>";
+        $output .= "<tr><td colspan='3' class='text-muted'>No repeating schedule — periodic next run times are not applicable.</td></tr>";
+        $output .= "</tbody></table></div></div>";
+
+        return $output;
+    }
+
     $expression = (string) $evaluation['expression'];
     $parts = $evaluation['parts'];
     $normalizedExpression = (string) $evaluation['normalized_expression'];
@@ -1562,6 +1594,10 @@ function handle_crontab_preview(array $req): string {
     }
 
     $summary = htmlspecialchars((string) $evaluation['summary'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    if (!empty($evaluation['reboot'])) {
+        return "<div class='small'>{$summary} <span class='text-muted'><code>@reboot</code></span></div>";
+    }
+
     $normalized = htmlspecialchars((string) $evaluation['normalized_expression'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 
     return "<div class='small'>{$summary} <span class='text-muted'>Normalized: <code>{$normalized}</code></span></div>";

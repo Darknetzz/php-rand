@@ -33,7 +33,7 @@ $defaultReference = (new DateTime('now'))->format('Y-m-d\TH:i');
                             required
                         >
                         <div class="form-text mt-2">
-                            Supports macros like <code>@daily</code> and advanced cron syntax such as <code>L</code>, <code>W</code>, and <code>#</code>.
+                            Supports macros like <code>@daily</code> and <code>@reboot</code> (Vixie-style one-shot at daemon start), plus advanced syntax such as <code>L</code>, <code>W</code>, and <code>#</code>.
                         </div>
                         <div class="card border-secondary mt-3" style="background: rgba(255,255,255,0.03);">
                             <div class="card-body py-3">

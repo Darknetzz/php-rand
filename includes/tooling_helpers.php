@@ -355,6 +355,26 @@ function cron_evaluate_schedule(
         return ['ok' => false, 'error' => 'Reference time is invalid. Use a valid local date/time.'];
     }
 
+    // Vixie cron extension: not a repeating 5-field schedule; dragonmantank/cron-expression has no alias.
+    if (strcasecmp($expression, '@reboot') === 0) {
+        return [
+            'ok' => true,
+            'reboot' => true,
+            'expression' => '@reboot',
+            'timezone' => $timezone,
+            'reference_time' => $referenceTime,
+            'run_count' => $runCount,
+            'allow_current' => $allowCurrent,
+            'cron' => null,
+            'parts' => null,
+            'normalized_expression' => '@reboot',
+            'summary' => 'Runs once when the cron daemon starts (usually after a reboot). This is not a repeating time-based schedule, so calendar “next run” times do not apply.',
+            'is_due' => false,
+            'previous_run' => null,
+            'next_runs' => [],
+        ];
+    }
+
     try {
         $cron = new \Cron\CronExpression($expression);
     } catch (Throwable $e) {
