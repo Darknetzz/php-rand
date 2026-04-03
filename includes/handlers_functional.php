@@ -1,5 +1,8 @@
 <?php
 
+use Symfony\Component\Yaml\Exception\ParseException;
+use Symfony\Component\Yaml\Yaml;
+
 /**
  * Handler Registry - Functional approach to mapping actions to handler functions
  * 
@@ -1046,6 +1049,344 @@ function handle_stringtools(array $req): string {
     }
 
     return formatOutput(nl2br($string));
+}
+
+function handle_urlencode(array $req): string {
+    $input = (string) req_get($req, 'urlencode', '');
+    if ($input === '') {
+        return formatOutput('Input text is required.', type: 'danger');
+    }
+    if (strlen($input) > 1_000_000) {
+        return formatOutput('Input must be at most 1,000,000 characters.', type: 'danger');
+    }
+    $encoded = rawurlencode($input);
+    $decodedTry = rawurldecode($input);
+    $blocks = '<div class="mb-3"><strong>Original</strong><pre class="mb-0 p-2 rounded" style="background:rgba(0,0,0,0.2);white-space:pre-wrap;word-break:break-word;">'
+        . htmlspecialchars($input, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</pre></div>';
+    $blocks .= '<div class="mb-3"><strong>URL-encoded (RFC 3986)</strong><pre class="mb-0 p-2 rounded" style="background:rgba(0,0,0,0.2);white-space:pre-wrap;word-break:break-all;">'
+        . htmlspecialchars($encoded, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</pre></div>';
+    $blocks .= '<div class="mb-0"><strong>Decoded from input</strong><p class="text-muted small">If the input was encoded, this shows the decoded form; otherwise it may match the original.</p><pre class="mb-0 p-2 rounded" style="background:rgba(0,0,0,0.2);white-space:pre-wrap;word-break:break-word;">'
+        . htmlspecialchars($decodedTry, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</pre></div>';
+    return formatOutput($blocks);
+}
+
+function handle_htmlentities(array $req): string {
+    $input = (string) req_get($req, 'htmlentities', '');
+    if ($input === '') {
+        return formatOutput('Input text is required.', type: 'danger');
+    }
+    if (strlen($input) > 1_000_000) {
+        return formatOutput('Input must be at most 1,000,000 characters.', type: 'danger');
+    }
+    $mode = strtolower((string) req_get($req, 'htmlentities_mode', 'auto'));
+    if (!in_array($mode, ['auto', 'encode', 'decode', 'both'], true)) {
+        $mode = 'auto';
+    }
+    if ($mode === 'auto') {
+        $mode = preg_match('/&(?:#(?:x[0-9a-fA-F]+|\d+)|[a-zA-Z][a-zA-Z0-9]*);/', $input) ? 'decode' : 'encode';
+    }
+    $encoded = htmlspecialchars($input, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    $decoded = html_entity_decode($input, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    $html = '';
+    if ($mode === 'encode' || $mode === 'both') {
+        $html .= '<div class="mb-3"><strong>HTML-encoded</strong><pre class="mb-0 p-2 rounded" style="background:rgba(0,0,0,0.2);white-space:pre-wrap;word-break:break-word;">'
+            . htmlspecialchars($encoded, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</pre></div>';
+    }
+    if ($mode === 'decode' || $mode === 'both') {
+        $html .= '<div class="mb-0"><strong>Decoded</strong><pre class="mb-0 p-2 rounded" style="background:rgba(0,0,0,0.2);white-space:pre-wrap;word-break:break-word;">'
+            . htmlspecialchars($decoded, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</pre></div>';
+    }
+    return formatOutput($html);
+}
+
+function handle_levenshtein(array $req): string {
+    $s1 = (string) req_get($req, 'levenshtein1', '');
+    $s2 = (string) req_get($req, 'levenshtein2', '');
+    $ins = max(0, req_int($req, 'insertion_cost', 1));
+    $rep = max(0, req_int($req, 'replacement_cost', 1));
+    $del = max(0, req_int($req, 'deletion_cost', 1));
+    if (strlen($s1) > 255 || strlen($s2) > 255) {
+        return formatOutput(
+            'Each string must be at most 255 characters for Levenshtein distance (PHP limit). Shorten the input or compare smaller chunks.',
+            type: 'warning'
+        );
+    }
+    $dist = levenshtein($s1, $s2, $ins, $rep, $del);
+    if ($dist < 0) {
+        return formatOutput('Could not compute distance (invalid arguments or empty strings).', type: 'danger');
+    }
+    $body = '<p class="lead mb-2"><strong>Distance:</strong> ' . (int) $dist . '</p>';
+    $body .= '<p class="text-muted small mb-0">Costs used — insertion: ' . $ins . ', replacement: ' . $rep . ', deletion: ' . $del . '</p>';
+    return formatOutput($body);
+}
+
+/**
+ * @return string Unified-style diff text (plain)
+ */
+function diff_unified_fallback(string $old, string $new): string {
+    $a = explode("\n", str_replace(["\r\n", "\r"], "\n", $old));
+    $b = explode("\n", str_replace(["\r\n", "\r"], "\n", $new));
+    $lines = ['--- old', '+++ new'];
+    $n = max(count($a), count($b));
+    for ($i = 0; $i < $n; $i++) {
+        $oa = $a[$i] ?? '';
+        $ob = $b[$i] ?? '';
+        if ($oa !== $ob) {
+            $lines[] = '@@ line ' . ($i + 1) . ' @@';
+            $lines[] = '-' . $oa;
+            $lines[] = '+' . $ob;
+        }
+    }
+    if (count($lines) === 2) {
+        return 'No differences.';
+    }
+    return implode("\n", $lines);
+}
+
+function handle_diff(array $req): string {
+    $old = (string) req_get($req, 'diff1', '');
+    $new = (string) req_get($req, 'diff2', '');
+    if (strlen($old) > 500_000 || strlen($new) > 500_000) {
+        return formatOutput('Each side must be at most 500,000 characters.', type: 'danger');
+    }
+    $out = '';
+    $t1 = @tempnam(sys_get_temp_dir(), 'rndd1_');
+    $t2 = @tempnam(sys_get_temp_dir(), 'rndd2_');
+    if ($t1 !== false && $t2 !== false) {
+        if (file_put_contents($t1, $old) !== false && file_put_contents($t2, $new) !== false) {
+            $cmd = 'diff -u ' . escapeshellarg($t1) . ' ' . escapeshellarg($t2) . ' 2>/dev/null';
+            $shellOut = shell_exec($cmd);
+            if (is_string($shellOut) && $shellOut !== '') {
+                $out = $shellOut;
+            } elseif ($old === $new) {
+                $out = 'No differences.';
+            }
+        }
+        @unlink($t1);
+        @unlink($t2);
+    }
+    if ($out === '') {
+        $out = diff_unified_fallback($old, $new);
+    }
+    return formatOutput('<pre class="mb-0 text-start" style="white-space:pre-wrap;word-break:break-word;">'
+        . htmlspecialchars($out, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</pre>');
+}
+
+function serialization_strip_comment_lines(string $input): string {
+    $lines = preg_split('/\R/', $input);
+    if ($lines === false) {
+        return $input;
+    }
+    $kept = [];
+    foreach ($lines as $line) {
+        $t = ltrim($line);
+        if ($t === '' || str_starts_with($t, '#') || str_starts_with($t, '//')) {
+            continue;
+        }
+        $kept[] = $line;
+    }
+    return implode("\n", $kept);
+}
+
+/**
+ * @return array{0: mixed, 1: string} Parsed data and detected source label
+ */
+function serialization_parse_input(string $input): array {
+    $input = str_replace("\r\n", "\n", $input);
+    $input = preg_replace('/^\xEF\xBB\xBF/', '', $input) ?? $input;
+    $trimmed = trim($input);
+    if ($trimmed === '') {
+        throw new InvalidArgumentException('Input is empty.');
+    }
+    try {
+        $data = json_decode($trimmed, true, 512, JSON_THROW_ON_ERROR);
+        if (is_object($data)) {
+            $data = (array) $data;
+        }
+        if (!is_array($data)) {
+            $data = ['value' => $data];
+        }
+        return [$data, 'JSON'];
+    } catch (\JsonException) {
+        // try YAML / XML
+    }
+    $lastYaml = null;
+    try {
+        $data = Yaml::parse($trimmed);
+        if ($data === null || $data === '') {
+            throw new InvalidArgumentException('YAML parsed to empty value.');
+        }
+        if (!is_array($data)) {
+            $data = ['value' => $data];
+        }
+        return [$data, 'YAML'];
+    } catch (ParseException $e) {
+        $lastYaml = $e->getMessage();
+    } catch (InvalidArgumentException $e) {
+        $lastYaml = $e->getMessage();
+    }
+    libxml_use_internal_errors(true);
+    $xml = simplexml_load_string($trimmed, 'SimpleXMLElement', LIBXML_NONET);
+    if ($xml === false) {
+        $hint = $lastYaml !== null ? ' Could not parse as YAML: ' . $lastYaml : '';
+        throw new InvalidArgumentException('Could not parse as JSON, YAML, or XML.' . $hint);
+    }
+    $asJson = json_encode($xml);
+    if ($asJson === false) {
+        throw new InvalidArgumentException('Could not convert XML to data.');
+    }
+    $data = json_decode($asJson, true);
+    return [is_array($data) ? $data : ['value' => $data], 'XML'];
+}
+
+function rand_dom_append_data(DOMDocument $dom, DOMElement $parent, mixed $data, string $listItemTag = 'item'): void {
+    if (!is_array($data)) {
+        $parent->appendChild($dom->createTextNode((string) $data));
+        return;
+    }
+    foreach ($data as $key => $value) {
+        $name = is_int($key)
+            ? $listItemTag
+            : (preg_replace('/[^a-zA-Z0-9_-]/', '_', (string) $key) ?: 'key');
+        $el = $dom->createElement($name);
+        $parent->appendChild($el);
+        if (is_array($value)) {
+            rand_dom_append_data($dom, $el, $value, $listItemTag);
+        } else {
+            $el->appendChild($dom->createTextNode((string) $value));
+        }
+    }
+}
+
+function serialization_render_output(array $data, string $type): string {
+    $type = strtoupper(trim($type));
+    if ($type === 'JSON') {
+        $flags = JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES;
+        $json = json_encode($data, $flags);
+        if ($json === false) {
+            throw new RuntimeException('Could not encode JSON.');
+        }
+        return $json;
+    }
+    if ($type === 'YAML') {
+        return Yaml::dump($data, 6, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK);
+    }
+    if ($type === 'XML') {
+        $dom = new DOMDocument('1.0', 'UTF-8');
+        $dom->formatOutput = true;
+        $root = $dom->createElement('root');
+        $dom->appendChild($root);
+        rand_dom_append_data($dom, $root, $data);
+        $xml = $dom->saveXML();
+        if ($xml === false) {
+            throw new RuntimeException('Could not build XML.');
+        }
+        return $xml;
+    }
+    throw new InvalidArgumentException('Unknown output type.');
+}
+
+function handle_serialization(array $req): string {
+    $input = (string) req_get($req, 'input', '');
+    if (req_bool($req, 'stripcomments')) {
+        $input = serialization_strip_comment_lines($input);
+    }
+    $type = (string) req_get($req, 'type', 'JSON');
+    try {
+        [$data, $src] = serialization_parse_input($input);
+        $out = serialization_render_output($data, $type);
+    } catch (Throwable $e) {
+        return formatOutput(htmlspecialchars($e->getMessage(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'), type: 'danger');
+    }
+    $note = '<p class="text-muted small mb-2">Detected input as <strong>' . htmlspecialchars($src, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')
+        . '</strong> → output <strong>' . htmlspecialchars(strtoupper($type), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</strong></p>';
+    return formatOutput(
+        $note . '<pre class="mb-0" style="white-space:pre-wrap;word-break:break-word;">'
+        . htmlspecialchars($out, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</pre>'
+    );
+}
+
+function handle_spinwheel(array $req): string {
+    $items = $req['wheelitem'] ?? [];
+    if (!is_array($items)) {
+        return formatOutput('Invalid wheel items.', type: 'danger');
+    }
+    $labels = [];
+    foreach ($items as $v) {
+        $t = trim((string) $v);
+        if ($t !== '') {
+            $labels[] = $t;
+        }
+    }
+    if ($labels === []) {
+        return formatOutput('Add at least one non-empty wheel item.', type: 'warning');
+    }
+    $pick = $labels[array_rand($labels)];
+    return formatOutput(
+        '<div class="alert alert-success mb-0">Winner: <strong>'
+        . htmlspecialchars($pick, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</strong></div>'
+    );
+}
+
+function handle_calculator(array $req): string {
+    return formatOutput(
+        'This calculator runs entirely in your browser. Use the on-screen keypad to compute results.',
+        type: 'info'
+    );
+}
+
+function handle_currency(array $req): string {
+    $amount = req_float($req, 'currency_amount', 0.0);
+    $from = strtoupper(trim((string) req_get($req, 'currency_from', '')));
+    $to = strtoupper(trim((string) req_get($req, 'currency_to', '')));
+    $overrideRaw = req_get($req, 'currency_rate', null);
+    if ($amount < 0 || !is_finite($amount)) {
+        return formatOutput('Enter a valid non-negative amount.', type: 'danger');
+    }
+    if ($from === '' || $to === '' || !preg_match('/^[A-Z]{3}$/', $from) || !preg_match('/^[A-Z]{3}$/', $to)) {
+        return formatOutput('Select valid source and target currencies.', type: 'danger');
+    }
+    if ($from === $to) {
+        $formatted = number_format($amount, 2, '.', ',');
+        return formatOutput(
+            '<p class="mb-0"><strong>' . htmlspecialchars($formatted, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . ' ' . htmlspecialchars($from, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</strong> (same currency)</p>'
+        );
+    }
+    $rate = null;
+    if ($overrideRaw !== null && $overrideRaw !== '') {
+        $rate = floatval($overrideRaw);
+        if ($rate <= 0 || !is_finite($rate)) {
+            return formatOutput('Custom exchange rate must be a positive number.', type: 'danger');
+        }
+    } else {
+        $url = 'https://api.exchangerate-api.com/v4/latest/' . rawurlencode($from);
+        $ctx = stream_context_create([
+            'http' => ['timeout' => 12, 'header' => "Accept: application/json\r\n"],
+            'https' => ['timeout' => 12, 'header' => "Accept: application/json\r\n"],
+        ]);
+        $raw = @file_get_contents($url, false, $ctx);
+        if ($raw === false) {
+            return formatOutput('Could not reach the exchange-rate service. Try again later or enter a custom rate.', type: 'danger');
+        }
+        try {
+            $payload = json_decode($raw, true, 512, JSON_THROW_ON_ERROR);
+        } catch (JsonException) {
+            return formatOutput('Unexpected response from exchange-rate service.', type: 'danger');
+        }
+        if (!is_array($payload) || empty($payload['rates'][$to])) {
+            return formatOutput('Rate for the selected currency pair was not found.', type: 'danger');
+        }
+        $rate = (float) $payload['rates'][$to];
+    }
+    $converted = $amount * $rate;
+    $outAmt = number_format($converted, 2, '.', ',');
+    $outRate = rtrim(rtrim(number_format($rate, 8, '.', ''), '0'), '.') ?: '0';
+    $html = '<p class="lead mb-1"><strong>' . htmlspecialchars(number_format($amount, 2, '.', ','), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . ' '
+        . htmlspecialchars($from, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</strong> = <strong>'
+        . htmlspecialchars($outAmt, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . ' ' . htmlspecialchars($to, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</strong></p>';
+    $html .= '<p class="text-muted small mb-0">Applied rate: 1 ' . htmlspecialchars($from, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . ' = '
+        . htmlspecialchars($outRate, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . ' ' . htmlspecialchars($to, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</p>';
+    return formatOutput($html);
 }
 
 /**

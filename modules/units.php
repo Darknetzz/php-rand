@@ -185,6 +185,7 @@
     document.querySelectorAll('.units-math-form').forEach(function(form) {
         form.addEventListener('submit', function(e) {
             e.preventDefault();
+            e.stopPropagation();
             e.stopImmediatePropagation();
             var cat = form.getAttribute('data-category');
             var val = form.querySelector('[name="units_value"]').value;
