@@ -197,6 +197,11 @@ $navbarItems = [
                 "formalName" => "ShellCheck",
                 "icon"       => icon("terminal"),
             ],
+            "syntax_validate" => [
+                "name"       => "syntax_validate",
+                "formalName" => "JSON / YAML / PHP / Python",
+                "icon"       => icon('braces'),
+            ],
         ],
     ],
     "misc" => [

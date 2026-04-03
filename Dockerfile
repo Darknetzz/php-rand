@@ -18,6 +18,7 @@ RUN apt-get update \
         curl \
         openssh-client \
         shellcheck \
+        python3 \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install pdo pdo_mysql mysqli intl zip gd gmp \
     && a2enmod rewrite headers expires \

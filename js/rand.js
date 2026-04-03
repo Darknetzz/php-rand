@@ -1626,6 +1626,26 @@ const CRONTAB_RANDOM_SCENARIOS = [
     { expression: "0 0 L * *", timezone: "UTC" },
     { expression: "0 0 15W * *", timezone: "America/Vancouver" }
 ];
+
+const SYNTAX_VALIDATE_SCENARIOS = [
+    {
+        kind: "json",
+        content: '{\n  "service": "demo",\n  "port": 8080,\n  "enabled": true\n}'
+    },
+    {
+        kind: "yaml",
+        content: "app:\n  name: phprand\n  env: production\nlisten:\n  host: 127.0.0.1\n  port: 9000\n"
+    },
+    {
+        kind: "php",
+        content: "<?php\n\ndeclare(strict_types=1);\n\n$items = [1, 2, 3];\necho array_sum($items);\n"
+    },
+    {
+        kind: "python",
+        content: "def total(values: list[int]) -> int:\n    return sum(values)\n\nprint(total([10, 20, 12]))\n"
+    }
+];
+
 const SHELLCHECK_RANDOM_SCENARIOS = [
     {
         filename: "deploy.sh",
@@ -1909,6 +1929,15 @@ function randomDataGetCompatibleFormBundle($form) {
             shellcheckShell: shellcheckSample.shell,
             shellcheckScript: shellcheckSample.script
         };
+    } else if (formAction === "syntax_validate" || formId === "syntaxvalidateform") {
+        const svSample = randomPickAvoidRepeatFromForm($form, SYNTAX_VALIDATE_SCENARIOS, "syntaxValidateScenario");
+        if (svSample) {
+            bundle = {
+                kind: "syntax_validate",
+                syntaxValidateKind: svSample.kind,
+                syntaxValidateInput: svSample.content
+            };
+        }
     }
 
     $form.data("randomDataBundle", bundle);
@@ -2089,6 +2118,15 @@ function generateRandomData(type, placeholder = '', $input = null) {
                 }
             }
         }
+        if (formAction === "syntax_validate" || formId === "syntaxvalidateform") {
+            if (inputName === "syntax_validate_input") {
+                const sample = randomPickAvoidRepeatFromForm($form, SYNTAX_VALIDATE_SCENARIOS, "syntaxValidateScenario");
+                if (sample) {
+                    $form.find("[name='syntax_validate_kind']").val(sample.kind).trigger("change");
+                    return sample.content;
+                }
+            }
+        }
     }
     const bundle = randomDataGetCompatibleFormBundle($form);
     // Strict compatibility generators for modules that require related fields.
@@ -2146,6 +2184,10 @@ function generateRandomData(type, placeholder = '', $input = null) {
         if (inputName === "pattern") return bundle.regexPattern;
         if (inputName === "teststring") return bundle.regexTestString;
         if (inputName === "replacement") return bundle.regexReplacement;
+    }
+
+    if (bundle && bundle.kind === "syntax_validate") {
+        if (inputName === "syntax_validate_input") return bundle.syntaxValidateInput;
     }
 
     // Detect what type of data to generate based on context

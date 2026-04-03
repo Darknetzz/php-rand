@@ -44,6 +44,7 @@ function getHandlerRegistry(): array {
         'genid' => 'handle_genid',
         'jwt' => 'handle_jwt',
         'shellcheck' => 'handle_shellcheck',
+        'syntax_validate' => 'handle_syntax_validate',
         'ssh_keygen' => 'handle_ssh_keygen',
         'keypair_generate' => 'handle_keypair_generate',
         'csr_generate' => 'handle_csr_generate',
@@ -1783,6 +1784,30 @@ function handle_shellcheck(array $req): string {
     }
 
     return $output;
+}
+
+function handle_syntax_validate(array $req): string {
+    require_once __DIR__ . '/syntax_validate.php';
+
+    $kind = strtolower(trim((string) req_get($req, 'syntax_validate_kind', 'json')));
+    $allowed = ['json', 'yaml', 'php', 'python'];
+    if (!in_array($kind, $allowed, true)) {
+        return formatOutput('Invalid language selected.', type: 'danger');
+    }
+
+    $input = (string) req_get($req, 'syntax_validate_input', '');
+    $input = str_replace("\r", '', $input);
+    if (strlen($input) > syntax_validate_max_len()) {
+        return formatOutput('Input is too large (max ' . (string) syntax_validate_max_len() . ' characters).', type: 'danger');
+    }
+
+    $result = syntax_validate_dispatch($kind, $input);
+    $msg = htmlspecialchars($result['message'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    if (!empty($result['detail'])) {
+        $msg .= '<br><small class="text-muted">' . htmlspecialchars((string) $result['detail'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</small>';
+    }
+
+    return formatOutput($msg, type: $result['ok'] ? 'success' : 'danger');
 }
 
 /**
