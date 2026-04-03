@@ -69,6 +69,46 @@ function cli_run_command(array $command, ?string $stdin = null): array {
     ];
 }
 
+/**
+ * Apply ShellCheck auto-fixes using `shellcheck -f diff` and GNU patch (patch reads the diff on stdin).
+ * Updates $scriptPath in place, then returns the full file contents (caller should unlink the temp file).
+ *
+ * @param  string $scriptPath   Path to the script file (must exist)
+ * @param  string $shellcheckPath Absolute path to shellcheck binary
+ * @param  list<string> $shellcheckArgs Flags after shellcheck (e.g. --severity=info, --shell=bash)
+ * @return string|null Patched script contents, or null if nothing to fix / patch unavailable / failure
+ */
+function shellcheck_apply_autofix(string $scriptPath, string $shellcheckPath, array $shellcheckArgs): ?string {
+    $patchPath = cli_find_binary('patch');
+    if ($patchPath === '' || !is_file($scriptPath)) {
+        return null;
+    }
+
+    $diffCmd = array_merge([$shellcheckPath, '-f', 'diff'], $shellcheckArgs, [$scriptPath]);
+    $diffResult = cli_run_command($diffCmd);
+    if (($diffResult['ok'] ?? false) !== true) {
+        return null;
+    }
+
+    $diff = trim((string) ($diffResult['stdout'] ?? ''));
+    if ($diff === '' || str_contains($diff, 'none were auto-fixable')) {
+        return null;
+    }
+
+    $patchCmd = array_merge([$patchPath, '-u', '--batch', '--forward', $scriptPath]);
+    $patchResult = cli_run_command($patchCmd, $diff . "\n");
+    if (($patchResult['ok'] ?? false) !== true || (int) ($patchResult['exit_code'] ?? 1) !== 0) {
+        return null;
+    }
+
+    $fixed = @file_get_contents($scriptPath);
+    if ($fixed === false) {
+        return null;
+    }
+
+    return $fixed;
+}
+
 function cron_month_labels(): array {
     return [
         1 => 'January',

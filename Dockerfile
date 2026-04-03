@@ -10,11 +10,14 @@ RUN printf '%s\n' '#!/bin/sh' 'echo "php-rand ${PHP_RAND_VERSION:-unknown}"' 'ex
     && chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # Install system dependencies and common PHP extensions (adjust as needed).
+# CLIs for handlers: shellcheck (lint), openssh-client (ssh-keygen); curl for HEALTHCHECK.
 # PHP 8.5: OPcache is built-in; do not use docker-php-ext-install opcache (it fails).
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         libzip-dev libicu-dev libonig-dev libpng-dev libjpeg-dev libfreetype6-dev libxml2-dev libgmp-dev git unzip \
+        curl \
         openssh-client \
+        shellcheck \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install pdo pdo_mysql mysqli intl zip gd gmp \
     && a2enmod rewrite headers expires \

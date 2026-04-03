@@ -1673,9 +1673,9 @@ function handle_shellcheck(array $req): string {
     $command[] = $tempPath;
 
     $result = cli_run_command($command);
-    @unlink($tempPath);
 
     if (($result['ok'] ?? false) !== true) {
+        @unlink($tempPath);
         return formatOutput((string) ($result['error'] ?? 'Unable to run shellcheck.'), type: "danger");
     }
 
@@ -1684,14 +1684,23 @@ function handle_shellcheck(array $req): string {
     $stderr = trim((string) ($result['stderr'] ?? ''));
 
     if (!in_array($exitCode, [0, 1], true)) {
+        @unlink($tempPath);
         $message = $stderr !== '' ? $stderr : ($stdout !== '' ? $stdout : 'shellcheck returned an unexpected error.');
         return formatOutput(htmlspecialchars($message, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'), type: "danger");
     }
 
     $decoded = $stdout !== '' ? json_decode($stdout, true) : ['comments' => []];
     if (!is_array($decoded)) {
+        @unlink($tempPath);
         return formatOutput("shellcheck produced unreadable output.", type: "danger");
     }
+
+    $shellArgs = ['--severity=' . $severity];
+    if ($shell !== 'auto') {
+        $shellArgs[] = '--shell=' . $shell;
+    }
+    $fixedScript = shellcheck_apply_autofix($tempPath, $shellcheckPath, $shellArgs);
+    @unlink($tempPath);
 
     $comments = $decoded['comments'] ?? [];
     if (!is_array($comments)) {
@@ -1731,6 +1740,13 @@ function handle_shellcheck(array $req): string {
         $output .= "<span class='badge {$badgeClass}'>" . strtoupper($level) . ': ' . intval($counts[$level] ?? 0) . "</span>";
     }
     $output .= "</div></div></div>";
+
+    if ($fixedScript !== null && $fixedScript !== '' && $fixedScript !== $script) {
+        $output .= "<div class='card border-success mb-3'><h5 class='card-header'>" . icon('magic') . " Auto-fixed script</h5><div class='card-body'>";
+        $output .= "<p class='small text-muted mb-2'>ShellCheck suggested edits (for the same severity and shell options) were applied with GNU <code>patch</code>. Review the result before running it.</p>";
+        $output .= copyableOutput($fixedScript, '', ['inputName' => 'shellcheck_script']);
+        $output .= "</div></div>";
+    }
 
     if ($comments === []) {
         $output .= "<div class='alert alert-success mb-0'><strong>No issues found.</strong> This script passed ShellCheck for the selected severity threshold.</div>";
