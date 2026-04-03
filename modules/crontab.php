@@ -117,8 +117,8 @@ $moreOptionsOpen = ($effectiveTimezone !== $serverTimezone)
 
                     <div class="col-12 col-xl-7 d-flex flex-column">
                         <label class="form-label mb-2"><strong>Schedule analysis</strong></label>
-                        <div class="responseDiv flex-grow-1" style="border: 2px solid #495057; padding: 20px; min-height: 480px; max-height: 760px; overflow-y: auto; background: linear-gradient(135deg, rgba(13, 110, 253, 0.08) 0%, rgba(32, 201, 151, 0.08) 100%); border-radius: 0.5rem;">
-                            <div style="opacity: 0.55; text-align: center; padding-top: 170px;">
+                        <div class="responseDiv flex-grow-1 pt-2" style="min-height: 280px; max-height: min(760px, 75vh); overflow-y: auto;">
+                            <div class="text-muted text-center py-5">
                                 <div style="font-size: 3rem; margin-bottom: 10px;"><?= icon("calendar-event", 2) ?></div>
                                 <div>Cron validation, explanation, and upcoming run times will appear here...</div>
                             </div>
