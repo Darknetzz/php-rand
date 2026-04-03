@@ -4,7 +4,7 @@
 define("DIRSEP", DIRECTORY_SEPARATOR);
 define("INCLUDES_DIR", basename(dirname(__FILE__)));
 define("CURRENT_DIR", basename(dirname(__FILE__, 1)));
-define("APP_ROOT", basename(dirname(__FILE__, 2)));
+define("APP_ROOT", dirname(__FILE__, 2));
 
 # Site
 define("SITE_TITLE", "RAND");
