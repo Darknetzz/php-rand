@@ -1,17 +1,22 @@
 <?php
+    $validatorsEmbed = $validatorsEmbed ?? false;
     $svKind = isset($_POST['syntax_validate_kind']) ? htmlspecialchars((string) $_POST['syntax_validate_kind'], ENT_QUOTES, 'UTF-8') : 'json';
     $svInput = isset($_POST['syntax_validate_input']) ? htmlspecialchars((string) $_POST['syntax_validate_input'], ENT_QUOTES, 'UTF-8') : '';
     if ($svKind !== 'json' && $svKind !== 'yaml' && $svKind !== 'php' && $svKind !== 'python') {
         $svKind = 'json';
     }
+    if ($validatorsEmbed) {
+        echo '<section class="validators-block mb-0">';
+    } else {
+        echo '<div id="syntax_validate" class="content">';
+    }
 ?>
-<div id="syntax_validate" class="content">
     <div class="alert alert-info mb-4">
         <strong>Check syntax without executing code.</strong>
         JSON and YAML are parsed in PHP; PHP uses <code>php -l</code>; Python uses <code>ast.parse</code> via the system interpreter when available.
     </div>
     <div class="card card-primary">
-        <h1 class="card-header"><?= icon('braces') ?> Syntax validator</h1>
+        <h2 class="card-header h3 mb-0"><?= icon('braces') ?> JSON / YAML / PHP / Python</h2>
         <div class="card-body">
             <form class="form" action="gen.php" method="POST" id="syntaxValidateForm" data-action="syntax_validate">
                 <div class="row g-4 mb-4">
@@ -50,4 +55,9 @@
             </form>
         </div>
     </div>
-</div>
+<?php
+if ($validatorsEmbed) {
+    echo '</section>';
+} else {
+    echo '</div>';
+}

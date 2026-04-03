@@ -186,7 +186,6 @@
                     "encoding" => "#6f42c1",
                     "convert" => "#fd7e14",
                     "math" => "#0aa2c0",
-                    "validators" => "#2fb344",
                     "misc" => "#d63384"
                 ];
                 $color = $colors[$name] ?? "#6c757d";
