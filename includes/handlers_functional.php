@@ -1065,8 +1065,7 @@ function logo_hex_to_rgb(string $hex, string $fallback = '#1f2937'): array {
 }
 
 function logo_get_fonts(): array {
-    $fonts = glob(APP_ROOT . DIRSEP . 'fonts' . DIRSEP . '*.ttf');
-    return is_array($fonts) ? $fonts : [];
+    return logo_discover_font_files();
 }
 
 function logo_pick_font(string $fontFile): ?string {
@@ -1125,7 +1124,7 @@ function handle_logo_generate(array $req): string {
 
     $width = max(128, min(1600, req_int($req, 'logo_width', 512)));
     $height = max(128, min(1600, req_int($req, 'logo_height', 512)));
-    $fontSize = max(12, min(220, req_int($req, 'logo_font_size', 96)));
+    $fontSize = max(12, min(400, req_int($req, 'logo_font_size', 96)));
     $shape = (string) req_get($req, 'logo_shape', 'rounded');
     $style = (string) req_get($req, 'logo_style', 'gradient');
     $uppercase = req_bool($req, 'logo_uppercase');

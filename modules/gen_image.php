@@ -1,15 +1,16 @@
 <div id="gen_image" class="content">
     <?php
-    $fonts = glob(APP_ROOT . DIRSEP . "fonts" . DIRSEP . "*.ttf");
+    $fonts = logo_discover_font_files();
     $fontOptions = "";
-    if (is_array($fonts) && !empty($fonts)) {
+    if (!empty($fonts)) {
         foreach ($fonts as $index => $fontPath) {
             $fontName = basename($fontPath);
+            $label = preg_replace('/\.(ttf|otf)$/i', '', $fontName);
             $selected = $index === 0 ? "selected" : "";
-            $fontOptions .= "<option value='" . htmlspecialchars($fontName, ENT_QUOTES, 'UTF-8') . "' {$selected}>" . htmlspecialchars($fontName, ENT_QUOTES, 'UTF-8') . "</option>";
+            $fontOptions .= "<option value='" . htmlspecialchars($fontName, ENT_QUOTES, 'UTF-8') . "' {$selected}>" . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . "</option>";
         }
     } else {
-        $fontOptions = "<option value=''>No TTF fonts found (fallback mode)</option>";
+        $fontOptions = "<option value=''>No fonts in fonts/ — add .ttf or .otf files</option>";
     }
     ?>
     <style>
@@ -75,6 +76,33 @@
                                     Use similar values for squares, different for banners.
                                 </td>
                             </tr>
+                            <tr>
+                                <th scope="row" class="text-nowrap align-top pt-3">
+                                    Font &amp; size
+                                    <span class="fw-normal text-muted d-block small">TTF/OTF in fonts/</span>
+                                </th>
+                                <td colspan="3">
+                                    <div class="row g-3 align-items-end">
+                                        <div class="col-12 col-lg-5">
+                                            <label class="form-label small text-muted mb-1" for="logo_font">Typeface</label>
+                                            <select class="form-select" id="logo_font" name="logo_font" aria-label="Font file">
+                                                <?= $fontOptions ?>
+                                            </select>
+                                        </div>
+                                        <div class="col-6 col-sm-4 col-lg-2">
+                                            <label class="form-label small text-muted mb-1" for="logo_font_size">Size (px)</label>
+                                            <input type="number" class="form-control" id="logo_font_size" name="logo_font_size" min="12" max="400" value="96"
+                                                aria-describedby="logoFontSizeHint">
+                                        </div>
+                                        <div class="col-12 col-sm-8 col-lg-5">
+                                            <label class="form-label small text-muted mb-1" for="logo_font_size_range" id="logoFontSizeRangeLabel">Scale</label>
+                                            <input type="range" class="form-range" id="logo_font_size_range" min="12" max="400" value="96"
+                                                aria-labelledby="logoFontSizeRangeLabel" aria-describedby="logoFontSizeHint">
+                                            <span id="logoFontSizeHint" class="small text-muted">12–400 px — use the slider or type a value</span>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
                             <tr class="logo-gen-section-header">
                                 <td colspan="4" class="py-2 small text-uppercase fw-semibold text-body-secondary">Look</td>
                             </tr>
@@ -96,17 +124,15 @@
                                 </td>
                             </tr>
                             <tr>
-                                <th scope="row" class="text-nowrap">Type size</th>
-                                <td>
-                                    <input type="number" class="form-control" name="logo_font_size" min="12" max="220" value="96"
-                                        aria-describedby="logoFontSizeHint">
-                                    <span id="logoFontSizeHint" class="small text-muted">12–220</span>
-                                </td>
-                                <td class="text-nowrap fw-medium">Border</td>
-                                <td>
-                                    <input type="number" class="form-control" name="logo_border" min="0" max="24" value="0"
-                                        aria-describedby="logoBorderHint">
-                                    <span id="logoBorderHint" class="small text-muted">0–24 px (color below)</span>
+                                <th scope="row" class="text-nowrap">Border</th>
+                                <td colspan="3">
+                                    <div class="d-flex flex-wrap align-items-center gap-3">
+                                        <div style="width: 7rem; max-width: 100%;">
+                                            <input type="number" class="form-control" name="logo_border" min="0" max="24" value="0"
+                                                aria-describedby="logoBorderHint">
+                                        </div>
+                                        <span id="logoBorderHint" class="small text-muted">0–24 px (uses border color below)</span>
+                                    </div>
                                 </td>
                             </tr>
                             <tr class="logo-gen-section-header">
@@ -139,18 +165,10 @@
                                 </td>
                             </tr>
                             <tr class="logo-gen-section-header">
-                                <td colspan="4" class="py-2 small text-uppercase fw-semibold text-body-secondary">Font &amp; text behavior</td>
+                                <td colspan="4" class="py-2 small text-uppercase fw-semibold text-body-secondary">Text transform</td>
                             </tr>
                             <tr>
-                                <th scope="row" class="text-nowrap">Typeface</th>
-                                <td colspan="3">
-                                    <select class="form-select" name="logo_font" aria-label="Font file">
-                                        <?= $fontOptions ?>
-                                    </select>
-                                </td>
-                            </tr>
-                            <tr>
-                                <th scope="row" class="text-nowrap align-middle">Transform</th>
+                                <th scope="row" class="text-nowrap align-middle">Case &amp; initials</th>
                                 <td colspan="3">
                                     <div class="d-flex flex-wrap gap-4">
                                         <div class="form-check">

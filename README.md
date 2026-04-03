@@ -12,31 +12,39 @@ A comprehensive collection of useful developer tools built with PHP and modern w
 ## Features
 
 ### Generators
-- String generator
 - Number generator
+- String generator
+- Image generator (built into this repository)
 - QR Code generator
-- Logo generator (built into this repository)
+- ID generator
 - Spin the wheel
+
+### Cryptography
+- OpenSSL (AES encryption/decryption)
+- Hashing (SHA512, SHA256, SHA1, MD5, and more)
+- ROT cipher
+- JWT inspector
+- Private/public key tools
+- SSH key generator
+- CSR generator
+- PEM/OpenSSH converter
+- Crypto diagnostics
 
 ### Encoding & Decoding
 - Base converters
-- Bin2Hex, Hex2Bin
+- Binary/hexadecimal
 - URL encoding/decoding
 - HTML entities encode/decode
 
-### Encryption & Hashing
-- OpenSSL (AES encryption/decryption)
-- Hashing (SHA512, SHA256, SHA1, MD5, and more)
-- ROT Cipher
-
-### Conversion & Transformation
+### Text & Data
 - String tools (trim, reverse, shuffle, case conversion, etc.)
 - Serialization (JSON, YAML, XML)
 - Markdown editor (client-side live preview)
 - Minify (CSS and JavaScript)
 - Metaphone (phonetic key generation)
-- Unit converter (Convert → Units: volume, length, weight, temperature, energy, area, speed, time, power, data, pressure, angle)
-- Currency converter (Convert → Currency Converter)
+- Brainfuck converter
+- Unit converter (volume, length, weight, temperature, energy, area, speed, time, power, data, pressure, angle)
+- Currency converter
 
 ### Networking
 - DNS lookup (hostname/IP resolution)
@@ -48,10 +56,14 @@ A comprehensive collection of useful developer tools built with PHP and modern w
 ### Comparison & Analysis
 - Levenshtein distance (with tunable costs)
 - Diff viewer (pure PHP, colorized output)
+- Regex tester
 
 ### Miscellaneous
 - Calculator (basic arithmetic)
 - Datetime tools (time unit conversion, timezone selector)
+- Browser client inspector (capabilities, optional permissions/WebRTC/public IP probes)
+- Crontab helper
+- ShellCheck (shell script linting)
 
 ## Installation
 
@@ -182,7 +194,7 @@ Notes:
 ## Documentation
 
 For detailed documentation, feature guides, and implementation details, see:
-- [CHANGELOG](docs/CHANGELOG.md) - Version history and feature updates
+- [CHANGELOG](CHANGELOG.md) - Version history and feature updates
 - [README](docs/README.md) - Detailed feature documentation
 - [IMPLEMENTATION_SUMMARY](docs/IMPLEMENTATION_SUMMARY.md) - Technical implementation details
 - [VISUAL_GUIDE](docs/VISUAL_GUIDE.md) - UI/UX design documentation
@@ -218,7 +230,12 @@ Common options:
 - `./scripts/release.sh --help` to show usage
 - `./scripts/release.sh 1.2.10 --dry-run` to preview actions only
 - `./scripts/release.sh 1.2.10 --publish-only` to run only `gh` + Docker after the tag is on the remote
-- `./scripts/extract_changelog_section.sh --help` to show extraction script usage
+
+Other release helpers (run from repo root):
+
+- **`scripts/extract_changelog_section.sh`** — Prints one `CHANGELOG.md` section by heading title (from `## <title>` through the next `## [` line). Example: `./scripts/extract_changelog_section.sh CHANGELOG.md "[v1.2.10]"`. Use `--dry-run` to verify the heading exists without printing the body. Requires [ripgrep](https://github.com/BurntSushi/ripgrep) (`rg`) for `--dry-run`.
+
+- **`scripts/update-release-descriptions.php`** — For each `## [vX.Y.Z]` block in `CHANGELOG.md`, runs `gh release edit <tag> --notes-file …` so existing GitHub Releases match the changelog (useful after editing old sections). Requires the [GitHub CLI](https://cli.github.com/) authenticated for this repo. Use `php scripts/update-release-descriptions.php --dry-run` to list what would be updated without calling the API.
 
 CI Docker publish requirements:
 - Docker Hub secrets: `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN`
