@@ -13,8 +13,22 @@
     }
 ?>
     <div class="alert alert-info mb-4">
-        <strong>Check syntax without executing code.</strong>
-        JSON, YAML, XML, INI, and JSON Lines are parsed in PHP; cron uses the same rules as the Crontab tool; PHP uses <code>php -l</code>; Python uses <code>ast.parse</code>; Ruby uses <code>ruby -c</code>; JavaScript uses <code>node --check</code>; shell uses <code>bash -n</code> or <code>sh -n</code> when those CLIs are available (not full static analysis; see ShellCheck for shell scripts).
+        <p class="mb-2"><strong>Check syntax without executing code.</strong></p>
+        <ul class="small mb-0 ps-3">
+            <li class="mb-1">JSON, YAML, XML, INI, and JSON Lines are parsed in PHP.</li>
+            <li class="mb-1">Cron uses the same rules as the Crontab tool.</li>
+            <li class="mb-1">
+                PHP, Python, Ruby, JavaScript, and shell use CLI-backed syntax checks when those tools are available:
+                <ul class="mt-1 mb-0 ps-3">
+                    <li><strong>PHP</strong> — <code>php -l</code></li>
+                    <li><strong>Python</strong> — <code>ast.parse</code></li>
+                    <li><strong>Ruby</strong> — <code>ruby -c</code></li>
+                    <li><strong>JavaScript</strong> — <code>node --check</code></li>
+                    <li><strong>Shell</strong> — <code>bash -n</code> or <code>sh -n</code></li>
+                </ul>
+            </li>
+            <li class="text-muted mb-0">Not full static analysis; for shell scripts, use ShellCheck under Miscellaneous.</li>
+        </ul>
     </div>
     <div class="card card-primary">
         <?php if ($validatorsEmbed): ?>
