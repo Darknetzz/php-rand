@@ -275,12 +275,21 @@ function cron_time_summary(string $minuteExpression, string $hourExpression): st
     $minuteExpression = trim($minuteExpression);
     $hourExpression = trim($hourExpression);
 
+    // Step-of-1 (*/1) is the same as * for that field; parsers accept both.
+    if (preg_match('/^\*\/1$/', $hourExpression)) {
+        $hourExpression = '*';
+    }
+    if (preg_match('/^\*\/1$/', $minuteExpression)) {
+        $minuteExpression = '*';
+    }
+
     if ($minuteExpression === '*' && $hourExpression === '*') {
         return 'Every minute';
     }
 
     if (preg_match('/^\*\/(\d+)$/', $minuteExpression, $step) && $hourExpression === '*') {
-        return 'Every ' . intval($step[1]) . ' minutes';
+        $n = intval($step[1]);
+        return $n === 1 ? 'Every minute' : 'Every ' . $n . ' minutes';
     }
 
     if (cron_is_simple_value($minuteExpression) && $hourExpression === '*') {
