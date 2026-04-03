@@ -1049,6 +1049,41 @@ function handle_stringtools(array $req): string {
 }
 
 /**
+ * Metaphone phonetic keys per word (line structure preserved).
+ *
+ * @param array $req Request with POST field `metaphone`
+ */
+function handle_metaphone(array $req): string {
+    $input = (string) req_get($req, 'metaphone', '');
+    if (trim($input) === '') {
+        return formatOutput("Input text is required.", type: "danger");
+    }
+    if (strlen($input) > 1_000_000) {
+        return formatOutput("Input must be at most 1,000,000 characters.", type: "danger");
+    }
+
+    $blocks = [];
+    foreach (preg_split('/\R/u', $input) as $line) {
+        $words = preg_split('/\s+/u', $line, -1, PREG_SPLIT_NO_EMPTY);
+        if ($words === []) {
+            $blocks[] = '';
+            continue;
+        }
+        $pairs = [];
+        foreach ($words as $word) {
+            $key = metaphone($word);
+            $pairs[] = htmlspecialchars($word, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')
+                . ' → '
+                . htmlspecialchars($key === false ? '' : $key, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        }
+        $blocks[] = implode("\n", $pairs);
+    }
+    $text = implode("\n\n", $blocks);
+
+    return formatOutput(nl2br($text));
+}
+
+/**
  * Parse #RRGGBB color to RGB tuple.
  *
  * @return array{0:int,1:int,2:int}
@@ -2088,6 +2123,67 @@ function handle_genid(array $req): string {
     $output .= "<div style='margin-top: 8px; font-size: 0.85rem; opacity: 0.75;'>Generated <strong>{$qty}</strong> ID" . ($qty > 1 ? "s" : "") . ".</div>";
 
     return $output;
+}
+
+/**
+ * Light HTML minification: strip comments and collapse whitespace between tags.
+ */
+function handle_minify_html_whitespace(string $html): string {
+    $html = preg_replace('/<!--[\s\S]*?-->/', '', $html) ?? $html;
+    $html = preg_replace('/>\s+</', '><', $html) ?? $html;
+
+    return trim($html);
+}
+
+/**
+ * Minify JS/CSS (matthiasmullie/minify) or apply light cleanup for HTML.
+ *
+ * @param array $req Request with input, type (js|css|html)
+ */
+function handle_minify(array $req): string {
+    $input = req_get($req, 'input', '');
+    if ($input === '') {
+        return formatOutput('Input code is required.', type: 'danger');
+    }
+
+    $maxLen = 500000;
+    if (strlen($input) > $maxLen) {
+        return formatOutput("Input is too long. Maximum {$maxLen} characters allowed.", type: 'danger');
+    }
+
+    $type = strtolower(trim((string) req_get($req, 'type', 'js')));
+    if (!in_array($type, ['js', 'css', 'html'], true)) {
+        return formatOutput('Invalid code type.', type: 'danger');
+    }
+
+    try {
+        if ($type === 'js') {
+            $minifier = new \MatthiasMullie\Minify\JS($input);
+            $out = $minifier->minify();
+        } elseif ($type === 'css') {
+            $minifier = new \MatthiasMullie\Minify\CSS($input);
+            $out = $minifier->minify();
+        } else {
+            $out = handle_minify_html_whitespace($input);
+        }
+    } catch (\Throwable $e) {
+        return formatOutput(
+            'Minify failed: ' . htmlspecialchars($e->getMessage(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
+            type: 'danger'
+        );
+    }
+
+    $inLen = strlen($input);
+    $outLen = strlen($out);
+    $pct = $inLen > 0 ? round(100 * (1 - $outLen / $inLen), 1) : 0.0;
+    $delta = $pct >= 0
+        ? htmlspecialchars((string) $pct, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '% smaller'
+        : htmlspecialchars((string) abs($pct), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '% larger';
+
+    $meta = '<div class="small text-muted mb-2">'
+        . (int) $inLen . ' → ' . (int) $outLen . ' bytes (~' . $delta . ')</div>';
+
+    return $meta . output_copyable($out, 'Minified', ['inputName' => 'input']);
 }
 
 function crypto_available_key_algorithms(): array {
