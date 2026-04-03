@@ -1764,6 +1764,75 @@ function handle_qrcode(array $req): string {
 }
 
 /**
+ * Build HTML for the full test string with full-match regions wrapped in a green highlight.
+ *
+ * @param array $allMatches Output of preg_match_all with PREG_SET_ORDER | PREG_OFFSET_CAPTURE
+ */
+function regex_format_test_string_with_highlights(string $testString, array $allMatches): string {
+    $intervals = [];
+    foreach ($allMatches as $matchSet) {
+        if (!isset($matchSet[0]) || !is_array($matchSet[0])) {
+            continue;
+        }
+        $text = $matchSet[0][0];
+        $start = (int) $matchSet[0][1];
+        $end = $start + strlen($text);
+        if ($end < $start) {
+            continue;
+        }
+        $intervals[] = [$start, $end];
+    }
+    if ($intervals === []) {
+        return htmlspecialchars($testString, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    }
+    usort($intervals, static fn(array $a, array $b): int => $a[0] <=> $b[0]);
+    $merged = [];
+    foreach ($intervals as [$s, $e]) {
+        if ($merged === []) {
+            $merged[] = [$s, $e];
+            continue;
+        }
+        $last = count($merged) - 1;
+        [$ls, $le] = $merged[$last];
+        if ($s <= $le) {
+            $merged[$last] = [$ls, max($le, $e)];
+        } else {
+            $merged[] = [$s, $e];
+        }
+    }
+
+    $esc = static fn(string $chunk): string => htmlspecialchars($chunk, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    $hlOpen = '<span style="background-color: rgba(74, 222, 128, 0.45); border-radius: 2px; box-decoration-break: clone; -webkit-box-decoration-break: clone;">';
+    $hlClose = '</span>';
+    $zeroWidthMarker = '<span style="display:inline-block;width:0;height:1em;vertical-align:bottom;border-left:2px solid rgba(74,222,128,0.95);" title="Zero-width match"></span>';
+
+    $len = strlen($testString);
+    $html = '';
+    $pos = 0;
+    foreach ($merged as [$s, $e]) {
+        $s = max(0, min($s, $len));
+        $e = max(0, min($e, $len));
+        if ($s < $pos) {
+            continue;
+        }
+        if ($s > $pos) {
+            $html .= $esc(substr($testString, $pos, $s - $pos));
+        }
+        if ($e > $s) {
+            $html .= $hlOpen . $esc(substr($testString, $s, $e - $s)) . $hlClose;
+        } else {
+            $html .= $hlOpen . $zeroWidthMarker . $hlClose;
+        }
+        $pos = $e;
+    }
+    if ($pos < $len) {
+        $html .= $esc(substr($testString, $pos));
+    }
+
+    return $html;
+}
+
+/**
  * Handle regex testing requests
  *
  * Tests regular expressions against input text, showing matches, groups,
@@ -1850,6 +1919,13 @@ function handle_regex(array $req): string {
         $output .= "</div>";
         
         if ($matchCount > 0) {
+            $output .= "<div style='margin-bottom: 20px;'>";
+            $output .= "<h5 style='margin-bottom: 10px;'>Full test string (matches highlighted)</h5>";
+            $output .= "<div style='padding: 10px; background: #0f172a; color: #e9ecef; border-radius: 0.25rem; white-space: pre-wrap; word-break: break-word; line-height: 1.5;'>";
+            $output .= regex_format_test_string_with_highlights($testString, $allMatches);
+            $output .= "</div>";
+            $output .= "</div>";
+
             // Display matches
             $output .= "<div style='margin-bottom: 20px;'>";
             $output .= "<h5 style='margin-bottom: 15px;'>Match Details:</h5>";
