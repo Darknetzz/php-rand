@@ -8,6 +8,13 @@ All notable changes to this project are documented in this file.
 
 ### Major Features
 
+_Add entries here during development; rotate into a dated release section when tagging._
+
+---
+
+## [v1.3.0] (2026-04-03)
+### Major Features
+
 - **Navbar and IA updates** – Navigation structure now reflects the `Math` grouping better, labels were clarified (`Convert` -> **Text & Data**), and active-link handling was refactored so current tool context is highlighted more reliably.
 - **Logo Generator upgrade** – `gen_image` received a substantial UI/UX refresh with improved layout, richer interactions, and live preview-focused iteration.
 - **Crypto compatibility hardening** – Added RSA signing/verification padding fallback and broader algorithm compatibility updates (including Ed25519/Ed448 handling paths).
