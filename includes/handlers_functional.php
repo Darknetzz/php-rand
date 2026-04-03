@@ -1612,6 +1612,8 @@ function shellcheck_excerpt_html(array $lines, array $comment): string {
 
 function handle_shellcheck(array $req): string {
     $script = (string) req_get($req, 'shellcheck_script', '');
+    // CRLF / Mac CR: shellcheck SC1017 otherwise; normalize like tr -d '\r'
+    $script = str_replace("\r", '', $script);
     if (trim($script) === '') {
         return formatOutput("Shell script input is required.", type: "danger");
     }
