@@ -187,6 +187,18 @@ $navbarItems = [
             ],
         ],
     ],
+    "validators" => [
+        "name"       => "validators",
+        "formalName" => "Validators",
+        "icon"       => icon('patch-check'),
+        "subitems" => [
+            "shellcheck" => [
+                "name"       => "shellcheck",
+                "formalName" => "ShellCheck",
+                "icon"       => icon("terminal"),
+            ],
+        ],
+    ],
     "misc" => [
         "name"       => "misc",
         "formalName" => "Miscellaneous",
@@ -221,11 +233,6 @@ $navbarItems = [
                 "name"       => "crontab",
                 "formalName" => "Crontab",
                 "icon"       => icon("calendar-event"),
-            ],
-            "shellcheck" => [
-                "name"       => "shellcheck",
-                "formalName" => "ShellCheck",
-                "icon"       => icon("terminal"),
             ],
         ],
     ],
