@@ -87,6 +87,13 @@ footer {
   margin: 15px;
 }
 
+/* Align syntax validator help panel with sibling .card (same 15px horizontal inset). */
+#syntax_validate > .alert.alert-info,
+.validators-block > .alert.alert-info {
+  margin-left: 15px;
+  margin-right: 15px;
+}
+
 .card-body {
   padding: 15px;
   margin: 15px;
