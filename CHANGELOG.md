@@ -8,33 +8,46 @@ All notable changes to this project are documented in this file.
 
 ### Major Features
 
-- **Syntax validators (JSON, YAML, PHP, Python)** – New **Miscellaneous → Validators** tool validates pasted content without executing it: JSON via `json_decode` with `JSON_THROW_ON_ERROR`, YAML via **`symfony/yaml`**, PHP via **`php -l`** on a temp file (snippets without `<?php` are linted as if that tag were prepended), Python via **`python3`/`python`** and `ast.parse` when a CLI interpreter is available. Handler `handle_syntax_validate` and shared logic in `includes/syntax_validate.php`; UI in `modules/syntax_validate.php` and the combined **`validators`** module (`modules/validators.php`).
-- **Navigation (Misc)** – **ShellCheck** and **Validators** are separate items under **Miscellaneous** (no top-level Validators category). ShellCheck remains its own module (`modules/shellcheck.php`); the Validators page is syntax-check only and embeds the syntax validator section.
-- **Docker** – Image installs **`python3`** so Python syntax validation works in container deployments.
-- **Random data (syntax validator)** – `js/rand.js` adds a dedicated shuffle control for the **language** `<select>` (`#syntaxValidateKind`) and a separate control for **sample input**; the textarea shuffle fills content for the **currently selected** language only (does not change the language).
+- **Syntax validators (many languages)** – New **Miscellaneous → Validators** checks pasted content **without executing** it. Kinds: **JSON** (`json_decode` + `JSON_THROW_ON_ERROR`), **YAML** (**`symfony/yaml`**), **XML** (DOM parse), **INI** (`parse_ini_string`), **JSON Lines** (per-line JSON, capped line count), **cron** (shared **`cron_parse_expression_fields()`** with the Crontab tool / **`dragonmantank/cron-expression`**), **PHP** (`php -l`, optional `<?php` prepend for snippets), **Python** (`ast.parse` via **`python3`/`python`**), **Ruby** (`ruby -c`), **JavaScript** (`node --check`), **shell** (`bash -n` / `sh -n` when available). Handler **`handle_syntax_validate`**, logic in **`includes/syntax_validate.php`**, UI in **`modules/syntax_validate.php`** and embed **`modules/validators.php`**. Layout/help copy refined for clarity; help panel aligned with sibling cards.
+- **Navigation (Misc)** – **ShellCheck** and **Validators** are separate items under **Miscellaneous**. ShellCheck stays **`modules/shellcheck.php`**; Validators is syntax-only and embeds the validator section.
+- **Text & Data tools** – **URL encoding** (RFC 3986 via `rawurlencode` / decode preview), **HTML entities** (encode, decode, both, or **auto** from content), **Levenshtein** distance with tunable insertion/replacement/deletion costs (PHP length limits documented in UI), **Metaphone** (word keys), **Minify** JS/CSS via **`matthiasmullie/minify`** plus light HTML whitespace cleanup. Handlers and navbar entries in **`includes/handlers_functional.php`** / **`includes/navbar.php`**; modules **`urlencoding.php`**, **`htmlentities.php`**, **`levenshtein.php`**, **`metaphone.php`**, **`minify.php`**.
+- **Logo generator** – **Circle / rounded-rectangle** output uses **`logo_apply_shape_alpha_mask()`** so transparency matches the shape (fixes incorrect white fill from the old merge path). **Font** picker uses **`logo_discover_font_files()`** (**.ttf** and **.otf** under **`fonts/`**); bundled **DejaVu** TTFs; labels strip extensions. **Font size** **12–400** px with **number + range slider** kept in sync; presets call **`syncFontSizeUi()`**. Default **background** **`#000000`**; border row and **“Text transform”** section reorganized in **`modules/gen_image.php`**.
+- **Crontab** – **`cron_parse_expression_fields()`** in **`includes/tooling_helpers.php`** centralizes expression validation, **`@reboot`**, and `CronExpression` construction for both the explorer and syntax validator. **UI**: layout tweaks and **diff output** styling (**`modules/crontab.php`**, **`style.css`**).
+- **Docker** – Image installs **`python3`** so Python (and related CLI checks where applicable) work in containers.
+- **Random data (syntax validator)** – **`js/rand.js`**: shuffle for **language** (`#syntaxValidateKind`) vs **sample textarea**; samples follow the **active** kind with avoid-repeat keys.
+- **Config & repo hygiene** – **`APP_ROOT`** set with **`dirname(__FILE__, 2)`** in **`includes/config.php`**. **`.gitignore`** no longer ignores **`scripts/`** (release tooling tracked). **`README.md`** feature list reorganized (e.g. cryptography, text & data, misc tools).
+- **Release automation** – **`scripts/release.sh`** rotates **`[Unreleased]`**, bumps **`docker-image.config`**, optional commit/tag/push, GitHub release, Docker publish; **`scripts/extract_changelog_section.sh`** and **`scripts/update-release-descriptions.php`** support changelog/release descriptions.
 
 <details>
 <summary>📋 Detailed Changes (click to expand)</summary>
 
 #### Syntax validation
-- **Dependency** – `composer require symfony/yaml` (^7.x) for YAML parsing.
-- **Registry** – `syntax_validate` → `handle_syntax_validate()` in `includes/handlers_functional.php` (lazy-loads `includes/syntax_validate.php`).
-- **Limits** – Input length capped consistently with other tools (e.g. 200k characters).
-- **Privacy copy** – `index.php` privacy modal lists server-processed tools without a separate “validators” category line (validators live under Misc).
+- **Dependencies** – `composer require symfony/yaml` (^7.x); YAML lint binary under **`vendor/`** as shipped by the package.
+- **Registry** – `syntax_validate` → `handle_syntax_validate()` in **`includes/handlers_functional.php`** (lazy-loads **`includes/syntax_validate.php`**).
+- **Limits** – Input length capped (e.g. 200k characters); JSON Lines capped per **`syntax_validate_jsonl_max_lines()`**.
+- **Privacy copy** – **`index.php`** privacy modal lists server-processed tools without a separate “validators” top-level line (validators under Misc).
 
 #### Navigation and modules
-- **`includes/navbar.php`** – Misc subitems: `shellcheck`, `validators` (patch-check icon for Validators).
-- **`modules/validators.php`** – Single `#validators` content shell with intro; embeds syntax validator via `$validatorsEmbed` so nested panels are not hidden by global `.content` toggling in `js/rand.js`.
-- **`modules/syntax_validate.php`** – Supports embed mode (`<section class="validators-block">`) vs standalone `#syntax_validate` module for direct `load_module.php?module=syntax_validate` loads.
-- **`modules/dashboard.php`** – Category color map no longer includes a separate `validators` top-level key.
+- **`includes/navbar.php`** – Misc: `shellcheck`, `validators`; Text & Data entries for new tools as applicable.
+- **`modules/validators.php`** – `#validators` shell; embeds syntax validator via `$validatorsEmbed` so nested panels are not hidden by global `.content` toggling in **`js/rand.js`**.
+- **`modules/syntax_validate.php`** – Embed mode (`<section class="validators-block">`) vs standalone `#syntax_validate` for **`load_module.php?module=syntax_validate`**.
 
 #### Random data (`js/rand.js`)
 - **`SYNTAX_VALIDATE_KIND_OPTIONS`** – Language-only shuffle pool.
-- **`SYNTAX_VALIDATE_SCENARIOS`** – Per-kind samples; textarea shuffle uses scenarios matching the active language (`syntaxValidateContent_<kind>` avoid-repeat keys).
-- **`addRandomDataButtons`** – Includes `#syntaxValidateKind`; button titles distinguish language vs sample actions.
+- **`SYNTAX_VALIDATE_SCENARIOS`** – Per-kind samples; textarea shuffle uses the selected kind (`syntaxValidateContent_<kind>`, avoid-repeat).
+- **`addRandomDataButtons`** – Includes `#syntaxValidateKind`; titles distinguish language vs sample actions.
 
 #### Docker
-- **`Dockerfile`** – `apt-get install` adds `python3` alongside `shellcheck` and `openssh-client`.
+- **`Dockerfile`** – `apt-get install` adds **`python3`** alongside **`shellcheck`** and **`openssh-client`**.
+
+#### Dependencies (`composer.json`)
+- **`symfony/yaml`**, **`matthiasmullie/minify`** (and transitive **`path-converter`**) for the features above.
+
+#### Styling
+- **`style.css`** – Adjustments including Crontab / diff presentation.
+
+#### Other
+- **`modules/currency.php`**, **`modules/units.php`** – Minor copy or wiring updates where touched for consistency.
 
 </details>
 
