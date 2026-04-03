@@ -16,7 +16,11 @@
         JSON and YAML are parsed in PHP; PHP uses <code>php -l</code>; Python uses <code>ast.parse</code> via the system interpreter when available.
     </div>
     <div class="card card-primary">
+        <?php if ($validatorsEmbed): ?>
         <h2 class="card-header h3 mb-0"><?= icon('braces') ?> JSON / YAML / PHP / Python</h2>
+        <?php else: ?>
+        <h1 class="card-header"><?= icon('braces') ?> Syntax validator</h1>
+        <?php endif; ?>
         <div class="card-body">
             <form class="form" action="gen.php" method="POST" id="syntaxValidateForm" data-action="syntax_validate">
                 <div class="row g-4 mb-4">

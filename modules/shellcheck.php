@@ -1,17 +1,10 @@
-<?php
-$validatorsEmbed = $validatorsEmbed ?? false;
-if ($validatorsEmbed) {
-    echo '<section class="validators-block mb-5 pb-4 border-bottom border-secondary">';
-} else {
-    echo '<div id="shellcheck" class="content">';
-}
-?>
+<div id="shellcheck" class="content">
     <div class="alert alert-info mb-4">
         <strong>Lint shell scripts before you run them.</strong>
         Paste a shell script to get structured ShellCheck diagnostics with severity, rule IDs, and highlighted locations.
     </div>
     <div class="card card-primary">
-        <h2 class="card-header h3 mb-0"><?= icon("terminal") ?> ShellCheck</h2>
+        <h1 class="card-header"><?= icon("terminal") ?> ShellCheck</h1>
         <div class="card-body">
             <form class="form" action="gen.php" method="POST" id="shellcheckForm" data-action="shellcheck">
                 <div class="row g-4 mb-4">
@@ -87,9 +80,4 @@ if ($validatorsEmbed) {
             </form>
         </div>
     </div>
-<?php
-if ($validatorsEmbed) {
-    echo '</section>';
-} else {
-    echo '</div>';
-}
+</div>

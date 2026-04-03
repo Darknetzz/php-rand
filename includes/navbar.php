@@ -222,6 +222,11 @@ $navbarItems = [
                 "formalName" => "Crontab",
                 "icon"       => icon("calendar-event"),
             ],
+            "shellcheck" => [
+                "name"       => "shellcheck",
+                "formalName" => "ShellCheck",
+                "icon"       => icon("terminal"),
+            ],
             "validators" => [
                 "name"       => "validators",
                 "formalName" => "Validators",
