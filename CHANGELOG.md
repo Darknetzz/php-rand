@@ -8,6 +8,36 @@ All notable changes to this project are documented in this file.
 
 ### Major Features
 
+- **Syntax validators (JSON, YAML, PHP, Python)** – New **Miscellaneous → Validators** tool validates pasted content without executing it: JSON via `json_decode` with `JSON_THROW_ON_ERROR`, YAML via **`symfony/yaml`**, PHP via **`php -l`** on a temp file (snippets without `<?php` are linted as if that tag were prepended), Python via **`python3`/`python`** and `ast.parse` when a CLI interpreter is available. Handler `handle_syntax_validate` and shared logic in `includes/syntax_validate.php`; UI in `modules/syntax_validate.php` and the combined **`validators`** module (`modules/validators.php`).
+- **Navigation (Misc)** – **ShellCheck** and **Validators** are separate items under **Miscellaneous** (no top-level Validators category). ShellCheck remains its own module (`modules/shellcheck.php`); the Validators page is syntax-check only and embeds the syntax validator section.
+- **Docker** – Image installs **`python3`** so Python syntax validation works in container deployments.
+- **Random data (syntax validator)** – `js/rand.js` adds a dedicated shuffle control for the **language** `<select>` (`#syntaxValidateKind`) and a separate control for **sample input**; the textarea shuffle fills content for the **currently selected** language only (does not change the language).
+
+<details>
+<summary>📋 Detailed Changes (click to expand)</summary>
+
+#### Syntax validation
+- **Dependency** – `composer require symfony/yaml` (^7.x) for YAML parsing.
+- **Registry** – `syntax_validate` → `handle_syntax_validate()` in `includes/handlers_functional.php` (lazy-loads `includes/syntax_validate.php`).
+- **Limits** – Input length capped consistently with other tools (e.g. 200k characters).
+- **Privacy copy** – `index.php` privacy modal lists server-processed tools without a separate “validators” category line (validators live under Misc).
+
+#### Navigation and modules
+- **`includes/navbar.php`** – Misc subitems: `shellcheck`, `validators` (patch-check icon for Validators).
+- **`modules/validators.php`** – Single `#validators` content shell with intro; embeds syntax validator via `$validatorsEmbed` so nested panels are not hidden by global `.content` toggling in `js/rand.js`.
+- **`modules/syntax_validate.php`** – Supports embed mode (`<section class="validators-block">`) vs standalone `#syntax_validate` module for direct `load_module.php?module=syntax_validate` loads.
+- **`modules/dashboard.php`** – Category color map no longer includes a separate `validators` top-level key.
+
+#### Random data (`js/rand.js`)
+- **`SYNTAX_VALIDATE_KIND_OPTIONS`** – Language-only shuffle pool.
+- **`SYNTAX_VALIDATE_SCENARIOS`** – Per-kind samples; textarea shuffle uses scenarios matching the active language (`syntaxValidateContent_<kind>` avoid-repeat keys).
+- **`addRandomDataButtons`** – Includes `#syntaxValidateKind`; button titles distinguish language vs sample actions.
+
+#### Docker
+- **`Dockerfile`** – `apt-get install` adds `python3` alongside `shellcheck` and `openssh-client`.
+
+</details>
+
 _Add entries here during development; rotate into a dated release section when tagging._
 
 ---
