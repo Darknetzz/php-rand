@@ -1521,7 +1521,7 @@ function handle_logo_generate(array $req): string {
         $displayText = $initials !== '' ? mb_substr($initials, 0, 4) : mb_substr($displayText, 0, 3);
     }
 
-    $bgRgb = logo_hex_to_rgb((string) req_get($req, 'logo_bg_color', '#111827'));
+    $bgRgb = logo_hex_to_rgb((string) req_get($req, 'logo_bg_color', '#000000'));
     $accentRgb = logo_hex_to_rgb((string) req_get($req, 'logo_accent_color', '#1d4ed8'));
     $textRgb = logo_hex_to_rgb((string) req_get($req, 'logo_text_color', '#ffffff'), '#ffffff');
     $borderRgb = logo_hex_to_rgb((string) req_get($req, 'logo_border_color', '#ffffff'), '#ffffff');

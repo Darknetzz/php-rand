@@ -147,7 +147,7 @@
                                     <div class="row row-cols-2 row-cols-sm-4 g-3">
                                         <div class="col">
                                             <label class="form-label small mb-1" for="logo_bg_color">Background</label>
-                                            <input type="color" class="form-control form-control-color w-100" id="logo_bg_color" name="logo_bg_color" value="#111827" title="Background">
+                                            <input type="color" class="form-control form-control-color w-100" id="logo_bg_color" name="logo_bg_color" value="#000000" title="Background">
                                         </div>
                                         <div class="col">
                                             <label class="form-label small mb-1" for="logo_accent_color">Accent</label>
