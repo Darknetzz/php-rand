@@ -220,6 +220,23 @@
         }
     };
 
+    const sizeInput = form.querySelector("#logo_font_size");
+    const sizeRange = document.getElementById("logo_font_size_range");
+    const syncFontSizeUi = () => {
+        if (!sizeInput || !sizeRange) return;
+        let v = parseInt(sizeInput.value, 10);
+        if (Number.isNaN(v)) v = 96;
+        v = Math.max(12, Math.min(400, v));
+        sizeInput.value = String(v);
+        sizeRange.value = String(v);
+    };
+    if (sizeInput && sizeRange) {
+        sizeInput.addEventListener("input", syncFontSizeUi);
+        sizeRange.addEventListener("input", function() {
+            sizeInput.value = sizeRange.value;
+        });
+    }
+
     const runLogoPreview = () => {
         if (typeof setFormVal !== "function" || typeof showData !== "function") return;
 
@@ -279,6 +296,7 @@
             setVal("logo_initials", true);
             setVal("logo_uppercase", true);
             if (hint) hint.textContent = "App icon: square canvas, rounded shape, initials + caps — good for launcher icons.";
+            syncFontSizeUi();
             scheduleLogoPreviewSoon();
             return;
         }
@@ -292,6 +310,7 @@
             setVal("logo_initials", false);
             setVal("logo_uppercase", false);
             if (hint) hint.textContent = "Banner: wide rectangle with full text — headers and cover images.";
+            syncFontSizeUi();
             scheduleLogoPreviewSoon();
             return;
         }
@@ -305,6 +324,7 @@
             setVal("logo_initials", true);
             setVal("logo_uppercase", true);
             if (hint) hint.textContent = "Initials badge: circle, solid fill, visible border — avatars and seals.";
+            syncFontSizeUi();
             scheduleLogoPreviewSoon();
         }
     };
@@ -330,6 +350,7 @@
         randomizeBtn.addEventListener("click", randomizePalette);
     }
 
+    syncFontSizeUi();
     scheduleLogoPreviewSoon();
 })();
 </script>
