@@ -12,9 +12,12 @@ All notable changes to this project are documented in this file.
 - **Logo Generator upgrade** – `gen_image` received a substantial UI/UX refresh with improved layout, richer interactions, and live preview-focused iteration.
 - **Crypto compatibility hardening** – Added RSA signing/verification padding fallback and broader algorithm compatibility updates (including Ed25519/Ed448 handling paths).
 - **Shared output actions** – `copyableOutput` and related rendering paths now support optional HTML actions and more consistent action/button styling across tools.
+- **Tool card intros** – Top-of-card guidance was tightened and aligned across many modules (encoding, crypto, JWT, networking, ShellCheck, SSH, and others) so descriptions and alert-style blocks are shorter, more consistent, and easier to scan.
 - **Runtime/deployment refresh** – Docker image/runtime config updated for PHP 8.5 + `openssh-client`; release workflow/docs (`README`, workflow, config, ignore rules) were refined to reduce release friction.
-- **Crontab Explorer** – New **Misc** tool to validate cron expressions (including macros like `@daily` and Vixie **`@reboot`** as a one-shot at daemon start), human-readable summaries, field breakdown, and timezone-aware previous/next run listings powered by **`dragonmantank/cron-expression`**. The **full analysis** runs automatically on debounced edits (expression, timezone, run count, reference time, include-current); **Analyze Schedule** remains as an explicit action.
-- **ShellCheck** – New **Misc** tool to lint pasted shell scripts via the host **`shellcheck`** binary when available; JSON-backed diagnostics with severity, excerpts, and wiki links. Temp-file linting only (no persistence).
+- **Networking IP backend** – Centralized `handle_ip` flows for DNS forward/reverse lookup, IPv4 **CIDR ↔ range** conversion, and **subnet** math; subnet inputs accept dotted masks or **`/prefix`** via `handle_ip_normalize_subnet_mask()`; results render through shared `handle_ip_kv_table()` for consistent key/value output.
+- **Crontab Explorer** – New **Misc** tool to validate cron expressions (including macros like `@daily` and Vixie **`@reboot`** as a one-shot at daemon start), human-readable summaries, field breakdown, and timezone-aware previous/next run listings powered by **`dragonmantank/cron-expression`**. The **full analysis** runs automatically on debounced edits (expression, timezone, run count, reference time, include-current); **Analyze Schedule** remains as an explicit action. **More options** collapses advanced fields; schedule summaries use a dedicated **human-readable** block, **`*/1` step fields** are described like wildcards in the time summary for clearer copy, and the results layout was refined.
+- **ShellCheck** – New **Misc** tool to lint pasted shell scripts via the host **`shellcheck`** binary when available; JSON-backed diagnostics with severity, excerpts, and wiki links. Temp-file linting only (no persistence). Carriage returns are **stripped from pasted scripts** before linting to avoid spurious CRLF-related **SC1017** warnings.
+- **Form-aware random data** – `randomDataGetCompatibleFormBundle()` extends `generateRandomData()` so random fills line up with more tool-specific forms (JWT, keypair sign/verify, SSH verification, CIDR/networking, and others) and handle `<select>` elements reliably.
 - **Random shuffle samples** – Crontab and ShellCheck random-data buttons use **larger scenario pools**, **avoid picking the same scenario twice in a row**, and keep **related fields in sync** (cron + timezone; script + filename + shell dialect).
 
 <details>
@@ -37,10 +40,16 @@ All notable changes to this project are documented in this file.
 - **Reusable actions** - Extended shared output helpers to accept optional HTML actions, reducing per-module divergence and improving DRY reuse.
 - **Action styling** - Standardized button/link styles around copy/download and related output actions.
 
+#### Tool card intros
+- **Consistency pass** - Reworked introductory/description blocks at the top of many `modules/*.php` files (BinHex, Brainfuck, Browser, Crontab, crypto and PEM tools, datetime, JWT, networking, ShellCheck, SSH, units, and more) for uniform structure and brevity.
+
 #### Infrastructure and Docs
 - **Docker runtime** - Updated Dockerfile and image config for PHP 8.5, removed unused OPcache install steps, and added `openssh-client`.
 - **Release process docs** - Expanded release workflow guidance and environment toggle documentation in `README` and workflow-related files.
 - **Repo hygiene** - Updated ignore rules for local release tooling artifacts.
+
+#### Networking
+- **Backend** - `handle_ip()`, `handle_ip_normalize_subnet_mask()`, and `handle_ip_kv_table()` in `includes/handlers_functional.php` for DNS lookup, IPv4 CIDR↔range conversion, and subnet calculations aligned with `modules/networking.php`.
 
 #### Crontab Explorer
 - **UI** - `modules/crontab.php` under **Misc**; navbar entries in `includes/navbar.php`.
@@ -48,11 +57,18 @@ All notable changes to this project are documented in this file.
 - **Dependency** - `composer require dragonmantank/cron-expression` for parsing and next/previous run calculation.
 - **`@reboot`** - Handled explicitly (not expressible as five cron fields); dedicated summary and “no periodic next runs” messaging instead of a parser error.
 - **Live analysis** - `initCrontabLiveAnalyzeUi()` in `js/rand.js` POSTs the same payload as **Analyze Schedule** into the main results panel with debouncing and out-of-order response guarding; removed the separate `crontab_preview` action.
+- **Human summary** - `crontab_human_summary_block()` presents schedule summaries in a dedicated styled block for clearer hierarchy.
+- **Form UX** - “More options” `<details>` hides secondary fields; shared native `<details>` styling in `style.css`; timezone is honored in random-data payloads and live analysis.
+- **Time summary** - `cron_time_summary()` treats `*/1` step fields like `*` for more natural wording; follow-up layout tweaks to the main results container in `modules/crontab.php`.
 
 #### ShellCheck
 - **UI** - `modules/shellcheck.php` under **Misc** (script textarea, optional filename, dialect, minimum severity).
 - **Backend** - `handle_shellcheck()` runs `shellcheck --format=json1` via `proc_open` (`cli_run_command()` / `cli_find_binary()` in `includes/tooling_helpers.php`); structured HTML cards per finding.
+- **Input** - `handle_shellcheck()` strips `\r` from script input before linting to reduce CRLF-driven SC1017 noise.
 - **Random samples** - Expanded `shellcheckScenarios` in `js/rand.js` with `randomPickAvoidRepeat()`; shuffle clears the per-form bundle and syncs script, filename, and dialect from the chosen scenario.
+
+#### Random data
+- **`js/rand.js`** - `randomDataGetCompatibleFormBundle()` and `generateRandomData()` updates for context-specific bundles (JWT, keypair sign/verify, SSH verification, CIDR/networking, etc.), improved handling of `<select>` elements, and crontab timezone included when shuffling cron scenarios.
 
 </details>
 
