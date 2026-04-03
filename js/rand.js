@@ -1627,6 +1627,13 @@ const CRONTAB_RANDOM_SCENARIOS = [
     { expression: "0 0 15W * *", timezone: "America/Vancouver" }
 ];
 
+const SYNTAX_VALIDATE_KIND_OPTIONS = [
+    { kind: "json" },
+    { kind: "yaml" },
+    { kind: "php" },
+    { kind: "python" }
+];
+
 const SYNTAX_VALIDATE_SCENARIOS = [
     {
         kind: "json",
@@ -2119,12 +2126,16 @@ function generateRandomData(type, placeholder = '', $input = null) {
             }
         }
         if (formAction === "syntax_validate" || formId === "syntaxvalidateform") {
+            if (inputName === "syntax_validate_kind") {
+                const picked = randomPickAvoidRepeatFromForm($form, SYNTAX_VALIDATE_KIND_OPTIONS, "syntaxValidateKindOnly");
+                return picked ? picked.kind : "json";
+            }
             if (inputName === "syntax_validate_input") {
-                const sample = randomPickAvoidRepeatFromForm($form, SYNTAX_VALIDATE_SCENARIOS, "syntaxValidateScenario");
-                if (sample) {
-                    $form.find("[name='syntax_validate_kind']").val(sample.kind).trigger("change");
-                    return sample.content;
-                }
+                const kind = String($form.find("[name='syntax_validate_kind']").val() || "json").toLowerCase();
+                const pool = SYNTAX_VALIDATE_SCENARIOS.filter((s) => s.kind === kind);
+                const usePool = pool.length > 0 ? pool : SYNTAX_VALIDATE_SCENARIOS;
+                const sample = randomPickAvoidRepeatFromForm($form, usePool, "syntaxValidateContent_" + kind);
+                return sample ? sample.content : "";
             }
         }
     }
@@ -2378,6 +2389,7 @@ function addRandomDataButtons($root = null) {
         'input[type="text"]:not([readonly]):not([disabled])',
         'input[type="number"]:not([readonly]):not([disabled])',
         'textarea:not([readonly]):not([disabled])',
+        '#syntaxValidateKind:not([disabled])',
         '#crontabTimezone:not([disabled])'
     ];
 
@@ -2428,11 +2440,19 @@ function addRandomDataButtons($root = null) {
             $input.wrap('<div class="input-with-random-btn" style="position: relative; display: flex; gap: 8px; align-items: flex-start;"></div>');
         }
 
+        const inputIdForTitle = $input.attr('id') || '';
+        let randomBtnTitle = 'Generate random data';
+        if (inputIdForTitle === 'syntaxValidateKind') {
+            randomBtnTitle = 'Random language';
+        } else if (inputIdForTitle === 'syntaxValidateInput') {
+            randomBtnTitle = 'Random sample for current language';
+        }
+
         // Create the random button
         const $btn = $('<button>', {
             type: 'button',
             class: 'btn btn-sm btn-outline-secondary random-data-btn',
-            title: 'Generate random data',
+            title: randomBtnTitle,
             html: '<i class="bi bi-shuffle"></i>',
             css: {
                 'flex-shrink': '0',
