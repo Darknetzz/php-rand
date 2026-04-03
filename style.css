@@ -72,7 +72,7 @@ footer {
   left: 50%;
   transform: translateX(-50%);
   width: 100%;
-  max-width: 1600px;
+  max-width: 1920px;
   min-height: calc(100vh - 100px);
   overflow-y: auto;
   box-sizing: border-box;
@@ -341,4 +341,29 @@ th.tablehead,
 }
 .crontab-more-options summary::-webkit-details-marker {
   display: none;
+}
+
+/* Crontab Explorer: analysis uses a nested row; keep tables readable in split columns */
+@media (min-width: 1200px) {
+  .crontab-analysis-cols .table-responsive {
+    max-height: min(70vh, 520px);
+    overflow-y: auto;
+  }
+}
+
+/* Diff tool: unified diff line colors */
+.diff-colored-output .diff-line-del {
+  color: #f87171;
+}
+.diff-colored-output .diff-line-add {
+  color: #4ade80;
+}
+.diff-colored-output .diff-line-meta {
+  color: #94a3b8;
+}
+.diff-colored-output .diff-line-hunk {
+  color: #7dd3fc;
+}
+.diff-colored-output .diff-line-context {
+  color: inherit;
 }

@@ -1996,7 +1996,7 @@ function randomDataGetCompatibleFormBundle($form) {
  * - Calculator: Math expressions (e.g., "25+8*3")
  * - Networking: IP addresses, CIDR notations, domain names
  * - Hashing/Encoding: Text, JSON, code snippets
- * - String tools: Lorem ipsum text, emails
+ * - String tools: Short lorem ipsum (2–3 sentences for generic textareas), emails
  * And many more context-specific generators
  *
  * @param {string} type - Input type ('text', 'textarea', 'number', etc.)
@@ -2016,14 +2016,14 @@ function generateRandomData(type, placeholder = '', $input = null) {
 
     const randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
 
-    const randomText = (sentences = 3) => {
+    const randomText = (sentences = 3, wordMin = 8, wordMax = 15) => {
         const words = ['lorem', 'ipsum', 'dolor', 'sit', 'amet', 'consectetur', 'adipiscing', 'elit', 
                       'sed', 'do', 'eiusmod', 'tempor', 'incididunt', 'ut', 'labore', 'et', 'dolore',
                       'magna', 'aliqua', 'enim', 'ad', 'minim', 'veniam', 'quis', 'nostrud', 'exercitation'];
         let result = [];
         for (let i = 0; i < sentences; i++) {
             let sentence = [];
-            const wordCount = randomInt(8, 15);
+            const wordCount = randomInt(wordMin, wordMax);
             for (let j = 0; j < wordCount; j++) {
                 sentence.push(words[randomInt(0, words.length - 1)]);
             }
@@ -2402,7 +2402,7 @@ function generateRandomData(type, placeholder = '', $input = null) {
         if (placeholderLower.includes('json')) {
             return randomJSON();
         }
-        return randomText(5) + '\n\n' + randomText(4);
+        return randomText(randomInt(2, 3), 5, 10);
     }
 
     // Default for text inputs

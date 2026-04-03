@@ -1143,6 +1143,36 @@ function diff_unified_fallback(string $old, string $new): string {
     return implode("\n", $lines);
 }
 
+/**
+ * Escape unified diff text and wrap each line for red/green (and muted headers) in HTML.
+ */
+function diff_output_to_colored_html(string $out): string {
+    $out = str_replace(["\r\n", "\r"], "\n", $out);
+    if ($out === 'No differences.' || $out === '') {
+        return htmlspecialchars($out, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    }
+    $lines = explode("\n", $out);
+    $chunks = [];
+    foreach ($lines as $line) {
+        $class = 'diff-line-context';
+        if (str_starts_with($line, '---')) {
+            $class = 'diff-line-meta';
+        } elseif (str_starts_with($line, '+++')) {
+            $class = 'diff-line-meta';
+        } elseif (str_starts_with($line, '@@')) {
+            $class = 'diff-line-hunk';
+        } elseif (str_starts_with($line, '-')) {
+            $class = 'diff-line-del';
+        } elseif (str_starts_with($line, '+')) {
+            $class = 'diff-line-add';
+        } elseif (str_starts_with($line, '\\')) {
+            $class = 'diff-line-meta';
+        }
+        $chunks[] = '<span class="' . $class . '">' . htmlspecialchars($line, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</span>';
+    }
+    return implode("\n", $chunks);
+}
+
 function handle_diff(array $req): string {
     $old = (string) req_get($req, 'diff1', '');
     $new = (string) req_get($req, 'diff2', '');
@@ -1168,8 +1198,8 @@ function handle_diff(array $req): string {
     if ($out === '') {
         $out = diff_unified_fallback($old, $new);
     }
-    return formatOutput('<pre class="mb-0 text-start" style="white-space:pre-wrap;word-break:break-word;">'
-        . htmlspecialchars($out, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</pre>');
+    return formatOutput('<pre class="diff-colored-output mb-0 text-start" style="white-space:pre-wrap;word-break:break-word;">'
+        . diff_output_to_colored_html($out) . '</pre>');
 }
 
 function serialization_strip_comment_lines(string $input): string {
@@ -1920,7 +1950,9 @@ function handle_crontab(array $req): string {
         $timezone = (string) $evaluation['timezone'];
 
         $output = '';
-        $output .= "<div class='card border-info mb-3'><h5 class='card-header'>Schedule Summary</h5><div class='card-body'>";
+        $output .= "<div class='row g-3 align-items-start crontab-analysis-cols'>";
+        $output .= "<div class='col-12 col-xl-6'>";
+        $output .= "<div class='card border-info mb-3 mb-xl-0'><h5 class='card-header'>Schedule Summary</h5><div class='card-body'>";
         $output .= crontab_human_summary_block($summary);
         $output .= "<div class='d-flex flex-wrap gap-2 mb-3'>";
         $output .= "<span class='badge bg-info text-white'>" . icon('arrow-repeat') . " One-shot at cron startup</span>";
@@ -1930,18 +1962,22 @@ function handle_crontab(array $req): string {
         $output .= "<div class='mb-3'><strong>Reference time:</strong> <code>" . htmlspecialchars($referenceTime->format('Y-m-d H:i:s T'), ENT_QUOTES, 'UTF-8') . "</code></div>";
         $output .= copyableOutput('@reboot', 'Expression');
         $output .= "</div></div>";
+        $output .= "</div>";
 
+        $output .= "<div class='col-12 col-xl-6'>";
         $output .= "<div class='card border-secondary mb-3'><h5 class='card-header'>Field Breakdown</h5><div class='card-body p-0'>";
-        $output .= "<div class='table-responsive'><table class='table table-dark table-striped mb-0'><tbody>";
+        $output .= "<div class='table-responsive'><table class='table table-sm table-dark table-striped mb-0'><tbody>";
         $output .= "<tr><td colspan='3' class='text-muted'>"
             . htmlspecialchars('@reboot is not a five-field cron pattern; there are no minute/hour/day/month/day-of-week fields to expand.', ENT_QUOTES, 'UTF-8')
             . "</td></tr>";
         $output .= "</tbody></table></div></div>";
 
-        $output .= "<div class='card border-success mb-3'><h5 class='card-header'>Upcoming Run Times</h5><div class='card-body p-0'>";
-        $output .= "<div class='table-responsive'><table class='table table-dark table-striped mb-0'><tbody>";
+        $output .= "<div class='card border-success mb-0'><h5 class='card-header'>Upcoming Run Times</h5><div class='card-body p-0'>";
+        $output .= "<div class='table-responsive'><table class='table table-sm table-dark table-striped mb-0'><tbody>";
         $output .= "<tr><td colspan='3' class='text-muted'>No repeating schedule — periodic next run times are not applicable.</td></tr>";
         $output .= "</tbody></table></div></div>";
+        $output .= "</div>";
+        $output .= "</div>";
 
         return $output;
     }
@@ -2002,7 +2038,9 @@ function handle_crontab(array $req): string {
     }
 
     $output = '';
-    $output .= "<div class='card border-info mb-3'><h5 class='card-header'>Schedule Summary</h5><div class='card-body'>";
+    $output .= "<div class='row g-3 align-items-start crontab-analysis-cols'>";
+    $output .= "<div class='col-12 col-xl-6'>";
+    $output .= "<div class='card border-info mb-3 mb-xl-0'><h5 class='card-header'>Schedule Summary</h5><div class='card-body'>";
     $output .= crontab_human_summary_block($summary);
     $output .= "<div class='d-flex flex-wrap gap-2 mb-3'>{$dueBadge}";
     $output .= "<span class='badge bg-primary text-white'>" . icon('globe2') . ' ' . htmlspecialchars($timezone, ENT_QUOTES, 'UTF-8') . "</span>";
@@ -2013,18 +2051,22 @@ function handle_crontab(array $req): string {
     $output .= "<div class='mb-3'><strong>Previous matching run:</strong> <code>" . htmlspecialchars($previousRun->format('Y-m-d H:i:s T'), ENT_QUOTES, 'UTF-8') . "</code></div>";
     $output .= copyableOutput($normalizedExpression, 'Normalized expression');
     $output .= "</div></div>";
+    $output .= "</div>";
 
+    $output .= "<div class='col-12 col-xl-6'>";
     $output .= "<div class='card border-secondary mb-3'><h5 class='card-header'>Field Breakdown</h5><div class='card-body p-0'>";
-    $output .= "<div class='table-responsive'><table class='table table-dark table-striped mb-0'><thead><tr><th>Field</th><th>Value</th><th>Meaning</th></tr></thead><tbody>{$fieldRows}</tbody></table></div>";
+    $output .= "<div class='table-responsive'><table class='table table-sm table-dark table-striped mb-0'><thead><tr><th>Field</th><th>Value</th><th>Meaning</th></tr></thead><tbody>{$fieldRows}</tbody></table></div>";
     $output .= "</div></div>";
 
-    $output .= "<div class='card border-success mb-3'><h5 class='card-header'>Upcoming Run Times</h5><div class='card-body p-0'>";
-    $output .= "<div class='table-responsive'><table class='table table-dark table-striped mb-0'><thead><tr><th>#</th><th>Date/Time</th><th>Day</th></tr></thead><tbody>{$nextRunRows}</tbody></table></div>";
+    $output .= "<div class='card border-success mb-3 mb-xl-0'><h5 class='card-header'>Upcoming Run Times</h5><div class='card-body p-0'>";
+    $output .= "<div class='table-responsive'><table class='table table-sm table-dark table-striped mb-0'><thead><tr><th>#</th><th>Date/Time</th><th>Day</th></tr></thead><tbody>{$nextRunRows}</tbody></table></div>";
     $output .= "</div></div>";
 
     if ($orSemanticsNotice !== '') {
         $output .= $orSemanticsNotice;
     }
+    $output .= "</div>";
+    $output .= "</div>";
 
     return $output;
 }

@@ -34,7 +34,7 @@ $moreOptionsOpen = ($effectiveTimezone !== $serverTimezone)
                 data-server-timezone="<?= htmlspecialchars($serverTimezone, ENT_QUOTES, 'UTF-8') ?>"
             >
                 <div class="row g-4 mb-4 align-items-xl-start">
-                    <div class="col-12 col-xl-5">
+                    <div class="col-12 col-xl-4">
                         <label for="crontabExpression" class="form-label mb-2"><strong>Cron expression</strong></label>
                         <input
                             type="text"
@@ -115,7 +115,7 @@ $moreOptionsOpen = ($effectiveTimezone !== $serverTimezone)
                         </div>
                     </div>
 
-                    <div class="col-12 col-xl-7">
+                    <div class="col-12 col-xl-8">
                         <label class="form-label mb-2"><strong>Schedule analysis</strong></label>
                         <div class="responseDiv pt-2">
                             <div class="text-muted text-center py-5">
