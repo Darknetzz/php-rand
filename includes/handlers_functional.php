@@ -1458,6 +1458,96 @@ function logo_pick_font(string $fontFile): ?string {
     return $fonts[0];
 }
 
+/**
+ * Whether (x, y) lies inside the ellipse drawn by imagefilledellipse(..., w/2, h/2, w, h, ...).
+ */
+function logo_point_inside_ellipse(int $x, int $y, int $w, int $h): bool {
+    if ($w <= 0 || $h <= 0) {
+        return false;
+    }
+    $cx = $w / 2.0;
+    $cy = $h / 2.0;
+    $rx = max($w / 2.0, 1e-9);
+    $ry = max($h / 2.0, 1e-9);
+    $dx = ($x - $cx) / $rx;
+    $dy = ($y - $cy) / $ry;
+    return ($dx * $dx + $dy * $dy) <= 1.0;
+}
+
+/**
+ * Whether (x, y) is inside a rounded rectangle matching logo generator GD drawing (radius r).
+ */
+function logo_point_inside_rounded_rect(int $x, int $y, int $w, int $h, int $r): bool {
+    if ($x < 0 || $y < 0 || $x >= $w || $y >= $h) {
+        return false;
+    }
+    if ($r <= 0) {
+        return true;
+    }
+    if ($x >= $r && $x <= $w - $r) {
+        return true;
+    }
+    if ($y >= $r && $y <= $h - $r) {
+        return true;
+    }
+    if ($x < $r && $y < $r) {
+        $dx = $x - $r;
+        $dy = $y - $r;
+        return ($dx * $dx + $dy * $dy) <= $r * $r;
+    }
+    if ($x >= $w - $r && $y < $r) {
+        $dx = $x - ($w - $r);
+        $dy = $y - $r;
+        return ($dx * $dx + $dy * $dy) <= $r * $r;
+    }
+    if ($x < $r && $y >= $h - $r) {
+        $dx = $x - $r;
+        $dy = $y - ($h - $r);
+        return ($dx * $dx + $dy * $dy) <= $r * $r;
+    }
+    if ($x >= $w - $r && $y >= $h - $r) {
+        $dx = $x - ($w - $r);
+        $dy = $y - ($h - $r);
+        return ($dx * $dx + $dy * $dy) <= $r * $r;
+    }
+    return false;
+}
+
+/**
+ * Copy $src to a new image, making pixels outside the shape fully transparent.
+ * Destroys $src and returns the new handle.
+ *
+ * @param resource|\GdImage $src
+ * @return resource|\GdImage
+ */
+function logo_apply_shape_alpha_mask($src, string $shape, int $width, int $height) {
+    $radius = 0;
+    if ($shape === 'rounded') {
+        $radius = (int) max(12, min((int) floor(min($width, $height) * 0.15), 80));
+    }
+
+    $out = imagecreatetruecolor($width, $height);
+    imagealphablending($out, false);
+    imagesavealpha($out, true);
+    $transparent = imagecolorallocatealpha($out, 0, 0, 0, 127);
+    imagefilledrectangle($out, 0, 0, $width - 1, $height - 1, $transparent);
+
+    for ($y = 0; $y < $height; $y++) {
+        for ($x = 0; $x < $width; $x++) {
+            $inside = $shape === 'circle'
+                ? logo_point_inside_ellipse($x, $y, $width, $height)
+                : logo_point_inside_rounded_rect($x, $y, $width, $height, $radius);
+            if ($inside) {
+                imagesetpixel($out, $x, $y, imagecolorat($src, $x, $y));
+            }
+        }
+    }
+
+    imagealphablending($out, true);
+    imagedestroy($src);
+    return $out;
+}
+
 function logo_build_png_data_uri($image): string {
     ob_start();
     imagepng($image);
@@ -1532,30 +1622,9 @@ function handle_logo_generate(array $req): string {
 
     logo_draw_background($image, $width, $height, $style, $bgRgb, $accentRgb);
 
-    if ($shape === 'circle') {
-        $mask = imagecreatetruecolor($width, $height);
-        $transparent = imagecolorallocatealpha($mask, 0, 0, 0, 127);
-        imagefill($mask, 0, 0, $transparent);
-        imagealphablending($mask, true);
-        $white = imagecolorallocate($mask, 255, 255, 255);
-        imagefilledellipse($mask, (int) ($width / 2), (int) ($height / 2), $width, $height, $white);
-        imagecolortransparent($mask, $transparent);
-        imagecopymerge($image, $mask, 0, 0, 0, 0, $width, $height, 100);
-    } elseif ($shape === 'rounded') {
-        $radius = (int) max(12, min((int) floor(min($width, $height) * 0.15), 80));
-        $overlay = imagecreatetruecolor($width, $height);
-        imagesavealpha($overlay, true);
-        $trans = imagecolorallocatealpha($overlay, 0, 0, 0, 127);
-        imagefill($overlay, 0, 0, $trans);
-        $fill = imagecolorallocate($overlay, 255, 255, 255);
-        imagefilledrectangle($overlay, $radius, 0, $width - $radius, $height, $fill);
-        imagefilledrectangle($overlay, 0, $radius, $width, $height - $radius, $fill);
-        imagefilledellipse($overlay, $radius, $radius, $radius * 2, $radius * 2, $fill);
-        imagefilledellipse($overlay, $width - $radius, $radius, $radius * 2, $radius * 2, $fill);
-        imagefilledellipse($overlay, $radius, $height - $radius, $radius * 2, $radius * 2, $fill);
-        imagefilledellipse($overlay, $width - $radius, $height - $radius, $radius * 2, $radius * 2, $fill);
-        imagecolortransparent($overlay, $trans);
-        imagecopymerge($image, $overlay, 0, 0, 0, 0, $width, $height, 100);
+    // imagecopymerge + white mask incorrectly painted the interior white; copy pixels only inside the shape.
+    if ($shape === 'circle' || $shape === 'rounded') {
+        $image = logo_apply_shape_alpha_mask($image, $shape, $width, $height);
     }
 
     if ($border > 0) {
