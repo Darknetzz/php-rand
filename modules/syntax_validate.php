@@ -1,8 +1,9 @@
 <?php
+    require_once __DIR__ . '/../includes/syntax_validate.php';
     $validatorsEmbed = $validatorsEmbed ?? false;
     $svKind = isset($_POST['syntax_validate_kind']) ? htmlspecialchars((string) $_POST['syntax_validate_kind'], ENT_QUOTES, 'UTF-8') : 'json';
     $svInput = isset($_POST['syntax_validate_input']) ? htmlspecialchars((string) $_POST['syntax_validate_input'], ENT_QUOTES, 'UTF-8') : '';
-    if ($svKind !== 'json' && $svKind !== 'yaml' && $svKind !== 'php' && $svKind !== 'python') {
+    if (!in_array($svKind, syntax_validate_allowed_kinds(), true)) {
         $svKind = 'json';
     }
     if ($validatorsEmbed) {
@@ -13,11 +14,11 @@
 ?>
     <div class="alert alert-info mb-4">
         <strong>Check syntax without executing code.</strong>
-        JSON and YAML are parsed in PHP; PHP uses <code>php -l</code>; Python uses <code>ast.parse</code> via the system interpreter when available.
+        JSON, YAML, XML, INI, and JSON Lines are parsed in PHP; cron uses the same rules as the Crontab tool; PHP uses <code>php -l</code>; Python uses <code>ast.parse</code>; Ruby uses <code>ruby -c</code>; JavaScript uses <code>node --check</code>; shell uses <code>bash -n</code> or <code>sh -n</code> when those CLIs are available (not full static analysis; see ShellCheck for shell scripts).
     </div>
     <div class="card card-primary">
         <?php if ($validatorsEmbed): ?>
-        <h2 class="card-header h3 mb-0"><?= icon('braces') ?> JSON / YAML / PHP / Python</h2>
+        <h2 class="card-header h3 mb-0"><?= icon('braces') ?> Formats &amp; languages</h2>
         <?php else: ?>
         <h1 class="card-header"><?= icon('braces') ?> Syntax validator</h1>
         <?php endif; ?>
@@ -29,8 +30,15 @@
                         <select name="syntax_validate_kind" id="syntaxValidateKind" class="form-select form-select-lg mb-3" style="border: 2px solid #495057;">
                             <option value="json" <?= $svKind === 'json' ? 'selected' : '' ?>>JSON</option>
                             <option value="yaml" <?= $svKind === 'yaml' ? 'selected' : '' ?>>YAML</option>
+                            <option value="xml" <?= $svKind === 'xml' ? 'selected' : '' ?>>XML</option>
+                            <option value="ini" <?= $svKind === 'ini' ? 'selected' : '' ?>>INI</option>
+                            <option value="jsonl" <?= $svKind === 'jsonl' ? 'selected' : '' ?>>JSON Lines</option>
+                            <option value="cron" <?= $svKind === 'cron' ? 'selected' : '' ?>>Cron</option>
                             <option value="php" <?= $svKind === 'php' ? 'selected' : '' ?>>PHP</option>
                             <option value="python" <?= $svKind === 'python' ? 'selected' : '' ?>>Python</option>
+                            <option value="ruby" <?= $svKind === 'ruby' ? 'selected' : '' ?>>Ruby</option>
+                            <option value="javascript" <?= $svKind === 'javascript' ? 'selected' : '' ?>>JavaScript</option>
+                            <option value="shell" <?= $svKind === 'shell' ? 'selected' : '' ?>>Shell</option>
                         </select>
                         <label for="syntaxValidateInput" class="form-label mb-3"><strong style="font-size: 1.1rem;">Input</strong></label>
                         <textarea
@@ -41,7 +49,10 @@
                             style="min-height: 420px; resize: vertical; font-family: monospace; font-size: 0.95rem; border: 2px solid #495057;"
                             required
                         ><?= $svInput ?></textarea>
-                        <div class="form-text mt-2">PHP snippets without <code>&lt;?php</code> are validated as if that opening tag were prepended.</div>
+                        <div class="form-text mt-2">
+                            PHP snippets without <code>&lt;?php</code> are validated as if that opening tag were prepended.
+                            Cron: first non-empty, non-<code>#</code> line is validated (same engine as the Crontab tool). INI uses PHP’s <code>parse_ini_string</code> (classic INI; not all <code>.env</code> dialects).
+                        </div>
                     </div>
                     <div class="col-12 col-xl-6 d-flex flex-column">
                         <label class="form-label mb-3"><strong style="font-size: 1.1rem;">Result</strong></label>

@@ -375,13 +375,12 @@ function cron_build_summary(array $parts): string {
     return rtrim(implode(' ', array_filter($segments)), '.') . '.';
 }
 
-function cron_evaluate_schedule(
-    string $expression,
-    string $timezone,
-    string $referenceRaw = '',
-    bool $allowCurrent = false,
-    int $runCount = 8
-): array {
+/**
+ * Validate trim, length, @reboot, and CronExpression construction (shared by crontab tool and syntax validator).
+ *
+ * @return array{ok: true, reboot: true, trimmed: string}|array{ok: true, reboot: false, trimmed: string, cron: \Cron\CronExpression}|array{ok: false, error: string}
+ */
+function cron_parse_expression_fields(string $expression): array {
     $expression = trim($expression);
     if ($expression === '') {
         return ['ok' => false, 'error' => 'Cron expression is required.'];
@@ -389,6 +388,33 @@ function cron_evaluate_schedule(
     if (strlen($expression) > 120) {
         return ['ok' => false, 'error' => 'Cron expression is too long. Maximum 120 characters allowed.'];
     }
+
+    // Vixie cron extension: not a repeating 5-field schedule; dragonmantank/cron-expression has no alias.
+    if (strcasecmp($expression, '@reboot') === 0) {
+        return ['ok' => true, 'reboot' => true, 'trimmed' => '@reboot'];
+    }
+
+    try {
+        $cron = new \Cron\CronExpression($expression);
+
+        return ['ok' => true, 'reboot' => false, 'trimmed' => $expression, 'cron' => $cron];
+    } catch (Throwable $e) {
+        return ['ok' => false, 'error' => 'Invalid cron expression: ' . $e->getMessage()];
+    }
+}
+
+function cron_evaluate_schedule(
+    string $expression,
+    string $timezone,
+    string $referenceRaw = '',
+    bool $allowCurrent = false,
+    int $runCount = 8
+): array {
+    $parsed = cron_parse_expression_fields($expression);
+    if (!$parsed['ok']) {
+        return ['ok' => false, 'error' => $parsed['error']];
+    }
+    $expression = $parsed['trimmed'];
 
     if (!in_array($timezone, DateTimeZone::listIdentifiers(), true)) {
         return ['ok' => false, 'error' => 'Invalid timezone selected.'];
@@ -404,8 +430,7 @@ function cron_evaluate_schedule(
         return ['ok' => false, 'error' => 'Reference time is invalid. Use a valid local date/time.'];
     }
 
-    // Vixie cron extension: not a repeating 5-field schedule; dragonmantank/cron-expression has no alias.
-    if (strcasecmp($expression, '@reboot') === 0) {
+    if ($parsed['reboot']) {
         return [
             'ok' => true,
             'reboot' => true,
@@ -424,11 +449,7 @@ function cron_evaluate_schedule(
         ];
     }
 
-    try {
-        $cron = new \Cron\CronExpression($expression);
-    } catch (Throwable $e) {
-        return ['ok' => false, 'error' => 'Invalid cron expression: ' . $e->getMessage()];
-    }
+    $cron = $parsed['cron'];
 
     try {
         $parts = $cron->getParts();

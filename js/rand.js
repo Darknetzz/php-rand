@@ -1630,8 +1630,15 @@ const CRONTAB_RANDOM_SCENARIOS = [
 const SYNTAX_VALIDATE_KIND_OPTIONS = [
     { kind: "json" },
     { kind: "yaml" },
+    { kind: "xml" },
+    { kind: "ini" },
+    { kind: "jsonl" },
+    { kind: "cron" },
     { kind: "php" },
-    { kind: "python" }
+    { kind: "python" },
+    { kind: "ruby" },
+    { kind: "javascript" },
+    { kind: "shell" }
 ];
 
 const SYNTAX_VALIDATE_SCENARIOS = [
@@ -1644,12 +1651,40 @@ const SYNTAX_VALIDATE_SCENARIOS = [
         content: "app:\n  name: phprand\n  env: production\nlisten:\n  host: 127.0.0.1\n  port: 9000\n"
     },
     {
+        kind: "xml",
+        content: '<?xml version="1.0" encoding="UTF-8"?>\n<config>\n  <service name="demo" port="8080"/>\n</config>\n'
+    },
+    {
+        kind: "ini",
+        content: "; sample ini\n[app]\nname = phprand\nenv = production\n\n[listen]\nhost = 127.0.0.1\nport = 9000\n"
+    },
+    {
+        kind: "jsonl",
+        content: '{"id":1,"msg":"alpha"}\n{"id":2,"msg":"beta"}\n{"id":3,"msg":"gamma"}\n'
+    },
+    {
+        kind: "cron",
+        content: "# daily at 02:00 (five fields only; command goes in crontab UI elsewhere)\n0 2 * * *\n"
+    },
+    {
         kind: "php",
         content: "<?php\n\ndeclare(strict_types=1);\n\n$items = [1, 2, 3];\necho array_sum($items);\n"
     },
     {
         kind: "python",
         content: "def total(values: list[int]) -> int:\n    return sum(values)\n\nprint(total([10, 20, 12]))\n"
+    },
+    {
+        kind: "ruby",
+        content: "# frozen_string_literal: true\n\ndef total(values)\n  values.sum\nend\n\nputs total([10, 20, 12])\n"
+    },
+    {
+        kind: "javascript",
+        content: "function total(values) {\n  return values.reduce((a, b) => a + b, 0);\n}\n\nconsole.log(total([10, 20, 12]));\n"
+    },
+    {
+        kind: "shell",
+        content: "#!/usr/bin/env bash\nset -euo pipefail\nfor f in *.log; do\n  echo \"processing $f\"\ndone\n"
     }
 ];
 

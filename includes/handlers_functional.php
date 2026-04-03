@@ -2235,8 +2235,7 @@ function handle_syntax_validate(array $req): string {
     require_once __DIR__ . '/syntax_validate.php';
 
     $kind = strtolower(trim((string) req_get($req, 'syntax_validate_kind', 'json')));
-    $allowed = ['json', 'yaml', 'php', 'python'];
-    if (!in_array($kind, $allowed, true)) {
+    if (!in_array($kind, syntax_validate_allowed_kinds(), true)) {
         return formatOutput('Invalid language selected.', type: 'danger');
     }
 
