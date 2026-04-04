@@ -335,11 +335,13 @@ th.tablehead,
   background: #a96bb8;
 }
 
-/* Crontab: native <details> disclosure without double marker */
-.crontab-more-options summary {
+/* Native <details> disclosure without double marker (crontab, shellcheck, …) */
+.crontab-more-options summary,
+.shellcheck-lint-options summary {
   list-style: none;
 }
-.crontab-more-options summary::-webkit-details-marker {
+.crontab-more-options summary::-webkit-details-marker,
+.shellcheck-lint-options summary::-webkit-details-marker {
   display: none;
 }
 

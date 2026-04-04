@@ -1,3 +1,19 @@
+<?php
+$postedShellcheckFilename = isset($_POST['shellcheck_filename']) ? trim((string) $_POST['shellcheck_filename']) : '';
+$postedShellcheckShell = strtolower(trim((string) ($_POST['shellcheck_shell'] ?? 'auto')));
+$postedShellcheckSeverity = strtolower(trim((string) ($_POST['shellcheck_severity'] ?? 'info')));
+$shellcheckShells = ['auto', 'bash', 'sh', 'dash', 'ksh'];
+if (!in_array($postedShellcheckShell, $shellcheckShells, true)) {
+    $postedShellcheckShell = 'auto';
+}
+$shellcheckSeverities = ['style', 'info', 'warning', 'error'];
+if (!in_array($postedShellcheckSeverity, $shellcheckSeverities, true)) {
+    $postedShellcheckSeverity = 'info';
+}
+$shellcheckLintOptionsOpen = $postedShellcheckFilename !== ''
+    || $postedShellcheckShell !== 'auto'
+    || $postedShellcheckSeverity !== 'info';
+?>
 <div id="shellcheck" class="content">
     <div class="alert alert-info mb-4">
         <strong>Lint shell scripts before you run them.</strong>
@@ -32,11 +48,16 @@
                     </div>
                 </div>
 
-                <div class="card border-warning mb-4" style="background: rgba(255, 193, 7, 0.05);">
-                    <div class="card-header">
-                        <strong><?= icon("sliders") ?> Lint Options</strong>
-                    </div>
-                    <div class="card-body">
+                <details
+                    class="shellcheck-lint-options border border-warning rounded-3 mb-4"
+                    style="background: rgba(255, 193, 7, 0.05);"
+                    id="shellcheckLintOptions"
+                    <?= $shellcheckLintOptionsOpen ? ' open' : '' ?>
+                >
+                    <summary class="px-3 py-2 fw-semibold user-select-none" style="cursor: pointer;">
+                        <?= icon("sliders") ?> Lint options
+                    </summary>
+                    <div class="border-top border-warning px-3 pt-3 pb-2">
                         <div class="row g-3">
                             <div class="col-12 col-md-4">
                                 <label for="shellcheckFilename" class="form-label"><strong>Filename (Optional)</strong></label>
@@ -54,25 +75,25 @@
                             <div class="col-12 col-md-4">
                                 <label for="shellcheckShell" class="form-label"><strong>Shell Dialect</strong></label>
                                 <select name="shellcheck_shell" id="shellcheckShell" class="form-select" style="border: 2px solid #495057;">
-                                    <option value="auto">Auto detect</option>
-                                    <option value="bash">bash</option>
-                                    <option value="sh">sh</option>
-                                    <option value="dash">dash</option>
-                                    <option value="ksh">ksh</option>
+                                    <option value="auto"<?= $postedShellcheckShell === 'auto' ? ' selected' : '' ?>>Auto detect</option>
+                                    <option value="bash"<?= $postedShellcheckShell === 'bash' ? ' selected' : '' ?>>bash</option>
+                                    <option value="sh"<?= $postedShellcheckShell === 'sh' ? ' selected' : '' ?>>sh</option>
+                                    <option value="dash"<?= $postedShellcheckShell === 'dash' ? ' selected' : '' ?>>dash</option>
+                                    <option value="ksh"<?= $postedShellcheckShell === 'ksh' ? ' selected' : '' ?>>ksh</option>
                                 </select>
                             </div>
                             <div class="col-12 col-md-4">
                                 <label for="shellcheckSeverity" class="form-label"><strong>Minimum Severity</strong></label>
                                 <select name="shellcheck_severity" id="shellcheckSeverity" class="form-select" style="border: 2px solid #495057;">
-                                    <option value="style">style</option>
-                                    <option value="info" selected>info</option>
-                                    <option value="warning">warning</option>
-                                    <option value="error">error</option>
+                                    <option value="style"<?= $postedShellcheckSeverity === 'style' ? ' selected' : '' ?>>style</option>
+                                    <option value="info"<?= $postedShellcheckSeverity === 'info' ? ' selected' : '' ?>>info</option>
+                                    <option value="warning"<?= $postedShellcheckSeverity === 'warning' ? ' selected' : '' ?>>warning</option>
+                                    <option value="error"<?= $postedShellcheckSeverity === 'error' ? ' selected' : '' ?>>error</option>
                                 </select>
                             </div>
                         </div>
                     </div>
-                </div>
+                </details>
 
                 <div class="d-flex gap-3 flex-wrap">
                     <?= submitBtn("shellcheck", "action", "Lint Script", "terminal", "lg") ?>
