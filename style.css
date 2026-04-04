@@ -92,12 +92,39 @@ footer {
 .syntax-validate-code-input,
 .crontab-expression-code-input {
   background-color: #1e1e1e !important;
-  color: #d4d4d4;
+  /* Host `color` would cascade into Tabler’s pre/code + hljs stack and can make tokens unreadable */
 }
 [data-bs-theme="light"] .syntax-validate-code-input,
 [data-bs-theme="light"] .crontab-expression-code-input {
   background-color: #f3f5f7 !important;
-  color: #212529;
+}
+
+/*
+ * Tabler: pre { background: var(--tblr-bg-surface-dark); color: var(--tblr-light); } and pre code { color: inherit }.
+ * Under code-input the hljs layer must stay legible behind the transparent textarea; strip pre chrome + set a clear base color.
+ */
+.syntax-validate-code-input pre,
+.crontab-expression-code-input pre {
+  background: transparent !important;
+  color: #ddd !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+.syntax-validate-code-input pre code.hljs,
+.crontab-expression-code-input pre code.hljs {
+  color: #ddd !important;
+  background: #303030 !important;
+}
+[data-bs-theme="light"] .syntax-validate-code-input pre,
+[data-bs-theme="light"] .crontab-expression-code-input pre {
+  color: #24292f !important;
+}
+[data-bs-theme="light"] .syntax-validate-code-input pre code.hljs,
+[data-bs-theme="light"] .crontab-expression-code-input pre code.hljs {
+  color: #24292f !important;
+  background: #e8ecf0 !important;
 }
 
 .output,
