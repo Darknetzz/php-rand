@@ -1,5 +1,9 @@
 <div id="gen_image" class="content">
     <?php
+
+    $defaultText = "Text";
+    $defaultFontSize = 48;
+
     $fonts = logo_discover_font_files();
     $fontOptions = "";
     if (!empty($fonts)) {
@@ -17,6 +21,31 @@
         #gen_image .logo-gen-table tr.logo-gen-section-header > td {
             background-color: rgba(13, 110, 253, 0.12);
             background-color: rgba(var(--tblr-primary-rgb), 0.14);
+        }
+        /* Two logical columns: narrow label | control | narrow label | control */
+        #gen_image .logo-gen-table tbody th[scope="row"] {
+            width: 11rem;
+            max-width: 11rem;
+            vertical-align: middle;
+        }
+        #gen_image .logo-gen-table tbody tr.logo-gen-row-tall th[scope="row"] {
+            vertical-align: top;
+        }
+        #gen_image .logo-gen-table .logo-gen-subhead {
+            white-space: nowrap;
+            width: 1%;
+            vertical-align: middle;
+        }
+        #gen_image .logo-gen-table .logo-gen-size-pair {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            align-items: flex-end;
+        }
+        #gen_image .logo-gen-table .logo-gen-size-pair > div {
+            flex: 1 1 6rem;
+            min-width: 5.5rem;
+            max-width: 12rem;
         }
     </style>
     <div class="card card-primary">
@@ -49,14 +78,14 @@
                             <tr class="logo-gen-section-header">
                                 <td colspan="4" class="py-2 small text-uppercase fw-semibold text-body-secondary">Content &amp; size</td>
                             </tr>
-                            <tr>
-                                <th scope="row" class="text-nowrap" style="width: 11rem;">
+                            <tr class="logo-gen-row-tall">
+                                <th scope="row" class="text-nowrap">
                                     Text
                                     <span class="fw-normal text-muted d-block small">Shown on the logo</span>
                                 </th>
                                 <td colspan="3">
                                     <textarea class="form-control" name="logo_text" rows="3" maxlength="500"
-                                        autocomplete="off" placeholder="Your name or brand (multiple lines allowed)">Rand Studio</textarea>
+                                        autocomplete="off" placeholder="Your name or brand (multiple lines allowed)"><?= $defaultText ?></textarea>
                                     <small class="text-muted">Up to 500 characters. New lines only where you press Enter unless <strong>Autofit</strong> is on (then text also wraps and scales to fit). Best with fonts in <code>fonts/</code>.</small>
                                 </td>
                             </tr>
@@ -65,19 +94,22 @@
                                     Width × height
                                     <span class="fw-normal text-muted d-block small">128–1600 px</span>
                                 </th>
-                                <td>
-                                    <label class="form-label small text-muted mb-0" for="logo_width">W</label>
-                                    <input type="number" class="form-control" id="logo_width" name="logo_width" min="128" max="1600" value="512">
-                                </td>
-                                <td>
-                                    <label class="form-label small text-muted mb-0" for="logo_height">H</label>
-                                    <input type="number" class="form-control" id="logo_height" name="logo_height" min="128" max="1600" value="512">
-                                </td>
-                                <td class="d-none d-md-table-cell text-muted small align-middle">
-                                    Use similar values for squares, different for banners.
+                                <td colspan="3" class="align-middle">
+                                    <div class="logo-gen-size-pair">
+                                        <div>
+                                            <label class="form-label small text-muted mb-0" for="logo_width">W</label>
+                                            <input type="number" class="form-control" id="logo_width" name="logo_width" min="128" max="1600" value="512">
+                                        </div>
+                                        <div>
+                                            <label class="form-label small text-muted mb-0" for="logo_height">H</label>
+                                            <input type="number" class="form-control" id="logo_height" name="logo_height" min="128" max="1600" value="512">
+                                        </div>
+                                    </div>
+                                    <small class="text-muted d-md-none d-block mt-2">Use similar W/H for squares; stretch width for banners.</small>
+                                    <small class="text-muted d-none d-md-block mt-2 mb-0">Use similar values for squares, different for banners.</small>
                                 </td>
                             </tr>
-                            <tr>
+                            <tr class="logo-gen-row-tall">
                                 <th scope="row" class="text-nowrap align-top pt-3">
                                     Font &amp; size
                                     <span class="fw-normal text-muted d-block small">TTF/OTF in fonts/</span>
@@ -92,19 +124,19 @@
                                         </div>
                                         <div class="col-6 col-sm-4 col-lg-2">
                                             <label class="form-label small text-muted mb-1" for="logo_font_size">Size (px)</label>
-                                            <input type="number" class="form-control" id="logo_font_size" name="logo_font_size" min="12" max="400" value="96"
+                                            <input type="number" class="form-control" id="logo_font_size" name="logo_font_size" min="12" max="400" value="<?= $defaultFontSize ?>"
                                                 aria-describedby="logoFontSizeHint">
                                         </div>
                                         <div class="col-12 col-sm-8 col-lg-5">
                                             <label class="form-label small text-muted mb-1" for="logo_font_size_range" id="logoFontSizeRangeLabel">Scale</label>
-                                            <input type="range" class="form-range" id="logo_font_size_range" min="12" max="400" value="96"
+                                            <input type="range" class="form-range" id="logo_font_size_range" min="12" max="400" value="<?= $defaultFontSize ?>"
                                                 aria-labelledby="logoFontSizeRangeLabel" aria-describedby="logoFontSizeHint">
                                             <span id="logoFontSizeHint" class="small text-muted">12–400 px — use the slider or type a value (max size when Autofit is on)</span>
                                         </div>
                                     </div>
                                 </td>
                             </tr>
-                            <tr>
+                            <tr class="logo-gen-row-tall">
                                 <th scope="row" class="text-nowrap align-top pt-3">
                                     Autofit &amp; nudge
                                     <span class="fw-normal text-muted d-block small">Wrap + optional scale</span>
@@ -134,16 +166,20 @@
                             </tr>
                             <tr>
                                 <th scope="row" class="text-nowrap">Export format</th>
-                                <td colspan="3">
-                                    <div class="d-flex flex-wrap align-items-center gap-3">
-                                        <select class="form-select" id="logo_format" name="logo_format" aria-label="Output image format" style="max-width:14rem;">
-                                            <option value="png" selected>PNG (transparency)</option>
-                                            <option value="webp">WebP</option>
-                                            <option value="jpeg">JPEG (opaque)</option>
-                                        </select>
-                                        <input type="hidden" name="logo_jpeg_quality" value="90">
-                                        <span class="small text-muted">JPEG flattens onto the background color. WebP/PNG keep transparency where supported.</span>
-                                    </div>
+                                <td>
+                                    <select class="form-select" id="logo_format" name="logo_format" aria-label="Output image format" style="max-width: 18rem;">
+                                        <option value="png" selected>PNG (transparency)</option>
+                                        <option value="webp">WebP</option>
+                                        <option value="jpeg">JPEG (opaque)</option>
+                                    </select>
+                                    <input type="hidden" name="logo_jpeg_quality" value="90">
+                                    <small class="text-muted d-block mt-1 mb-0">JPEG flattens onto the background color. WebP/PNG keep transparency where supported.</small>
+                                </td>
+                                <td class="text-nowrap fw-medium logo-gen-subhead">Border</td>
+                                <td>
+                                    <input type="number" class="form-control" name="logo_border" min="0" max="24" value="0"
+                                        aria-describedby="logoBorderHint" style="max-width: 7rem;">
+                                    <small id="logoBorderHint" class="text-muted d-block mt-1 mb-0">0–24 px (uses border color below)</small>
                                 </td>
                             </tr>
                             <tr>
@@ -154,7 +190,7 @@
                                         <option value="solid">Solid</option>
                                     </select>
                                 </td>
-                                <td class="text-nowrap fw-medium">Mask shape</td>
+                                <td class="text-nowrap fw-medium logo-gen-subhead">Mask shape</td>
                                 <td>
                                     <select class="form-select" name="logo_shape" aria-label="Logo outer shape">
                                         <option value="rounded" selected>Rounded square</option>
@@ -163,28 +199,16 @@
                                     </select>
                                 </td>
                             </tr>
-                            <tr>
-                                <th scope="row" class="text-nowrap">Border</th>
-                                <td colspan="3">
-                                    <div class="d-flex flex-wrap align-items-center gap-3">
-                                        <div style="width: 7rem; max-width: 100%;">
-                                            <input type="number" class="form-control" name="logo_border" min="0" max="24" value="0"
-                                                aria-describedby="logoBorderHint">
-                                        </div>
-                                        <span id="logoBorderHint" class="small text-muted">0–24 px (uses border color below)</span>
-                                    </div>
-                                </td>
-                            </tr>
                             <tr class="logo-gen-section-header">
                                 <td colspan="4" class="py-2 small text-uppercase fw-semibold text-body-secondary">Colors</td>
                             </tr>
-                            <tr>
+                            <tr class="logo-gen-row-tall">
                                 <th scope="row" class="text-nowrap align-top pt-3">
                                     Palette
                                     <span class="fw-normal text-muted d-block small">Accent blends in gradients</span>
                                 </th>
                                 <td colspan="3">
-                                    <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-4 g-3">
+                                    <div class="row row-cols-2 row-cols-lg-4 g-3">
                                         <div class="col">
                                             <label class="form-label small mb-1" for="logo_bg_color">Background</label>
                                             <div class="d-flex gap-1 align-items-stretch">
