@@ -57,7 +57,7 @@
                                 <td colspan="3">
                                     <textarea class="form-control" name="logo_text" rows="3" maxlength="500"
                                         autocomplete="off" placeholder="Your name or brand (multiple lines allowed)">Rand Studio</textarea>
-                                    <small class="text-muted">Up to 500 characters. Multiline, word-wrap, and <strong>Autofit</strong> work best with fonts in <code>fonts/</code>.</small>
+                                    <small class="text-muted">Up to 500 characters. New lines only where you press Enter unless <strong>Autofit</strong> is on (then text also wraps and scales to fit). Best with fonts in <code>fonts/</code>.</small>
                                 </td>
                             </tr>
                             <tr>

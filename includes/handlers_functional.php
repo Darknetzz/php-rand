@@ -1766,6 +1766,29 @@ function logo_build_wrapped_lines(string $displayText, string $fontPath, float $
 }
 
 /**
+ * Split on line breaks only — no word-wrapping (used when Autofit is off).
+ *
+ * @return list<string>
+ */
+function logo_split_explicit_lines_only(string $displayText): array {
+    $parts = preg_split("/\r\n|\n|\r/", $displayText);
+    $all = [];
+    $first = true;
+    foreach ($parts as $part) {
+        if (!$first && $part === '' && $all !== []) {
+            $all[] = '';
+        }
+        $first = false;
+        if ($part === '') {
+            continue;
+        }
+        $all[] = $part;
+    }
+
+    return $all;
+}
+
+/**
  * @param list<string> $lines
  * @return array{w:int,h:int,lineH:int,gap:int}
  */
@@ -1959,8 +1982,10 @@ function handle_logo_generate(array $req): string {
         $fontSize = (float) $fontSizeReq;
         if ($autofit) {
             $fontSize = (float) logo_autofit_font_size($displayText, $fontPath, $fontSizeReq, $maxTextW, $maxTextH);
+            $lines = logo_build_wrapped_lines($displayText, $fontPath, $fontSize, $maxTextW);
+        } else {
+            $lines = logo_split_explicit_lines_only($displayText);
         }
-        $lines = logo_build_wrapped_lines($displayText, $fontPath, $fontSize, $maxTextW);
         if ($lines === []) {
             $lines = [' '];
         }
