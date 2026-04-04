@@ -1574,7 +1574,6 @@ function logo_apply_shape_alpha_mask($src, string $shape, int $width, int $heigh
     }
 
     imagealphablending($out, true);
-    imagedestroy($src);
     return $out;
 }
 
