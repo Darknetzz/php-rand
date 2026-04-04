@@ -2419,7 +2419,12 @@ function generateRandomData(type, placeholder = '', $input = null) {
         return randomUrl();
     }
 
-    if (placeholderLower.includes('ip') || placeholderLower.includes('address')) {
+    /* Avoid "multiple" → false positive on substring "ip" (e.g. logo generator textarea). */
+    const looksLikeIpPlaceholder = /\bipv6\b/.test(placeholderLower)
+        || /\bipv4\b/.test(placeholderLower)
+        || /\b(ip\s+address|ip-address|host\s*ip|enter\s+ip)\b/.test(placeholderLower)
+        || /(^|[^a-z0-9])ip([-:\s/]|$)/.test(placeholderLower);
+    if (looksLikeIpPlaceholder) {
         if (placeholderLower.includes('ipv6')) {
             return randomIPv6();
         }

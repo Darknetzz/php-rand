@@ -63,6 +63,20 @@
             min-width: 5.5rem;
             max-width: 12rem;
         }
+        /* Checkerboard + tint so rounded/circle transparency and light theme don’t read as “plain white”. */
+        #gen_image #liveLogoPreview {
+            background-color: rgba(0, 0, 0, 0.18);
+            background-image:
+                linear-gradient(45deg, rgba(255, 255, 255, 0.06) 25%, transparent 25%),
+                linear-gradient(-45deg, rgba(255, 255, 255, 0.06) 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, rgba(255, 255, 255, 0.06) 75%),
+                linear-gradient(-45deg, transparent 75%, rgba(255, 255, 255, 0.06) 75%);
+            background-size: 14px 14px;
+            background-position: 0 0, 0 7px, 7px -7px, -7px 0;
+        }
+        [data-bs-theme="light"] #gen_image #liveLogoPreview {
+            background-color: rgba(0, 0, 0, 0.06);
+        }
     </style>
     <div class="card card-primary">
         <h1 class="card-header"><?= icon("image", 1, 2) ?> Logo Generator</h1>
@@ -300,7 +314,7 @@
                 </div>
 
                 <label class="form-label mb-2"><strong>Live preview</strong></label>
-                <div class="responseDiv border rounded p-4 bg-body-secondary bg-opacity-10" id="liveLogoPreview" style="min-height: 240px;">
+                <div class="responseDiv border rounded p-4" id="liveLogoPreview" style="min-height: 240px;">
                     <div class="text-muted" style="opacity: 0.75;">Loading preview…</div>
                 </div>
             </form>
