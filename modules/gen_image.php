@@ -64,18 +64,18 @@
             max-width: 12rem;
         }
         /* Checkerboard + tint so rounded/circle transparency and light theme don’t read as “plain white”. */
-        #gen_image #liveLogoPreview {
-            background-color: rgba(0, 0, 0, 0.18);
+        #gen_image #liveLogoPreview.logo-live-preview-host {
+            background-color: rgba(32, 32, 40, 0.92) !important;
             background-image:
-                linear-gradient(45deg, rgba(255, 255, 255, 0.06) 25%, transparent 25%),
-                linear-gradient(-45deg, rgba(255, 255, 255, 0.06) 25%, transparent 25%),
-                linear-gradient(45deg, transparent 75%, rgba(255, 255, 255, 0.06) 75%),
-                linear-gradient(-45deg, transparent 75%, rgba(255, 255, 255, 0.06) 75%);
+                linear-gradient(45deg, rgba(255, 255, 255, 0.07) 25%, transparent 25%),
+                linear-gradient(-45deg, rgba(255, 255, 255, 0.07) 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, rgba(255, 255, 255, 0.07) 75%),
+                linear-gradient(-45deg, transparent 75%, rgba(255, 255, 255, 0.07) 75%);
             background-size: 14px 14px;
             background-position: 0 0, 0 7px, 7px -7px, -7px 0;
         }
-        [data-bs-theme="light"] #gen_image #liveLogoPreview {
-            background-color: rgba(0, 0, 0, 0.06);
+        [data-bs-theme="light"] #gen_image #liveLogoPreview.logo-live-preview-host {
+            background-color: rgba(0, 0, 0, 0.08) !important;
         }
     </style>
     <div class="card card-primary">
@@ -314,185 +314,10 @@
                 </div>
 
                 <label class="form-label mb-2"><strong>Live preview</strong></label>
-                <div class="responseDiv border rounded p-4" id="liveLogoPreview" style="min-height: 240px;">
+                <div class="responseDiv border rounded p-4 logo-live-preview-host" id="liveLogoPreview" style="min-height: 240px;">
                     <div class="text-muted" style="opacity: 0.75;">Loading preview…</div>
                 </div>
             </form>
         </div>
     </div>
 </div>
-<script>
-(function() {
-    const form = document.getElementById("logoGeneratorForm");
-    if (!form || typeof jQuery === "undefined") return;
-
-    const $form = jQuery(form);
-    const hint = document.getElementById("logoHintText");
-    let debounceTimer = null;
-    let activeXhr = null;
-    const DEBOUNCE_MS = 0;
-
-    const setVal = (name, value) => {
-        const el = form.querySelector('[name="' + name + '"]');
-        if (!el) return;
-        if (el.type === "checkbox") {
-            el.checked = !!value;
-        } else {
-            el.value = value;
-        }
-    };
-
-    const sizeInput = form.querySelector("#logo_font_size");
-    const sizeRange = document.getElementById("logo_font_size_range");
-    const syncFontSizeUi = () => {
-        if (!sizeInput || !sizeRange) return;
-        let v = parseInt(sizeInput.value, 10);
-        if (Number.isNaN(v)) v = 96;
-        v = Math.max(12, Math.min(400, v));
-        sizeInput.value = String(v);
-        sizeRange.value = String(v);
-    };
-    if (sizeInput && sizeRange) {
-        sizeInput.addEventListener("input", syncFontSizeUi);
-        sizeRange.addEventListener("input", function() {
-            sizeInput.value = sizeRange.value;
-        });
-    }
-
-    const runLogoPreview = () => {
-        if (typeof setFormVal !== "function" || typeof showData !== "function") return;
-
-        if (activeXhr) {
-            activeXhr.abort();
-            activeXhr = null;
-        }
-
-        const $response = $form.find(".responseDiv");
-        setFormVal($form, "responsetype", "html");
-        setFormVal($form, "action", $form.data("action") || "logo_generate");
-
-        activeXhr = jQuery.ajax({
-            type: "POST",
-            url: $form.attr("action") || "gen.php",
-            data: $form.serialize(),
-            success: function(html) {
-                activeXhr = null;
-                showData($response, html);
-            },
-            error: function(jqXHR, textStatus) {
-                activeXhr = null;
-                if (textStatus === "abort") return;
-                const msg = (jqXHR && jqXHR.statusText) ? jqXHR.statusText : "request failed";
-                showData($response, "<div class='alert alert-danger'>Preview error: " + msg + "</div>");
-            }
-        });
-    };
-
-    const scheduleLogoPreview = () => {
-        clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(runLogoPreview, DEBOUNCE_MS);
-    };
-
-    const scheduleLogoPreviewSoon = () => {
-        clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(runLogoPreview, 0);
-    };
-
-    $form.on("input change", "input:not([type='hidden']), select, textarea", scheduleLogoPreview);
-
-    $form.on("submit", function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        scheduleLogoPreviewSoon();
-        return false;
-    });
-
-    const setPreset = (preset) => {
-        if (preset === "app-icon") {
-            setVal("logo_width", 512);
-            setVal("logo_height", 512);
-            setVal("logo_shape", "rounded");
-            setVal("logo_style", "gradient");
-            setVal("logo_font_size", 120);
-            setVal("logo_border", 0);
-            setVal("logo_initials", true);
-            setVal("logo_uppercase", true);
-            if (hint) hint.textContent = "App icon: square canvas, rounded shape, initials + caps — good for launcher icons.";
-            syncFontSizeUi();
-            scheduleLogoPreviewSoon();
-            return;
-        }
-        if (preset === "banner") {
-            setVal("logo_width", 1200);
-            setVal("logo_height", 400);
-            setVal("logo_shape", "rectangle");
-            setVal("logo_style", "gradient");
-            setVal("logo_font_size", 110);
-            setVal("logo_border", 0);
-            setVal("logo_initials", false);
-            setVal("logo_uppercase", false);
-            if (hint) hint.textContent = "Banner: wide rectangle with full text — headers and cover images.";
-            syncFontSizeUi();
-            scheduleLogoPreviewSoon();
-            return;
-        }
-        if (preset === "initials-badge") {
-            setVal("logo_width", 384);
-            setVal("logo_height", 384);
-            setVal("logo_shape", "circle");
-            setVal("logo_style", "solid");
-            setVal("logo_font_size", 132);
-            setVal("logo_border", 8);
-            setVal("logo_initials", true);
-            setVal("logo_uppercase", true);
-            if (hint) hint.textContent = "Initials badge: circle, solid fill, visible border — avatars and seals.";
-            syncFontSizeUi();
-            scheduleLogoPreviewSoon();
-        }
-    };
-
-    const randomHex = () => "#" + Math.floor(Math.random() * 16777215).toString(16).padStart(6, "0");
-    const randomizePalette = () => {
-        setVal("logo_bg_color", randomHex());
-        setVal("logo_accent_color", randomHex());
-        setVal("logo_text_color", "#ffffff");
-        setVal("logo_border_color", randomHex());
-        if (hint) hint.textContent = "Colors shuffled — preview updating.";
-        scheduleLogoPreviewSoon();
-    };
-
-    form.querySelectorAll(".logo-preset-btn").forEach((btn) => {
-        btn.addEventListener("click", function() {
-            setPreset(this.dataset.preset || "");
-        });
-    });
-
-    const randomizeBtn = document.getElementById("logoRandomizeBtn");
-    if (randomizeBtn) {
-        randomizeBtn.addEventListener("click", randomizePalette);
-    }
-
-    form.querySelectorAll(".logo-color-random").forEach((btn) => {
-        btn.addEventListener("click", function() {
-            const id = this.getAttribute("data-target");
-            const el = id ? document.getElementById(id) : null;
-            if (el && el.type === "color") {
-                el.value = randomHex();
-                scheduleLogoPreviewSoon();
-            }
-        });
-    });
-
-    const offsetReset = document.getElementById("logoOffsetReset");
-    if (offsetReset) {
-        offsetReset.addEventListener("click", function() {
-            setVal("logo_text_offset_x", 0);
-            setVal("logo_text_offset_y", 0);
-            scheduleLogoPreviewSoon();
-        });
-    }
-
-    syncFontSizeUi();
-    scheduleLogoPreviewSoon();
-})();
-</script>

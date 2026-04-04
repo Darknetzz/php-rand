@@ -1128,6 +1128,191 @@ function initKeypairSignFormUi($scope) {
 }
 
 /* ===================================================================== */
+/*                    FUNCTION: initLogoGeneratorUi                      */
+/* ===================================================================== */
+function initLogoGeneratorUi($scope) {
+    const $form = $scope.find("#logoGeneratorForm");
+    if (!$form.length) {
+        return;
+    }
+    if ($form.data("randLogoGenBound")) {
+        return;
+    }
+    $form.data("randLogoGenBound", true);
+
+    const form = $form[0];
+    const $hint = $scope.find("#logoHintText");
+    let debounceTimer = null;
+    let activeXhr = null;
+    const DEBOUNCE_MS = 0;
+
+    const setVal = (name, value) => {
+        const el = form.querySelector("[name=\"" + name + "\"]");
+        if (!el) {
+            return;
+        }
+        if (el.type === "checkbox") {
+            el.checked = !!value;
+        } else {
+            el.value = value;
+        }
+    };
+
+    const $sizeInput = $form.find("#logo_font_size");
+    const $sizeRange = $form.find("#logo_font_size_range");
+    const syncFontSizeUi = () => {
+        if (!$sizeInput.length || !$sizeRange.length) {
+            return;
+        }
+        let v = parseInt($sizeInput.val(), 10);
+        if (Number.isNaN(v)) {
+            v = 96;
+        }
+        v = Math.max(12, Math.min(400, v));
+        $sizeInput.val(String(v));
+        $sizeRange.val(String(v));
+    };
+    $sizeInput.off("input.randLogoGen").on("input.randLogoGen", syncFontSizeUi);
+    $sizeRange.off("input.randLogoGen").on("input.randLogoGen", function() {
+        $sizeInput.val($sizeRange.val());
+    });
+
+    const runLogoPreview = () => {
+        if (typeof setFormVal !== "function" || typeof showData !== "function") {
+            return;
+        }
+        if (activeXhr) {
+            activeXhr.abort();
+            activeXhr = null;
+        }
+        const $response = $form.find(".responseDiv");
+        setFormVal($form, "responsetype", "html");
+        setFormVal($form, "action", $form.data("action") || "logo_generate");
+        activeXhr = $.ajax({
+            type: "POST",
+            url: $form.attr("action") || "gen.php",
+            data: $form.serialize(),
+            success: function(html) {
+                activeXhr = null;
+                showData($response, html);
+            },
+            error: function(jqXHR, textStatus) {
+                activeXhr = null;
+                if (textStatus === "abort") {
+                    return;
+                }
+                const msg = jqXHR && jqXHR.statusText ? jqXHR.statusText : "request failed";
+                showData($response, "<div class='alert alert-danger'>Preview error: " + msg + "</div>");
+            }
+        });
+    };
+
+    const scheduleLogoPreview = () => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(runLogoPreview, DEBOUNCE_MS);
+    };
+
+    const scheduleLogoPreviewSoon = () => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(runLogoPreview, 0);
+    };
+
+    $form.off(".randLogoLive").on("input.randLogoLive change.randLogoLive", "input:not([type='hidden']), select, textarea", scheduleLogoPreview);
+    $form.off("submit.randLogoLive").on("submit.randLogoLive", function(e) {
+        e.preventDefault();
+        e.stopPropagation(); /* keep document’s .form delegate from also submitting */
+        scheduleLogoPreviewSoon();
+        return false;
+    });
+
+    const setPreset = (preset) => {
+        if (preset === "app-icon") {
+            setVal("logo_width", 512);
+            setVal("logo_height", 512);
+            setVal("logo_shape", "rounded");
+            setVal("logo_style", "gradient");
+            setVal("logo_font_size", 120);
+            setVal("logo_border", 0);
+            setVal("logo_initials", true);
+            setVal("logo_uppercase", true);
+            if ($hint.length) {
+                $hint.text("App icon: square canvas, rounded shape, initials + caps — good for launcher icons.");
+            }
+            syncFontSizeUi();
+            scheduleLogoPreviewSoon();
+            return;
+        }
+        if (preset === "banner") {
+            setVal("logo_width", 1200);
+            setVal("logo_height", 400);
+            setVal("logo_shape", "rectangle");
+            setVal("logo_style", "gradient");
+            setVal("logo_font_size", 110);
+            setVal("logo_border", 0);
+            setVal("logo_initials", false);
+            setVal("logo_uppercase", false);
+            if ($hint.length) {
+                $hint.text("Banner: wide rectangle with full text — headers and cover images.");
+            }
+            syncFontSizeUi();
+            scheduleLogoPreviewSoon();
+            return;
+        }
+        if (preset === "initials-badge") {
+            setVal("logo_width", 384);
+            setVal("logo_height", 384);
+            setVal("logo_shape", "circle");
+            setVal("logo_style", "solid");
+            setVal("logo_font_size", 132);
+            setVal("logo_border", 8);
+            setVal("logo_initials", true);
+            setVal("logo_uppercase", true);
+            if ($hint.length) {
+                $hint.text("Initials badge: circle, solid fill, visible border — avatars and seals.");
+            }
+            syncFontSizeUi();
+            scheduleLogoPreviewSoon();
+        }
+    };
+
+    const rndHex = () => "#" + Math.floor(Math.random() * 16777215).toString(16).padStart(6, "0");
+    const randomizePalette = () => {
+        setVal("logo_bg_color", rndHex());
+        setVal("logo_accent_color", rndHex());
+        setVal("logo_text_color", "#ffffff");
+        setVal("logo_border_color", rndHex());
+        if ($hint.length) {
+            $hint.text("Colors shuffled — preview updating.");
+        }
+        scheduleLogoPreviewSoon();
+    };
+
+    $form.find(".logo-preset-btn").off("click.randLogoPreset").on("click.randLogoPreset", function() {
+        setPreset($(this).data("preset") || "");
+    });
+
+    $form.find("#logoRandomizeBtn").off("click.randLogoRand").on("click.randLogoRand", randomizePalette);
+
+    $form.find(".logo-color-random").off("click.randLogoColor").on("click.randLogoColor", function() {
+        const id = this.getAttribute("data-target");
+        const el = id ? document.getElementById(id) : null;
+        if (el && el.type === "color") {
+            el.value = rndHex();
+            scheduleLogoPreviewSoon();
+        }
+    });
+
+    $form.find("#logoOffsetReset").off("click.randLogoOff").on("click.randLogoOff", function() {
+        setVal("logo_text_offset_x", 0);
+        setVal("logo_text_offset_y", 0);
+        scheduleLogoPreviewSoon();
+    });
+
+    syncFontSizeUi();
+    scheduleLogoPreviewSoon();
+}
+
+/* ===================================================================== */
 /*                    FUNCTION: initCrontabLiveAnalyzeUi                  */
 /* ===================================================================== */
 function initCrontabLiveAnalyzeUi($scope) {
@@ -1249,6 +1434,7 @@ function navigate(to) {
         $(".content").hide();
         $(normalizedTo).fadeIn();
         addRandomDataButtons($(normalizedTo));
+        initLogoGeneratorUi($(normalizedTo));
         initCsrFormUi($(normalizedTo));
         initKeypairSignFormUi($(normalizedTo));
         initCrontabLiveAnalyzeUi($(normalizedTo));
@@ -2313,6 +2499,17 @@ function generateRandomData(type, placeholder = '', $input = null) {
     // =====================================================================
     // CONTEXT-AWARE DETECTION BY FORM/MODULE
     // =====================================================================
+
+    if (formAction === "logo_generate" || formId === "logogeneratorform") {
+        if (type === "textarea" && inputName === "logo_text") {
+            const brands = [
+                "Acme Co", "Northwind", "Harbor Labs", "Atlas Works", "Rand Studio",
+                "Cedar & Co.", "Pixel Foundry", "Blue Oak", "Signal Nine", "Kestrel"
+            ];
+            const pick = brands[randomInt(0, brands.length - 1)];
+            return pick + (Math.random() > 0.45 ? "\n" + randomText(randomInt(1, 2), 3, 8) : "");
+        }
+    }
 
     // OpenSSL encryption module - generate hex strings for IV and key
     if (formAction === 'openssl' || formId === 'openssl') {
