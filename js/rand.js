@@ -1488,8 +1488,9 @@ function loadModule(moduleName) {
             cache: true
         }).done(function(html) {
             $placeholder.replaceWith(html);
-            addRandomDataButtons($(selector));
-            ensureEnhancersForScope($(selector));
+            ensureEnhancersForScope($(selector)).always(function() {
+                addRandomDataButtons($(selector));
+            });
         }).fail(function() {
             $placeholder.remove();
         });
@@ -1598,6 +1599,22 @@ $(document).ready(function() {
         document.execCommand("copy");
         $(this).html("Copied!");
         $(this).addClass("btn-success");
+    });
+
+    $(document).on("click", ".syntax-validate-random-sample", function() {
+        var $form = $(this).closest("#syntaxValidateForm");
+        if (!$form.length) {
+            return;
+        }
+        var $host = $form.find("code-input.syntax-validate-code-input");
+        if (!$host.length) {
+            return;
+        }
+        randomDataGetCompatibleFormBundle($form);
+        var text = generateRandomData("textarea", "Paste content to validate...", $host);
+        $host.each(function() {
+            this.value = text;
+        });
     });
 
     /* ===================================================================== */
@@ -2723,6 +2740,11 @@ function addRandomDataButtons($root = null) {
             return;
         }
 
+        /* code-input setup() replaces inner HTML; wrapping breaks its textarea/pre grid. Use a dedicated sample control instead (e.g. .syntax-validate-random-sample). */
+        if ($input.closest("code-input").length) {
+            return;
+        }
+
         // Check if this is a wheel item input (handle without wrapping)
         const isWheelItemInput = $input.hasClass('wheelitem-input') || $input.closest('.wheelitem').length > 0;
         
@@ -2751,8 +2773,6 @@ function addRandomDataButtons($root = null) {
         let randomBtnTitle = 'Generate random data';
         if (inputIdForTitle === 'syntaxValidateKind') {
             randomBtnTitle = 'Random language';
-        } else if (inputIdForTitle === 'syntaxValidateInput') {
-            randomBtnTitle = 'Random sample for current language';
         }
 
         // Create the random button

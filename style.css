@@ -88,6 +88,18 @@ footer {
   max-width: none !important;
 }
 
+/* Library default is white (code-input.min.css); match app + hljs dark. */
+.syntax-validate-code-input,
+.crontab-expression-code-input {
+  background-color: #1e1e1e !important;
+  color: #d4d4d4;
+}
+[data-bs-theme="light"] .syntax-validate-code-input,
+[data-bs-theme="light"] .crontab-expression-code-input {
+  background-color: #f3f5f7 !important;
+  color: #212529;
+}
+
 .output,
 .card {
   margin: 15px;
