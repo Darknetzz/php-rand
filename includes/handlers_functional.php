@@ -1584,6 +1584,280 @@ function logo_build_png_data_uri($image): string {
     return 'data:image/png;base64,' . base64_encode($binary);
 }
 
+/**
+ * Flatten alpha onto an opaque canvas (for JPEG output).
+ *
+ * @param resource|\GdImage $src
+ * @return resource|\GdImage
+ */
+function logo_flatten_image_for_lossy($src, int $w, int $h, array $matteRgb) {
+    $dst = imagecreatetruecolor($w, $h);
+    imagealphablending($dst, true);
+    imagesavealpha($dst, false);
+    $matte = imagecolorallocate($dst, $matteRgb[0], $matteRgb[1], $matteRgb[2]);
+    imagefilledrectangle($dst, 0, 0, max(0, $w - 1), max(0, $h - 1), $matte);
+    imagecopy($dst, $src, 0, 0, 0, 0, $w, $h);
+    return $dst;
+}
+
+/**
+ * Encode GD image to a data URI (PNG, JPEG, or WebP).
+ *
+ * @param resource|\GdImage $image
+ * @return array{mime:string,data_uri:string,ext:string,format:string}
+ */
+function logo_build_raster_data_uri($image, string $format, int $quality, array $matteRgb, int $w, int $h): array {
+    $format = strtolower($format);
+    if (!in_array($format, ['png', 'jpeg', 'webp'], true)) {
+        $format = 'png';
+    }
+    $qLossy = max(60, min(95, $quality));
+
+    if ($format === 'jpeg' && function_exists('imagejpeg')) {
+        $flat = logo_flatten_image_for_lossy($image, $w, $h, $matteRgb);
+        ob_start();
+        imagejpeg($flat, null, $qLossy);
+        $binary = (string) ob_get_clean();
+        imagedestroy($flat);
+
+        return [
+            'mime' => 'image/jpeg',
+            'data_uri' => 'data:image/jpeg;base64,' . base64_encode($binary),
+            'ext' => 'jpg',
+            'format' => 'jpeg',
+        ];
+    }
+
+    if ($format === 'webp' && function_exists('imagewebp')) {
+        ob_start();
+        imagewebp($image, null, $qLossy);
+        $binary = (string) ob_get_clean();
+
+        return [
+            'mime' => 'image/webp',
+            'data_uri' => 'data:image/webp;base64,' . base64_encode($binary),
+            'ext' => 'webp',
+            'format' => 'webp',
+        ];
+    }
+
+    ob_start();
+    imagepng($image);
+    $binary = (string) ob_get_clean();
+
+    return [
+        'mime' => 'image/png',
+        'data_uri' => 'data:image/png;base64,' . base64_encode($binary),
+        'ext' => 'png',
+        'format' => 'png',
+    ];
+}
+
+function logo_ttf_line_width(string $fontPath, float $fontSize, string $line): int {
+    if ($line === '') {
+        return 0;
+    }
+    $bbox = imagettfbbox($fontSize, 0, $fontPath, $line);
+    if ($bbox === false) {
+        return 0;
+    }
+
+    return (int) abs(($bbox[2] ?? 0) - ($bbox[0] ?? 0));
+}
+
+function logo_ttf_line_height(string $fontPath, float $fontSize): int {
+    $bbox = imagettfbbox($fontSize, 0, $fontPath, 'Mg');
+    if ($bbox === false) {
+        return (int) max(12, round($fontSize * 1.2));
+    }
+
+    return (int) abs(($bbox[7] ?? 0) - ($bbox[1] ?? 0));
+}
+
+/**
+ * Split a single token into chunks that fit maxWidth.
+ *
+ * @return list<string>
+ */
+function logo_hard_break_token(string $token, string $fontPath, float $fontSize, int $maxWidth): array {
+    if ($token === '' || $maxWidth < 4) {
+        return $token === '' ? [] : [$token];
+    }
+    if (logo_ttf_line_width($fontPath, $fontSize, $token) <= $maxWidth) {
+        return [$token];
+    }
+    $out = [];
+    $len = mb_strlen($token);
+    $buf = '';
+    for ($i = 0; $i < $len; $i++) {
+        $ch = mb_substr($token, $i, 1);
+        $trial = $buf . $ch;
+        if ($buf !== '' && logo_ttf_line_width($fontPath, $fontSize, $trial) > $maxWidth) {
+            $out[] = $buf;
+            $buf = $ch;
+        } else {
+            $buf = $trial;
+        }
+    }
+    if ($buf !== '') {
+        $out[] = $buf;
+    }
+
+    return $out !== [] ? $out : [$token];
+}
+
+/**
+ * Word-wrap one paragraph to a maximum pixel width (TTF).
+ *
+ * @return list<string>
+ */
+function logo_wrap_paragraph(string $paragraph, string $fontPath, float $fontSize, int $maxWidth): array {
+    $paragraph = trim($paragraph);
+    if ($paragraph === '') {
+        return [];
+    }
+    $words = preg_split('/\s+/u', $paragraph, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+    $lines = [];
+    $current = '';
+    foreach ($words as $w) {
+        $chunks = logo_hard_break_token($w, $fontPath, $fontSize, $maxWidth);
+        foreach ($chunks as $chunk) {
+            $trial = $current === '' ? $chunk : $current . ' ' . $chunk;
+            if (logo_ttf_line_width($fontPath, $fontSize, $trial) <= $maxWidth) {
+                $current = $trial;
+            } else {
+                if ($current !== '') {
+                    $lines[] = $current;
+                }
+                $current = $chunk;
+            }
+        }
+    }
+    if ($current !== '') {
+        $lines[] = $current;
+    }
+
+    return $lines;
+}
+
+/**
+ * Build display lines from user text: explicit newlines + soft wrap per paragraph.
+ *
+ * @return list<string>
+ */
+function logo_build_wrapped_lines(string $displayText, string $fontPath, float $fontSize, int $maxWidth): array {
+    $parts = preg_split("/\r\n|\n|\r/", $displayText);
+    $all = [];
+    $first = true;
+    foreach ($parts as $part) {
+        if (!$first && $part === '' && $all !== []) {
+            $all[] = '';
+        }
+        $first = false;
+        if ($part === '') {
+            continue;
+        }
+        $wrapped = logo_wrap_paragraph($part, $fontPath, $fontSize, $maxWidth);
+        foreach ($wrapped as $ln) {
+            $all[] = $ln;
+        }
+    }
+
+    return $all;
+}
+
+/**
+ * @param list<string> $lines
+ * @return array{w:int,h:int,lineH:int,gap:int}
+ */
+function logo_measure_text_block(string $fontPath, float $fontSize, array $lines): array {
+    $lineH = logo_ttf_line_height($fontPath, $fontSize);
+    $gap = max(2, (int) round($fontSize * 0.12));
+    $maxW = 0;
+    foreach ($lines as $ln) {
+        $draw = $ln === '' ? ' ' : $ln;
+        $maxW = max($maxW, logo_ttf_line_width($fontPath, $fontSize, $draw));
+    }
+    $n = count($lines);
+    $totalH = $n === 0 ? 0 : $n * $lineH + ($n - 1) * $gap;
+
+    return ['w' => $maxW, 'h' => $totalH, 'lineH' => $lineH, 'gap' => $gap];
+}
+
+/**
+ * Largest font size (within [12, $maxSize]) so wrapped text fits the inner box.
+ */
+function logo_autofit_font_size(
+    string $displayText,
+    string $fontPath,
+    int $maxSize,
+    int $maxTextW,
+    int $maxTextH
+): int {
+    $maxSize = max(12, min(400, $maxSize));
+    if ($maxTextW < 8 || $maxTextH < 8) {
+        return 12;
+    }
+    $low = 12;
+    $high = $maxSize;
+    $best = 12;
+    while ($low <= $high) {
+        $mid = intdiv($low + $high, 2);
+        $lines = logo_build_wrapped_lines($displayText, $fontPath, (float) $mid, $maxTextW);
+        $m = logo_measure_text_block($fontPath, (float) $mid, $lines);
+        if ($m['h'] <= $maxTextH && $m['w'] <= $maxTextW) {
+            $best = $mid;
+            $low = $mid + 1;
+        } else {
+            $high = $mid - 1;
+        }
+    }
+
+    return $best;
+}
+
+/**
+ * Draw centered, multi-line TTF text with optional pixel offsets.
+ *
+ * @param resource|\GdImage $image
+ * @param list<string> $lines
+ */
+function logo_draw_ttf_text_block(
+    $image,
+    string $fontPath,
+    float $fontSize,
+    array $lines,
+    int $canvasW,
+    int $canvasH,
+    int $fontColor,
+    int $offsetX,
+    int $offsetY
+): void {
+    if ($lines === []) {
+        return;
+    }
+    $m = logo_measure_text_block($fontPath, $fontSize, $lines);
+    $lineH = $m['lineH'];
+    $gap = $m['gap'];
+    $totalH = $m['h'];
+    $top = (int) floor(($canvasH - $totalH) / 2) + $offsetY;
+    $yCursor = $top;
+
+    foreach ($lines as $line) {
+        $draw = $line === '' ? ' ' : $line;
+        $bbox = imagettfbbox($fontSize, 0, $fontPath, $draw);
+        if ($bbox === false) {
+            continue;
+        }
+        $ymin = (int) min($bbox[1], $bbox[3], $bbox[5], $bbox[7]);
+        $baselineY = $yCursor - $ymin;
+        $w = logo_ttf_line_width($fontPath, $fontSize, $draw);
+        $x = (int) floor(($canvasW - $w) / 2) + $offsetX;
+        imagettftext($image, $fontSize, 0, $x, $baselineY, $fontColor, $fontPath, $draw);
+        $yCursor += $lineH + $gap;
+    }
+}
+
 function logo_draw_background($image, int $width, int $height, string $style, array $bgRgb, array $accentRgb): void {
     if ($style === 'gradient') {
         for ($y = 0; $y < $height; $y++) {
@@ -1612,32 +1886,45 @@ function handle_logo_generate(array $req): string {
         return formatOutput("GD extension is required for logo generation.", type: "danger");
     }
 
-    $text = trim((string) req_get($req, 'logo_text', 'Rand'));
+    $text = (string) req_get($req, 'logo_text', 'Rand');
+    $text = str_replace(["\r\n", "\r"], "\n", $text);
+    $text = trim($text);
     if ($text === '') {
         $text = 'Rand';
     }
-    $text = mb_substr($text, 0, 40);
+    $text = mb_substr($text, 0, 500);
 
     $width = max(128, min(1600, req_int($req, 'logo_width', 512)));
     $height = max(128, min(1600, req_int($req, 'logo_height', 512)));
-    $fontSize = max(12, min(400, req_int($req, 'logo_font_size', 96)));
+    $fontSizeReq = max(12, min(400, req_int($req, 'logo_font_size', 96)));
     $shape = (string) req_get($req, 'logo_shape', 'rounded');
     $style = (string) req_get($req, 'logo_style', 'gradient');
     $uppercase = req_bool($req, 'logo_uppercase');
     $useInitials = req_bool($req, 'logo_initials');
     $border = max(0, min(24, req_int($req, 'logo_border', 0)));
     $fontFile = (string) req_get($req, 'logo_font', '');
+    $autofit = req_bool($req, 'logo_autofit');
+    $format = strtolower((string) req_get($req, 'logo_format', 'png'));
+    if (!in_array($format, ['png', 'jpeg', 'webp'], true)) {
+        $format = 'png';
+    }
+    $quality = max(60, min(95, req_int($req, 'logo_jpeg_quality', 90)));
+
+    $offsetMax = 400;
+    $offsetX = max(-$offsetMax, min($offsetMax, req_int($req, 'logo_text_offset_x', 0)));
+    $offsetY = max(-$offsetMax, min($offsetMax, req_int($req, 'logo_text_offset_y', 0)));
 
     $displayText = $uppercase ? mb_strtoupper($text) : $text;
     if ($useInitials) {
-        $parts = preg_split('/\s+/', trim($displayText)) ?: [];
+        $forInitials = preg_replace('/\s+/u', ' ', trim(str_replace("\n", ' ', $displayText)));
+        $parts = preg_split('/\s+/u', $forInitials, -1, PREG_SPLIT_NO_EMPTY) ?: [];
         $initials = '';
         foreach ($parts as $part) {
             if ($part !== '') {
                 $initials .= mb_substr($part, 0, 1);
             }
         }
-        $displayText = $initials !== '' ? mb_substr($initials, 0, 4) : mb_substr($displayText, 0, 3);
+        $displayText = $initials !== '' ? mb_substr($initials, 0, 4) : mb_substr(preg_replace('/\s+/u', '', $forInitials), 0, 3);
     }
 
     $bgRgb = logo_hex_to_rgb((string) req_get($req, 'logo_bg_color', '#000000'));
@@ -1665,35 +1952,52 @@ function handle_logo_generate(array $req): string {
 
     $fontColor = imagecolorallocate($image, $textRgb[0], $textRgb[1], $textRgb[2]);
     $fontPath = logo_pick_font($fontFile);
+    $padding = max(8, (int) round(min($width, $height) * 0.06));
+    $maxTextW = max(8, $width - 2 * $border - 2 * $padding);
+    $maxTextH = max(8, $height - 2 * $border - 2 * $padding);
+
     if ($fontPath !== null && function_exists('imagettfbbox') && function_exists('imagettftext')) {
-        $bbox = imagettfbbox($fontSize, 0, $fontPath, $displayText);
-        $textWidth = (int) abs(($bbox[2] ?? 0) - ($bbox[0] ?? 0));
-        $textHeight = (int) abs(($bbox[7] ?? 0) - ($bbox[1] ?? 0));
-        $x = (int) floor(($width - $textWidth) / 2);
-        $y = (int) floor(($height + $textHeight) / 2);
-        imagettftext($image, $fontSize, 0, $x, $y, $fontColor, $fontPath, $displayText);
+        $fontSize = (float) $fontSizeReq;
+        if ($autofit) {
+            $fontSize = (float) logo_autofit_font_size($displayText, $fontPath, $fontSizeReq, $maxTextW, $maxTextH);
+        }
+        $lines = logo_build_wrapped_lines($displayText, $fontPath, $fontSize, $maxTextW);
+        if ($lines === []) {
+            $lines = [' '];
+        }
+        logo_draw_ttf_text_block($image, $fontPath, $fontSize, $lines, $width, $height, $fontColor, $offsetX, $offsetY);
     } else {
         $font = 5;
-        $textWidth = imagefontwidth($font) * strlen($displayText);
+        $line = preg_replace('/\s+/u', ' ', trim(str_replace("\n", ' ', $displayText)));
+        $textWidth = imagefontwidth($font) * strlen($line);
         $textHeight = imagefontheight($font);
-        $x = (int) floor(($width - $textWidth) / 2);
-        $y = (int) floor(($height - $textHeight) / 2);
-        imagestring($image, $font, $x, $y, $displayText, $fontColor);
+        $x = (int) floor(($width - $textWidth) / 2) + $offsetX;
+        $y = (int) floor(($height - $textHeight) / 2) + $offsetY;
+        imagestring($image, $font, $x, $y, $line, $fontColor);
     }
 
-    $dataUri = logo_build_png_data_uri($image);
+    $encoded = logo_build_raster_data_uri($image, $format, $quality, $bgRgb, $width, $height);
+    imagedestroy($image);
+
+    $dataUri = $encoded['data_uri'];
+    $ext = $encoded['ext'];
+    $dlLabel = strtoupper($ext === 'jpg' ? 'JPEG' : $ext);
 
     $safeDataUri = htmlspecialchars($dataUri, ENT_QUOTES, 'UTF-8');
-    $safeAlt = htmlspecialchars($displayText, ENT_QUOTES, 'UTF-8');
-    $filenameBase = preg_replace('/[^a-zA-Z0-9_-]+/', '-', strtolower($displayText)) ?: 'logo';
-    $filename = $filenameBase . '.png';
+    $altLine = preg_replace('/\s+/u', ' ', trim(str_replace("\n", ' ', $displayText)));
+    $safeAlt = htmlspecialchars(mb_substr($altLine, 0, 120), ENT_QUOTES, 'UTF-8');
+    $filenameSeed = preg_split("/\r\n|\n|\r/", $displayText)[0] ?? 'logo';
+    $filenameSeed = preg_replace('/\s+/u', ' ', trim($filenameSeed));
+    $filenameBase = preg_replace('/[^a-zA-Z0-9_-]+/', '-', strtolower($filenameSeed)) ?: 'logo';
+    $filename = $filenameBase . '.' . $ext;
 
     $output = "<div style='text-align:center; padding:12px;'>";
     $output .= "<img src='{$safeDataUri}' alt='{$safeAlt}' style='max-width:100%; height:auto; border-radius:8px; border:1px solid #334155;' />";
     $output .= "<div style='margin-top:12px;'>";
-    $output .= "<a class='btn btn-primary btn-sm' href='{$safeDataUri}' download='" . htmlspecialchars($filename, ENT_QUOTES, 'UTF-8') . "'>" . icon('download') . " Download PNG</a>";
+    $output .= "<a class='btn btn-primary btn-sm' href='{$safeDataUri}' download='" . htmlspecialchars($filename, ENT_QUOTES, 'UTF-8') . "'>" . icon('download') . " Download {$dlLabel}</a>";
     $output .= "</div>";
     $output .= "</div>";
+
     return $output;
 }
 

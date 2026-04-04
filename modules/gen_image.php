@@ -23,7 +23,7 @@
         <h1 class="card-header"><?= icon("image", 1, 2) ?> Logo Generator</h1>
         <div class="card-body">
             <p class="text-muted mb-4">
-                Pick a <strong>preset</strong> or adjust the table below — the <strong>preview updates automatically</strong> as you change options.
+                Pick a <strong>preset</strong> or adjust the table below — the <strong>live preview updates on every change</strong> (no submit).
             </p>
             <form class="form" action="gen.php" method="POST" id="logoGeneratorForm" data-action="logo_generate">
                 <div class="mb-4">
@@ -55,8 +55,9 @@
                                     <span class="fw-normal text-muted d-block small">Shown on the logo</span>
                                 </th>
                                 <td colspan="3">
-                                    <input type="text" class="form-control" name="logo_text" value="Rand Studio" maxlength="40"
-                                        autocomplete="off" placeholder="Your name or brand">
+                                    <textarea class="form-control" name="logo_text" rows="3" maxlength="500"
+                                        autocomplete="off" placeholder="Your name or brand (multiple lines allowed)">Rand Studio</textarea>
+                                    <small class="text-muted">Up to 500 characters. Multiline, word-wrap, and <strong>Autofit</strong> work best with fonts in <code>fonts/</code>.</small>
                                 </td>
                             </tr>
                             <tr>
@@ -98,13 +99,52 @@
                                             <label class="form-label small text-muted mb-1" for="logo_font_size_range" id="logoFontSizeRangeLabel">Scale</label>
                                             <input type="range" class="form-range" id="logo_font_size_range" min="12" max="400" value="96"
                                                 aria-labelledby="logoFontSizeRangeLabel" aria-describedby="logoFontSizeHint">
-                                            <span id="logoFontSizeHint" class="small text-muted">12–400 px — use the slider or type a value</span>
+                                            <span id="logoFontSizeHint" class="small text-muted">12–400 px — use the slider or type a value (max size when Autofit is on)</span>
                                         </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th scope="row" class="text-nowrap align-top pt-3">
+                                    Autofit &amp; nudge
+                                    <span class="fw-normal text-muted d-block small">Wrap + optional scale</span>
+                                </th>
+                                <td colspan="3">
+                                    <div class="d-flex flex-wrap gap-4 align-items-center mb-2">
+                                        <div class="form-check mb-0">
+                                            <input class="form-check-input" type="checkbox" id="logoAutofit" name="logo_autofit" value="1">
+                                            <label class="form-check-label" for="logoAutofit">Autofit text in canvas</label>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex flex-wrap align-items-center gap-2">
+                                        <div class="d-flex align-items-center gap-1">
+                                            <label class="small text-muted text-nowrap mb-0" for="logo_text_offset_x">Nudge X (px)</label>
+                                            <input type="number" class="form-control form-control-sm" id="logo_text_offset_x" name="logo_text_offset_x" value="0" min="-400" max="400" style="width:5.25rem;" title="Horizontal shift; positive = right">
+                                        </div>
+                                        <div class="d-flex align-items-center gap-1">
+                                            <label class="small text-muted text-nowrap mb-0" for="logo_text_offset_y">Y (px)</label>
+                                            <input type="number" class="form-control form-control-sm" id="logo_text_offset_y" name="logo_text_offset_y" value="0" min="-400" max="400" style="width:5.25rem;" title="Vertical shift; positive = down">
+                                        </div>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" id="logoOffsetReset">Reset nudge</button>
                                     </div>
                                 </td>
                             </tr>
                             <tr class="logo-gen-section-header">
                                 <td colspan="4" class="py-2 small text-uppercase fw-semibold text-body-secondary">Look</td>
+                            </tr>
+                            <tr>
+                                <th scope="row" class="text-nowrap">Export format</th>
+                                <td colspan="3">
+                                    <div class="d-flex flex-wrap align-items-center gap-3">
+                                        <select class="form-select" id="logo_format" name="logo_format" aria-label="Output image format" style="max-width:14rem;">
+                                            <option value="png" selected>PNG (transparency)</option>
+                                            <option value="webp">WebP</option>
+                                            <option value="jpeg">JPEG (opaque)</option>
+                                        </select>
+                                        <input type="hidden" name="logo_jpeg_quality" value="90">
+                                        <span class="small text-muted">JPEG flattens onto the background color. WebP/PNG keep transparency where supported.</span>
+                                    </div>
+                                </td>
                             </tr>
                             <tr>
                                 <th scope="row" class="text-nowrap">Background style</th>
@@ -144,22 +184,34 @@
                                     <span class="fw-normal text-muted d-block small">Accent blends in gradients</span>
                                 </th>
                                 <td colspan="3">
-                                    <div class="row row-cols-2 row-cols-sm-4 g-3">
+                                    <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-4 g-3">
                                         <div class="col">
                                             <label class="form-label small mb-1" for="logo_bg_color">Background</label>
-                                            <input type="color" class="form-control form-control-color w-100" id="logo_bg_color" name="logo_bg_color" value="#000000" title="Background">
+                                            <div class="d-flex gap-1 align-items-stretch">
+                                                <input type="color" class="form-control form-control-color flex-grow-1" id="logo_bg_color" name="logo_bg_color" value="#000000" title="Background">
+                                                <button type="button" class="btn btn-outline-secondary btn-sm logo-color-random px-2" data-target="logo_bg_color" title="Random color"><?= icon('shuffle', 0.9) ?></button>
+                                            </div>
                                         </div>
                                         <div class="col">
                                             <label class="form-label small mb-1" for="logo_accent_color">Accent</label>
-                                            <input type="color" class="form-control form-control-color w-100" id="logo_accent_color" name="logo_accent_color" value="#1d4ed8" title="Gradient accent">
+                                            <div class="d-flex gap-1 align-items-stretch">
+                                                <input type="color" class="form-control form-control-color flex-grow-1" id="logo_accent_color" name="logo_accent_color" value="#1d4ed8" title="Gradient accent">
+                                                <button type="button" class="btn btn-outline-secondary btn-sm logo-color-random px-2" data-target="logo_accent_color" title="Random color"><?= icon('shuffle', 0.9) ?></button>
+                                            </div>
                                         </div>
                                         <div class="col">
                                             <label class="form-label small mb-1" for="logo_text_color">Text</label>
-                                            <input type="color" class="form-control form-control-color w-100" id="logo_text_color" name="logo_text_color" value="#ffffff" title="Text color">
+                                            <div class="d-flex gap-1 align-items-stretch">
+                                                <input type="color" class="form-control form-control-color flex-grow-1" id="logo_text_color" name="logo_text_color" value="#ffffff" title="Text color">
+                                                <button type="button" class="btn btn-outline-secondary btn-sm logo-color-random px-2" data-target="logo_text_color" title="Random color"><?= icon('shuffle', 0.9) ?></button>
+                                            </div>
                                         </div>
                                         <div class="col">
                                             <label class="form-label small mb-1" for="logo_border_color">Border</label>
-                                            <input type="color" class="form-control form-control-color w-100" id="logo_border_color" name="logo_border_color" value="#ffffff" title="Border color">
+                                            <div class="d-flex gap-1 align-items-stretch">
+                                                <input type="color" class="form-control form-control-color flex-grow-1" id="logo_border_color" name="logo_border_color" value="#ffffff" title="Border color">
+                                                <button type="button" class="btn btn-outline-secondary btn-sm logo-color-random px-2" data-target="logo_border_color" title="Random color"><?= icon('shuffle', 0.9) ?></button>
+                                            </div>
                                         </div>
                                     </div>
                                 </td>
@@ -208,7 +260,7 @@
     const hint = document.getElementById("logoHintText");
     let debounceTimer = null;
     let activeXhr = null;
-    const DEBOUNCE_MS = 320;
+    const DEBOUNCE_MS = 0;
 
     const setVal = (name, value) => {
         const el = form.querySelector('[name="' + name + '"]');
@@ -276,7 +328,7 @@
         debounceTimer = setTimeout(runLogoPreview, 0);
     };
 
-    $form.on("input change", "input:not([type='hidden']), select", scheduleLogoPreview);
+    $form.on("input change", "input:not([type='hidden']), select, textarea", scheduleLogoPreview);
 
     $form.on("submit", function(e) {
         e.preventDefault();
@@ -348,6 +400,26 @@
     const randomizeBtn = document.getElementById("logoRandomizeBtn");
     if (randomizeBtn) {
         randomizeBtn.addEventListener("click", randomizePalette);
+    }
+
+    form.querySelectorAll(".logo-color-random").forEach((btn) => {
+        btn.addEventListener("click", function() {
+            const id = this.getAttribute("data-target");
+            const el = id ? document.getElementById(id) : null;
+            if (el && el.type === "color") {
+                el.value = randomHex();
+                scheduleLogoPreviewSoon();
+            }
+        });
+    });
+
+    const offsetReset = document.getElementById("logoOffsetReset");
+    if (offsetReset) {
+        offsetReset.addEventListener("click", function() {
+            setVal("logo_text_offset_x", 0);
+            setVal("logo_text_offset_y", 0);
+            scheduleLogoPreviewSoon();
+        });
     }
 
     syncFontSizeUi();
