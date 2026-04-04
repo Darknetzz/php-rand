@@ -1618,7 +1618,6 @@ function logo_build_raster_data_uri($image, string $format, int $quality, array 
         ob_start();
         imagejpeg($flat, null, $qLossy);
         $binary = (string) ob_get_clean();
-        imagedestroy($flat);
 
         return [
             'mime' => 'image/jpeg',
@@ -1977,7 +1976,6 @@ function handle_logo_generate(array $req): string {
     }
 
     $encoded = logo_build_raster_data_uri($image, $format, $quality, $bgRgb, $width, $height);
-    imagedestroy($image);
 
     $dataUri = $encoded['data_uri'];
     $ext = $encoded['ext'];
