@@ -36,16 +36,20 @@ $moreOptionsOpen = ($effectiveTimezone !== $serverTimezone)
                 <div class="row g-4 mb-4 align-items-xl-start">
                     <div class="col-12 col-xl-4">
                         <label for="crontabExpression" class="form-label mb-2"><strong>Cron expression</strong></label>
-                        <input
-                            type="text"
+                        <code-input
+                            template="hljs-lang"
+                            language="plaintext"
+                            class="crontab-expression-code-input w-100"
+                            style="display: block; font-family: monospace; font-size: 1.09375rem; border: 2px solid #495057; border-radius: 0.5rem; max-width: none;"
+                        ><textarea
+                            data-code-input-fallback
                             name="cron_expression"
                             id="crontabExpression"
-                            class="form-control form-control-lg"
+                            class="form-control-lg"
+                            rows="1"
                             placeholder="*/15 9-17 * * MON-FRI"
-                            style="font-family: monospace; border: 2px solid #495057;"
-                            value="<?= htmlspecialchars($_POST['cron_expression'] ?? '', ENT_QUOTES, 'UTF-8') ?>"
                             required
-                        >
+                        ><?= htmlspecialchars($_POST['cron_expression'] ?? '', ENT_QUOTES, 'UTF-8') ?></textarea></code-input>
                         <div class="form-text mt-2 mb-3">
                             Macros (<code>@daily</code>, <code>@reboot</code>, …) and advanced tokens (<code>L</code>, <code>W</code>, <code>#</code>) are supported.
                         </div>

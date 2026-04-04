@@ -82,6 +82,12 @@ footer {
   display: none;
 }
 
+/* code-input (@webcoder49): full-width editors (global .form-control max-width would clip them) */
+.crontab-expression-code-input,
+.syntax-validate-code-input {
+  max-width: none !important;
+}
+
 .output,
 .card {
   margin: 15px;

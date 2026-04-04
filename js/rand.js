@@ -179,6 +179,10 @@ function initCodeInputTemplate() {
         new codeInput.plugins.Autodetect(),
         new codeInput.plugins.Indent(true, 2)
     ]));
+    /* Fixed language (no Autodetect): Autodetect clears language-* before highlight, breaking explicit modes. */
+    codeInput.registerTemplate("hljs-lang", codeInput.templates.hljs(hljs, [
+        new codeInput.plugins.Indent(true, 2)
+    ]));
     window._codeInputTemplateReady = true;
 }
 
@@ -192,7 +196,50 @@ function ensureEnhancersForScope($scope) {
     }
     return ensureCodeInputAssets().done(function() {
         initCodeInputTemplate();
+        initSyntaxValidateCodeInputUi($scope);
     });
+}
+
+/* ===================================================================== */
+/*                 FUNCTION: syntaxValidateHljsLangForKind                */
+/* ===================================================================== */
+function syntaxValidateHljsLangForKind($form, kind) {
+    const raw = $form.attr("data-hljs-by-kind");
+    if (!raw) {
+        return "plaintext";
+    }
+    try {
+        const m = JSON.parse(raw);
+        return m[String(kind || "").toLowerCase()] || "plaintext";
+    } catch (e) {
+        return "plaintext";
+    }
+}
+
+/* ===================================================================== */
+/*                 FUNCTION: initSyntaxValidateCodeInputUi               */
+/* ===================================================================== */
+function initSyntaxValidateCodeInputUi($scope) {
+    const $form = $scope.find("#syntaxValidateForm");
+    if (!$form.length) {
+        return;
+    }
+    const $host = $form.find("code-input.syntax-validate-code-input");
+    if (!$host.length) {
+        return;
+    }
+    const $kind = $form.find("#syntaxValidateKind");
+
+    function syncHljsLangFromKind() {
+        const k = String($kind.val() || "json").toLowerCase();
+        const lang = syntaxValidateHljsLangForKind($form, k);
+        $host.each(function() {
+            this.setAttribute("language", lang);
+        });
+    }
+
+    $kind.off("change.syntaxValidateHljs").on("change.syntaxValidateHljs", syncHljsLangFromKind);
+    syncHljsLangFromKind();
 }
 
 /* ===================================================================== */
@@ -1084,7 +1131,7 @@ function initCrontabLiveAnalyzeUi($scope) {
         return;
     }
 
-    const $expression = $form.find("[name='cron_expression']");
+    const $expression = $form.find("code-input.crontab-expression-code-input textarea");
     const $responseDiv = $form.find(".responseDiv");
     if (!$expression.length || !$responseDiv.length) {
         return;
@@ -1200,6 +1247,7 @@ function navigate(to) {
         initCsrFormUi($(normalizedTo));
         initKeypairSignFormUi($(normalizedTo));
         initCrontabLiveAnalyzeUi($(normalizedTo));
+        initSyntaxValidateCodeInputUi($(normalizedTo));
         refreshClientCryptoGeneratorUi($(normalizedTo));
     };
 

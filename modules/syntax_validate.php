@@ -6,6 +6,12 @@
     if (!in_array($svKind, syntax_validate_allowed_kinds(), true)) {
         $svKind = 'json';
     }
+    $syntaxHljsByKind = [];
+    foreach (syntax_validate_allowed_kinds() as $k) {
+        $syntaxHljsByKind[$k] = syntax_validate_kind_to_hljs_lang($k);
+    }
+    $syntaxHljsByKindJson = htmlspecialchars(json_encode($syntaxHljsByKind, JSON_UNESCAPED_SLASHES) ?: '{}', ENT_QUOTES, 'UTF-8');
+    $svHljsLang = htmlspecialchars(syntax_validate_kind_to_hljs_lang($svKind), ENT_QUOTES, 'UTF-8');
     if ($validatorsEmbed) {
         echo '<section class="validators-block mb-0">';
     } else {
@@ -19,7 +25,7 @@
         <h1 class="card-header"><?= icon('braces') ?> Syntax validator</h1>
         <?php endif; ?>
         <div class="card-body">
-            <form class="form" action="gen.php" method="POST" id="syntaxValidateForm" data-action="syntax_validate">
+            <form class="form" action="gen.php" method="POST" id="syntaxValidateForm" data-action="syntax_validate" data-hljs-by-kind="<?= $syntaxHljsByKindJson ?>">
                 <div class="row g-4 mb-4">
                     <div class="col-12 col-xl-6">
                         <label for="syntaxValidateKind" class="form-label mb-2"><strong>Language</strong></label>
@@ -37,14 +43,19 @@
                             <option value="shell" <?= $svKind === 'shell' ? 'selected' : '' ?>>Shell</option>
                         </select>
                         <label for="syntaxValidateInput" class="form-label mb-3"><strong style="font-size: 1.1rem;">Input</strong></label>
-                        <textarea
+                        <code-input
+                            template="hljs-lang"
+                            language="<?= $svHljsLang ?>"
+                            class="syntax-validate-code-input w-100"
+                            style="display: block; min-height: 420px; resize: vertical; font-family: monospace; font-size: 0.95rem; border: 2px solid #495057; border-radius: 0.5rem; max-width: none;"
+                        ><textarea
+                            data-code-input-fallback
                             name="syntax_validate_input"
                             id="syntaxValidateInput"
-                            class="form-control"
                             placeholder="Paste content to validate..."
-                            style="min-height: 420px; resize: vertical; font-family: monospace; font-size: 0.95rem; border: 2px solid #495057;"
+                            style="min-height: 420px;"
                             required
-                        ><?= $svInput ?></textarea>
+                        ><?= $svInput ?></textarea></code-input>
                         <div class="form-text mt-2">
                             PHP snippets without <code>&lt;?php</code> are validated as if that opening tag were prepended.
                             Cron: first non-empty, non-<code>#</code> line is validated (same engine as the Crontab tool). INI uses PHP’s <code>parse_ini_string</code> (classic INI; not all <code>.env</code> dialects).
