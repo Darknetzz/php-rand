@@ -27,6 +27,7 @@
 <title>Rand</title>
 
 <body class="theme-dark">
+    <script src="js/rand_ui_boot.js"></script>
     <?php
         require_once("includes/_includes.php");
         require_once("includes/navbar.php");

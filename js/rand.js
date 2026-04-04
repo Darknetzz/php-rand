@@ -1302,6 +1302,23 @@ function randomizeDice() {
 /* ===================================================================== */
 $(document).ready(function() {
 
+    if (window.randUiPrefs) {
+        var p0 = window.randUiPrefs.read();
+        $("#randPrefTheme").val(p0.theme);
+        $("#randPrefUiScale").val(String(p0.uiScale));
+        $("#randPrefTheme").on("change.randUiPrefs", function () {
+            var p = window.randUiPrefs.read();
+            p.theme = ($(this).val() === "light") ? "light" : "dark";
+            window.randUiPrefs.save(p);
+        });
+        $("#randPrefUiScale").on("change.randUiPrefs", function () {
+            var p = window.randUiPrefs.read();
+            p.uiScale = parseFloat($(this).val(), 10);
+            window.randUiPrefs.save(p);
+            $("#randPrefUiScale").val(String(window.randUiPrefs.read().uiScale));
+        });
+    }
+
     var tz = getTimeZone();
     $(".timezone").text(tz);
 

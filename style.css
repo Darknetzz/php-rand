@@ -369,3 +369,87 @@ th.tablehead,
 .diff-colored-output .diff-line-context {
   color: inherit;
 }
+
+/* ---------- Appearance: light theme (paired with data-bs-theme + theme-light on body) ---------- */
+[data-bs-theme="light"] body.theme-light {
+  background-color: #f1f5f9;
+  color: #1e293b;
+}
+
+[data-bs-theme="light"] .description {
+  color: #64748b;
+}
+
+[data-bs-theme="light"] li.active {
+  background-color: #e2e8f0;
+}
+
+[data-bs-theme="light"] footer {
+  color: #64748b;
+  background-color: rgba(255, 255, 255, 0.92);
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+[data-bs-theme="light"] #changelogMarkdown details {
+  border-color: rgba(15, 23, 42, 0.12);
+  background: rgba(255, 255, 255, 0.85);
+}
+
+[data-bs-theme="light"] .box {
+  border-color: #cbd5e1;
+  background-color: #fff;
+}
+
+[data-bs-theme="light"] .copyable-content {
+  background-color: #f8fafc;
+  color: #0f172a;
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+}
+
+[data-bs-theme="light"] .modal-backdrop {
+  background-color: #fff;
+  opacity: 0.85 !important;
+}
+
+[data-bs-theme="light"] .calc-card {
+  background: #fff;
+  border-color: rgba(15, 23, 42, 0.12);
+}
+
+[data-bs-theme="light"] .calc-mode {
+  color: rgba(15, 23, 42, 0.55);
+}
+
+[data-bs-theme="light"] .calc-body {
+  background: transparent;
+}
+
+[data-bs-theme="light"] .calc-display-wrap {
+  background: #e2e8f0;
+}
+
+[data-bs-theme="light"] .calc-expression {
+  color: rgba(15, 23, 42, 0.55);
+}
+
+[data-bs-theme="light"] .calc-display {
+  color: #0f172a;
+}
+
+[data-bs-theme="light"] .calc-btn {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+[data-bs-theme="light"] .calc-btn:hover {
+  background: #cbd5e1;
+}
+
+[data-bs-theme="light"] .calc-op {
+  color: #0369a1;
+}
+
+[data-bs-theme="light"] .navbar.border-bottom {
+  border-color: rgba(15, 23, 42, 0.1) !important;
+}
