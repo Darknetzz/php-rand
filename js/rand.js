@@ -154,13 +154,18 @@ function ensureMarkdownAssets() {
 /*                    FUNCTION: ensureCodeInputAssets                     */
 /* ===================================================================== */
 function ensureCodeInputAssets() {
+    /* Plugin scripts assign to codeInput.plugins.* and must run after code-input.min.js.
+       loadScriptOnce uses async=true, so parallel $.when() does not guarantee order. */
     return $.when(
         loadStyleOnce("https://cdn.jsdelivr.net/npm/@webcoder49/code-input@2.7.1/code-input.min.css"),
-        loadScriptOnce("https://cdn.jsdelivr.net/npm/@webcoder49/code-input@2.7.1/code-input.min.js"),
-        loadScriptOnce("js/hljs_autodetect.js"),
-        loadScriptOnce("js/hljs_indent.js"),
         loadStyleOnce("https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/dark.min.css"),
-        loadScriptOnce("https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js")
+        loadScriptOnce("https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"),
+        loadScriptOnce("https://cdn.jsdelivr.net/npm/@webcoder49/code-input@2.7.1/code-input.min.js").then(function() {
+            return $.when(
+                loadScriptOnce("js/hljs_autodetect.js"),
+                loadScriptOnce("js/hljs_indent.js")
+            );
+        })
     );
 }
 
