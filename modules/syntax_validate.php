@@ -45,12 +45,12 @@
                             <label for="syntaxValidateInput" class="form-label mb-0"><strong style="font-size: 1.1rem;">Input</strong></label>
                             <button type="button" class="btn btn-sm btn-outline-secondary syntax-validate-random-sample" title="Insert random sample for the selected language"><?= icon('shuffle', 0.9) ?> Random sample</button>
                         </div>
-                        <div data-no-random-buttons class="syntax-validate-editor-shell">
-                            <pre class="syntax-validate-highlight-pane" aria-hidden="true"><code id="syntaxValidateHlCode" class="hljs"></code></pre>
+                        <div data-no-random-buttons class="hljs-mirror-shell">
+                            <pre class="hljs-mirror-highlight-pane" aria-hidden="true"><code id="syntaxValidateHlCode" class="hljs"></code></pre>
                             <textarea
                                 name="syntax_validate_input"
                                 id="syntaxValidateInput"
-                                class="syntax-validate-input-overlay w-100"
+                                class="hljs-mirror-input-overlay w-100"
                                 placeholder="Paste content to validate..."
                                 spellcheck="false"
                                 autocomplete="off"

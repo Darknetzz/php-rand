@@ -234,42 +234,48 @@ function syntaxHljsLangFromForm($form, kind) {
 }
 
 /* ===================================================================== */
-/*               FUNCTION: initSyntaxValidateHljsMirror                 */
+/*            FUNCTION: serializationHljsLangGuess (input heuristic)      */
 /* ===================================================================== */
-function initSyntaxValidateHljsMirror($scope) {
-    const $form = $scope.find("#syntaxValidateForm");
-    if (!$form.length || !$form.find(".syntax-validate-editor-shell").length) {
+function serializationHljsLangGuess(text) {
+    const t = String(text || "").trimStart();
+    if (t.startsWith("{") || t.startsWith("[")) {
+        return "json";
+    }
+    if (t.startsWith("<") || t.startsWith("<?xml")) {
+        return "xml";
+    }
+    return "yaml";
+}
+
+/* ===================================================================== */
+/*               FUNCTION: bindHljsMirrorEditor                             */
+/* ===================================================================== */
+function bindHljsMirrorEditor($form, opts) {
+    if ($form.data(opts.dataKey)) {
         return;
     }
-    if ($form.data("syntaxHljsMirrorBound")) {
-        return;
-    }
-    const $ta = $form.find("#syntaxValidateInput");
-    const $pre = $form.find(".syntax-validate-highlight-pane");
-    const codeEl = document.getElementById("syntaxValidateHlCode");
+    const $ta = opts.$ta;
+    const $pre = opts.$pre;
+    const codeEl = opts.codeEl;
+    const ns = opts.eventNs || ".hljsMirrorBind";
+    const debounceMs = opts.debounceMs != null ? opts.debounceMs : 40;
+
     if (!$ta.length || !$pre.length || !codeEl || typeof hljs === "undefined") {
         return;
     }
 
-    $form.data("syntaxHljsMirrorBound", true);
-    const $kind = $form.find("#syntaxValidateKind");
-    let debounceTimer = null;
-    const DEBOUNCE_MS = 40;
+    $form.data(opts.dataKey, true);
 
-    function langNow() {
-        return syntaxHljsLangFromForm($form, String($kind.val() || "json"));
-    }
+    let debounceTimer = null;
 
     function syncScroll() {
-        const ta = $ta[0];
-        const pre = $pre[0];
-        pre.scrollTop = ta.scrollTop;
-        pre.scrollLeft = ta.scrollLeft;
+        $pre[0].scrollTop = $ta[0].scrollTop;
+        $pre[0].scrollLeft = $ta[0].scrollLeft;
     }
 
     function paint() {
         const text = $ta.val();
-        const lang = langNow();
+        const lang = typeof opts.lang === "function" ? opts.lang() : opts.lang;
         codeEl.textContent = text;
         codeEl.removeAttribute("data-highlighted");
         codeEl.className = "hljs language-" + lang;
@@ -290,28 +296,73 @@ function initSyntaxValidateHljsMirror($scope) {
 
     function schedulePaint() {
         clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(paint, DEBOUNCE_MS);
+        debounceTimer = setTimeout(paint, debounceMs);
     }
 
-    $ta.off(".syntaxHljsMirror")
-        .on("scroll.syntaxHljsMirror", syncScroll)
-        .on("input.syntaxHljsMirror", schedulePaint);
-    $kind.off("change.syntaxHljsMirror").on("change.syntaxHljsMirror", function() {
-        schedulePaint();
-    });
+    $ta.off(ns).on("scroll" + ns, syncScroll).on("input" + ns, schedulePaint);
+
+    if (opts.$repaintOnChange && opts.$repaintOnChange.length) {
+        opts.$repaintOnChange.forEach(function($el) {
+            $el.off("change" + ns).on("change" + ns, schedulePaint);
+        });
+    }
 
     paint();
 }
 
 /* ===================================================================== */
-/*              FUNCTION: ensureSyntaxValidateHighlighter                 */
+/*               FUNCTION: initSyntaxValidateHljsMirror                   */
 /* ===================================================================== */
-function ensureSyntaxValidateHighlighter($scope) {
-    if (!$scope.find("#syntaxValidateForm .syntax-validate-editor-shell").length) {
+function initSyntaxValidateHljsMirror($scope) {
+    const $form = $scope.find("#syntaxValidateForm");
+    if (!$form.length || !$form.find(".hljs-mirror-shell").length) {
+        return;
+    }
+    const $kind = $form.find("#syntaxValidateKind");
+    bindHljsMirrorEditor($form, {
+        dataKey: "syntaxHljsMirrorBound",
+        $ta: $form.find("#syntaxValidateInput"),
+        $pre: $form.find(".hljs-mirror-highlight-pane"),
+        codeEl: document.getElementById("syntaxValidateHlCode"),
+        eventNs: ".syntaxHljsMirror",
+        lang: function() {
+            return syntaxHljsLangFromForm($form, String($kind.val() || "json"));
+        },
+        $repaintOnChange: [$kind]
+    });
+}
+
+/* ===================================================================== */
+/*              FUNCTION: initSerializationHljsMirror                     */
+/* ===================================================================== */
+function initSerializationHljsMirror($scope) {
+    const $form = $scope.find("#serializationForm");
+    if (!$form.length || !$form.find(".hljs-mirror-shell").length) {
+        return;
+    }
+    const $ta = $form.find("#serializationInput");
+    bindHljsMirrorEditor($form, {
+        dataKey: "serializationHljsMirrorBound",
+        $ta: $ta,
+        $pre: $form.find(".hljs-mirror-highlight-pane"),
+        codeEl: document.getElementById("serializationHlCode"),
+        eventNs: ".serializationHljsMirror",
+        lang: function() {
+            return serializationHljsLangGuess($ta.val());
+        }
+    });
+}
+
+/* ===================================================================== */
+/*              FUNCTION: ensureHljsMirrorEditors                         */
+/* ===================================================================== */
+function ensureHljsMirrorEditors($scope) {
+    if (!$scope.find(".hljs-mirror-shell").length) {
         return $.Deferred().resolve().promise();
     }
     return ensureHljsMirrorAssets().done(function() {
         initSyntaxValidateHljsMirror($scope);
+        initSerializationHljsMirror($scope);
     });
 }
 
@@ -1501,7 +1552,7 @@ function navigate(to) {
     const showTarget = function() {
         $(".content").hide();
         $(normalizedTo).fadeIn();
-        ensureSyntaxValidateHighlighter($(normalizedTo));
+        ensureHljsMirrorEditors($(normalizedTo));
         addRandomDataButtons($(normalizedTo));
         initLogoGeneratorUi($(normalizedTo));
         initCsrFormUi($(normalizedTo));
@@ -1557,7 +1608,7 @@ function loadModule(moduleName) {
         }).done(function(html) {
             $placeholder.replaceWith(html);
             const $mod = $(selector);
-            $.when(ensureEnhancersForScope($mod), ensureSyntaxValidateHighlighter($mod)).always(function() {
+            $.when(ensureEnhancersForScope($mod), ensureHljsMirrorEditors($mod)).always(function() {
                 addRandomDataButtons($mod);
             });
         }).fail(function() {

@@ -87,15 +87,15 @@ footer {
   max-width: none !important;
 }
 
-/* Validators: hljs mirror behind transparent textarea (no code-input) */
-.syntax-validate-editor-shell {
+/* hljs mirror behind transparent textarea (validators, serialization, …) */
+.hljs-mirror-shell {
   display: grid;
   grid-template-columns: 1fr;
   grid-template-rows: 1fr;
   position: relative;
   width: 100%;
   max-width: none !important;
-  min-height: 420px;
+  min-height: 320px;
   border: 2px solid #495057;
   border-radius: 0.5rem;
   background-color: #2d2d2d;
@@ -107,7 +107,11 @@ footer {
   -moz-tab-size: 2;
   overflow: hidden;
 }
-.syntax-validate-highlight-pane {
+#syntaxValidateForm .hljs-mirror-shell,
+.validators-block .hljs-mirror-shell {
+  min-height: 420px;
+}
+.hljs-mirror-highlight-pane {
   grid-column: 1 / -1;
   grid-row: 1 / -1;
   z-index: 0;
@@ -121,19 +125,19 @@ footer {
   word-wrap: normal;
   word-break: normal;
 }
-.syntax-validate-highlight-pane code.hljs {
+.hljs-mirror-highlight-pane code.hljs {
   display: block;
   min-height: 100%;
   padding: 0;
   margin: 0;
   background: transparent !important;
 }
-textarea.syntax-validate-input-overlay {
+textarea.hljs-mirror-input-overlay {
   grid-column: 1 / -1;
   grid-row: 1 / -1;
   z-index: 1;
   position: relative;
-  min-height: 420px;
+  min-height: 320px;
   margin: 0 !important;
   padding: 0.5rem 0.75rem !important;
   border: none !important;
@@ -155,18 +159,22 @@ textarea.syntax-validate-input-overlay {
   caret-color: #e6edf3 !important;
   color-scheme: dark;
 }
-textarea.syntax-validate-input-overlay::placeholder {
+#syntaxValidateForm textarea.hljs-mirror-input-overlay,
+.validators-block textarea.hljs-mirror-input-overlay {
+  min-height: 420px;
+}
+textarea.hljs-mirror-input-overlay::placeholder {
   color: rgba(230, 237, 243, 0.45);
   -webkit-text-fill-color: rgba(230, 237, 243, 0.45);
 }
-[data-bs-theme="light"] .syntax-validate-editor-shell {
+[data-bs-theme="light"] .hljs-mirror-shell {
   background-color: #f6f8fa;
   color-scheme: light;
 }
-[data-bs-theme="light"] textarea.syntax-validate-input-overlay {
+[data-bs-theme="light"] textarea.hljs-mirror-input-overlay {
   caret-color: #24292f !important;
 }
-[data-bs-theme="light"] textarea.syntax-validate-input-overlay::placeholder {
+[data-bs-theme="light"] textarea.hljs-mirror-input-overlay::placeholder {
   color: rgba(36, 41, 47, 0.45);
   -webkit-text-fill-color: rgba(36, 41, 47, 0.45);
 }

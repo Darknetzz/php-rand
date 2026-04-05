@@ -16,7 +16,20 @@
                 <div class="row g-4 mb-4">
                     <div class="col-12 col-lg-6">
                         <label class="form-label mb-3"><strong style="font-size: 1.1rem;">Input</strong></label>
-                        <textarea name="input" id="serializationInput" class="form-control" style="min-height: 320px; resize: vertical; font-family: monospace; font-size: 0.95rem; border: 2px solid #495057;" placeholder="Paste JSON, YAML, or XML here..." required><?= $serializationInputVal ?></textarea>
+                        <div data-no-random-buttons class="hljs-mirror-shell">
+                            <pre class="hljs-mirror-highlight-pane" aria-hidden="true"><code id="serializationHlCode" class="hljs"></code></pre>
+                            <textarea
+                                name="input"
+                                id="serializationInput"
+                                class="hljs-mirror-input-overlay w-100"
+                                placeholder="Paste JSON, YAML, or XML here..."
+                                spellcheck="false"
+                                autocomplete="off"
+                                autocorrect="off"
+                                autocapitalize="off"
+                                required
+                            ><?= $serializationInputVal ?></textarea>
+                        </div>
                         <div class="form-check form-switch mt-3">
                             <input class="form-check-input" type="checkbox" name="stripcomments" id="stripcomments" value="1" <?= $stripCommentsChecked ?>>
                             <label class="form-check-label" for="stripcomments">Remove comment lines (# or //)</label>
