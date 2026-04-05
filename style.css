@@ -125,13 +125,28 @@ footer {
   word-wrap: normal;
   word-break: normal;
 }
+/* hl.js themes (loaded after this file) use `pre code.hljs{padding:1em}` — that
+   shifts highlighted text vs the transparent textarea and misaligns the caret. */
+pre.hljs-mirror-highlight-pane code.hljs,
 .hljs-mirror-highlight-pane code.hljs {
   display: block;
   min-height: 100%;
-  padding: 0;
-  margin: 0;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow-x: visible !important;
   background: transparent !important;
 }
+
+/* Token spans must use the same font metrics as the textarea (theme uses bold). */
+.hljs-mirror-highlight-pane code.hljs span {
+  font-family: inherit !important;
+  font-size: inherit !important;
+  line-height: inherit !important;
+  font-weight: inherit !important;
+  font-style: inherit !important;
+  vertical-align: baseline;
+}
+
 textarea.hljs-mirror-input-overlay {
   grid-column: 1 / -1;
   grid-row: 1 / -1;
@@ -158,6 +173,8 @@ textarea.hljs-mirror-input-overlay {
   -webkit-text-fill-color: transparent !important;
   caret-color: #e6edf3 !important;
   color-scheme: dark;
+  font-weight: 400 !important;
+  font-style: normal !important;
 }
 #syntaxValidateForm textarea.hljs-mirror-input-overlay,
 .validators-block textarea.hljs-mirror-input-overlay {
