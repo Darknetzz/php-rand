@@ -247,6 +247,18 @@ function serializationHljsLangGuess(text) {
     return "yaml";
 }
 
+/* Map Serialization output type (JSON | YAML | XML) to highlight.js grammar id */
+function serializationHljsLangFromOutputType(typeVal) {
+    const t = String(typeVal || "JSON").toUpperCase();
+    if (t === "YAML") {
+        return "yaml";
+    }
+    if (t === "XML") {
+        return "xml";
+    }
+    return "json";
+}
+
 /* ===================================================================== */
 /*               FUNCTION: bindHljsMirrorEditor                             */
 /* ===================================================================== */
@@ -341,6 +353,7 @@ function initSerializationHljsMirror($scope) {
         return;
     }
     const $ta = $form.find("#serializationInput");
+    const $type = $form.find("[name='type']");
     bindHljsMirrorEditor($form, {
         dataKey: "serializationHljsMirrorBound",
         $ta: $ta,
@@ -348,7 +361,49 @@ function initSerializationHljsMirror($scope) {
         codeEl: document.getElementById("serializationHlCode"),
         eventNs: ".serializationHljsMirror",
         lang: function() {
+            if (!String($ta.val() || "").trim()) {
+                return serializationHljsLangFromOutputType($type.val());
+            }
             return serializationHljsLangGuess($ta.val());
+        },
+        $repaintOnChange: [$type]
+    });
+}
+
+/* After convert: highlight the escaped <pre> body in the response card */
+function paintSerializationOutputHighlight($root, outputType) {
+    if (!$root || !$root.length) {
+        return;
+    }
+    ensureHljsMirrorAssets().done(function() {
+        if (typeof hljs === "undefined") {
+            return;
+        }
+        const $pre = $root.find("pre").first();
+        if (!$pre.length) {
+            return;
+        }
+        const raw = $pre.text();
+        if (!String(raw || "").trim()) {
+            return;
+        }
+        const lang = serializationHljsLangFromOutputType(outputType);
+        const code = document.createElement("code");
+        code.className = "hljs language-" + lang;
+        code.textContent = raw;
+        $pre.empty().append(code);
+        $pre.addClass("serialization-output-hljs");
+        try {
+            hljs.highlightElement(code);
+        } catch (e) {
+            try {
+                const r = hljs.highlightAuto(raw);
+                code.className = "hljs";
+                code.innerHTML = r.value;
+            } catch (e2) {
+                code.className = "hljs";
+                code.textContent = raw;
+            }
         }
     });
 }
@@ -1735,6 +1790,20 @@ $(document).ready(function() {
         $ta.val(text).trigger("change").trigger("input");
     });
 
+    $(document).on("click", ".serialization-random-sample", function() {
+        var $form = $(this).closest("#serializationForm");
+        if (!$form.length) {
+            return;
+        }
+        var $ta = $form.find("#serializationInput");
+        if (!$ta.length) {
+            return;
+        }
+        randomDataGetCompatibleFormBundle($form);
+        var text = generateRandomData("textarea", "Paste JSON, YAML, or XML here...", $ta);
+        $ta.val(text).trigger("change").trigger("input");
+    });
+
     /* ===================================================================== */
     /*                              Form submit                              */
     /* ===================================================================== */
@@ -1815,6 +1884,14 @@ $(document).ready(function() {
                         $root.html(buildClientCryptoDiagnosticsHtml());
                     }
                 }, 0);
+            };
+        }
+
+        if ((form.data("action") || "") === "serialization") {
+            const outType = String(form.find("[name='type']").val() || "JSON");
+            submitOpts.onSuccess = function(dataOut) {
+                showData(responseDiv, dataOut);
+                paintSerializationOutputHighlight(responseDiv, outType);
             };
         }
 
@@ -2697,9 +2774,18 @@ function generateRandomData(type, placeholder = '', $input = null) {
         return randomIP();
     }
 
-    // Serialization/Encoding modules
-    if (formAction === 'serialization' || formId.includes('serial')) {
-        return randomJSON();
+    // Serialization — sample matches selected output format (JSON / YAML / XML)
+    if (formAction === "serialization" || formId === "serializationform") {
+        if (inputName === "input" || inputId === "serializationinput") {
+            const t = String(($form && $form.find("[name='type']").val()) || "JSON").toUpperCase();
+            if (t === "YAML") {
+                return randomYAML();
+            }
+            if (t === "XML") {
+                return randomXML();
+            }
+            return randomJSON();
+        }
     }
 
     // Base/Encoding conversion

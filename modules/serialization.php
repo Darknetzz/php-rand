@@ -15,7 +15,10 @@
             <form class="form" action="gen.php" method="POST" id="serializationForm" data-action="serialization" data-responsetype="text">
                 <div class="row g-4 mb-4">
                     <div class="col-12 col-lg-6">
-                        <label class="form-label mb-3"><strong style="font-size: 1.1rem;">Input</strong></label>
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                            <label for="serializationInput" class="form-label mb-0"><strong style="font-size: 1.1rem;">Input</strong></label>
+                            <button type="button" class="btn btn-sm btn-outline-secondary serialization-random-sample" title="Insert a random sample matching the selected output type"><?= icon('shuffle', 0.9) ?> Random sample</button>
+                        </div>
                         <div data-no-random-buttons class="hljs-mirror-shell">
                             <pre class="hljs-mirror-highlight-pane" aria-hidden="true"><code id="serializationHlCode" class="hljs"></code></pre>
                             <textarea
