@@ -234,17 +234,40 @@ function initSyntaxValidateCodeInputUi($scope) {
         return;
     }
     const $kind = $form.find("#syntaxValidateKind");
+    const isLight = document.documentElement.getAttribute("data-bs-theme") === "light";
+    const hljsFg = isLight ? "#24292f" : "#ddd";
 
     function syncHljsLangFromKind() {
         const k = String($kind.val() || "json").toLowerCase();
         const lang = syntaxValidateHljsLangForKind($form, k);
         $host.each(function() {
             this.setAttribute("language", lang);
+            this.style.setProperty("--code-input_highlight-text-color", hljsFg);
         });
     }
 
-    $kind.off("change.syntaxValidateHljs").on("change.syntaxValidateHljs", syncHljsLangFromKind);
+    function refreshSyntaxValidateHighlight() {
+        $host.each(function() {
+            if (typeof this.update === "function") {
+                this.update();
+            }
+        });
+    }
+
+    $kind.off("change.syntaxValidateHljs").on("change.syntaxValidateHljs", function() {
+        syncHljsLangFromKind();
+        requestAnimationFrame(refreshSyntaxValidateHighlight);
+    });
     syncHljsLangFromKind();
+
+    requestAnimationFrame(function() {
+        requestAnimationFrame(function() {
+            $host.each(function() {
+                this.style.setProperty("--code-input_highlight-text-color", hljsFg);
+            });
+            refreshSyntaxValidateHighlight();
+        });
+    });
 }
 
 /* ===================================================================== */

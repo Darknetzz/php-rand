@@ -92,16 +92,16 @@ footer {
 .syntax-validate-code-input,
 .crontab-expression-code-input {
   background-color: #1e1e1e !important;
-  /* Host `color` would cascade into Tabler’s pre/code + hljs stack and can make tokens unreadable */
+  color-scheme: dark;
 }
 [data-bs-theme="light"] .syntax-validate-code-input,
 [data-bs-theme="light"] .crontab-expression-code-input {
   background-color: #f3f5f7 !important;
+  color-scheme: light;
 }
 
 /*
- * Tabler: pre { background: var(--tblr-bg-surface-dark); color: var(--tblr-light); } and pre code { color: inherit }.
- * Under code-input the hljs layer must stay legible behind the transparent textarea; strip pre chrome + set a clear base color.
+ * Tabler pre/code + native textarea styling can break code-input’s stack (transparent textarea over hljs pre).
  */
 .syntax-validate-code-input pre,
 .crontab-expression-code-input pre {
@@ -111,20 +111,33 @@ footer {
   margin: 0 !important;
   border: none !important;
   box-shadow: none !important;
-}
-.syntax-validate-code-input pre code.hljs,
-.crontab-expression-code-input pre code.hljs {
-  color: #ddd !important;
-  background: #303030 !important;
+  opacity: 1 !important;
 }
 [data-bs-theme="light"] .syntax-validate-code-input pre,
 [data-bs-theme="light"] .crontab-expression-code-input pre {
   color: #24292f !important;
 }
-[data-bs-theme="light"] .syntax-validate-code-input pre code.hljs,
-[data-bs-theme="light"] .crontab-expression-code-input pre code.hljs {
-  color: #24292f !important;
-  background: #e8ecf0 !important;
+
+.syntax-validate-code-input pre code,
+.crontab-expression-code-input pre code {
+  padding: 0 !important;
+  border-radius: 0 !important;
+  font-size: inherit !important;
+  word-wrap: normal !important;
+}
+
+/* Force overlay textarea to stay transparent (UA “dark form controls” often paints an opaque fill) */
+.syntax-validate-code-input textarea:not([data-code-input-fallback]),
+.crontab-expression-code-input textarea:not([data-code-input-fallback]) {
+  background: transparent !important;
+  background-color: transparent !important;
+  color: transparent !important;
+  -webkit-text-fill-color: transparent !important;
+  caret-color: #c8c8c8 !important;
+}
+[data-bs-theme="light"] .syntax-validate-code-input textarea:not([data-code-input-fallback]),
+[data-bs-theme="light"] .crontab-expression-code-input textarea:not([data-code-input-fallback]) {
+  caret-color: #333 !important;
 }
 
 .output,
