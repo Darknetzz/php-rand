@@ -83,27 +83,103 @@ footer {
 }
 
 /* code-input (@webcoder49): full-width editors (global .form-control max-width would clip them) */
-.crontab-expression-code-input,
-.syntax-validate-code-input {
+.crontab-expression-code-input {
   max-width: none !important;
 }
 
-/* Library default is white (code-input.min.css); match app + hljs dark. */
-.syntax-validate-code-input,
+/* Validators: hljs mirror behind transparent textarea (no code-input) */
+.syntax-validate-editor-shell {
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr;
+  position: relative;
+  width: 100%;
+  max-width: none !important;
+  min-height: 420px;
+  border: 2px solid #495057;
+  border-radius: 0.5rem;
+  background-color: #2d2d2d;
+  color-scheme: dark;
+  font-family: monospace;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  tab-size: 2;
+  -moz-tab-size: 2;
+  overflow: hidden;
+}
+.syntax-validate-highlight-pane {
+  grid-column: 1 / -1;
+  grid-row: 1 / -1;
+  z-index: 0;
+  margin: 0 !important;
+  padding: 0.5rem 0.75rem;
+  border: 0 !important;
+  background: transparent !important;
+  overflow: auto;
+  pointer-events: none;
+  white-space: pre;
+  word-wrap: normal;
+  word-break: normal;
+}
+.syntax-validate-highlight-pane code.hljs {
+  display: block;
+  min-height: 100%;
+  padding: 0;
+  margin: 0;
+  background: transparent !important;
+}
+textarea.syntax-validate-input-overlay {
+  grid-column: 1 / -1;
+  grid-row: 1 / -1;
+  z-index: 1;
+  position: relative;
+  min-height: 420px;
+  margin: 0 !important;
+  padding: 0.5rem 0.75rem !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  resize: vertical;
+  overflow: auto;
+  max-width: none !important;
+  font-family: inherit !important;
+  font-size: inherit !important;
+  line-height: inherit !important;
+  tab-size: inherit;
+  -moz-tab-size: inherit;
+  white-space: pre;
+  word-wrap: normal;
+  background: transparent !important;
+  color: transparent !important;
+  -webkit-text-fill-color: transparent !important;
+  caret-color: #e6edf3 !important;
+  color-scheme: dark;
+}
+textarea.syntax-validate-input-overlay::placeholder {
+  color: rgba(230, 237, 243, 0.45);
+  -webkit-text-fill-color: rgba(230, 237, 243, 0.45);
+}
+[data-bs-theme="light"] .syntax-validate-editor-shell {
+  background-color: #f6f8fa;
+  color-scheme: light;
+}
+[data-bs-theme="light"] textarea.syntax-validate-input-overlay {
+  caret-color: #24292f !important;
+}
+[data-bs-theme="light"] textarea.syntax-validate-input-overlay::placeholder {
+  color: rgba(36, 41, 47, 0.45);
+  -webkit-text-fill-color: rgba(36, 41, 47, 0.45);
+}
+
+/* Crontab: hljs + code-input */
 .crontab-expression-code-input {
   background-color: #1e1e1e !important;
   color-scheme: dark;
 }
-[data-bs-theme="light"] .syntax-validate-code-input,
 [data-bs-theme="light"] .crontab-expression-code-input {
   background-color: #f3f5f7 !important;
   color-scheme: light;
 }
-
-/*
- * Tabler pre/code + native textarea styling can break code-input’s stack (transparent textarea over hljs pre).
- */
-.syntax-validate-code-input pre,
 .crontab-expression-code-input pre {
   background: transparent !important;
   color: #ddd !important;
@@ -113,21 +189,15 @@ footer {
   box-shadow: none !important;
   opacity: 1 !important;
 }
-[data-bs-theme="light"] .syntax-validate-code-input pre,
 [data-bs-theme="light"] .crontab-expression-code-input pre {
   color: #24292f !important;
 }
-
-.syntax-validate-code-input pre code,
 .crontab-expression-code-input pre code {
   padding: 0 !important;
   border-radius: 0 !important;
   font-size: inherit !important;
   word-wrap: normal !important;
 }
-
-/* Force overlay textarea to stay transparent (UA “dark form controls” often paints an opaque fill) */
-.syntax-validate-code-input textarea:not([data-code-input-fallback]),
 .crontab-expression-code-input textarea:not([data-code-input-fallback]) {
   background: transparent !important;
   background-color: transparent !important;
@@ -135,7 +205,6 @@ footer {
   -webkit-text-fill-color: transparent !important;
   caret-color: #c8c8c8 !important;
 }
-[data-bs-theme="light"] .syntax-validate-code-input textarea:not([data-code-input-fallback]),
 [data-bs-theme="light"] .crontab-expression-code-input textarea:not([data-code-input-fallback]) {
   caret-color: #333 !important;
 }

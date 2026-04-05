@@ -201,14 +201,26 @@ function ensureEnhancersForScope($scope) {
     }
     return ensureCodeInputAssets().done(function() {
         initCodeInputTemplate();
-        initSyntaxValidateCodeInputUi($scope);
     });
 }
 
 /* ===================================================================== */
-/*                 FUNCTION: syntaxValidateHljsLangForKind                */
+/*              FUNCTION: ensureHljsMirrorAssets (syntax validator)       */
 /* ===================================================================== */
-function syntaxValidateHljsLangForKind($form, kind) {
+function ensureHljsMirrorAssets() {
+    if (typeof hljs !== "undefined") {
+        return $.Deferred().resolve().promise();
+    }
+    return $.when(
+        loadStyleOnce("https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/dark.min.css"),
+        loadScriptOnce("https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js")
+    );
+}
+
+/* ===================================================================== */
+/*                 FUNCTION: syntaxHljsLangFromForm                       */
+/* ===================================================================== */
+function syntaxHljsLangFromForm($form, kind) {
     const raw = $form.attr("data-hljs-by-kind");
     if (!raw) {
         return "plaintext";
@@ -222,51 +234,84 @@ function syntaxValidateHljsLangForKind($form, kind) {
 }
 
 /* ===================================================================== */
-/*                 FUNCTION: initSyntaxValidateCodeInputUi               */
+/*               FUNCTION: initSyntaxValidateHljsMirror                 */
 /* ===================================================================== */
-function initSyntaxValidateCodeInputUi($scope) {
+function initSyntaxValidateHljsMirror($scope) {
     const $form = $scope.find("#syntaxValidateForm");
-    if (!$form.length) {
+    if (!$form.length || !$form.find(".syntax-validate-editor-shell").length) {
         return;
     }
-    const $host = $form.find("code-input.syntax-validate-code-input");
-    if (!$host.length) {
+    if ($form.data("syntaxHljsMirrorBound")) {
         return;
     }
+    const $ta = $form.find("#syntaxValidateInput");
+    const $pre = $form.find(".syntax-validate-highlight-pane");
+    const codeEl = document.getElementById("syntaxValidateHlCode");
+    if (!$ta.length || !$pre.length || !codeEl || typeof hljs === "undefined") {
+        return;
+    }
+
+    $form.data("syntaxHljsMirrorBound", true);
     const $kind = $form.find("#syntaxValidateKind");
-    const isLight = document.documentElement.getAttribute("data-bs-theme") === "light";
-    const hljsFg = isLight ? "#24292f" : "#ddd";
+    let debounceTimer = null;
+    const DEBOUNCE_MS = 40;
 
-    function syncHljsLangFromKind() {
-        const k = String($kind.val() || "json").toLowerCase();
-        const lang = syntaxValidateHljsLangForKind($form, k);
-        $host.each(function() {
-            this.setAttribute("language", lang);
-            this.style.setProperty("--code-input_highlight-text-color", hljsFg);
-        });
+    function langNow() {
+        return syntaxHljsLangFromForm($form, String($kind.val() || "json"));
     }
 
-    function refreshSyntaxValidateHighlight() {
-        $host.each(function() {
-            if (typeof this.update === "function") {
-                this.update();
+    function syncScroll() {
+        const ta = $ta[0];
+        const pre = $pre[0];
+        pre.scrollTop = ta.scrollTop;
+        pre.scrollLeft = ta.scrollLeft;
+    }
+
+    function paint() {
+        const text = $ta.val();
+        const lang = langNow();
+        codeEl.textContent = text;
+        codeEl.removeAttribute("data-highlighted");
+        codeEl.className = "hljs language-" + lang;
+        try {
+            hljs.highlightElement(codeEl);
+        } catch (e) {
+            try {
+                const r = hljs.highlightAuto(text);
+                codeEl.className = "hljs";
+                codeEl.innerHTML = r.value;
+            } catch (e2) {
+                codeEl.className = "hljs";
+                codeEl.textContent = text;
             }
-        });
+        }
+        syncScroll();
     }
 
-    $kind.off("change.syntaxValidateHljs").on("change.syntaxValidateHljs", function() {
-        syncHljsLangFromKind();
-        requestAnimationFrame(refreshSyntaxValidateHighlight);
-    });
-    syncHljsLangFromKind();
+    function schedulePaint() {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(paint, DEBOUNCE_MS);
+    }
 
-    requestAnimationFrame(function() {
-        requestAnimationFrame(function() {
-            $host.each(function() {
-                this.style.setProperty("--code-input_highlight-text-color", hljsFg);
-            });
-            refreshSyntaxValidateHighlight();
-        });
+    $ta.off(".syntaxHljsMirror")
+        .on("scroll.syntaxHljsMirror", syncScroll)
+        .on("input.syntaxHljsMirror", schedulePaint);
+    $kind.off("change.syntaxHljsMirror").on("change.syntaxHljsMirror", function() {
+        schedulePaint();
+    });
+
+    paint();
+}
+
+/* ===================================================================== */
+/*              FUNCTION: ensureSyntaxValidateHighlighter                 */
+/* ===================================================================== */
+function ensureSyntaxValidateHighlighter($scope) {
+    if (!$scope.find("#syntaxValidateForm .syntax-validate-editor-shell").length) {
+        return $.Deferred().resolve().promise();
+    }
+    return ensureHljsMirrorAssets().done(function() {
+        initSyntaxValidateHljsMirror($scope);
     });
 }
 
@@ -1456,12 +1501,12 @@ function navigate(to) {
     const showTarget = function() {
         $(".content").hide();
         $(normalizedTo).fadeIn();
+        ensureSyntaxValidateHighlighter($(normalizedTo));
         addRandomDataButtons($(normalizedTo));
         initLogoGeneratorUi($(normalizedTo));
         initCsrFormUi($(normalizedTo));
         initKeypairSignFormUi($(normalizedTo));
         initCrontabLiveAnalyzeUi($(normalizedTo));
-        initSyntaxValidateCodeInputUi($(normalizedTo));
         refreshClientCryptoGeneratorUi($(normalizedTo));
     };
 
@@ -1511,8 +1556,9 @@ function loadModule(moduleName) {
             cache: true
         }).done(function(html) {
             $placeholder.replaceWith(html);
-            ensureEnhancersForScope($(selector)).always(function() {
-                addRandomDataButtons($(selector));
+            const $mod = $(selector);
+            $.when(ensureEnhancersForScope($mod), ensureSyntaxValidateHighlighter($mod)).always(function() {
+                addRandomDataButtons($mod);
             });
         }).fail(function() {
             $placeholder.remove();
@@ -1629,15 +1675,13 @@ $(document).ready(function() {
         if (!$form.length) {
             return;
         }
-        var $host = $form.find("code-input.syntax-validate-code-input");
-        if (!$host.length) {
+        var $ta = $form.find("#syntaxValidateInput");
+        if (!$ta.length) {
             return;
         }
         randomDataGetCompatibleFormBundle($form);
-        var text = generateRandomData("textarea", "Paste content to validate...", $host);
-        $host.each(function() {
-            this.value = text;
-        });
+        var text = generateRandomData("textarea", "Paste content to validate...", $ta);
+        $ta.val(text).trigger("change").trigger("input");
     });
 
     /* ===================================================================== */

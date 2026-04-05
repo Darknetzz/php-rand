@@ -11,7 +11,6 @@
         $syntaxHljsByKind[$k] = syntax_validate_kind_to_hljs_lang($k);
     }
     $syntaxHljsByKindJson = htmlspecialchars(json_encode($syntaxHljsByKind, JSON_UNESCAPED_SLASHES) ?: '{}', ENT_QUOTES, 'UTF-8');
-    $svHljsLang = htmlspecialchars(syntax_validate_kind_to_hljs_lang($svKind), ENT_QUOTES, 'UTF-8');
     if ($validatorsEmbed) {
         echo '<section class="validators-block mb-0">';
     } else {
@@ -46,19 +45,20 @@
                             <label for="syntaxValidateInput" class="form-label mb-0"><strong style="font-size: 1.1rem;">Input</strong></label>
                             <button type="button" class="btn btn-sm btn-outline-secondary syntax-validate-random-sample" title="Insert random sample for the selected language"><?= icon('shuffle', 0.9) ?> Random sample</button>
                         </div>
-                        <code-input
-                            template="hljs-lang"
-                            language="<?= $svHljsLang ?>"
-                            class="syntax-validate-code-input w-100"
-                            style="display: block; min-height: 420px; resize: vertical; font-family: monospace; font-size: 0.95rem; border: 2px solid #495057; border-radius: 0.5rem; max-width: none;"
-                        ><textarea
-                            data-code-input-fallback
-                            name="syntax_validate_input"
-                            id="syntaxValidateInput"
-                            placeholder="Paste content to validate..."
-                            style="min-height: 420px;"
-                            required
-                        ><?= $svInput ?></textarea></code-input>
+                        <div data-no-random-buttons class="syntax-validate-editor-shell">
+                            <pre class="syntax-validate-highlight-pane" aria-hidden="true"><code id="syntaxValidateHlCode" class="hljs"></code></pre>
+                            <textarea
+                                name="syntax_validate_input"
+                                id="syntaxValidateInput"
+                                class="syntax-validate-input-overlay w-100"
+                                placeholder="Paste content to validate..."
+                                spellcheck="false"
+                                autocomplete="off"
+                                autocorrect="off"
+                                autocapitalize="off"
+                                required
+                            ><?= $svInput ?></textarea>
+                        </div>
                         <div class="form-text mt-2">
                             PHP snippets without <code>&lt;?php</code> are validated as if that opening tag were prepended.
                             Cron: first non-empty, non-<code>#</code> line is validated (same engine as the Crontab tool). INI uses PHP’s <code>parse_ini_string</code> (classic INI; not all <code>.env</code> dialects).
