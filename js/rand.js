@@ -75,8 +75,6 @@ function showData(obj, data) {
         if (obj.find(".crypto-ssh-key-output-card").length) {
             initSshKeyOutputFormatUi(obj);
         }
-    } else if (obj.is("code-input")) {
-        obj.val(data.trim());
     } else {
         data = data.replace(/<(.|\n)*?>/g, '');
         obj.val(data.trim());
@@ -151,276 +149,10 @@ function ensureMarkdownAssets() {
 }
 
 /* ===================================================================== */
-/*                    FUNCTION: ensureCodeInputAssets                     */
-/* ===================================================================== */
-function ensureCodeInputAssets() {
-    /* Plugin scripts assign to codeInput.plugins.* and must run after code-input.min.js.
-       loadScriptOnce uses async=true, so parallel $.when() does not guarantee order. */
-    return $.when(
-        loadStyleOnce("https://cdn.jsdelivr.net/npm/@webcoder49/code-input@2.7.1/code-input.min.css"),
-        loadStyleOnce("https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/dark.min.css"),
-        loadScriptOnce("https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"),
-        loadScriptOnce("https://cdn.jsdelivr.net/npm/@webcoder49/code-input@2.7.1/code-input.min.js").then(function() {
-            return $.when(
-                loadScriptOnce("js/hljs_autodetect.js"),
-                loadScriptOnce("js/hljs_indent.js")
-            );
-        })
-    );
-}
-
-/* ===================================================================== */
-/*                     FUNCTION: initCodeInputTemplate                    */
-/* ===================================================================== */
-window._codeInputTemplateReady = window._codeInputTemplateReady || false;
-function initCodeInputTemplate() {
-    if (window._codeInputTemplateReady) {
-        return;
-    }
-    if (typeof codeInput === "undefined" || typeof hljs === "undefined") {
-        return;
-    }
-    codeInput.registerTemplate("default", codeInput.templates.hljs(hljs, [
-        new codeInput.plugins.Autodetect(),
-        new codeInput.plugins.Indent(true, 2)
-    ]));
-    /* Fixed language (no Autodetect): Autodetect clears language-* before highlight, breaking explicit modes. */
-    codeInput.registerTemplate("hljs-lang", codeInput.templates.hljs(hljs, [
-        new codeInput.plugins.Indent(true, 2)
-    ]));
-    window._codeInputTemplateReady = true;
-}
-
-/* ===================================================================== */
 /*                    FUNCTION: ensureEnhancersForScope                   */
 /* ===================================================================== */
 function ensureEnhancersForScope($scope) {
-    const hasCodeInput = $scope.find("code-input").length > 0;
-    if (!hasCodeInput) {
-        return $.Deferred().resolve().promise();
-    }
-    return ensureCodeInputAssets().done(function() {
-        initCodeInputTemplate();
-    });
-}
-
-/* ===================================================================== */
-/*              FUNCTION: ensureHljsMirrorAssets (syntax validator)       */
-/* ===================================================================== */
-function ensureHljsMirrorAssets() {
-    if (typeof hljs !== "undefined") {
-        return $.Deferred().resolve().promise();
-    }
-    return $.when(
-        loadStyleOnce("https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/dark.min.css"),
-        loadScriptOnce("https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js")
-    );
-}
-
-/* ===================================================================== */
-/*                 FUNCTION: syntaxHljsLangFromForm                       */
-/* ===================================================================== */
-function syntaxHljsLangFromForm($form, kind) {
-    const raw = $form.attr("data-hljs-by-kind");
-    if (!raw) {
-        return "plaintext";
-    }
-    try {
-        const m = JSON.parse(raw);
-        return m[String(kind || "").toLowerCase()] || "plaintext";
-    } catch (e) {
-        return "plaintext";
-    }
-}
-
-/* ===================================================================== */
-/*            FUNCTION: serializationHljsLangGuess (input heuristic)      */
-/* ===================================================================== */
-function serializationHljsLangGuess(text) {
-    const t = String(text || "").trimStart();
-    if (t.startsWith("{") || t.startsWith("[")) {
-        return "json";
-    }
-    if (t.startsWith("<") || t.startsWith("<?xml")) {
-        return "xml";
-    }
-    return "yaml";
-}
-
-/* Map Serialization output type (JSON | YAML | XML) to highlight.js grammar id */
-function serializationHljsLangFromOutputType(typeVal) {
-    const t = String(typeVal || "JSON").toUpperCase();
-    if (t === "YAML") {
-        return "yaml";
-    }
-    if (t === "XML") {
-        return "xml";
-    }
-    return "json";
-}
-
-/* ===================================================================== */
-/*               FUNCTION: bindHljsMirrorEditor                             */
-/* ===================================================================== */
-function bindHljsMirrorEditor($form, opts) {
-    if ($form.data(opts.dataKey)) {
-        return;
-    }
-    const $ta = opts.$ta;
-    const $pre = opts.$pre;
-    const codeEl = opts.codeEl;
-    const ns = opts.eventNs || ".hljsMirrorBind";
-    const debounceMs = opts.debounceMs != null ? opts.debounceMs : 40;
-
-    if (!$ta.length || !$pre.length || !codeEl || typeof hljs === "undefined") {
-        return;
-    }
-
-    $form.data(opts.dataKey, true);
-
-    let debounceTimer = null;
-
-    function syncScroll() {
-        $pre[0].scrollTop = $ta[0].scrollTop;
-        $pre[0].scrollLeft = $ta[0].scrollLeft;
-    }
-
-    function paint() {
-        const text = $ta.val();
-        const lang = typeof opts.lang === "function" ? opts.lang() : opts.lang;
-        codeEl.textContent = text;
-        codeEl.removeAttribute("data-highlighted");
-        codeEl.className = "hljs language-" + lang;
-        try {
-            hljs.highlightElement(codeEl);
-        } catch (e) {
-            try {
-                const r = hljs.highlightAuto(text);
-                codeEl.className = "hljs";
-                codeEl.innerHTML = r.value;
-            } catch (e2) {
-                codeEl.className = "hljs";
-                codeEl.textContent = text;
-            }
-        }
-        syncScroll();
-        /* Highlight.js mutates the DOM; one extra frame aligns scroll metrics with the textarea. */
-        requestAnimationFrame(syncScroll);
-    }
-
-    function schedulePaint() {
-        clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(paint, debounceMs);
-    }
-
-    $ta.off(ns).on("scroll" + ns, syncScroll).on("input" + ns, schedulePaint);
-
-    if (opts.$repaintOnChange && opts.$repaintOnChange.length) {
-        opts.$repaintOnChange.forEach(function($el) {
-            $el.off("change" + ns).on("change" + ns, schedulePaint);
-        });
-    }
-
-    paint();
-}
-
-/* ===================================================================== */
-/*               FUNCTION: initSyntaxValidateHljsMirror                   */
-/* ===================================================================== */
-function initSyntaxValidateHljsMirror($scope) {
-    const $form = $scope.find("#syntaxValidateForm");
-    if (!$form.length || !$form.find(".hljs-mirror-shell").length) {
-        return;
-    }
-    const $kind = $form.find("#syntaxValidateKind");
-    bindHljsMirrorEditor($form, {
-        dataKey: "syntaxHljsMirrorBound",
-        $ta: $form.find("#syntaxValidateInput"),
-        $pre: $form.find(".hljs-mirror-highlight-pane"),
-        codeEl: document.getElementById("syntaxValidateHlCode"),
-        eventNs: ".syntaxHljsMirror",
-        lang: function() {
-            return syntaxHljsLangFromForm($form, String($kind.val() || "json"));
-        },
-        $repaintOnChange: [$kind]
-    });
-}
-
-/* ===================================================================== */
-/*              FUNCTION: initSerializationHljsMirror                     */
-/* ===================================================================== */
-function initSerializationHljsMirror($scope) {
-    const $form = $scope.find("#serializationForm");
-    if (!$form.length || !$form.find(".hljs-mirror-shell").length) {
-        return;
-    }
-    const $ta = $form.find("#serializationInput");
-    const $type = $form.find("[name='type']");
-    bindHljsMirrorEditor($form, {
-        dataKey: "serializationHljsMirrorBound",
-        $ta: $ta,
-        $pre: $form.find(".hljs-mirror-highlight-pane"),
-        codeEl: document.getElementById("serializationHlCode"),
-        eventNs: ".serializationHljsMirror",
-        lang: function() {
-            if (!String($ta.val() || "").trim()) {
-                return serializationHljsLangFromOutputType($type.val());
-            }
-            return serializationHljsLangGuess($ta.val());
-        },
-        $repaintOnChange: [$type]
-    });
-}
-
-/* After convert: highlight the escaped <pre> body in the response card */
-function paintSerializationOutputHighlight($root, outputType) {
-    if (!$root || !$root.length) {
-        return;
-    }
-    ensureHljsMirrorAssets().done(function() {
-        if (typeof hljs === "undefined") {
-            return;
-        }
-        const $pre = $root.find("pre").first();
-        if (!$pre.length) {
-            return;
-        }
-        const raw = $pre.text();
-        if (!String(raw || "").trim()) {
-            return;
-        }
-        const lang = serializationHljsLangFromOutputType(outputType);
-        const code = document.createElement("code");
-        code.className = "hljs language-" + lang;
-        code.textContent = raw;
-        $pre.empty().append(code);
-        $pre.addClass("serialization-output-hljs");
-        try {
-            hljs.highlightElement(code);
-        } catch (e) {
-            try {
-                const r = hljs.highlightAuto(raw);
-                code.className = "hljs";
-                code.innerHTML = r.value;
-            } catch (e2) {
-                code.className = "hljs";
-                code.textContent = raw;
-            }
-        }
-    });
-}
-
-/* ===================================================================== */
-/*              FUNCTION: ensureHljsMirrorEditors                         */
-/* ===================================================================== */
-function ensureHljsMirrorEditors($scope) {
-    if (!$scope.find(".hljs-mirror-shell").length) {
-        return $.Deferred().resolve().promise();
-    }
-    return ensureHljsMirrorAssets().done(function() {
-        initSyntaxValidateHljsMirror($scope);
-        initSerializationHljsMirror($scope);
-    });
+    return $.Deferred().resolve().promise();
 }
 
 /* ===================================================================== */
@@ -1497,7 +1229,7 @@ function initCrontabLiveAnalyzeUi($scope) {
         return;
     }
 
-    const $expression = $form.find("code-input.crontab-expression-code-input textarea");
+    const $expression = $form.find("#crontabExpression");
     const $responseDiv = $form.find(".responseDiv");
     if (!$expression.length || !$responseDiv.length) {
         return;
@@ -1609,7 +1341,6 @@ function navigate(to) {
     const showTarget = function() {
         $(".content").hide();
         $(normalizedTo).fadeIn();
-        ensureHljsMirrorEditors($(normalizedTo));
         addRandomDataButtons($(normalizedTo));
         initLogoGeneratorUi($(normalizedTo));
         initCsrFormUi($(normalizedTo));
@@ -1665,7 +1396,7 @@ function loadModule(moduleName) {
         }).done(function(html) {
             $placeholder.replaceWith(html);
             const $mod = $(selector);
-            $.when(ensureEnhancersForScope($mod), ensureHljsMirrorEditors($mod)).always(function() {
+            ensureEnhancersForScope($mod).always(function() {
                 addRandomDataButtons($mod);
             });
         }).fail(function() {
@@ -1886,14 +1617,6 @@ $(document).ready(function() {
                         $root.html(buildClientCryptoDiagnosticsHtml());
                     }
                 }, 0);
-            };
-        }
-
-        if ((form.data("action") || "") === "serialization") {
-            const outType = String(form.find("[name='type']").val() || "JSON");
-            submitOpts.onSuccess = function(dataOut) {
-                showData(responseDiv, dataOut);
-                paintSerializationOutputHighlight(responseDiv, outType);
             };
         }
 
@@ -2943,11 +2666,6 @@ function addRandomDataButtons($root = null) {
 
         // Skip inputs that are part of special controls
         if ($input.closest('.form-selectgroup').length > 0) {
-            return;
-        }
-
-        /* code-input setup() replaces inner HTML; wrapping breaks its textarea/pre grid. Use a dedicated sample control instead (e.g. .syntax-validate-random-sample). */
-        if ($input.closest("code-input").length) {
             return;
         }
 

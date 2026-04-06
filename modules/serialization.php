@@ -19,12 +19,11 @@
                             <label for="serializationInput" class="form-label mb-0"><strong style="font-size: 1.1rem;">Input</strong></label>
                             <button type="button" class="btn btn-sm btn-outline-secondary serialization-random-sample" title="Insert a random sample matching the selected output type"><?= icon('shuffle', 0.9) ?> Random sample</button>
                         </div>
-                        <div data-no-random-buttons class="hljs-mirror-shell">
-                            <pre class="hljs-mirror-highlight-pane" aria-hidden="true"><code id="serializationHlCode" class="hljs"></code></pre>
+                        <div data-no-random-buttons>
                             <textarea
                                 name="input"
                                 id="serializationInput"
-                                class="hljs-mirror-input-overlay w-100"
+                                class="rand-code-textarea w-100"
                                 placeholder="Paste JSON, YAML, or XML here..."
                                 spellcheck="false"
                                 autocomplete="off"

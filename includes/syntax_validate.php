@@ -21,26 +21,6 @@ function syntax_validate_allowed_kinds(): array {
 }
 
 /**
- * highlight.js grammar names for the bundled build (must match languages included in hljs core).
- */
-function syntax_validate_kind_to_hljs_lang(string $kind): string {
-    return match (strtolower($kind)) {
-        'json' => 'json',
-        'yaml' => 'yaml',
-        'xml' => 'xml',
-        'ini' => 'ini',
-        'jsonl' => 'json',
-        'cron' => 'plaintext',
-        'php' => 'php',
-        'python' => 'python',
-        'ruby' => 'ruby',
-        'javascript' => 'javascript',
-        'shell' => 'bash',
-        default => 'plaintext',
-    };
-}
-
-/**
  * @return array{ok: bool, message: string, detail?: string}
  */
 function syntax_validate_dispatch(string $kind, string $input): array {

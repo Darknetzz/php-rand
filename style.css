@@ -82,197 +82,62 @@ footer {
   display: none;
 }
 
-/* code-input (@webcoder49): full-width editors (global .form-control max-width would clip them) */
-.crontab-expression-code-input {
-  max-width: none !important;
-}
-
-/* hljs mirror behind transparent textarea (validators, serialization, …)
-   Use in-flow textarea + absolutely positioned pre over the same box. CSS grid
-   stacking made the highlight layer and textarea diverge (scrollbar gutter /
-   track sizing), which misaligns the caret vs highlighted text. */
-.hljs-mirror-shell {
-  --hljs-mirror-fs: 0.95rem;
-  --hljs-mirror-lh: 1.5;
-  --hljs-mirror-pad-y: 0.5rem;
-  --hljs-mirror-pad-x: 0.75rem;
-  --hljs-mirror-ff: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
-    "Liberation Mono", "Courier New", monospace;
-  display: block;
-  position: relative;
-  width: 100%;
-  max-width: none !important;
-  min-height: 320px;
-  border: 2px solid #495057;
-  border-radius: 0.5rem;
-  background-color: #2d2d2d;
-  color-scheme: dark;
-  font-family: var(--hljs-mirror-ff);
-  font-size: var(--hljs-mirror-fs);
-  line-height: var(--hljs-mirror-lh);
-  tab-size: 2;
-  -moz-tab-size: 2;
-  overflow: hidden;
-  box-sizing: border-box;
-}
-#syntaxValidateForm .hljs-mirror-shell,
-.validators-block .hljs-mirror-shell {
-  min-height: 420px;
-}
-.hljs-mirror-highlight-pane {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  margin: 0 !important;
-  padding: var(--hljs-mirror-pad-y) var(--hljs-mirror-pad-x);
-  border: 0 !important;
-  background: transparent !important;
-  box-sizing: border-box;
-  overflow-x: auto;
-  overflow-y: scroll;
-  overflow-anchor: none;
-  scrollbar-gutter: stable;
-  pointer-events: none;
-  white-space: pre;
-  word-wrap: normal;
-  word-break: normal;
-  font-family: var(--hljs-mirror-ff) !important;
-  font-size: var(--hljs-mirror-fs) !important;
-  line-height: var(--hljs-mirror-lh) !important;
-}
-/* hl.js themes (loaded after this file) use `pre code.hljs{padding:1em}` — that
-   shifts highlighted text vs the transparent textarea and misaligns the caret. */
-pre.hljs-mirror-highlight-pane code.hljs,
-.hljs-mirror-highlight-pane code.hljs {
-  display: block;
-  min-height: 100%;
-  padding: 0 !important;
-  margin: 0 !important;
-  overflow-x: visible !important;
-  background: transparent !important;
-  font-family: inherit !important;
-  font-size: inherit !important;
-  line-height: inherit !important;
-}
-
-/* Token spans must use the same font metrics as the textarea (theme uses bold). */
-.hljs-mirror-highlight-pane code.hljs span {
-  font-family: inherit !important;
-  font-size: inherit !important;
-  line-height: inherit !important;
-  font-weight: inherit !important;
-  font-style: inherit !important;
-  vertical-align: baseline;
-}
-
-textarea.hljs-mirror-input-overlay {
-  position: relative;
-  z-index: 1;
+/* Monospace editors (Serialization, Syntax validator): visible text, no overlay */
+textarea.rand-code-textarea {
   display: block;
   width: 100%;
   max-width: none !important;
   min-height: 320px;
-  margin: 0 !important;
-  padding: var(--hljs-mirror-pad-y) var(--hljs-mirror-pad-x) !important;
-  border: none !important;
-  border-radius: 0 !important;
-  box-shadow: none !important;
+  margin: 0;
+  padding: 0.5rem 0.75rem;
   box-sizing: border-box;
   resize: vertical;
-  overflow-x: auto;
-  overflow-y: scroll;
-  overflow-anchor: none;
-  scrollbar-gutter: stable;
-  font-family: var(--hljs-mirror-ff) !important;
-  font-size: var(--hljs-mirror-fs) !important;
-  line-height: var(--hljs-mirror-lh) !important;
+  overflow: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+  font-size: 0.95rem;
+  line-height: 1.5;
   tab-size: 2;
   -moz-tab-size: 2;
   white-space: pre;
   word-wrap: normal;
-  background: transparent !important;
-  color: transparent !important;
-  -webkit-text-fill-color: transparent !important;
-  caret-color: #e6edf3 !important;
+  color: #e6edf3;
+  background-color: #2d2d2d;
+  border: 2px solid #495057;
+  border-radius: 0.5rem;
   color-scheme: dark;
-  font-weight: 400 !important;
-  font-style: normal !important;
-  vertical-align: top;
-  appearance: none;
-  -webkit-appearance: none;
 }
-#syntaxValidateForm textarea.hljs-mirror-input-overlay,
-.validators-block textarea.hljs-mirror-input-overlay {
+#syntaxValidateForm textarea.rand-code-textarea,
+.validators-block textarea.rand-code-textarea {
   min-height: 420px;
 }
-textarea.hljs-mirror-input-overlay::placeholder {
-  color: rgba(230, 237, 243, 0.45);
-  -webkit-text-fill-color: rgba(230, 237, 243, 0.45);
-}
-[data-bs-theme="light"] .hljs-mirror-shell {
+[data-bs-theme="light"] textarea.rand-code-textarea {
+  color: #24292f;
   background-color: #f6f8fa;
+  border-color: #adb5bd;
   color-scheme: light;
 }
-[data-bs-theme="light"] textarea.hljs-mirror-input-overlay {
-  caret-color: #24292f !important;
-}
-[data-bs-theme="light"] textarea.hljs-mirror-input-overlay::placeholder {
-  color: rgba(36, 41, 47, 0.45);
-  -webkit-text-fill-color: rgba(36, 41, 47, 0.45);
-}
 
-/* Serialization convert output: hl.js block inside server-rendered <pre> */
-.serialization-output-hljs {
-  margin: 0 !important;
-  padding: 0.75rem 1rem !important;
-  background: rgba(0, 0, 0, 0.35) !important;
-  border-radius: 0.35rem;
-  overflow-x: auto;
-}
-.serialization-output-hljs code.hljs {
-  background: transparent !important;
-  padding: 0;
-}
-[data-bs-theme="light"] .serialization-output-hljs {
-  background: rgba(0, 0, 0, 0.06) !important;
-}
-
-/* Crontab: hljs + code-input */
-.crontab-expression-code-input {
-  background-color: #1e1e1e !important;
+/* Crontab expression: compact monospace field */
+textarea.crontab-expression-textarea {
+  max-width: none !important;
+  min-height: 3.25rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+  font-size: 1.09375rem;
+  line-height: 1.5;
+  white-space: pre;
+  color: #e6edf3;
+  background-color: #2d2d2d;
+  border: 2px solid #495057 !important;
+  border-radius: 0.5rem;
   color-scheme: dark;
 }
-[data-bs-theme="light"] .crontab-expression-code-input {
-  background-color: #f3f5f7 !important;
+[data-bs-theme="light"] textarea.crontab-expression-textarea {
+  color: #24292f;
+  background-color: #f6f8fa;
+  border-color: #adb5bd !important;
   color-scheme: light;
-}
-.crontab-expression-code-input pre {
-  background: transparent !important;
-  color: #ddd !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  border: none !important;
-  box-shadow: none !important;
-  opacity: 1 !important;
-}
-[data-bs-theme="light"] .crontab-expression-code-input pre {
-  color: #24292f !important;
-}
-.crontab-expression-code-input pre code {
-  padding: 0 !important;
-  border-radius: 0 !important;
-  font-size: inherit !important;
-  word-wrap: normal !important;
-}
-.crontab-expression-code-input textarea:not([data-code-input-fallback]) {
-  background: transparent !important;
-  background-color: transparent !important;
-  color: transparent !important;
-  -webkit-text-fill-color: transparent !important;
-  caret-color: #c8c8c8 !important;
-}
-[data-bs-theme="light"] .crontab-expression-code-input textarea:not([data-code-input-fallback]) {
-  caret-color: #333 !important;
 }
 
 .output,

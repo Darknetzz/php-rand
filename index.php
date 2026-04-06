@@ -15,7 +15,7 @@
   src="https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/js/tabler.min.js">
 </script>
 
-<!-- Marked / Highlight.js / code-input are loaded on demand in js/rand.js -->
+<!-- Marked / Highlight.js (e.g. markdown) are loaded on demand in js/rand.js -->
 
 <!-- Axios for AJAX requests -->
 <script defer src="js/axios.min.js"></script>

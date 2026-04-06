@@ -6,11 +6,6 @@
     if (!in_array($svKind, syntax_validate_allowed_kinds(), true)) {
         $svKind = 'json';
     }
-    $syntaxHljsByKind = [];
-    foreach (syntax_validate_allowed_kinds() as $k) {
-        $syntaxHljsByKind[$k] = syntax_validate_kind_to_hljs_lang($k);
-    }
-    $syntaxHljsByKindJson = htmlspecialchars(json_encode($syntaxHljsByKind, JSON_UNESCAPED_SLASHES) ?: '{}', ENT_QUOTES, 'UTF-8');
     if ($validatorsEmbed) {
         echo '<section class="validators-block mb-0">';
     } else {
@@ -24,7 +19,7 @@
         <h1 class="card-header"><?= icon('braces') ?> Syntax validator</h1>
         <?php endif; ?>
         <div class="card-body">
-            <form class="form" action="gen.php" method="POST" id="syntaxValidateForm" data-action="syntax_validate" data-hljs-by-kind="<?= $syntaxHljsByKindJson ?>">
+            <form class="form" action="gen.php" method="POST" id="syntaxValidateForm" data-action="syntax_validate">
                 <div class="row g-4 mb-4">
                     <div class="col-12 col-xl-6">
                         <label for="syntaxValidateKind" class="form-label mb-2"><strong>Language</strong></label>
@@ -45,12 +40,11 @@
                             <label for="syntaxValidateInput" class="form-label mb-0"><strong style="font-size: 1.1rem;">Input</strong></label>
                             <button type="button" class="btn btn-sm btn-outline-secondary syntax-validate-random-sample" title="Insert random sample for the selected language"><?= icon('shuffle', 0.9) ?> Random sample</button>
                         </div>
-                        <div data-no-random-buttons class="hljs-mirror-shell">
-                            <pre class="hljs-mirror-highlight-pane" aria-hidden="true"><code id="syntaxValidateHlCode" class="hljs"></code></pre>
+                        <div data-no-random-buttons>
                             <textarea
                                 name="syntax_validate_input"
                                 id="syntaxValidateInput"
-                                class="hljs-mirror-input-overlay w-100"
+                                class="rand-code-textarea w-100"
                                 placeholder="Paste content to validate..."
                                 spellcheck="false"
                                 autocomplete="off"
