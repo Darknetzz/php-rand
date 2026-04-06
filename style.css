@@ -87,11 +87,18 @@ footer {
   max-width: none !important;
 }
 
-/* hljs mirror behind transparent textarea (validators, serialization, …) */
+/* hljs mirror behind transparent textarea (validators, serialization, …)
+   Use in-flow textarea + absolutely positioned pre over the same box. CSS grid
+   stacking made the highlight layer and textarea diverge (scrollbar gutter /
+   track sizing), which misaligns the caret vs highlighted text. */
 .hljs-mirror-shell {
-  display: grid;
-  grid-template-columns: 1fr;
-  grid-template-rows: 1fr;
+  --hljs-mirror-fs: 0.95rem;
+  --hljs-mirror-lh: 1.5;
+  --hljs-mirror-pad-y: 0.5rem;
+  --hljs-mirror-pad-x: 0.75rem;
+  --hljs-mirror-ff: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+  display: block;
   position: relative;
   width: 100%;
   max-width: none !important;
@@ -100,30 +107,38 @@ footer {
   border-radius: 0.5rem;
   background-color: #2d2d2d;
   color-scheme: dark;
-  font-family: monospace;
-  font-size: 0.95rem;
-  line-height: 1.5;
+  font-family: var(--hljs-mirror-ff);
+  font-size: var(--hljs-mirror-fs);
+  line-height: var(--hljs-mirror-lh);
   tab-size: 2;
   -moz-tab-size: 2;
   overflow: hidden;
+  box-sizing: border-box;
 }
 #syntaxValidateForm .hljs-mirror-shell,
 .validators-block .hljs-mirror-shell {
   min-height: 420px;
 }
 .hljs-mirror-highlight-pane {
-  grid-column: 1 / -1;
-  grid-row: 1 / -1;
+  position: absolute;
+  inset: 0;
   z-index: 0;
   margin: 0 !important;
-  padding: 0.5rem 0.75rem;
+  padding: var(--hljs-mirror-pad-y) var(--hljs-mirror-pad-x);
   border: 0 !important;
   background: transparent !important;
-  overflow: auto;
+  box-sizing: border-box;
+  overflow-x: auto;
+  overflow-y: scroll;
+  overflow-anchor: none;
+  scrollbar-gutter: stable;
   pointer-events: none;
   white-space: pre;
   word-wrap: normal;
   word-break: normal;
+  font-family: var(--hljs-mirror-ff) !important;
+  font-size: var(--hljs-mirror-fs) !important;
+  line-height: var(--hljs-mirror-lh) !important;
 }
 /* hl.js themes (loaded after this file) use `pre code.hljs{padding:1em}` — that
    shifts highlighted text vs the transparent textarea and misaligns the caret. */
@@ -135,6 +150,9 @@ pre.hljs-mirror-highlight-pane code.hljs,
   margin: 0 !important;
   overflow-x: visible !important;
   background: transparent !important;
+  font-family: inherit !important;
+  font-size: inherit !important;
+  line-height: inherit !important;
 }
 
 /* Token spans must use the same font metrics as the textarea (theme uses bold). */
@@ -148,24 +166,28 @@ pre.hljs-mirror-highlight-pane code.hljs,
 }
 
 textarea.hljs-mirror-input-overlay {
-  grid-column: 1 / -1;
-  grid-row: 1 / -1;
-  z-index: 1;
   position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  max-width: none !important;
   min-height: 320px;
   margin: 0 !important;
-  padding: 0.5rem 0.75rem !important;
+  padding: var(--hljs-mirror-pad-y) var(--hljs-mirror-pad-x) !important;
   border: none !important;
   border-radius: 0 !important;
   box-shadow: none !important;
+  box-sizing: border-box;
   resize: vertical;
-  overflow: auto;
-  max-width: none !important;
-  font-family: inherit !important;
-  font-size: inherit !important;
-  line-height: inherit !important;
-  tab-size: inherit;
-  -moz-tab-size: inherit;
+  overflow-x: auto;
+  overflow-y: scroll;
+  overflow-anchor: none;
+  scrollbar-gutter: stable;
+  font-family: var(--hljs-mirror-ff) !important;
+  font-size: var(--hljs-mirror-fs) !important;
+  line-height: var(--hljs-mirror-lh) !important;
+  tab-size: 2;
+  -moz-tab-size: 2;
   white-space: pre;
   word-wrap: normal;
   background: transparent !important;
@@ -175,6 +197,9 @@ textarea.hljs-mirror-input-overlay {
   color-scheme: dark;
   font-weight: 400 !important;
   font-style: normal !important;
+  vertical-align: top;
+  appearance: none;
+  -webkit-appearance: none;
 }
 #syntaxValidateForm textarea.hljs-mirror-input-overlay,
 .validators-block textarea.hljs-mirror-input-overlay {

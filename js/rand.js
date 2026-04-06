@@ -304,6 +304,8 @@ function bindHljsMirrorEditor($form, opts) {
             }
         }
         syncScroll();
+        /* Highlight.js mutates the DOM; one extra frame aligns scroll metrics with the textarea. */
+        requestAnimationFrame(syncScroll);
     }
 
     function schedulePaint() {
