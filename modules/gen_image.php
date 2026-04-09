@@ -219,9 +219,15 @@
                                     <tr>
                                         <th scope="row" class="text-nowrap">Border</th>
                                         <td>
-                                            <input type="number" class="form-control" name="logo_border" min="0" max="24" value="0"
-                                                aria-describedby="logoBorderHint" style="max-width: 7rem;">
-                                            <small id="logoBorderHint" class="text-muted d-block mt-1 mb-0">0–24 px (uses border color below)</small>
+                                            <div class="d-flex flex-wrap gap-3 align-items-center">
+                                                <div class="form-check form-switch mb-0">
+                                                    <input class="form-check-input" type="checkbox" id="logoBorderEnabled" name="logo_border_enabled" value="1">
+                                                    <label class="form-check-label" for="logoBorderEnabled">Enable border</label>
+                                                </div>
+                                                <input type="number" class="form-control" id="logo_border" name="logo_border" min="0" max="24" value="0"
+                                                    aria-describedby="logoBorderHint" style="max-width: 7rem;" disabled>
+                                            </div>
+                                            <small id="logoBorderHint" class="text-muted d-block mt-1 mb-0">0–24 px when enabled. Border color is set below.</small>
                                         </td>
                                     </tr>
                                     <tr>
@@ -277,8 +283,8 @@
                                                 <div class="col">
                                                     <label class="form-label small mb-1" for="logo_border_color">Border</label>
                                                     <div class="d-flex gap-1 align-items-stretch">
-                                                        <input type="color" class="form-control form-control-color flex-grow-1" id="logo_border_color" name="logo_border_color" value="#ffffff" title="Border color">
-                                                        <button type="button" class="btn btn-outline-secondary btn-sm logo-color-random px-2" data-target="logo_border_color" title="Random color"><?= icon('shuffle', 0.9) ?></button>
+                                                        <input type="color" class="form-control form-control-color flex-grow-1" id="logo_border_color" name="logo_border_color" value="#ffffff" title="Border color" disabled>
+                                                        <button type="button" class="btn btn-outline-secondary btn-sm logo-color-random px-2" data-target="logo_border_color" title="Random color" disabled><?= icon('shuffle', 0.9) ?></button>
                                                     </div>
                                                 </div>
                                             </div>

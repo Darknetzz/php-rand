@@ -1066,6 +1066,44 @@ function initLogoGeneratorUi($scope) {
         }
     };
 
+    const $borderToggle = $form.find("#logoBorderEnabled");
+    const $borderInput = $form.find("#logo_border");
+    const $borderColorInput = $form.find("#logo_border_color");
+    const $borderColorRandomBtn = $form.find(".logo-color-random[data-target='logo_border_color']");
+    const clampBorderWidth = (value, fallback) => {
+        let parsed = parseInt(value, 10);
+        if (Number.isNaN(parsed)) {
+            parsed = fallback;
+        }
+        return Math.max(0, Math.min(24, parsed));
+    };
+    const setBorderEnabled = (enabled) => {
+        if ($borderToggle.length) {
+            $borderToggle.prop("checked", !!enabled);
+        }
+    };
+    const syncBorderUi = () => {
+        if (!$borderToggle.length || !$borderInput.length) {
+            return;
+        }
+        const enabled = $borderToggle.prop("checked");
+        const currentWidth = clampBorderWidth($borderInput.val(), 0);
+        if (currentWidth > 0) {
+            $form.data("logoLastBorderWidth", currentWidth);
+        }
+        if (enabled) {
+            const restoredWidth = clampBorderWidth($form.data("logoLastBorderWidth"), 4);
+            $borderInput.prop("disabled", false);
+            $borderColorInput.prop("disabled", false);
+            $borderColorRandomBtn.prop("disabled", false);
+            $borderInput.val(String(currentWidth > 0 ? currentWidth : Math.max(1, restoredWidth)));
+            return;
+        }
+        $borderInput.val("0").prop("disabled", true);
+        $borderColorInput.prop("disabled", true);
+        $borderColorRandomBtn.prop("disabled", true);
+    };
+
     const $sizeInput = $form.find("#logo_font_size");
     const $sizeRange = $form.find("#logo_font_size_range");
     const syncFontSizeUi = () => {
@@ -1140,6 +1178,7 @@ function initLogoGeneratorUi($scope) {
             setVal("logo_shape", "rounded");
             setVal("logo_style", "gradient");
             setVal("logo_font_size", 120);
+            setBorderEnabled(false);
             setVal("logo_border", 0);
             setVal("logo_initials", true);
             setVal("logo_uppercase", true);
@@ -1147,6 +1186,7 @@ function initLogoGeneratorUi($scope) {
                 $hint.text("App icon: square canvas, rounded shape, initials + caps — good for launcher icons.");
             }
             syncFontSizeUi();
+            syncBorderUi();
             scheduleLogoPreviewSoon();
             return;
         }
@@ -1156,6 +1196,7 @@ function initLogoGeneratorUi($scope) {
             setVal("logo_shape", "rectangle");
             setVal("logo_style", "gradient");
             setVal("logo_font_size", 110);
+            setBorderEnabled(false);
             setVal("logo_border", 0);
             setVal("logo_initials", false);
             setVal("logo_uppercase", false);
@@ -1163,6 +1204,7 @@ function initLogoGeneratorUi($scope) {
                 $hint.text("Banner: wide rectangle with full text — headers and cover images.");
             }
             syncFontSizeUi();
+            syncBorderUi();
             scheduleLogoPreviewSoon();
             return;
         }
@@ -1172,6 +1214,7 @@ function initLogoGeneratorUi($scope) {
             setVal("logo_shape", "circle");
             setVal("logo_style", "solid");
             setVal("logo_font_size", 132);
+            setBorderEnabled(true);
             setVal("logo_border", 8);
             setVal("logo_initials", true);
             setVal("logo_uppercase", true);
@@ -1179,6 +1222,7 @@ function initLogoGeneratorUi($scope) {
                 $hint.text("Initials badge: circle, solid fill, visible border — avatars and seals.");
             }
             syncFontSizeUi();
+            syncBorderUi();
             scheduleLogoPreviewSoon();
         }
     };
@@ -1216,7 +1260,19 @@ function initLogoGeneratorUi($scope) {
         scheduleLogoPreviewSoon();
     });
 
+    $borderToggle.off("change.randLogoBorder").on("change.randLogoBorder", function() {
+        syncBorderUi();
+    });
+
+    $borderInput.off("input.randLogoBorder").on("input.randLogoBorder", function() {
+        const width = clampBorderWidth($borderInput.val(), 0);
+        setBorderEnabled(width > 0);
+        syncBorderUi();
+    });
+
     syncFontSizeUi();
+    setBorderEnabled(clampBorderWidth($borderInput.val(), 0) > 0);
+    syncBorderUi();
     scheduleLogoPreviewSoon();
 }
 
