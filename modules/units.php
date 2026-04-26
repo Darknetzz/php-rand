@@ -86,24 +86,54 @@
     var UNITS = {
         volume: { base: 'L', units: { 'L': ['liter (L)', 1], 'mL': ['milliliter (mL)', 0.001], 'gal': ['gallon (US)', 3.78541], 'qt': ['quart (US)', 0.946353], 'pt': ['pint (US)', 0.473176], 'cup': ['cup (US)', 0.236588], 'floz': ['fluid ounce (US)', 0.0295735], 'm3': ['cubic meter', 1000], 'ft3': ['cubic foot', 28.3168], 'in3': ['cubic inch', 0.0163871] }},
         length: { base: 'm', units: { 'm': ['meter', 1], 'km': ['kilometer', 1000], 'cm': ['centimeter', 0.01], 'mm': ['millimeter', 0.001], 'mi': ['mile', 1609.34], 'yd': ['yard', 0.9144], 'ft': ['foot', 0.3048], 'in': ['inch', 0.0254], 'nmi': ['nautical mile', 1852] }},
-        weight: { base: 'kg', units: { 'kg': ['kilogram', 1], 'g': ['gram', 0.001], 'mg': ['milligram', 0.000001], 'lb': ['pound', 0.453592], 'oz': ['ounce', 0.0283495], 't_metric': ['ton (metric)', 1000], 't_us': ['ton (US)', 907.185] }},
+        weight: { base: 'kg', units: { 'kg': ['kilogram', 1], 'g': ['gram', 0.001], 'mg': ['milligram', 0.000001], 'lb': ['pound', 0.453592], 'oz': ['ounce', 0.0283495], 't_metric': ['ton (metric)', 1000, 't'], 't_us': ['ton (US)', 907.185, 'short ton'] }},
         temperature: { special: true }, // handled separately
         energy: { base: 'J', units: { 'J': ['joule', 1], 'kJ': ['kilojoule', 1000], 'cal': ['calorie', 4.184], 'kcal': ['kilocalorie', 4184], 'kWh': ['kilowatt-hour', 3600000], 'eV': ['electronvolt', 1.602e-19], 'BTU': ['BTU', 1055.06] }},
         area: { base: 'm2', units: { 'm2': ['square meter', 1], 'km2': ['square kilometer', 1e6], 'ft2': ['square foot', 0.092903], 'in2': ['square inch', 0.00064516], 'ha': ['hectare', 10000], 'acre': ['acre', 4046.86] }},
         speed: { base: 'm/s', units: { 'm/s': ['meter/second', 1], 'km/h': ['kilometer/hour', 0.277778], 'mph': ['mile/hour', 0.44704], 'knot': ['knot', 0.514444], 'ft/s': ['foot/second', 0.3048] }},
         time: { base: 's', units: { 's': ['second', 1], 'min': ['minute', 60], 'h': ['hour', 3600], 'd': ['day', 86400], 'w': ['week', 604800], 'mo': ['month (30 d)', 2592000], 'y': ['year (365 d)', 31536000] }},
-        power: { base: 'W', units: { 'W': ['watt', 1], 'kW': ['kilowatt', 1000], 'hp_metric': ['horsepower (metric)', 735.499], 'hp_us': ['horsepower (US)', 745.7], 'BTU/h': ['BTU/hour', 0.293071] }},
+        power: { base: 'W', units: { 'W': ['watt', 1], 'kW': ['kilowatt', 1000], 'hp_metric': ['horsepower (metric)', 735.499, 'PS'], 'hp_us': ['horsepower (US)', 745.7, 'hp'], 'BTU/h': ['BTU/hour', 0.293071] }},
         data: { base: 'B', units: { 'b': ['bit', 0.125], 'B': ['byte', 1], 'KB': ['kilobyte', 1000], 'MB': ['megabyte', 1e6], 'GB': ['gigabyte', 1e9], 'TB': ['terabyte', 1e12], 'KiB': ['kibibyte', 1024], 'MiB': ['mebibyte', 1048576], 'GiB': ['gibibyte', 1073741824], 'TiB': ['tebibyte', 1099511627776] }},
         pressure: { base: 'Pa', units: { 'Pa': ['pascal', 1], 'kPa': ['kilopascal', 1000], 'bar': ['bar', 100000], 'psi': ['psi', 6894.76], 'atm': ['atmosphere', 101325], 'mmHg': ['mmHg', 133.322], 'inHg': ['inHg', 3386.39] }},
         angle: { base: 'deg', units: { 'deg': ['degree', 1], 'rad': ['radian', 57.2958], 'grad': ['gradian', 0.9], 'arcmin': ['arcminute', 0.0166667], 'arcsec': ['arcsecond', 0.000277778] }}
     };
+
+    var TEMPERATURE_UNITS = {
+        C: ['Celsius', 1],
+        F: ['Fahrenheit', 1],
+        K: ['Kelvin', 1]
+    };
+
+    function getUnitShortName(unitKey, unit) {
+        return unit[2] || (unitKey.indexOf('_') === -1 ? unitKey : '');
+    }
+
+    function formatUnitLabel(unitKey, unit) {
+        var label = unit[0];
+        var shortName = getUnitShortName(unitKey, unit);
+        var normalizedLabel = label.toLowerCase();
+        var normalizedShortName = shortName.toLowerCase();
+        var alreadyShown = normalizedLabel === normalizedShortName ||
+            normalizedLabel.indexOf('(' + normalizedShortName + ')') !== -1 ||
+            normalizedLabel.indexOf(normalizedShortName + ' ') === 0;
+
+        return shortName && !alreadyShown ? label + ' (' + shortName + ')' : label;
+    }
 
     function fillSelect(selectEl, category) {
         var data = UNITS[category];
         if (!data || data.special) return;
         var opts = [];
         for (var k in data.units) {
-            opts.push('<option value="' + k + '">' + data.units[k][0] + '</option>');
+            opts.push('<option value="' + k + '">' + formatUnitLabel(k, data.units[k]) + '</option>');
+        }
+        selectEl.innerHTML = opts.join('');
+    }
+
+    function fillTemperatureSelect(selectEl) {
+        var opts = [];
+        for (var k in TEMPERATURE_UNITS) {
+            opts.push('<option value="' + k + '">' + formatUnitLabel(k, TEMPERATURE_UNITS[k]) + '</option>');
         }
         selectEl.innerHTML = opts.join('');
     }
@@ -134,9 +164,9 @@
         if (category === 'temperature') {
             var C = fromKey === 'C' ? value : fromKey === 'F' ? (value - 32) / 1.8 : value - 273.15;
             var rows = [
-                ['Celsius', C],
-                ['Fahrenheit', C * 1.8 + 32],
-                ['Kelvin', C + 273.15]
+                [formatUnitLabel('C', TEMPERATURE_UNITS.C), C],
+                [formatUnitLabel('F', TEMPERATURE_UNITS.F), C * 1.8 + 32],
+                [formatUnitLabel('K', TEMPERATURE_UNITS.K), C + 273.15]
             ];
             return renderTable(value + ' ' + fromKey, rows.map(function(r) { return [r[0], typeof r[1] === 'number' ? (r[1].toFixed(6)) : r[1]]; }));
         }
@@ -148,9 +178,9 @@
         for (var k in data.units) {
             if (k === fromKey) continue;
             var v = baseValue / data.units[k][1];
-            rows.push([data.units[k][0], v]);
+            rows.push([formatUnitLabel(k, data.units[k]), v]);
         }
-        return renderTable(value + ' ' + data.units[fromKey][0], rows);
+        return renderTable(value + ' ' + formatUnitLabel(fromKey, data.units[fromKey]), rows);
     }
 
     // Populate "from unit" when tab is shown
@@ -161,7 +191,7 @@
             var sel = pane ? pane.querySelector('.units-from-select') : null;
             if (sel && targetId !== 'currency') {
                 if (targetId === 'temperature') {
-                    sel.innerHTML = '<option value="C">Celsius</option><option value="F">Fahrenheit</option><option value="K">Kelvin</option>';
+                    fillTemperatureSelect(sel);
                 } else {
                     fillSelect(sel, targetId);
                 }
@@ -178,7 +208,7 @@
     var tempPane = document.querySelector('#pane-temperature');
     if (tempPane) {
         var tempSel = tempPane.querySelector('.units-from-select');
-        if (tempSel) tempSel.innerHTML = '<option value="C">Celsius</option><option value="F">Fahrenheit</option><option value="K">Kelvin</option>';
+        if (tempSel) fillTemperatureSelect(tempSel);
     }
 
     // Math form submit: prevent default and stop propagation so global .form handler doesn't POST
