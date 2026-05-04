@@ -233,30 +233,51 @@
                                     <tr>
                                         <th scope="row" class="text-nowrap">Background</th>
                                         <td>
-                                            <select class="form-select" name="logo_style" aria-label="Background style">
-                                                <option value="gradient" selected>Gradient</option>
-                                                <option value="solid">Solid</option>
-                                            </select>
+                                            <div class="d-flex flex-wrap gap-3 align-items-center" role="radiogroup" aria-label="Background style">
+                                                <div class="form-check form-check-inline mb-0 ps-0">
+                                                    <input class="form-check-input" type="radio" name="logo_style" id="logo_style_gradient" value="gradient" checked>
+                                                    <label class="form-check-label" for="logo_style_gradient">Gradient</label>
+                                                </div>
+                                                <div class="form-check form-check-inline mb-0 ps-0">
+                                                    <input class="form-check-input" type="radio" name="logo_style" id="logo_style_solid" value="solid">
+                                                    <label class="form-check-label" for="logo_style_solid">Solid</label>
+                                                </div>
+                                            </div>
                                         </td>
                                     </tr>
                                     <tr>
                                         <th scope="row" class="text-nowrap">Text fill</th>
                                         <td>
-                                            <select class="form-select" id="logo_text_style" name="logo_text_style" aria-label="Text fill style">
-                                                <option value="solid" selected>Solid</option>
-                                                <option value="gradient">Gradient</option>
-                                            </select>
+                                            <div class="d-flex flex-wrap gap-3 align-items-center" role="radiogroup" aria-label="Text fill style">
+                                                <div class="form-check form-check-inline mb-0 ps-0">
+                                                    <input class="form-check-input" type="radio" name="logo_text_style" id="logo_text_style_solid" value="solid" checked>
+                                                    <label class="form-check-label" for="logo_text_style_solid">Solid</label>
+                                                </div>
+                                                <div class="form-check form-check-inline mb-0 ps-0">
+                                                    <input class="form-check-input" type="radio" name="logo_text_style" id="logo_text_style_gradient" value="gradient">
+                                                    <label class="form-check-label" for="logo_text_style_gradient">Gradient</label>
+                                                </div>
+                                            </div>
                                             <small class="text-muted d-block mt-1 mb-0">Gradient runs top → bottom (same as background). Set colors under Palette.</small>
                                         </td>
                                     </tr>
                                     <tr>
                                         <th scope="row" class="text-nowrap">Mask shape</th>
                                         <td>
-                                            <select class="form-select" name="logo_shape" aria-label="Logo outer shape">
-                                                <option value="rounded" selected>Rounded square</option>
-                                                <option value="rectangle">Rectangle</option>
-                                                <option value="circle">Circle</option>
-                                            </select>
+                                            <div class="d-flex flex-wrap gap-3 align-items-center" role="radiogroup" aria-label="Logo outer shape">
+                                                <div class="form-check form-check-inline mb-0 ps-0">
+                                                    <input class="form-check-input" type="radio" name="logo_shape" id="logo_shape_rounded" value="rounded" checked>
+                                                    <label class="form-check-label" for="logo_shape_rounded">Rounded square</label>
+                                                </div>
+                                                <div class="form-check form-check-inline mb-0 ps-0">
+                                                    <input class="form-check-input" type="radio" name="logo_shape" id="logo_shape_rectangle" value="rectangle">
+                                                    <label class="form-check-label" for="logo_shape_rectangle">Rectangle</label>
+                                                </div>
+                                                <div class="form-check form-check-inline mb-0 ps-0">
+                                                    <input class="form-check-input" type="radio" name="logo_shape" id="logo_shape_circle" value="circle">
+                                                    <label class="form-check-label" for="logo_shape_circle">Circle</label>
+                                                </div>
+                                            </div>
                                         </td>
                                     </tr>
                                     <tr class="logo-gen-section-header">
