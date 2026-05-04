@@ -1076,6 +1076,7 @@ function initLogoGeneratorUi($scope) {
 
     const $borderToggle = $form.find("#logoBorderEnabled");
     const $borderInput = $form.find("#logo_border");
+    const $borderWidthWrap = $form.find("#logoBorderWidthWrap");
     const $borderColorInput = $form.find("#logo_border_color");
     const $borderColorRandomBtn = $form.find(".logo-color-random[data-target='logo_border_color']");
     const $textAccentInput = $form.find("#logo_text_accent_color");
@@ -1103,12 +1104,14 @@ function initLogoGeneratorUi($scope) {
         }
         if (enabled) {
             const restoredWidth = clampBorderWidth($form.data("logoLastBorderWidth"), 4);
+            $borderWidthWrap.removeClass("d-none");
             $borderInput.prop("disabled", false);
             $borderColorInput.prop("disabled", false);
             $borderColorRandomBtn.prop("disabled", false);
             $borderInput.val(String(currentWidth > 0 ? currentWidth : Math.max(1, restoredWidth)));
             return;
         }
+        $borderWidthWrap.addClass("d-none");
         $borderInput.val("0").prop("disabled", true);
         $borderColorInput.prop("disabled", true);
         $borderColorRandomBtn.prop("disabled", true);

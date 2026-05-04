@@ -207,11 +207,14 @@
                                     <tr>
                                         <th scope="row" class="text-nowrap">Export format</th>
                                         <td>
-                                            <select class="form-select" id="logo_format" name="logo_format" aria-label="Output image format">
-                                                <option value="png" selected>PNG (transparency)</option>
-                                                <option value="webp">WebP</option>
-                                                <option value="jpeg">JPEG (opaque)</option>
-                                            </select>
+                                            <div class="btn-group flex-wrap" role="group" aria-label="Output image format">
+                                                <input type="radio" class="btn-check" name="logo_format" id="logo_format_png" value="png" autocomplete="off" checked>
+                                                <label class="btn btn-outline-primary" for="logo_format_png">PNG <span class="text-body-secondary fw-normal small">(transparency)</span></label>
+                                                <input type="radio" class="btn-check" name="logo_format" id="logo_format_webp" value="webp" autocomplete="off">
+                                                <label class="btn btn-outline-primary" for="logo_format_webp">WebP</label>
+                                                <input type="radio" class="btn-check" name="logo_format" id="logo_format_jpeg" value="jpeg" autocomplete="off">
+                                                <label class="btn btn-outline-primary" for="logo_format_jpeg">JPEG <span class="text-body-secondary fw-normal small">(opaque)</span></label>
+                                            </div>
                                             <input type="hidden" name="logo_jpeg_quality" value="90">
                                             <small class="text-muted d-block mt-1 mb-0">JPEG flattens onto the background color. WebP/PNG keep transparency where supported.</small>
                                         </td>
@@ -224,8 +227,11 @@
                                                     <input class="form-check-input" type="checkbox" id="logoBorderEnabled" name="logo_border_enabled" value="1">
                                                     <label class="form-check-label" for="logoBorderEnabled">Enable border</label>
                                                 </div>
-                                                <input type="number" class="form-control" id="logo_border" name="logo_border" min="0" max="24" value="0"
-                                                    aria-describedby="logoBorderHint" style="max-width: 7rem;" disabled>
+                                                <div id="logoBorderWidthWrap" class="d-flex flex-wrap align-items-center gap-1 d-none">
+                                                    <label class="small text-muted text-nowrap mb-0" for="logo_border">Width (px)</label>
+                                                    <input type="number" class="form-control" id="logo_border" name="logo_border" min="0" max="24" value="0"
+                                                        aria-describedby="logoBorderHint" style="max-width: 7rem;" disabled>
+                                                </div>
                                             </div>
                                             <small id="logoBorderHint" class="text-muted d-block mt-1 mb-0">0–24 px when enabled. Border color is set below.</small>
                                         </td>
@@ -234,10 +240,10 @@
                                         <th scope="row" class="text-nowrap">Background</th>
                                         <td>
                                             <div class="btn-group" role="group" aria-label="Background style">
-                                                <input type="radio" class="btn-check" name="logo_style" id="logo_style_gradient" value="gradient" autocomplete="off" checked>
-                                                <label class="btn btn-outline-primary" for="logo_style_gradient">Gradient</label>
                                                 <input type="radio" class="btn-check" name="logo_style" id="logo_style_solid" value="solid" autocomplete="off">
                                                 <label class="btn btn-outline-primary" for="logo_style_solid">Solid</label>
+                                                <input type="radio" class="btn-check" name="logo_style" id="logo_style_gradient" value="gradient" autocomplete="off" checked>
+                                                <label class="btn btn-outline-primary" for="logo_style_gradient">Gradient</label>
                                             </div>
                                         </td>
                                     </tr>
