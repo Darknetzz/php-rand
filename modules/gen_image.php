@@ -233,30 +233,22 @@
                                     <tr>
                                         <th scope="row" class="text-nowrap">Background</th>
                                         <td>
-                                            <div class="d-flex flex-wrap gap-3 align-items-center" role="radiogroup" aria-label="Background style">
-                                                <div class="form-check form-check-inline mb-0 ps-0">
-                                                    <input class="form-check-input" type="radio" name="logo_style" id="logo_style_gradient" value="gradient" checked>
-                                                    <label class="form-check-label" for="logo_style_gradient">Gradient</label>
-                                                </div>
-                                                <div class="form-check form-check-inline mb-0 ps-0">
-                                                    <input class="form-check-input" type="radio" name="logo_style" id="logo_style_solid" value="solid">
-                                                    <label class="form-check-label" for="logo_style_solid">Solid</label>
-                                                </div>
+                                            <div class="btn-group" role="group" aria-label="Background style">
+                                                <input type="radio" class="btn-check" name="logo_style" id="logo_style_gradient" value="gradient" autocomplete="off" checked>
+                                                <label class="btn btn-outline-secondary" for="logo_style_gradient">Gradient</label>
+                                                <input type="radio" class="btn-check" name="logo_style" id="logo_style_solid" value="solid" autocomplete="off">
+                                                <label class="btn btn-outline-secondary" for="logo_style_solid">Solid</label>
                                             </div>
                                         </td>
                                     </tr>
                                     <tr>
                                         <th scope="row" class="text-nowrap">Text fill</th>
                                         <td>
-                                            <div class="d-flex flex-wrap gap-3 align-items-center" role="radiogroup" aria-label="Text fill style">
-                                                <div class="form-check form-check-inline mb-0 ps-0">
-                                                    <input class="form-check-input" type="radio" name="logo_text_style" id="logo_text_style_solid" value="solid" checked>
-                                                    <label class="form-check-label" for="logo_text_style_solid">Solid</label>
-                                                </div>
-                                                <div class="form-check form-check-inline mb-0 ps-0">
-                                                    <input class="form-check-input" type="radio" name="logo_text_style" id="logo_text_style_gradient" value="gradient">
-                                                    <label class="form-check-label" for="logo_text_style_gradient">Gradient</label>
-                                                </div>
+                                            <div class="btn-group" role="group" aria-label="Text fill style">
+                                                <input type="radio" class="btn-check" name="logo_text_style" id="logo_text_style_solid" value="solid" autocomplete="off" checked>
+                                                <label class="btn btn-outline-secondary" for="logo_text_style_solid">Solid</label>
+                                                <input type="radio" class="btn-check" name="logo_text_style" id="logo_text_style_gradient" value="gradient" autocomplete="off">
+                                                <label class="btn btn-outline-secondary" for="logo_text_style_gradient">Gradient</label>
                                             </div>
                                             <small class="text-muted d-block mt-1 mb-0">Gradient runs top → bottom (same as background). Set colors under Palette.</small>
                                         </td>
@@ -264,19 +256,13 @@
                                     <tr>
                                         <th scope="row" class="text-nowrap">Mask shape</th>
                                         <td>
-                                            <div class="d-flex flex-wrap gap-3 align-items-center" role="radiogroup" aria-label="Logo outer shape">
-                                                <div class="form-check form-check-inline mb-0 ps-0">
-                                                    <input class="form-check-input" type="radio" name="logo_shape" id="logo_shape_rounded" value="rounded" checked>
-                                                    <label class="form-check-label" for="logo_shape_rounded">Rounded square</label>
-                                                </div>
-                                                <div class="form-check form-check-inline mb-0 ps-0">
-                                                    <input class="form-check-input" type="radio" name="logo_shape" id="logo_shape_rectangle" value="rectangle">
-                                                    <label class="form-check-label" for="logo_shape_rectangle">Rectangle</label>
-                                                </div>
-                                                <div class="form-check form-check-inline mb-0 ps-0">
-                                                    <input class="form-check-input" type="radio" name="logo_shape" id="logo_shape_circle" value="circle">
-                                                    <label class="form-check-label" for="logo_shape_circle">Circle</label>
-                                                </div>
+                                            <div class="btn-group flex-wrap" role="group" aria-label="Logo outer shape">
+                                                <input type="radio" class="btn-check" name="logo_shape" id="logo_shape_rounded" value="rounded" autocomplete="off" checked>
+                                                <label class="btn btn-outline-secondary" for="logo_shape_rounded">Rounded square</label>
+                                                <input type="radio" class="btn-check" name="logo_shape" id="logo_shape_rectangle" value="rectangle" autocomplete="off">
+                                                <label class="btn btn-outline-secondary" for="logo_shape_rectangle">Rectangle</label>
+                                                <input type="radio" class="btn-check" name="logo_shape" id="logo_shape_circle" value="circle" autocomplete="off">
+                                                <label class="btn btn-outline-secondary" for="logo_shape_circle">Circle</label>
                                             </div>
                                         </td>
                                     </tr>
