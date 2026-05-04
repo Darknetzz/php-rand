@@ -233,11 +233,11 @@
                                                         aria-describedby="logoBorderHint" style="max-width: 7rem;" disabled>
                                                 </div>
                                             </div>
-                                            <small id="logoBorderHint" class="text-muted d-block mt-1 mb-0">0–24 px when enabled. Border color is set below.</small>
+                                            <small id="logoBorderHint" class="text-muted d-block mt-1 mb-0">0–24 px when enabled. Color is in the <strong>Border color</strong> section at the bottom of this column.</small>
                                         </td>
                                     </tr>
-                                    <tr>
-                                        <th scope="row" class="text-nowrap">Background</th>
+                                    <tr class="logo-gen-row-tall">
+                                        <th scope="row" class="text-nowrap align-top pt-3">Background</th>
                                         <td>
                                             <div class="btn-group" role="group" aria-label="Background style">
                                                 <input type="radio" class="btn-check" name="logo_style" id="logo_style_solid" value="solid" autocomplete="off">
@@ -245,10 +245,26 @@
                                                 <input type="radio" class="btn-check" name="logo_style" id="logo_style_gradient" value="gradient" autocomplete="off" checked>
                                                 <label class="btn btn-outline-primary btn-sm" for="logo_style_gradient">Gradient</label>
                                             </div>
+                                            <div class="row row-cols-1 row-cols-sm-2 g-2 mt-2 align-items-end">
+                                                <div class="col">
+                                                    <label class="form-label small mb-1" for="logo_bg_color">Background</label>
+                                                    <div class="d-flex gap-1 align-items-stretch">
+                                                        <input type="color" class="form-control form-control-color flex-grow-1" id="logo_bg_color" name="logo_bg_color" value="#000000" title="Background">
+                                                        <button type="button" class="btn btn-outline-secondary btn-sm logo-color-random px-2" data-target="logo_bg_color" title="Random color"><?= icon('shuffle', 0.9) ?></button>
+                                                    </div>
+                                                </div>
+                                                <div class="col" id="logoBgAccentWrap">
+                                                    <label class="form-label small mb-1" for="logo_accent_color">Accent</label>
+                                                    <div class="d-flex gap-1 align-items-stretch">
+                                                        <input type="color" class="form-control form-control-color flex-grow-1" id="logo_accent_color" name="logo_accent_color" value="#1d4ed8" title="Gradient accent">
+                                                        <button type="button" class="btn btn-outline-secondary btn-sm logo-color-random px-2" data-target="logo_accent_color" title="Random color"><?= icon('shuffle', 0.9) ?></button>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </td>
                                     </tr>
-                                    <tr>
-                                        <th scope="row" class="text-nowrap">Text fill</th>
+                                    <tr class="logo-gen-row-tall">
+                                        <th scope="row" class="text-nowrap align-top pt-3">Text fill</th>
                                         <td>
                                             <div class="btn-group" role="group" aria-label="Text fill style">
                                                 <input type="radio" class="btn-check" name="logo_text_style" id="logo_text_style_solid" value="solid" autocomplete="off" checked>
@@ -256,7 +272,23 @@
                                                 <input type="radio" class="btn-check" name="logo_text_style" id="logo_text_style_gradient" value="gradient" autocomplete="off">
                                                 <label class="btn btn-outline-primary btn-sm" for="logo_text_style_gradient">Gradient</label>
                                             </div>
-                                            <small class="text-muted d-block mt-1 mb-0">Gradient runs top → bottom (same as background). Set colors under Palette.</small>
+                                            <div class="row row-cols-1 row-cols-sm-2 g-2 mt-2 align-items-end">
+                                                <div class="col">
+                                                    <label class="form-label small mb-1" for="logo_text_color">Text</label>
+                                                    <div class="d-flex gap-1 align-items-stretch">
+                                                        <input type="color" class="form-control form-control-color flex-grow-1" id="logo_text_color" name="logo_text_color" value="#ffffff" title="Text color (gradient start when text fill is gradient)">
+                                                        <button type="button" class="btn btn-outline-secondary btn-sm logo-color-random px-2" data-target="logo_text_color" title="Random color"><?= icon('shuffle', 0.9) ?></button>
+                                                    </div>
+                                                </div>
+                                                <div class="col d-none" id="logoTextAccentWrap">
+                                                    <label class="form-label small mb-1" for="logo_text_accent_color">Text accent</label>
+                                                    <div class="d-flex gap-1 align-items-stretch">
+                                                        <input type="color" class="form-control form-control-color flex-grow-1" id="logo_text_accent_color" name="logo_text_accent_color" value="#94a3b8" title="Text gradient end" disabled>
+                                                        <button type="button" class="btn btn-outline-secondary btn-sm logo-color-random px-2" data-target="logo_text_accent_color" title="Random color" disabled><?= icon('shuffle', 0.9) ?></button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <small class="text-muted d-block mt-1 mb-0">Gradient runs top → bottom (same as background). <strong>Accent</strong> appears when gradient is selected.</small>
                                         </td>
                                     </tr>
                                     <tr>
@@ -273,51 +305,17 @@
                                         </td>
                                     </tr>
                                     <tr class="logo-gen-section-header">
-                                        <td colspan="2" class="py-2 small text-uppercase fw-semibold text-body-secondary">Colors</td>
+                                        <td colspan="2" class="py-2 small text-uppercase fw-semibold text-body-secondary">Border color</td>
                                     </tr>
-                                    <tr class="logo-gen-row-tall">
-                                        <th scope="row" class="text-nowrap align-top pt-3">
-                                            Palette
-                                            <span class="fw-normal text-muted d-block small">Background accent blends the backdrop; text accent blends the label when text fill is gradient</span>
-                                        </th>
+                                    <tr>
+                                        <th scope="row" class="text-nowrap align-middle">Border</th>
                                         <td>
-                                            <div class="row row-cols-2 g-3">
-                                                <div class="col">
-                                                    <label class="form-label small mb-1" for="logo_bg_color">Background</label>
-                                                    <div class="d-flex gap-1 align-items-stretch">
-                                                        <input type="color" class="form-control form-control-color flex-grow-1" id="logo_bg_color" name="logo_bg_color" value="#000000" title="Background">
-                                                        <button type="button" class="btn btn-outline-secondary btn-sm logo-color-random px-2" data-target="logo_bg_color" title="Random color"><?= icon('shuffle', 0.9) ?></button>
-                                                    </div>
-                                                </div>
-                                                <div class="col">
-                                                    <label class="form-label small mb-1" for="logo_accent_color">Accent</label>
-                                                    <div class="d-flex gap-1 align-items-stretch">
-                                                        <input type="color" class="form-control form-control-color flex-grow-1" id="logo_accent_color" name="logo_accent_color" value="#1d4ed8" title="Gradient accent">
-                                                        <button type="button" class="btn btn-outline-secondary btn-sm logo-color-random px-2" data-target="logo_accent_color" title="Random color"><?= icon('shuffle', 0.9) ?></button>
-                                                    </div>
-                                                </div>
-                                                <div class="col">
-                                                    <label class="form-label small mb-1" for="logo_text_color">Text</label>
-                                                    <div class="d-flex gap-1 align-items-stretch">
-                                                        <input type="color" class="form-control form-control-color flex-grow-1" id="logo_text_color" name="logo_text_color" value="#ffffff" title="Text color (gradient start when text fill is gradient)">
-                                                        <button type="button" class="btn btn-outline-secondary btn-sm logo-color-random px-2" data-target="logo_text_color" title="Random color"><?= icon('shuffle', 0.9) ?></button>
-                                                    </div>
-                                                </div>
-                                                <div class="col">
-                                                    <label class="form-label small mb-1" for="logo_text_accent_color">Text accent</label>
-                                                    <div class="d-flex gap-1 align-items-stretch">
-                                                        <input type="color" class="form-control form-control-color flex-grow-1" id="logo_text_accent_color" name="logo_text_accent_color" value="#94a3b8" title="Text gradient end" disabled>
-                                                        <button type="button" class="btn btn-outline-secondary btn-sm logo-color-random px-2" data-target="logo_text_accent_color" title="Random color" disabled><?= icon('shuffle', 0.9) ?></button>
-                                                    </div>
-                                                </div>
-                                                <div class="col">
-                                                    <label class="form-label small mb-1" for="logo_border_color">Border</label>
-                                                    <div class="d-flex gap-1 align-items-stretch">
-                                                        <input type="color" class="form-control form-control-color flex-grow-1" id="logo_border_color" name="logo_border_color" value="#ffffff" title="Border color" disabled>
-                                                        <button type="button" class="btn btn-outline-secondary btn-sm logo-color-random px-2" data-target="logo_border_color" title="Random color" disabled><?= icon('shuffle', 0.9) ?></button>
-                                                    </div>
-                                                </div>
+                                            <label class="form-label small mb-1" for="logo_border_color">Color</label>
+                                            <div class="d-flex gap-1 align-items-stretch" style="max-width: 16rem;">
+                                                <input type="color" class="form-control form-control-color flex-grow-1" id="logo_border_color" name="logo_border_color" value="#ffffff" title="Border color" disabled>
+                                                <button type="button" class="btn btn-outline-secondary btn-sm logo-color-random px-2" data-target="logo_border_color" title="Random color" disabled><?= icon('shuffle', 0.9) ?></button>
                                             </div>
+                                            <small class="text-muted d-block mt-1 mb-0">Enable the border above to edit.</small>
                                         </td>
                                     </tr>
                                     <tr class="logo-gen-section-header">

@@ -1175,8 +1175,12 @@ function initLogoGeneratorUi($scope) {
     const $borderWidthWrap = $form.find("#logoBorderWidthWrap");
     const $borderColorInput = $form.find("#logo_border_color");
     const $borderColorRandomBtn = $form.find(".logo-color-random[data-target='logo_border_color']");
+    const $textAccentWrap = $form.find("#logoTextAccentWrap");
     const $textAccentInput = $form.find("#logo_text_accent_color");
     const $textAccentRandomBtn = $form.find(".logo-color-random[data-target='logo_text_accent_color']");
+    const $bgAccentWrap = $form.find("#logoBgAccentWrap");
+    const $bgAccentInput = $form.find("#logo_accent_color");
+    const $bgAccentRandomBtn = $form.find(".logo-color-random[data-target='logo_accent_color']");
     const clampBorderWidth = (value, fallback) => {
         let parsed = parseInt(value, 10);
         if (Number.isNaN(parsed)) {
@@ -1213,12 +1217,30 @@ function initLogoGeneratorUi($scope) {
         $borderColorRandomBtn.prop("disabled", true);
     };
 
+    const syncBackgroundStyleUi = () => {
+        if (!$bgAccentInput.length) {
+            return;
+        }
+        const $checked = $form.find("input[name=\"logo_style\"]:checked");
+        const grad = $checked.length && String($checked.val() || "") === "gradient";
+        if ($bgAccentWrap.length) {
+            $bgAccentWrap.toggleClass("d-none", !grad);
+        }
+        $bgAccentInput.prop("disabled", !grad);
+        if ($bgAccentRandomBtn.length) {
+            $bgAccentRandomBtn.prop("disabled", !grad);
+        }
+    };
+
     const syncTextFillUi = () => {
         if (!$textAccentInput.length) {
             return;
         }
         const $checked = $form.find("input[name=\"logo_text_style\"]:checked");
         const grad = $checked.length && String($checked.val() || "") === "gradient";
+        if ($textAccentWrap.length) {
+            $textAccentWrap.toggleClass("d-none", !grad);
+        }
         $textAccentInput.prop("disabled", !grad);
         if ($textAccentRandomBtn.length) {
             $textAccentRandomBtn.prop("disabled", !grad);
@@ -1248,6 +1270,7 @@ function initLogoGeneratorUi($scope) {
         if (typeof setFormVal !== "function" || typeof showData !== "function") {
             return;
         }
+        syncBackgroundStyleUi();
         syncTextFillUi();
         if (activeXhr) {
             activeXhr.abort();
@@ -1414,6 +1437,7 @@ function initLogoGeneratorUi($scope) {
     syncFontSizeUi();
     setBorderEnabled(clampBorderWidth($borderInput.val(), 0) > 0);
     syncBorderUi();
+    syncBackgroundStyleUi();
     syncTextFillUi();
     scheduleLogoPreviewSoon();
 }
