@@ -1911,13 +1911,11 @@ function logo_draw_ttf_text_block_gradient(
     imagealphablending($tmp, true);
     $black = imagecolorallocate($tmp, 0, 0, 0);
     if ($black === false) {
-        imagedestroy($tmp);
         return;
     }
     imagefilledrectangle($tmp, 0, 0, $canvasW, $canvasH, $black);
     $white = imagecolorallocate($tmp, 255, 255, 255);
     if ($white === false) {
-        imagedestroy($tmp);
         return;
     }
     logo_draw_ttf_text_block($tmp, $fontPath, $fontSize, $lines, $canvasW, $canvasH, $white, $offsetX, $offsetY);
@@ -1954,8 +1952,6 @@ function logo_draw_ttf_text_block_gradient(
             imagesetpixel($image, $x, $y, $ciOut);
         }
     }
-
-    imagedestroy($tmp);
 }
 
 function logo_draw_background($image, int $width, int $height, string $style, array $bgRgb, array $accentRgb): void {
