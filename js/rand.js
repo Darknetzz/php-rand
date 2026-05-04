@@ -1143,9 +1143,11 @@ function initLogoGeneratorUi($scope) {
     const form = $form[0];
     const $hint = $scope.find("#logoHintText");
     let debounceTimer = null;
+    let sliderPreviewTimer = null;
     let persistTimer = null;
     let activeXhr = null;
     const DEBOUNCE_MS = 0;
+    const SLIDER_PREVIEW_DEBOUNCE_MS = 120;
     const PERSIST_DEBOUNCE_MS = 400;
 
     const setVal = (name, value) => {
@@ -1319,13 +1321,6 @@ function initLogoGeneratorUi($scope) {
         $sizeInput.val($sizeRange.val());
     });
 
-    $form.find("#logoGradientSwitch").off("change.randLogoGrad").on("change.randLogoGrad", function() {
-        setVal("logo_style", this.checked ? "gradient" : "solid");
-    });
-    $form.find("#logoTextGradientSwitch").off("change.randLogoGrad").on("change.randLogoGrad", function() {
-        setVal("logo_text_style", this.checked ? "gradient" : "solid");
-    });
-
     $form.find("#logo_bg_gradient_strength, #logo_text_gradient_strength").off("input.randLogoGradStr").on("input.randLogoGradStr", function() {
         if (this.id === "logo_bg_gradient_strength") {
             syncBgGradStrengthLabel();
@@ -1338,6 +1333,8 @@ function initLogoGeneratorUi($scope) {
         if (typeof setFormVal !== "function" || typeof showData !== "function") {
             return;
         }
+        clearTimeout(sliderPreviewTimer);
+        sliderPreviewTimer = null;
         syncBackgroundStyleUi();
         syncTextFillUi();
         if (activeXhr) {
@@ -1383,7 +1380,40 @@ function initLogoGeneratorUi($scope) {
         }, PERSIST_DEBOUNCE_MS);
     };
 
-    $form.off(".randLogoLive").on("input.randLogoLive change.randLogoLive", "input:not([type='hidden']), select, textarea", function() {
+    $form.find("#logoGradientSwitch").off("change.randLogoGrad").on("change.randLogoGrad", function(e) {
+        e.stopPropagation();
+        setVal("logo_style", this.checked ? "gradient" : "solid");
+        syncBackgroundStyleUi();
+        syncTextFillUi();
+        clearTimeout(debounceTimer);
+        clearTimeout(sliderPreviewTimer);
+        sliderPreviewTimer = null;
+        runLogoPreview();
+        scheduleLogoPersist();
+    });
+    $form.find("#logoTextGradientSwitch").off("change.randLogoGrad").on("change.randLogoGrad", function(e) {
+        e.stopPropagation();
+        setVal("logo_text_style", this.checked ? "gradient" : "solid");
+        syncBackgroundStyleUi();
+        syncTextFillUi();
+        clearTimeout(debounceTimer);
+        clearTimeout(sliderPreviewTimer);
+        sliderPreviewTimer = null;
+        runLogoPreview();
+        scheduleLogoPersist();
+    });
+
+    $form.off(".randLogoLive").on("input.randLogoLive change.randLogoLive", "input:not([type='hidden']), select, textarea", function(ev) {
+        const tid = ev.target && ev.target.id;
+        if (tid === "logo_bg_gradient_strength" || tid === "logo_text_gradient_strength") {
+            clearTimeout(sliderPreviewTimer);
+            sliderPreviewTimer = setTimeout(function() {
+                sliderPreviewTimer = null;
+                scheduleLogoPreview();
+            }, SLIDER_PREVIEW_DEBOUNCE_MS);
+            scheduleLogoPersist();
+            return;
+        }
         scheduleLogoPreview();
         scheduleLogoPersist();
     });
@@ -1493,15 +1523,25 @@ function initLogoGeneratorUi($scope) {
         scheduleLogoPersist();
     });
 
-    $borderToggle.off("change.randLogoBorder").on("change.randLogoBorder", function() {
+    $borderToggle.off("change.randLogoBorder").on("change.randLogoBorder", function(e) {
+        e.stopPropagation();
         syncBorderUi();
+        clearTimeout(debounceTimer);
+        clearTimeout(sliderPreviewTimer);
+        sliderPreviewTimer = null;
+        runLogoPreview();
         scheduleLogoPersist();
     });
 
-    $borderInput.off("input.randLogoBorder").on("input.randLogoBorder", function() {
+    $borderInput.off("input.randLogoBorder").on("input.randLogoBorder", function(e) {
+        e.stopPropagation();
         const width = clampBorderWidth($borderInput.val(), 0);
         setBorderEnabled(width > 0);
         syncBorderUi();
+        clearTimeout(debounceTimer);
+        clearTimeout(sliderPreviewTimer);
+        sliderPreviewTimer = null;
+        runLogoPreview();
         scheduleLogoPersist();
     });
 
