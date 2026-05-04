@@ -1168,7 +1168,21 @@ function initLogoGeneratorUi($scope) {
         first.value = value;
     };
 
+    const syncGradientSwitchesFromHidden = () => {
+        const bg = form.querySelector("#logo_style");
+        const bgSw = form.querySelector("#logoGradientSwitch");
+        if (bg && bgSw) {
+            bgSw.checked = String(bg.value) === "gradient";
+        }
+        const tx = form.querySelector("#logo_text_style");
+        const txSw = form.querySelector("#logoTextGradientSwitch");
+        if (tx && txSw) {
+            txSw.checked = String(tx.value) === "gradient";
+        }
+    };
+
     tryLoadLogoGeneratorState(form, setVal);
+    syncGradientSwitchesFromHidden();
 
     const $borderToggle = $form.find("#logoBorderEnabled");
     const $borderInput = $form.find("#logo_border");
@@ -1182,6 +1196,10 @@ function initLogoGeneratorUi($scope) {
     const $bgAccentWrap = $form.find("#logoBgAccentWrap");
     const $bgAccentInput = $form.find("#logo_accent_color");
     const $bgAccentRandomBtn = $form.find(".logo-color-random[data-target='logo_accent_color']");
+    const $bgGradStrengthWrap = $form.find("#logoBgGradientStrengthWrap");
+    const $bgGradStrengthInput = $form.find("#logo_bg_gradient_strength");
+    const $textGradStrengthWrap = $form.find("#logoTextGradientStrengthWrap");
+    const $textGradStrengthInput = $form.find("#logo_text_gradient_strength");
     const clampBorderWidth = (value, fallback) => {
         let parsed = parseInt(value, 10);
         if (Number.isNaN(parsed)) {
@@ -1221,12 +1239,29 @@ function initLogoGeneratorUi($scope) {
         $borderColorRandomBtn.prop("disabled", true);
     };
 
+    const syncBgGradStrengthLabel = () => {
+        const r = form.querySelector("#logo_bg_gradient_strength");
+        const sp = form.querySelector("#logo_bg_gradient_strength_val");
+        if (r && sp) {
+            sp.textContent = r.value + "%";
+            r.setAttribute("aria-valuenow", r.value);
+        }
+    };
+    const syncTextGradStrengthLabel = () => {
+        const r = form.querySelector("#logo_text_gradient_strength");
+        const sp = form.querySelector("#logo_text_gradient_strength_val");
+        if (r && sp) {
+            sp.textContent = r.value + "%";
+            r.setAttribute("aria-valuenow", r.value);
+        }
+    };
+
     const syncBackgroundStyleUi = () => {
         if (!$bgAccentInput.length) {
             return;
         }
-        const $checked = $form.find("input[name=\"logo_style\"]:checked");
-        const grad = $checked.length && String($checked.val() || "") === "gradient";
+        const styleEl = form.querySelector("[name=\"logo_style\"]");
+        const grad = styleEl && String(styleEl.value) === "gradient";
         if ($bgAccentWrap.length) {
             $bgAccentWrap.toggleClass("d-none", !grad);
         }
@@ -1234,14 +1269,21 @@ function initLogoGeneratorUi($scope) {
         if ($bgAccentRandomBtn.length) {
             $bgAccentRandomBtn.prop("disabled", !grad);
         }
+        if ($bgGradStrengthWrap.length) {
+            $bgGradStrengthWrap.toggleClass("d-none", !grad);
+        }
+        if ($bgGradStrengthInput.length) {
+            $bgGradStrengthInput.prop("disabled", !grad);
+        }
+        syncBgGradStrengthLabel();
     };
 
     const syncTextFillUi = () => {
         if (!$textAccentInput.length) {
             return;
         }
-        const $checked = $form.find("input[name=\"logo_text_style\"]:checked");
-        const grad = $checked.length && String($checked.val() || "") === "gradient";
+        const styleEl = form.querySelector("[name=\"logo_text_style\"]");
+        const grad = styleEl && String(styleEl.value) === "gradient";
         if ($textAccentWrap.length) {
             $textAccentWrap.toggleClass("d-none", !grad);
         }
@@ -1249,6 +1291,13 @@ function initLogoGeneratorUi($scope) {
         if ($textAccentRandomBtn.length) {
             $textAccentRandomBtn.prop("disabled", !grad);
         }
+        if ($textGradStrengthWrap.length) {
+            $textGradStrengthWrap.toggleClass("d-none", !grad);
+        }
+        if ($textGradStrengthInput.length) {
+            $textGradStrengthInput.prop("disabled", !grad);
+        }
+        syncTextGradStrengthLabel();
     };
 
     const $sizeInput = $form.find("#logo_font_size");
@@ -1268,6 +1317,21 @@ function initLogoGeneratorUi($scope) {
     $sizeInput.off("input.randLogoGen").on("input.randLogoGen", syncFontSizeUi);
     $sizeRange.off("input.randLogoGen").on("input.randLogoGen", function() {
         $sizeInput.val($sizeRange.val());
+    });
+
+    $form.find("#logoGradientSwitch").off("change.randLogoGrad").on("change.randLogoGrad", function() {
+        setVal("logo_style", this.checked ? "gradient" : "solid");
+    });
+    $form.find("#logoTextGradientSwitch").off("change.randLogoGrad").on("change.randLogoGrad", function() {
+        setVal("logo_text_style", this.checked ? "gradient" : "solid");
+    });
+
+    $form.find("#logo_bg_gradient_strength, #logo_text_gradient_strength").off("input.randLogoGradStr").on("input.randLogoGradStr", function() {
+        if (this.id === "logo_bg_gradient_strength") {
+            syncBgGradStrengthLabel();
+        } else {
+            syncTextGradStrengthLabel();
+        }
     });
 
     const runLogoPreview = () => {
@@ -1344,6 +1408,7 @@ function initLogoGeneratorUi($scope) {
             if ($hint.length) {
                 $hint.text("App icon: square canvas, rounded shape, initials + caps — good for launcher icons.");
             }
+            syncGradientSwitchesFromHidden();
             syncFontSizeUi();
             syncBorderUi();
             scheduleLogoPreviewSoon();
@@ -1363,6 +1428,7 @@ function initLogoGeneratorUi($scope) {
             if ($hint.length) {
                 $hint.text("Banner: wide rectangle with full text — headers and cover images.");
             }
+            syncGradientSwitchesFromHidden();
             syncFontSizeUi();
             syncBorderUi();
             scheduleLogoPreviewSoon();
@@ -1382,6 +1448,7 @@ function initLogoGeneratorUi($scope) {
             if ($hint.length) {
                 $hint.text("Initials badge: circle, solid fill, visible border — avatars and seals.");
             }
+            syncGradientSwitchesFromHidden();
             syncFontSizeUi();
             syncBorderUi();
             scheduleLogoPreviewSoon();

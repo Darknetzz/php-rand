@@ -246,12 +246,13 @@
                                     <tr class="logo-gen-row-tall">
                                         <th scope="row" class="text-nowrap align-top pt-3">Background</th>
                                         <td>
-                                            <div class="btn-group" role="group" aria-label="Background style">
-                                                <input type="radio" class="btn-check" name="logo_style" id="logo_style_solid" value="solid" autocomplete="off">
-                                                <label class="btn btn-outline-primary btn-sm" for="logo_style_solid">Solid</label>
-                                                <input type="radio" class="btn-check" name="logo_style" id="logo_style_gradient" value="gradient" autocomplete="off" checked>
-                                                <label class="btn btn-outline-primary btn-sm" for="logo_style_gradient">Gradient</label>
+                                            <input type="hidden" name="logo_style" id="logo_style" value="gradient">
+                                            <div class="form-check form-switch mb-2">
+                                                <input class="form-check-input" type="checkbox" id="logoGradientSwitch" checked
+                                                    aria-describedby="logoBgGradientHint">
+                                                <label class="form-check-label" for="logoGradientSwitch">Gradient background</label>
                                             </div>
+                                            <small id="logoBgGradientHint" class="text-muted d-block mb-2">Solid fill uses <strong>Background</strong> only. Turn on for a blend with <strong>Accent</strong>.</small>
                                             <div class="row row-cols-1 row-cols-sm-2 g-2 mt-2 align-items-end">
                                                 <div class="col">
                                                     <label class="form-label small mb-1" for="logo_bg_color">Background</label>
@@ -268,17 +269,28 @@
                                                     </div>
                                                 </div>
                                             </div>
+                                            <div id="logoBgGradientStrengthWrap" class="mt-2">
+                                                <label class="form-label small mb-1 d-flex flex-wrap align-items-baseline gap-2" for="logo_bg_gradient_strength">
+                                                    Gradient blend
+                                                    <span class="text-muted fw-normal" id="logo_bg_gradient_strength_val">100%</span>
+                                                </label>
+                                                <input type="range" class="form-range" name="logo_bg_gradient_strength" id="logo_bg_gradient_strength"
+                                                    min="0" max="100" value="100"
+                                                    aria-valuemin="0" aria-valuemax="100" aria-valuenow="100">
+                                                <small class="text-muted d-block">0 = flat (background color only) · 100 = full blend to accent at the bottom.</small>
+                                            </div>
                                         </td>
                                     </tr>
                                     <tr class="logo-gen-row-tall">
                                         <th scope="row" class="text-nowrap align-top pt-3">Text fill</th>
                                         <td>
-                                            <div class="btn-group" role="group" aria-label="Text fill style">
-                                                <input type="radio" class="btn-check" name="logo_text_style" id="logo_text_style_solid" value="solid" autocomplete="off" checked>
-                                                <label class="btn btn-outline-primary btn-sm" for="logo_text_style_solid">Solid</label>
-                                                <input type="radio" class="btn-check" name="logo_text_style" id="logo_text_style_gradient" value="gradient" autocomplete="off">
-                                                <label class="btn btn-outline-primary btn-sm" for="logo_text_style_gradient">Gradient</label>
+                                            <input type="hidden" name="logo_text_style" id="logo_text_style" value="solid">
+                                            <div class="form-check form-switch mb-2">
+                                                <input class="form-check-input" type="checkbox" id="logoTextGradientSwitch"
+                                                    aria-describedby="logoTextGradientHint">
+                                                <label class="form-check-label" for="logoTextGradientSwitch">Gradient text fill</label>
                                             </div>
+                                            <small id="logoTextGradientHint" class="text-muted d-block mb-2">Solid uses <strong>Text</strong> only. Turn on to blend with <strong>Text accent</strong> (top → bottom).</small>
                                             <div class="row row-cols-1 row-cols-sm-2 g-2 mt-2 align-items-end">
                                                 <div class="col">
                                                     <label class="form-label small mb-1" for="logo_text_color">Text</label>
@@ -295,7 +307,16 @@
                                                     </div>
                                                 </div>
                                             </div>
-                                            <small class="text-muted d-block mt-1 mb-0">Gradient runs top → bottom (same as background). <strong>Accent</strong> appears when gradient is selected.</small>
+                                            <div id="logoTextGradientStrengthWrap" class="mt-2 d-none">
+                                                <label class="form-label small mb-1 d-flex flex-wrap align-items-baseline gap-2" for="logo_text_gradient_strength">
+                                                    Gradient blend
+                                                    <span class="text-muted fw-normal" id="logo_text_gradient_strength_val">100%</span>
+                                                </label>
+                                                <input type="range" class="form-range" name="logo_text_gradient_strength" id="logo_text_gradient_strength"
+                                                    min="0" max="100" value="100" disabled
+                                                    aria-valuemin="0" aria-valuemax="100" aria-valuenow="100">
+                                                <small class="text-muted d-block">0 = solid text color · 100 = full blend to text accent at the bottom.</small>
+                                            </div>
                                         </td>
                                     </tr>
                                     <tr>

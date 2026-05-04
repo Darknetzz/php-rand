@@ -1887,6 +1887,7 @@ function logo_draw_ttf_text_block(
  * @param list<string> $lines
  * @param array{0:int,1:int,2:int} $rgbStart
  * @param array{0:int,1:int,2:int} $rgbEnd
+ * @param float $gradientStrength 0–100; scales how far the fill moves toward the end color (0 = solid start color, 100 = full top-to-bottom blend)
  */
 function logo_draw_ttf_text_block_gradient(
     $image,
@@ -1898,7 +1899,8 @@ function logo_draw_ttf_text_block_gradient(
     array $rgbStart,
     array $rgbEnd,
     int $offsetX,
-    int $offsetY
+    int $offsetY,
+    float $gradientStrength = 100.0
 ): void {
     if ($lines === []) {
         return;
@@ -1920,12 +1922,14 @@ function logo_draw_ttf_text_block_gradient(
     }
     logo_draw_ttf_text_block($tmp, $fontPath, $fontSize, $lines, $canvasW, $canvasH, $white, $offsetX, $offsetY);
 
+    $s = max(0.0, min(100.0, $gradientStrength)) / 100.0;
     $colCache = [];
     for ($y = 0; $y < $canvasH; $y++) {
         $t = $canvasH > 1 ? $y / ($canvasH - 1) : 0;
-        $gr = (int) round($rgbStart[0] + ($rgbEnd[0] - $rgbStart[0]) * $t);
-        $gg = (int) round($rgbStart[1] + ($rgbEnd[1] - $rgbStart[1]) * $t);
-        $gb = (int) round($rgbStart[2] + ($rgbEnd[2] - $rgbStart[2]) * $t);
+        $tEff = $t * $s;
+        $gr = (int) round($rgbStart[0] + ($rgbEnd[0] - $rgbStart[0]) * $tEff);
+        $gg = (int) round($rgbStart[1] + ($rgbEnd[1] - $rgbStart[1]) * $tEff);
+        $gb = (int) round($rgbStart[2] + ($rgbEnd[2] - $rgbStart[2]) * $tEff);
         for ($x = 0; $x < $canvasW; $x++) {
             $ci = imagecolorat($tmp, $x, $y);
             $mr = ($ci >> 16) & 0xFF;
@@ -1954,13 +1958,15 @@ function logo_draw_ttf_text_block_gradient(
     }
 }
 
-function logo_draw_background($image, int $width, int $height, string $style, array $bgRgb, array $accentRgb): void {
+function logo_draw_background($image, int $width, int $height, string $style, array $bgRgb, array $accentRgb, float $gradientStrength = 100.0): void {
     if ($style === 'gradient') {
+        $s = max(0.0, min(100.0, $gradientStrength)) / 100.0;
         for ($y = 0; $y < $height; $y++) {
             $t = $height > 1 ? ($y / ($height - 1)) : 0;
-            $r = (int) round($bgRgb[0] + ($accentRgb[0] - $bgRgb[0]) * $t);
-            $g = (int) round($bgRgb[1] + ($accentRgb[1] - $bgRgb[1]) * $t);
-            $b = (int) round($bgRgb[2] + ($accentRgb[2] - $bgRgb[2]) * $t);
+            $tEff = $t * $s;
+            $r = (int) round($bgRgb[0] + ($accentRgb[0] - $bgRgb[0]) * $tEff);
+            $g = (int) round($bgRgb[1] + ($accentRgb[1] - $bgRgb[1]) * $tEff);
+            $b = (int) round($bgRgb[2] + ($accentRgb[2] - $bgRgb[2]) * $tEff);
             $line = imagecolorallocate($image, $r, $g, $b);
             imageline($image, 0, $y, $width, $y, $line);
         }
@@ -2027,6 +2033,9 @@ function handle_logo_generate(array $req): string {
         $displayText = $initials !== '' ? mb_substr($initials, 0, 4) : mb_substr(preg_replace('/\s+/u', '', $forInitials), 0, 3);
     }
 
+    $bgGradStrength = max(0, min(100, req_int($req, 'logo_bg_gradient_strength', 100)));
+    $textGradStrength = max(0, min(100, req_int($req, 'logo_text_gradient_strength', 100)));
+
     $bgRgb = logo_hex_to_rgb((string) req_get($req, 'logo_bg_color', '#000000'));
     $accentRgb = logo_hex_to_rgb((string) req_get($req, 'logo_accent_color', '#1d4ed8'));
     $textRgb = logo_hex_to_rgb((string) req_get($req, 'logo_text_color', '#ffffff'), '#ffffff');
@@ -2037,7 +2046,7 @@ function handle_logo_generate(array $req): string {
     imagealphablending($image, true);
     imagesavealpha($image, true);
 
-    logo_draw_background($image, $width, $height, $style, $bgRgb, $accentRgb);
+    logo_draw_background($image, $width, $height, $style, $bgRgb, $accentRgb, (float) $bgGradStrength);
 
     // imagecopymerge + white mask incorrectly painted the interior white; copy pixels only inside the shape.
     if ($shape === 'circle' || $shape === 'rounded') {
@@ -2079,7 +2088,8 @@ function handle_logo_generate(array $req): string {
                 $textRgb,
                 $textAccentRgb,
                 $offsetX,
-                $offsetY
+                $offsetY,
+                (float) $textGradStrength
             );
         } else {
             logo_draw_ttf_text_block($image, $fontPath, $fontSize, $lines, $width, $height, $fontColor, $offsetX, $offsetY);
