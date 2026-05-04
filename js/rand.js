@@ -1036,6 +1036,98 @@ function initKeypairSignFormUi($scope) {
 }
 
 /* ===================================================================== */
+/*           Logo generator: localStorage (survives refresh)            */
+/* ===================================================================== */
+var RAND_LOGO_GENERATOR_STORAGE_KEY = "randLogoGenerator_v1";
+var RAND_LOGO_GENERATOR_STORAGE_VER = 1;
+
+function collectLogoGeneratorState(form) {
+    var payload = { v: RAND_LOGO_GENERATOR_STORAGE_VER };
+    var seen = new Set();
+    for (var i = 0; i < form.elements.length; i++) {
+        var el = form.elements[i];
+        var name = el.name;
+        if (!name || name.indexOf("logo_") !== 0) {
+            continue;
+        }
+        if (el.type === "button" || el.type === "submit") {
+            continue;
+        }
+        if (seen.has(name)) {
+            continue;
+        }
+        if (el.type === "radio") {
+            seen.add(name);
+            var rnodes = form.querySelectorAll("[name=\"" + name + "\"]");
+            for (var j = 0; j < rnodes.length; j++) {
+                if (rnodes[j].checked) {
+                    payload[name] = rnodes[j].value;
+                    break;
+                }
+            }
+            continue;
+        }
+        if (el.type === "checkbox") {
+            seen.add(name);
+            payload[name] = el.checked;
+            continue;
+        }
+        seen.add(name);
+        payload[name] = el.value;
+    }
+    return payload;
+}
+
+function applyLogoGeneratorState(form, payload, setVal) {
+    if (!payload || payload.v !== RAND_LOGO_GENERATOR_STORAGE_VER) {
+        return;
+    }
+    var skipFont = false;
+    var fontSel = form.querySelector("[name=\"logo_font\"]");
+    if (fontSel && payload.logo_font) {
+        var fontOk = false;
+        for (var fi = 0; fi < fontSel.options.length; fi++) {
+            if (fontSel.options[fi].value === payload.logo_font) {
+                fontOk = true;
+                break;
+            }
+        }
+        if (!fontOk) {
+            skipFont = true;
+        }
+    }
+    Object.keys(payload).forEach(function(key) {
+        if (key === "v" || key.indexOf("logo_") !== 0) {
+            return;
+        }
+        if (skipFont && key === "logo_font") {
+            return;
+        }
+        setVal(key, payload[key]);
+    });
+}
+
+function tryLoadLogoGeneratorState(form, setVal) {
+    try {
+        var raw = localStorage.getItem(RAND_LOGO_GENERATOR_STORAGE_KEY);
+        if (!raw) {
+            return;
+        }
+        applyLogoGeneratorState(form, JSON.parse(raw), setVal);
+    } catch (e) {
+        /* ignore */
+    }
+}
+
+function trySaveLogoGeneratorState(form) {
+    try {
+        localStorage.setItem(RAND_LOGO_GENERATOR_STORAGE_KEY, JSON.stringify(collectLogoGeneratorState(form)));
+    } catch (e) {
+        /* quota / private mode */
+    }
+}
+
+/* ===================================================================== */
 /*                    FUNCTION: initLogoGeneratorUi                      */
 /* ===================================================================== */
 function initLogoGeneratorUi($scope) {
@@ -1051,8 +1143,10 @@ function initLogoGeneratorUi($scope) {
     const form = $form[0];
     const $hint = $scope.find("#logoHintText");
     let debounceTimer = null;
+    let persistTimer = null;
     let activeXhr = null;
     const DEBOUNCE_MS = 0;
+    const PERSIST_DEBOUNCE_MS = 400;
 
     const setVal = (name, value) => {
         const nodes = form.querySelectorAll("[name=\"" + name + "\"]");
@@ -1073,6 +1167,8 @@ function initLogoGeneratorUi($scope) {
         }
         first.value = value;
     };
+
+    tryLoadLogoGeneratorState(form, setVal);
 
     const $borderToggle = $form.find("#logoBorderEnabled");
     const $borderInput = $form.find("#logo_border");
@@ -1189,7 +1285,17 @@ function initLogoGeneratorUi($scope) {
         debounceTimer = setTimeout(runLogoPreview, 0);
     };
 
-    $form.off(".randLogoLive").on("input.randLogoLive change.randLogoLive", "input:not([type='hidden']), select, textarea", scheduleLogoPreview);
+    const scheduleLogoPersist = () => {
+        clearTimeout(persistTimer);
+        persistTimer = setTimeout(function() {
+            trySaveLogoGeneratorState(form);
+        }, PERSIST_DEBOUNCE_MS);
+    };
+
+    $form.off(".randLogoLive").on("input.randLogoLive change.randLogoLive", "input:not([type='hidden']), select, textarea", function() {
+        scheduleLogoPreview();
+        scheduleLogoPersist();
+    });
     $form.off("submit.randLogoLive").on("submit.randLogoLive", function(e) {
         e.preventDefault();
         e.stopPropagation(); /* keep document’s .form delegate from also submitting */
@@ -1214,6 +1320,7 @@ function initLogoGeneratorUi($scope) {
             syncFontSizeUi();
             syncBorderUi();
             scheduleLogoPreviewSoon();
+            scheduleLogoPersist();
             return;
         }
         if (preset === "banner") {
@@ -1232,6 +1339,7 @@ function initLogoGeneratorUi($scope) {
             syncFontSizeUi();
             syncBorderUi();
             scheduleLogoPreviewSoon();
+            scheduleLogoPersist();
             return;
         }
         if (preset === "initials-badge") {
@@ -1250,6 +1358,7 @@ function initLogoGeneratorUi($scope) {
             syncFontSizeUi();
             syncBorderUi();
             scheduleLogoPreviewSoon();
+            scheduleLogoPersist();
         }
     };
 
@@ -1264,6 +1373,7 @@ function initLogoGeneratorUi($scope) {
             $hint.text("Colors shuffled — preview updating.");
         }
         scheduleLogoPreviewSoon();
+        scheduleLogoPersist();
     };
 
     $form.find(".logo-preset-btn").off("click.randLogoPreset").on("click.randLogoPreset", function() {
@@ -1278,6 +1388,7 @@ function initLogoGeneratorUi($scope) {
         if (el && el.type === "color") {
             el.value = rndHex();
             scheduleLogoPreviewSoon();
+            scheduleLogoPersist();
         }
     });
 
@@ -1285,16 +1396,19 @@ function initLogoGeneratorUi($scope) {
         setVal("logo_text_offset_x", 0);
         setVal("logo_text_offset_y", 0);
         scheduleLogoPreviewSoon();
+        scheduleLogoPersist();
     });
 
     $borderToggle.off("change.randLogoBorder").on("change.randLogoBorder", function() {
         syncBorderUi();
+        scheduleLogoPersist();
     });
 
     $borderInput.off("input.randLogoBorder").on("input.randLogoBorder", function() {
         const width = clampBorderWidth($borderInput.val(), 0);
         setBorderEnabled(width > 0);
         syncBorderUi();
+        scheduleLogoPersist();
     });
 
     syncFontSizeUi();
