@@ -219,8 +219,8 @@
                                             <small class="text-muted d-block mt-1 mb-0">JPEG flattens onto the background color. WebP/PNG keep transparency where supported.</small>
                                         </td>
                                     </tr>
-                                    <tr>
-                                        <th scope="row" class="text-nowrap">Border</th>
+                                    <tr class="logo-gen-row-tall">
+                                        <th scope="row" class="text-nowrap align-top pt-3">Border</th>
                                         <td>
                                             <div class="d-flex flex-wrap gap-3 align-items-center">
                                                 <div class="form-check form-switch mb-0">
@@ -233,7 +233,14 @@
                                                         aria-describedby="logoBorderHint" style="max-width: 7rem;" disabled>
                                                 </div>
                                             </div>
-                                            <small id="logoBorderHint" class="text-muted d-block mt-1 mb-0">0–24 px when enabled. Color is in the <strong>Border color</strong> section at the bottom of this column.</small>
+                                            <div id="logoBorderColorWrap" class="mt-2 d-none">
+                                                <label class="form-label small mb-1" for="logo_border_color">Color</label>
+                                                <div class="d-flex gap-1 align-items-stretch" style="max-width: 16rem;">
+                                                    <input type="color" class="form-control form-control-color flex-grow-1" id="logo_border_color" name="logo_border_color" value="#ffffff" title="Border color" disabled>
+                                                    <button type="button" class="btn btn-outline-secondary btn-sm logo-color-random px-2" data-target="logo_border_color" title="Random color" disabled><?= icon('shuffle', 0.9) ?></button>
+                                                </div>
+                                            </div>
+                                            <small id="logoBorderHint" class="text-muted d-block mt-1 mb-0">0–24 px when enabled. <strong>Color</strong> appears when the border is enabled.</small>
                                         </td>
                                     </tr>
                                     <tr class="logo-gen-row-tall">
@@ -302,20 +309,6 @@
                                                 <input type="radio" class="btn-check" name="logo_shape" id="logo_shape_circle" value="circle" autocomplete="off">
                                                 <label class="btn btn-outline-primary btn-sm" for="logo_shape_circle">Circle</label>
                                             </div>
-                                        </td>
-                                    </tr>
-                                    <tr class="logo-gen-section-header">
-                                        <td colspan="2" class="py-2 small text-uppercase fw-semibold text-body-secondary">Border color</td>
-                                    </tr>
-                                    <tr>
-                                        <th scope="row" class="text-nowrap align-middle">Border</th>
-                                        <td>
-                                            <label class="form-label small mb-1" for="logo_border_color">Color</label>
-                                            <div class="d-flex gap-1 align-items-stretch" style="max-width: 16rem;">
-                                                <input type="color" class="form-control form-control-color flex-grow-1" id="logo_border_color" name="logo_border_color" value="#ffffff" title="Border color" disabled>
-                                                <button type="button" class="btn btn-outline-secondary btn-sm logo-color-random px-2" data-target="logo_border_color" title="Random color" disabled><?= icon('shuffle', 0.9) ?></button>
-                                            </div>
-                                            <small class="text-muted d-block mt-1 mb-0">Enable the border above to edit.</small>
                                         </td>
                                     </tr>
                                     <tr class="logo-gen-section-header">

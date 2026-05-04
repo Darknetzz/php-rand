@@ -1173,6 +1173,7 @@ function initLogoGeneratorUi($scope) {
     const $borderToggle = $form.find("#logoBorderEnabled");
     const $borderInput = $form.find("#logo_border");
     const $borderWidthWrap = $form.find("#logoBorderWidthWrap");
+    const $borderColorWrap = $form.find("#logoBorderColorWrap");
     const $borderColorInput = $form.find("#logo_border_color");
     const $borderColorRandomBtn = $form.find(".logo-color-random[data-target='logo_border_color']");
     const $textAccentWrap = $form.find("#logoTextAccentWrap");
@@ -1201,6 +1202,9 @@ function initLogoGeneratorUi($scope) {
         const currentWidth = clampBorderWidth($borderInput.val(), 0);
         if (currentWidth > 0) {
             $form.data("logoLastBorderWidth", currentWidth);
+        }
+        if ($borderColorWrap.length) {
+            $borderColorWrap.toggleClass("d-none", !enabled);
         }
         if (enabled) {
             const restoredWidth = clampBorderWidth($form.data("logoLastBorderWidth"), 4);
