@@ -235,9 +235,9 @@
                                         <td>
                                             <div class="btn-group" role="group" aria-label="Background style">
                                                 <input type="radio" class="btn-check" name="logo_style" id="logo_style_gradient" value="gradient" autocomplete="off" checked>
-                                                <label class="btn btn-outline-secondary" for="logo_style_gradient">Gradient</label>
+                                                <label class="btn btn-outline-primary" for="logo_style_gradient">Gradient</label>
                                                 <input type="radio" class="btn-check" name="logo_style" id="logo_style_solid" value="solid" autocomplete="off">
-                                                <label class="btn btn-outline-secondary" for="logo_style_solid">Solid</label>
+                                                <label class="btn btn-outline-primary" for="logo_style_solid">Solid</label>
                                             </div>
                                         </td>
                                     </tr>
@@ -246,9 +246,9 @@
                                         <td>
                                             <div class="btn-group" role="group" aria-label="Text fill style">
                                                 <input type="radio" class="btn-check" name="logo_text_style" id="logo_text_style_solid" value="solid" autocomplete="off" checked>
-                                                <label class="btn btn-outline-secondary" for="logo_text_style_solid">Solid</label>
+                                                <label class="btn btn-outline-primary" for="logo_text_style_solid">Solid</label>
                                                 <input type="radio" class="btn-check" name="logo_text_style" id="logo_text_style_gradient" value="gradient" autocomplete="off">
-                                                <label class="btn btn-outline-secondary" for="logo_text_style_gradient">Gradient</label>
+                                                <label class="btn btn-outline-primary" for="logo_text_style_gradient">Gradient</label>
                                             </div>
                                             <small class="text-muted d-block mt-1 mb-0">Gradient runs top → bottom (same as background). Set colors under Palette.</small>
                                         </td>
@@ -258,11 +258,11 @@
                                         <td>
                                             <div class="btn-group flex-wrap" role="group" aria-label="Logo outer shape">
                                                 <input type="radio" class="btn-check" name="logo_shape" id="logo_shape_rounded" value="rounded" autocomplete="off" checked>
-                                                <label class="btn btn-outline-secondary" for="logo_shape_rounded">Rounded square</label>
+                                                <label class="btn btn-outline-primary" for="logo_shape_rounded">Rounded square</label>
                                                 <input type="radio" class="btn-check" name="logo_shape" id="logo_shape_rectangle" value="rectangle" autocomplete="off">
-                                                <label class="btn btn-outline-secondary" for="logo_shape_rectangle">Rectangle</label>
+                                                <label class="btn btn-outline-primary" for="logo_shape_rectangle">Rectangle</label>
                                                 <input type="radio" class="btn-check" name="logo_shape" id="logo_shape_circle" value="circle" autocomplete="off">
-                                                <label class="btn btn-outline-secondary" for="logo_shape_circle">Circle</label>
+                                                <label class="btn btn-outline-primary" for="logo_shape_circle">Circle</label>
                                             </div>
                                         </td>
                                     </tr>
