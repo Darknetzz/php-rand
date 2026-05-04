@@ -1880,6 +1880,84 @@ function logo_draw_ttf_text_block(
     }
 }
 
+/**
+ * Draw TTF text with a vertical gradient (top = rgbStart, bottom = rgbEnd) using a white-on-black mask.
+ *
+ * @param resource|\GdImage $image
+ * @param list<string> $lines
+ * @param array{0:int,1:int,2:int} $rgbStart
+ * @param array{0:int,1:int,2:int} $rgbEnd
+ */
+function logo_draw_ttf_text_block_gradient(
+    $image,
+    string $fontPath,
+    float $fontSize,
+    array $lines,
+    int $canvasW,
+    int $canvasH,
+    array $rgbStart,
+    array $rgbEnd,
+    int $offsetX,
+    int $offsetY
+): void {
+    if ($lines === []) {
+        return;
+    }
+
+    $tmp = imagecreatetruecolor($canvasW, $canvasH);
+    if ($tmp === false) {
+        return;
+    }
+    imagealphablending($tmp, true);
+    $black = imagecolorallocate($tmp, 0, 0, 0);
+    if ($black === false) {
+        imagedestroy($tmp);
+        return;
+    }
+    imagefilledrectangle($tmp, 0, 0, $canvasW, $canvasH, $black);
+    $white = imagecolorallocate($tmp, 255, 255, 255);
+    if ($white === false) {
+        imagedestroy($tmp);
+        return;
+    }
+    logo_draw_ttf_text_block($tmp, $fontPath, $fontSize, $lines, $canvasW, $canvasH, $white, $offsetX, $offsetY);
+
+    $colCache = [];
+    for ($y = 0; $y < $canvasH; $y++) {
+        $t = $canvasH > 1 ? $y / ($canvasH - 1) : 0;
+        $gr = (int) round($rgbStart[0] + ($rgbEnd[0] - $rgbStart[0]) * $t);
+        $gg = (int) round($rgbStart[1] + ($rgbEnd[1] - $rgbStart[1]) * $t);
+        $gb = (int) round($rgbStart[2] + ($rgbEnd[2] - $rgbStart[2]) * $t);
+        for ($x = 0; $x < $canvasW; $x++) {
+            $ci = imagecolorat($tmp, $x, $y);
+            $mr = ($ci >> 16) & 0xFF;
+            if ($mr < 1) {
+                continue;
+            }
+            $m = $mr / 255.0;
+            $base = imagecolorat($image, $x, $y);
+            $br = ($base >> 16) & 0xFF;
+            $bgc = ($base >> 8) & 0xFF;
+            $bb = $base & 0xFF;
+            $nr = (int) round($br * (1.0 - $m) + $gr * $m);
+            $ng = (int) round($bgc * (1.0 - $m) + $gg * $m);
+            $nb = (int) round($bb * (1.0 - $m) + $gb * $m);
+            $k = ($nr << 16) | ($ng << 8) | $nb;
+            if (!isset($colCache[$k])) {
+                $colCache[$k] = imagecolorallocate($image, $nr, $ng, $nb);
+            }
+            /** @var int $ciOut */
+            $ciOut = $colCache[$k];
+            if ($ciOut === false) {
+                continue;
+            }
+            imagesetpixel($image, $x, $y, $ciOut);
+        }
+    }
+
+    imagedestroy($tmp);
+}
+
 function logo_draw_background($image, int $width, int $height, string $style, array $bgRgb, array $accentRgb): void {
     if ($style === 'gradient') {
         for ($y = 0; $y < $height; $y++) {
@@ -1921,6 +1999,10 @@ function handle_logo_generate(array $req): string {
     $fontSizeReq = max(12, min(400, req_int($req, 'logo_font_size', 96)));
     $shape = (string) req_get($req, 'logo_shape', 'rounded');
     $style = (string) req_get($req, 'logo_style', 'gradient');
+    $textStyle = (string) req_get($req, 'logo_text_style', 'solid');
+    if (!in_array($textStyle, ['solid', 'gradient'], true)) {
+        $textStyle = 'solid';
+    }
     $uppercase = req_bool($req, 'logo_uppercase');
     $useInitials = req_bool($req, 'logo_initials');
     $border = max(0, min(24, req_int($req, 'logo_border', 0)));
@@ -1952,6 +2034,7 @@ function handle_logo_generate(array $req): string {
     $bgRgb = logo_hex_to_rgb((string) req_get($req, 'logo_bg_color', '#000000'));
     $accentRgb = logo_hex_to_rgb((string) req_get($req, 'logo_accent_color', '#1d4ed8'));
     $textRgb = logo_hex_to_rgb((string) req_get($req, 'logo_text_color', '#ffffff'), '#ffffff');
+    $textAccentRgb = logo_hex_to_rgb((string) req_get($req, 'logo_text_accent_color', '#94a3b8'), '#94a3b8');
     $borderRgb = logo_hex_to_rgb((string) req_get($req, 'logo_border_color', '#ffffff'), '#ffffff');
 
     $image = imagecreatetruecolor($width, $height);
@@ -1989,7 +2072,22 @@ function handle_logo_generate(array $req): string {
         if ($lines === []) {
             $lines = [' '];
         }
-        logo_draw_ttf_text_block($image, $fontPath, $fontSize, $lines, $width, $height, $fontColor, $offsetX, $offsetY);
+        if ($textStyle === 'gradient') {
+            logo_draw_ttf_text_block_gradient(
+                $image,
+                $fontPath,
+                $fontSize,
+                $lines,
+                $width,
+                $height,
+                $textRgb,
+                $textAccentRgb,
+                $offsetX,
+                $offsetY
+            );
+        } else {
+            logo_draw_ttf_text_block($image, $fontPath, $fontSize, $lines, $width, $height, $fontColor, $offsetX, $offsetY);
+        }
     } else {
         $font = 5;
         $line = preg_replace('/\s+/u', ' ', trim(str_replace("\n", ' ', $displayText)));

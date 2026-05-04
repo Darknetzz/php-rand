@@ -240,6 +240,16 @@
                                         </td>
                                     </tr>
                                     <tr>
+                                        <th scope="row" class="text-nowrap">Text fill</th>
+                                        <td>
+                                            <select class="form-select" id="logo_text_style" name="logo_text_style" aria-label="Text fill style">
+                                                <option value="solid" selected>Solid</option>
+                                                <option value="gradient">Gradient</option>
+                                            </select>
+                                            <small class="text-muted d-block mt-1 mb-0">Gradient runs top → bottom (same as background). Set colors under Palette.</small>
+                                        </td>
+                                    </tr>
+                                    <tr>
                                         <th scope="row" class="text-nowrap">Mask shape</th>
                                         <td>
                                             <select class="form-select" name="logo_shape" aria-label="Logo outer shape">
@@ -255,7 +265,7 @@
                                     <tr class="logo-gen-row-tall">
                                         <th scope="row" class="text-nowrap align-top pt-3">
                                             Palette
-                                            <span class="fw-normal text-muted d-block small">Accent blends in gradients</span>
+                                            <span class="fw-normal text-muted d-block small">Background accent blends the backdrop; text accent blends the label when text fill is gradient</span>
                                         </th>
                                         <td>
                                             <div class="row row-cols-2 g-3">
@@ -276,8 +286,15 @@
                                                 <div class="col">
                                                     <label class="form-label small mb-1" for="logo_text_color">Text</label>
                                                     <div class="d-flex gap-1 align-items-stretch">
-                                                        <input type="color" class="form-control form-control-color flex-grow-1" id="logo_text_color" name="logo_text_color" value="#ffffff" title="Text color">
+                                                        <input type="color" class="form-control form-control-color flex-grow-1" id="logo_text_color" name="logo_text_color" value="#ffffff" title="Text color (gradient start when text fill is gradient)">
                                                         <button type="button" class="btn btn-outline-secondary btn-sm logo-color-random px-2" data-target="logo_text_color" title="Random color"><?= icon('shuffle', 0.9) ?></button>
+                                                    </div>
+                                                </div>
+                                                <div class="col">
+                                                    <label class="form-label small mb-1" for="logo_text_accent_color">Text accent</label>
+                                                    <div class="d-flex gap-1 align-items-stretch">
+                                                        <input type="color" class="form-control form-control-color flex-grow-1" id="logo_text_accent_color" name="logo_text_accent_color" value="#94a3b8" title="Text gradient end" disabled>
+                                                        <button type="button" class="btn btn-outline-secondary btn-sm logo-color-random px-2" data-target="logo_text_accent_color" title="Random color" disabled><?= icon('shuffle', 0.9) ?></button>
                                                     </div>
                                                 </div>
                                                 <div class="col">

@@ -1070,6 +1070,9 @@ function initLogoGeneratorUi($scope) {
     const $borderInput = $form.find("#logo_border");
     const $borderColorInput = $form.find("#logo_border_color");
     const $borderColorRandomBtn = $form.find(".logo-color-random[data-target='logo_border_color']");
+    const $textStyleSelect = $form.find("#logo_text_style");
+    const $textAccentInput = $form.find("#logo_text_accent_color");
+    const $textAccentRandomBtn = $form.find(".logo-color-random[data-target='logo_text_accent_color']");
     const clampBorderWidth = (value, fallback) => {
         let parsed = parseInt(value, 10);
         if (Number.isNaN(parsed)) {
@@ -1102,6 +1105,17 @@ function initLogoGeneratorUi($scope) {
         $borderInput.val("0").prop("disabled", true);
         $borderColorInput.prop("disabled", true);
         $borderColorRandomBtn.prop("disabled", true);
+    };
+
+    const syncTextFillUi = () => {
+        if (!$textStyleSelect.length || !$textAccentInput.length) {
+            return;
+        }
+        const grad = String($textStyleSelect.val() || "") === "gradient";
+        $textAccentInput.prop("disabled", !grad);
+        if ($textAccentRandomBtn.length) {
+            $textAccentRandomBtn.prop("disabled", !grad);
+        }
     };
 
     const $sizeInput = $form.find("#logo_font_size");
@@ -1232,6 +1246,7 @@ function initLogoGeneratorUi($scope) {
         setVal("logo_bg_color", rndHex());
         setVal("logo_accent_color", rndHex());
         setVal("logo_text_color", "#ffffff");
+        setVal("logo_text_accent_color", rndHex());
         setVal("logo_border_color", rndHex());
         if ($hint.length) {
             $hint.text("Colors shuffled — preview updating.");
@@ -1270,9 +1285,15 @@ function initLogoGeneratorUi($scope) {
         syncBorderUi();
     });
 
+    $textStyleSelect.off("change.randLogoTextFill").on("change.randLogoTextFill", function() {
+        syncTextFillUi();
+        scheduleLogoPreviewSoon();
+    });
+
     syncFontSizeUi();
     setBorderEnabled(clampBorderWidth($borderInput.val(), 0) > 0);
     syncBorderUi();
+    syncTextFillUi();
     scheduleLogoPreviewSoon();
 }
 
