@@ -113,13 +113,13 @@
                         <div class="wheelitems mb-3" style="overflow-y: auto; max-height: 400px; min-height: 400px; padding-right: 10px; border: 1px solid #dee2e6; border-radius: 0.25rem; padding: 15px; background-color: rgba(0,0,0,0.05);">
                             <div class="input-group mb-3 wheelitem" style="gap: 8px;">
                                 <span class="badge bg-primary" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;"><strong>1</strong></span>
-                                <input type="text" name="wheelitem[0]" class="form-control wheelitem-input" placeholder="Item #1" value="Item #1" style="flex: 1;">
+                                <input type="text" name="wheelitem[0]" class="form-control wheelitem-input" placeholder="Item #1" value="" style="flex: 1;">
                                 <input type="number" name="wheelweight[0]" class="form-control wheelitem-weight" min="1" step="1" value="1" title="Weight" aria-label="Weight">
                                 <button type="button" class="btn btn-sm btn-outline-danger remove-item" title="Remove item"><?= icon("trash") ?></button>
                             </div>
                             <div class="input-group mb-3 wheelitem" style="gap: 8px;">
                                 <span class="badge bg-primary" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;"><strong>2</strong></span>
-                                <input type="text" name="wheelitem[1]" class="form-control wheelitem-input" placeholder="Item #2" value="Item #2" style="flex: 1;">
+                                <input type="text" name="wheelitem[1]" class="form-control wheelitem-input" placeholder="Item #2" value="" style="flex: 1;">
                                 <input type="number" name="wheelweight[1]" class="form-control wheelitem-weight" min="1" step="1" value="1" title="Weight" aria-label="Weight">
                                 <button type="button" class="btn btn-sm btn-outline-danger remove-item" title="Remove item"><?= icon("trash") ?></button>
                             </div>
@@ -271,11 +271,11 @@ function targetAngleForItemIndex(itemIndex) {
     return ((-(pointerTarget % TAU)) + TAU) % TAU;
 }
 
-function wheelItemRowHtml(index, label) {
+function wheelItemRowHtml(index, placeholder) {
     return `
         <div class="input-group mb-3 wheelitem" style="gap: 8px;">
             <span class="badge bg-primary" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;"><strong>${index}</strong></span>
-            <input type="text" name="wheelitem[]" class="form-control wheelitem-input" placeholder="${label}" value="${label}" style="flex: 1;">
+            <input type="text" name="wheelitem[]" class="form-control wheelitem-input" placeholder="${placeholder}" value="" style="flex: 1;">
             <input type="number" name="wheelweight[]" class="form-control wheelitem-weight" min="1" step="1" value="1" title="Weight" aria-label="Weight">
             <button type="button" class="btn btn-sm btn-outline-danger remove-item" title="Remove item"><?= icon("trash") ?></button>
         </div>
@@ -304,7 +304,7 @@ function updateWheelFromInputs() {
             index,
             color: `hsl(${(index * 360) / wheelItems.length}, 70%, 50%)`,
             text: "#fff",
-            label: input?.value || `Item #${index + 1}`,
+            label: input?.value.trim() || `Item #${index + 1}`,
             weight,
         };
     });
@@ -530,7 +530,7 @@ $(document).on("click", ".remove-item", function() {
 $(".clear").on("click", function() {
     $(".wheelitem:gt(1)").remove();
     $(".wheelitem").each(function(index) {
-        $(this).find(".wheelitem-input").val("Item #" + (index + 1));
+        $(this).find(".wheelitem-input").val("").attr("placeholder", "Item #" + (index + 1));
         $(this).find(".wheelitem-weight").val(1);
     });
     updateItemNumbers();
