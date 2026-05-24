@@ -64,6 +64,14 @@
 .wheel-weights-enabled .wheelitem-weight {
     display: block;
 }
+
+.wheel-distribute-evenly-option {
+    display: none;
+}
+
+.wheel-items-panel.wheel-weights-enabled .wheel-distribute-evenly-option {
+    display: block;
+}
 </style>
 
 
@@ -87,12 +95,18 @@
                     </div>
 
                     <!-- Items Management Section -->
-                    <div class="col-12 col-lg-6 d-flex flex-column">
+                    <div class="col-12 col-lg-6 d-flex flex-column wheel-items-panel">
                         <div class="d-flex align-items-center justify-content-between mb-3">
                             <h4 class="mb-0"><strong>Wheel Items</strong></h4>
-                            <div class="form-check form-switch mb-0">
-                                <input class="form-check-input" type="checkbox" id="wheelUseWeights" value="1">
-                                <label class="form-check-label" for="wheelUseWeights">Use weights</label>
+                            <div class="d-flex flex-column align-items-end gap-1">
+                                <div class="form-check form-switch mb-0">
+                                    <input class="form-check-input" type="checkbox" id="wheelUseWeights" value="1">
+                                    <label class="form-check-label" for="wheelUseWeights">Use weights</label>
+                                </div>
+                                <div class="form-check form-switch mb-0 wheel-distribute-evenly-option">
+                                    <input class="form-check-input" type="checkbox" id="wheelDistributeEvenly" value="1">
+                                    <label class="form-check-label" for="wheelDistributeEvenly">Distribute evenly</label>
+                                </div>
                             </div>
                         </div>
                         
@@ -168,6 +182,26 @@ function weightsEnabled() {
     return document.getElementById("wheelUseWeights")?.checked ?? false;
 }
 
+function distributeEvenlyEnabled() {
+    return weightsEnabled() && (document.getElementById("wheelDistributeEvenly")?.checked ?? false);
+}
+
+function setAllWeightsEqual(value = 1) {
+    document.querySelectorAll(".wheelitem-weight").forEach((input) => {
+        input.value = value;
+    });
+}
+
+function syncWeightInputState() {
+    const even = distributeEvenlyEnabled();
+    document.querySelectorAll(".wheelitem-weight").forEach((input) => {
+        input.disabled = even;
+        if (even) {
+            input.value = 1;
+        }
+    });
+}
+
 function parseWeight(value) {
     const n = parseInt(value, 10);
     return Number.isFinite(n) && n >= 1 ? n : 1;
@@ -241,12 +275,14 @@ $(document).ready(function() {
 
 function updateWheelFromInputs() {
     useWeights = weightsEnabled();
+    const even = distributeEvenlyEnabled();
+    syncWeightInputState();
     const wheelItems = document.querySelectorAll(".wheelitem");
     spinthewheel_sectors = Array.from(wheelItems).map((row, index) => {
         const input = row.querySelector(".wheelitem-input");
         const weightInput = row.querySelector(".wheelitem-weight");
-        const weight = useWeights ? parseWeight(weightInput?.value) : 1;
-        if (weightInput && weightInput.value !== String(weight)) {
+        const weight = useWeights ? (even ? 1 : parseWeight(weightInput?.value)) : 1;
+        if (weightInput && !even && weightInput.value !== String(weight)) {
             weightInput.value = weight;
         }
         return {
@@ -417,7 +453,17 @@ $(document).on("input", ".wheelitem-input, .wheelitem-weight", function() {
 });
 
 $("#wheelUseWeights").on("change", function() {
-    $(".wheelitems").toggleClass("wheel-weights-enabled", this.checked);
+    $(".wheel-items-panel, .wheelitems").toggleClass("wheel-weights-enabled", this.checked);
+    if (!this.checked) {
+        $("#wheelDistributeEvenly").prop("checked", false);
+    }
+    updateWheelFromInputs();
+});
+
+$("#wheelDistributeEvenly").on("change", function() {
+    if (this.checked) {
+        setAllWeightsEqual(1);
+    }
     updateWheelFromInputs();
 });
 
