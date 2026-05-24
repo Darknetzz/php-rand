@@ -54,6 +54,16 @@
     border-bottom-color: currentColor;
     border-top: none;
 }
+
+.wheelitem-weight {
+    width: 72px;
+    flex-shrink: 0;
+    display: none;
+}
+
+.wheel-weights-enabled .wheelitem-weight {
+    display: block;
+}
 </style>
 
 
@@ -78,17 +88,25 @@
 
                     <!-- Items Management Section -->
                     <div class="col-12 col-lg-6 d-flex flex-column">
-                        <h4 class="mb-3"><strong>Wheel Items</strong></h4>
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <h4 class="mb-0"><strong>Wheel Items</strong></h4>
+                            <div class="form-check form-switch mb-0">
+                                <input class="form-check-input" type="checkbox" id="wheelUseWeights" value="1">
+                                <label class="form-check-label" for="wheelUseWeights">Use weights</label>
+                            </div>
+                        </div>
                         
                         <div class="wheelitems mb-3" style="overflow-y: auto; max-height: 400px; min-height: 400px; padding-right: 10px; border: 1px solid #dee2e6; border-radius: 0.25rem; padding: 15px; background-color: rgba(0,0,0,0.05);">
                             <div class="input-group mb-3 wheelitem" style="gap: 8px;">
                                 <span class="badge bg-primary" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;"><strong>1</strong></span>
                                 <input type="text" name="wheelitem[0]" class="form-control wheelitem-input" placeholder="Item #1" value="Item #1" style="flex: 1;">
+                                <input type="number" name="wheelweight[0]" class="form-control wheelitem-weight" min="1" step="1" value="1" title="Weight" aria-label="Weight">
                                 <button type="button" class="btn btn-sm btn-outline-danger remove-item" title="Remove item"><?= icon("trash") ?></button>
                             </div>
                             <div class="input-group mb-3 wheelitem" style="gap: 8px;">
                                 <span class="badge bg-primary" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;"><strong>2</strong></span>
                                 <input type="text" name="wheelitem[1]" class="form-control wheelitem-input" placeholder="Item #2" value="Item #2" style="flex: 1;">
+                                <input type="number" name="wheelweight[1]" class="form-control wheelitem-weight" min="1" step="1" value="1" title="Weight" aria-label="Weight">
                                 <button type="button" class="btn btn-sm btn-outline-danger remove-item" title="Remove item"><?= icon("trash") ?></button>
                             </div>
                         </div>
@@ -141,6 +159,78 @@ const rad = dia / 2;
 const PI = Math.PI;
 const TAU = 2 * PI;
 let arc = TAU / spinthewheel_sectors.length;
+let sectorStarts = [];
+let sectorArcs = [];
+let useWeights = false;
+let spinWinnerIndex = null;
+
+function weightsEnabled() {
+    return document.getElementById("wheelUseWeights")?.checked ?? false;
+}
+
+function parseWeight(value) {
+    const n = parseInt(value, 10);
+    return Number.isFinite(n) && n >= 1 ? n : 1;
+}
+
+function rebuildSectorGeometry() {
+    const totalWeight = spinthewheel_sectors.reduce((sum, sector) => sum + sector.weight, 0) || 1;
+    let cursor = 0;
+    sectorStarts = [];
+    sectorArcs = spinthewheel_sectors.map((sector) => {
+        sectorStarts.push(cursor);
+        const slice = (sector.weight / totalWeight) * TAU;
+        cursor += slice;
+        return slice;
+    });
+    arc = TAU / spinthewheel_sectors.length;
+}
+
+function pointerAngle() {
+    return ((-(ang % TAU)) + TAU) % TAU;
+}
+
+function getIndex() {
+    if (useWeights) {
+        const pointer = pointerAngle();
+        for (let i = 0; i < tot; i++) {
+            if (pointer >= sectorStarts[i] && pointer < sectorStarts[i] + sectorArcs[i]) {
+                return i;
+            }
+        }
+        return tot - 1;
+    }
+    return Math.floor(tot - (ang / TAU) * tot) % tot;
+}
+
+function weightedRandomIndex() {
+    const totalWeight = spinthewheel_sectors.reduce((sum, sector) => sum + sector.weight, 0);
+    let roll = Math.random() * totalWeight;
+    for (let i = 0; i < spinthewheel_sectors.length; i++) {
+        roll -= spinthewheel_sectors[i].weight;
+        if (roll <= 0) {
+            return i;
+        }
+    }
+    return spinthewheel_sectors.length - 1;
+}
+
+function targetAngleForIndex(index) {
+    const offset = rand(0.15, 0.85) * sectorArcs[index];
+    const pointerTarget = sectorStarts[index] + offset;
+    return ((-(pointerTarget % TAU)) + TAU) % TAU;
+}
+
+function wheelItemRowHtml(index, label) {
+    return `
+        <div class="input-group mb-3 wheelitem" style="gap: 8px;">
+            <span class="badge bg-primary" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;"><strong>${index}</strong></span>
+            <input type="text" name="wheelitem[]" class="form-control wheelitem-input" placeholder="${label}" value="${label}" style="flex: 1;">
+            <input type="number" name="wheelweight[]" class="form-control wheelitem-weight" min="1" step="1" value="1" title="Weight" aria-label="Weight">
+            <button type="button" class="btn btn-sm btn-outline-danger remove-item" title="Remove item"><?= icon("trash") ?></button>
+        </div>
+    `;
+}
 
 // Initialize on DOM ready
 $(document).ready(function() {
@@ -150,16 +240,25 @@ $(document).ready(function() {
 });
 
 function updateWheelFromInputs() {
-    const wheelItems = document.querySelectorAll(".wheelitem-input");
-    spinthewheel_sectors = Array.from(wheelItems).map((input, index) => ({
-        color: `hsl(${(index * 360) / wheelItems.length}, 70%, 50%)`, // Evenly spaced colors
-        text: "#fff",
-        label: input.value || `Item #${index + 1}`,
-    }));
+    useWeights = weightsEnabled();
+    const wheelItems = document.querySelectorAll(".wheelitem");
+    spinthewheel_sectors = Array.from(wheelItems).map((row, index) => {
+        const input = row.querySelector(".wheelitem-input");
+        const weightInput = row.querySelector(".wheelitem-weight");
+        const weight = useWeights ? parseWeight(weightInput?.value) : 1;
+        if (weightInput && weightInput.value !== String(weight)) {
+            weightInput.value = weight;
+        }
+        return {
+            color: `hsl(${(index * 360) / wheelItems.length}, 70%, 50%)`,
+            text: "#fff",
+            label: input?.value || `Item #${index + 1}`,
+            weight,
+        };
+    });
     tot = spinthewheel_sectors.length;
-    arc = TAU / spinthewheel_sectors.length;
-    
-    // Redraw the wheel
+    rebuildSectorGeometry();
+
     ctx.clearRect(0, 0, dia, dia);
     spinthewheel_sectors.forEach(drawSector);
     rotate();
@@ -184,28 +283,30 @@ const friction = 0.991;
 let angVel = 0;
 let ang = 0;
 let isSpinning = false;
-
-const getIndex = () => Math.floor(tot - (ang / TAU) * tot) % tot;
+let spinRotated = 0;
+let spinTargetRotation = 0;
+let spinFinalAng = 0;
 
 function drawSector(sector, i) {
-    const ang = arc * i;
+    const sectorStart = useWeights ? sectorStarts[i] : arc * i;
+    const sectorArc = useWeights ? sectorArcs[i] : arc;
     ctx.save();
 
     ctx.beginPath();
     ctx.fillStyle = sector.color;
     ctx.moveTo(rad, rad);
-    ctx.arc(rad, rad, rad, ang, ang + arc);
+    ctx.arc(rad, rad, rad, sectorStart, sectorStart + sectorArc);
     ctx.lineTo(rad, rad);
     ctx.fill();
 
     ctx.translate(rad, rad);
-    ctx.rotate(ang + arc / 2);
+    ctx.rotate(sectorStart + sectorArc / 2);
     ctx.textAlign = "right";
     ctx.fillStyle = sector.text;
     
-    // Adjust font size based on number of sectors
+    // Adjust font size based on number of sectors and slice size
     let fontSize = 28;
-    let displayText = sector.label;
+    const displayText = sector.label;
     
     if (tot <= 4) {
         fontSize = 28;
@@ -217,6 +318,10 @@ function drawSector(sector, i) {
         fontSize = 12;
     } else {
         fontSize = 10;
+    }
+
+    if (useWeights && sectorArc < TAU / 12) {
+        fontSize = Math.min(fontSize, 10);
     }
     
     ctx.font = `bold ${fontSize}px 'Lato', sans-serif`;
@@ -233,23 +338,38 @@ function rotate() {
     spinEl.style.color = sector.text ? sector.text : "#000";
 }
 
+function finishSpin() {
+    angVel = 0;
+    isSpinning = false;
+    spinRotated = 0;
+    spinTargetRotation = 0;
+    const winnerIndex = spinWinnerIndex !== null ? spinWinnerIndex : getIndex();
+    spinWinnerIndex = null;
+    const finalSector = spinthewheel_sectors[winnerIndex];
+    $("#spinwheelresponse").html(`<div class="alert alert-success mb-0">✓ Winner: <strong>${finalSector.label}</strong></div>`);
+    spinEl.textContent = "SPIN";
+}
+
 function frame() {
     if (isSpinning) {
+        const step = angVel;
         angVel *= friction;
-        if (angVel < 0.001) {
-            // Spin has finished
-            angVel = 0;
-            isSpinning = false;
-            const finalSector = spinthewheel_sectors[getIndex()];
-            $("#spinwheelresponse").html(`<div class="alert alert-success mb-0">✓ Winner: <strong>${finalSector.label}</strong></div>`);
-            spinEl.textContent = "SPIN";
+        if (useWeights && spinTargetRotation > 0) {
+            spinRotated += step;
+            ang += step;
+            ang %= TAU;
+            if (angVel < 0.001 || spinRotated >= spinTargetRotation) {
+                ang = spinFinalAng;
+                finishSpin();
+            }
+        } else if (angVel < 0.001) {
+            finishSpin();
         } else {
-            ang += angVel;
+            ang += step;
             ang %= TAU;
         }
     }
     
-    // Always redraw the wheel
     ctx.clearRect(0, 0, dia, dia);
     spinthewheel_sectors.forEach(drawSector);
     rotate();
@@ -264,15 +384,25 @@ function init() {
     spinEl.addEventListener("click", (e) => {
         e.preventDefault();
         e.stopPropagation();
-        // Only allow spin if wheel is not currently spinning
         if (!isSpinning && angVel < 0.001) {
             $("#spinwheelresponse").html("Spinning...");
+            useWeights = weightsEnabled();
+            if (useWeights) {
+                spinWinnerIndex = weightedRandomIndex();
+                spinFinalAng = targetAngleForIndex(spinWinnerIndex);
+                const delta = ((spinFinalAng - (ang % TAU)) + TAU) % TAU;
+                spinTargetRotation = Math.floor(rand(5, 8)) * TAU + delta;
+                spinRotated = 0;
+            } else {
+                spinWinnerIndex = null;
+                spinTargetRotation = 0;
+                spinRotated = 0;
+            }
             angVel = rand(0.25, 0.45);
             isSpinning = true;
         }
     });
     
-    // Start the animation engine AFTER setting up the click handler
     engine();
 }
 
@@ -281,9 +411,14 @@ function init() {
 /* ===================================================================== */
 /*                       Update wheel when items change                  */
 /* ===================================================================== */
-$(document).on("input", ".wheelitem-input", function() {
+$(document).on("input", ".wheelitem-input, .wheelitem-weight", function() {
     updateWheelFromInputs();
     updateItemNumbers();
+});
+
+$("#wheelUseWeights").on("change", function() {
+    $(".wheelitems").toggleClass("wheel-weights-enabled", this.checked);
+    updateWheelFromInputs();
 });
 
 function updateItemNumbers() {
@@ -300,14 +435,7 @@ $("#addtowheel").on("click", function(e) {
     e.preventDefault();
     var inputCount = $(".wheelitem").length;
     var placeholder = "Item #" + (inputCount + 1);
-    var input = `
-        <div class="input-group mb-3 wheelitem" style="gap: 8px;">
-            <span class="badge bg-primary" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;"><strong>${inputCount + 1}</strong></span>
-            <input type="text" name="wheelitem[]" class="form-control wheelitem-input" placeholder="${placeholder}" value="${placeholder}" style="flex: 1;">
-            <button type="button" class="btn btn-sm btn-outline-danger remove-item" title="Remove item"><?= icon("trash") ?></button>
-        </div>
-    `;
-    $(".wheelitems").append(input);
+    $(".wheelitems").append(wheelItemRowHtml(inputCount + 1, placeholder));
     updateWheelFromInputs();
     updateItemNumbers();
     // Add random button to the newly added input (small delay to ensure DOM is ready)
@@ -340,6 +468,7 @@ $(".clear").on("click", function() {
     $(".wheelitem:gt(1)").remove();
     $(".wheelitem").each(function(index) {
         $(this).find(".wheelitem-input").val("Item #" + (index + 1));
+        $(this).find(".wheelitem-weight").val(1);
     });
     updateItemNumbers();
     updateWheelFromInputs();

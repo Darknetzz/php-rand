@@ -1341,17 +1341,40 @@ function handle_spinwheel(array $req): string {
     if (!is_array($items)) {
         return formatOutput('Invalid wheel items.', type: 'danger');
     }
+    $weights = $req['wheelweight'] ?? [];
+    $useWeights = !empty($req['wheel_use_weights']);
     $labels = [];
-    foreach ($items as $v) {
+    $itemWeights = [];
+    foreach ($items as $i => $v) {
         $t = trim((string) $v);
-        if ($t !== '') {
-            $labels[] = $t;
+        if ($t === '') {
+            continue;
         }
+        $labels[] = $t;
+        $w = 1;
+        if ($useWeights && isset($weights[$i])) {
+            $w = max(1, (int) $weights[$i]);
+        }
+        $itemWeights[] = $w;
     }
     if ($labels === []) {
         return formatOutput('Add at least one non-empty wheel item.', type: 'warning');
     }
-    $pick = $labels[array_rand($labels)];
+    if ($useWeights) {
+        $total = array_sum($itemWeights);
+        $roll = random_int(1, $total);
+        $running = 0;
+        $pick = $labels[0];
+        foreach ($labels as $idx => $label) {
+            $running += $itemWeights[$idx];
+            if ($roll <= $running) {
+                $pick = $label;
+                break;
+            }
+        }
+    } else {
+        $pick = $labels[array_rand($labels)];
+    }
     return formatOutput(
         '<div class="alert alert-success mb-0">Winner: <strong>'
         . htmlspecialchars($pick, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</strong></div>'
