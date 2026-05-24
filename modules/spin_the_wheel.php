@@ -105,7 +105,7 @@
                                 </div>
                                 <div class="form-check form-switch mb-0 wheel-distribute-evenly-option">
                                     <input class="form-check-input" type="checkbox" id="wheelDistributeEvenly" value="1">
-                                    <label class="form-check-label" for="wheelDistributeEvenly">Distribute evenly</label>
+                                    <label class="form-check-label" for="wheelDistributeEvenly" title="Each weight unit becomes its own equal slice on the wheel">Split into slices</label>
                                 </div>
                             </div>
                         </div>
@@ -150,22 +150,11 @@
 /*
  The code used here was borrowed from https://github.com/olimorris/spin-the-wheel
 */
-let spinthewheel_sectors = [
-    {
-        color: "#FFBC03",
-        text: "#333333",
-        label: "Item #1"
-    },
-    {
-        color: "#FF5A10",
-        text: "#333333",
-        label: "Item #2"
-    },
-];
-
+let spinthewheel_items = [];
+let spinthewheel_sectors = [];
 
 const rand = (m, M) => Math.random() * (M - m) + m;
-let tot = spinthewheel_sectors.length;
+let tot = 0;
 const spinEl = document.querySelector(".spin_the_wheel_spinbtn");
 const ctx = document.querySelector(".spin_the_wheel_wheel").getContext("2d");
 const dia = ctx.canvas.width;
@@ -176,35 +165,37 @@ let arc = TAU / spinthewheel_sectors.length;
 let sectorStarts = [];
 let sectorArcs = [];
 let useWeights = false;
-let spinWinnerIndex = null;
+let splitIntoSlices = false;
+let spinWinnerItemIndex = null;
 
 function weightsEnabled() {
     return document.getElementById("wheelUseWeights")?.checked ?? false;
 }
 
-function distributeEvenlyEnabled() {
+function splitSlicesEnabled() {
     return weightsEnabled() && (document.getElementById("wheelDistributeEvenly")?.checked ?? false);
-}
-
-function setAllWeightsEqual(value = 1) {
-    document.querySelectorAll(".wheelitem-weight").forEach((input) => {
-        input.value = value;
-    });
-}
-
-function syncWeightInputState() {
-    const even = distributeEvenlyEnabled();
-    document.querySelectorAll(".wheelitem-weight").forEach((input) => {
-        input.disabled = even;
-        if (even) {
-            input.value = 1;
-        }
-    });
 }
 
 function parseWeight(value) {
     const n = parseInt(value, 10);
     return Number.isFinite(n) && n >= 1 ? n : 1;
+}
+
+function buildDisplaySectors(items, useWeightsMode, splitSlices) {
+    const sectors = [];
+    for (const item of items) {
+        const sliceCount = useWeightsMode && splitSlices ? item.weight : 1;
+        for (let s = 0; s < sliceCount; s++) {
+            sectors.push({
+                label: item.label,
+                color: item.color,
+                text: item.text,
+                itemIndex: item.index,
+                weight: useWeightsMode && !splitSlices ? item.weight : 1,
+            });
+        }
+    }
+    return sectors;
 }
 
 function rebuildSectorGeometry() {
@@ -217,7 +208,7 @@ function rebuildSectorGeometry() {
         cursor += slice;
         return slice;
     });
-    arc = TAU / spinthewheel_sectors.length;
+    arc = tot > 0 ? TAU / tot : TAU;
 }
 
 function pointerAngle() {
@@ -225,7 +216,7 @@ function pointerAngle() {
 }
 
 function getIndex() {
-    if (useWeights) {
+    if (useWeights || splitIntoSlices) {
         const pointer = pointerAngle();
         for (let i = 0; i < tot; i++) {
             if (pointer >= sectorStarts[i] && pointer < sectorStarts[i] + sectorArcs[i]) {
@@ -237,21 +228,32 @@ function getIndex() {
     return Math.floor(tot - (ang / TAU) * tot) % tot;
 }
 
-function weightedRandomIndex() {
-    const totalWeight = spinthewheel_sectors.reduce((sum, sector) => sum + sector.weight, 0);
+function itemIndexFromDisplayIndex(displayIndex) {
+    return spinthewheel_sectors[displayIndex]?.itemIndex ?? displayIndex;
+}
+
+function weightedRandomItemIndex() {
+    const totalWeight = spinthewheel_items.reduce((sum, item) => sum + item.weight, 0);
     let roll = Math.random() * totalWeight;
-    for (let i = 0; i < spinthewheel_sectors.length; i++) {
-        roll -= spinthewheel_sectors[i].weight;
+    for (let i = 0; i < spinthewheel_items.length; i++) {
+        roll -= spinthewheel_items[i].weight;
         if (roll <= 0) {
             return i;
         }
     }
-    return spinthewheel_sectors.length - 1;
+    return spinthewheel_items.length - 1;
 }
 
-function targetAngleForIndex(index) {
-    const offset = rand(0.15, 0.85) * sectorArcs[index];
-    const pointerTarget = sectorStarts[index] + offset;
+function targetAngleForItemIndex(itemIndex) {
+    const sliceIndices = [];
+    spinthewheel_sectors.forEach((sector, i) => {
+        if (sector.itemIndex === itemIndex) {
+            sliceIndices.push(i);
+        }
+    });
+    const sectorIndex = sliceIndices[Math.floor(Math.random() * sliceIndices.length)] ?? itemIndex;
+    const offset = rand(0.15, 0.85) * sectorArcs[sectorIndex];
+    const pointerTarget = sectorStarts[sectorIndex] + offset;
     return ((-(pointerTarget % TAU)) + TAU) % TAU;
 }
 
@@ -275,23 +277,24 @@ $(document).ready(function() {
 
 function updateWheelFromInputs() {
     useWeights = weightsEnabled();
-    const even = distributeEvenlyEnabled();
-    syncWeightInputState();
+    splitIntoSlices = splitSlicesEnabled();
     const wheelItems = document.querySelectorAll(".wheelitem");
-    spinthewheel_sectors = Array.from(wheelItems).map((row, index) => {
+    spinthewheel_items = Array.from(wheelItems).map((row, index) => {
         const input = row.querySelector(".wheelitem-input");
         const weightInput = row.querySelector(".wheelitem-weight");
-        const weight = useWeights ? (even ? 1 : parseWeight(weightInput?.value)) : 1;
-        if (weightInput && !even && weightInput.value !== String(weight)) {
+        const weight = useWeights ? parseWeight(weightInput?.value) : 1;
+        if (weightInput && weightInput.value !== String(weight)) {
             weightInput.value = weight;
         }
         return {
+            index,
             color: `hsl(${(index * 360) / wheelItems.length}, 70%, 50%)`,
             text: "#fff",
             label: input?.value || `Item #${index + 1}`,
             weight,
         };
     });
+    spinthewheel_sectors = buildDisplaySectors(spinthewheel_items, useWeights, splitIntoSlices);
     tot = spinthewheel_sectors.length;
     rebuildSectorGeometry();
 
@@ -324,8 +327,8 @@ let spinTargetRotation = 0;
 let spinFinalAng = 0;
 
 function drawSector(sector, i) {
-    const sectorStart = useWeights ? sectorStarts[i] : arc * i;
-    const sectorArc = useWeights ? sectorArcs[i] : arc;
+    const sectorStart = useWeights || splitIntoSlices ? sectorStarts[i] : arc * i;
+    const sectorArc = useWeights || splitIntoSlices ? sectorArcs[i] : arc;
     ctx.save();
 
     ctx.beginPath();
@@ -356,7 +359,7 @@ function drawSector(sector, i) {
         fontSize = 10;
     }
 
-    if (useWeights && sectorArc < TAU / 12) {
+    if ((useWeights || splitIntoSlices) && sectorArc < TAU / 12) {
         fontSize = Math.min(fontSize, 10);
     }
     
@@ -379,10 +382,12 @@ function finishSpin() {
     isSpinning = false;
     spinRotated = 0;
     spinTargetRotation = 0;
-    const winnerIndex = spinWinnerIndex !== null ? spinWinnerIndex : getIndex();
-    spinWinnerIndex = null;
-    const finalSector = spinthewheel_sectors[winnerIndex];
-    $("#spinwheelresponse").html(`<div class="alert alert-success mb-0">✓ Winner: <strong>${finalSector.label}</strong></div>`);
+    const itemIndex = spinWinnerItemIndex !== null
+        ? spinWinnerItemIndex
+        : itemIndexFromDisplayIndex(getIndex());
+    spinWinnerItemIndex = null;
+    const winner = spinthewheel_items[itemIndex];
+    $("#spinwheelresponse").html(`<div class="alert alert-success mb-0">✓ Winner: <strong>${winner.label}</strong></div>`);
     spinEl.textContent = "SPIN";
 }
 
@@ -423,14 +428,15 @@ function init() {
         if (!isSpinning && angVel < 0.001) {
             $("#spinwheelresponse").html("Spinning...");
             useWeights = weightsEnabled();
+            splitIntoSlices = splitSlicesEnabled();
             if (useWeights) {
-                spinWinnerIndex = weightedRandomIndex();
-                spinFinalAng = targetAngleForIndex(spinWinnerIndex);
+                spinWinnerItemIndex = weightedRandomItemIndex();
+                spinFinalAng = targetAngleForItemIndex(spinWinnerItemIndex);
                 const delta = ((spinFinalAng - (ang % TAU)) + TAU) % TAU;
                 spinTargetRotation = Math.floor(rand(5, 8)) * TAU + delta;
                 spinRotated = 0;
             } else {
-                spinWinnerIndex = null;
+                spinWinnerItemIndex = null;
                 spinTargetRotation = 0;
                 spinRotated = 0;
             }
@@ -461,9 +467,6 @@ $("#wheelUseWeights").on("change", function() {
 });
 
 $("#wheelDistributeEvenly").on("change", function() {
-    if (this.checked) {
-        setAllWeightsEqual(1);
-    }
     updateWheelFromInputs();
 });
 
