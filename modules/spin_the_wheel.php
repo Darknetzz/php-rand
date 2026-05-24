@@ -183,17 +183,31 @@ function parseWeight(value) {
 
 function buildDisplaySectors(items, useWeightsMode, splitSlices) {
     const sectors = [];
-    for (const item of items) {
-        const sliceCount = useWeightsMode && splitSlices ? item.weight : 1;
-        for (let s = 0; s < sliceCount; s++) {
-            sectors.push({
-                label: item.label,
-                color: item.color,
-                text: item.text,
-                itemIndex: item.index,
-                weight: useWeightsMode && !splitSlices ? item.weight : 1,
-            });
+    if (useWeightsMode && splitSlices) {
+        const maxWeight = Math.max(...items.map((item) => item.weight), 1);
+        for (let round = 0; round < maxWeight; round++) {
+            for (const item of items) {
+                if (round < item.weight) {
+                    sectors.push({
+                        label: item.label,
+                        color: item.color,
+                        text: item.text,
+                        itemIndex: item.index,
+                        weight: 1,
+                    });
+                }
+            }
         }
+        return sectors;
+    }
+    for (const item of items) {
+        sectors.push({
+            label: item.label,
+            color: item.color,
+            text: item.text,
+            itemIndex: item.index,
+            weight: useWeightsMode ? item.weight : 1,
+        });
     }
     return sectors;
 }
