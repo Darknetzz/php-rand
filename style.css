@@ -1,5 +1,6 @@
 html {
   height: 100%;
+  --rand-space-scale: 1;
 }
 
 body {
@@ -8,6 +9,54 @@ body {
   color: #FFF;
   height: 100%;
   min-height: 100vh;
+}
+
+/* Global spacing scaler (driven by Settings -> Item spacing). */
+.container :is(.m-0, .mt-0, .me-0, .mb-0, .ms-0, .mx-0, .my-0),
+.container :is(.p-0, .pt-0, .pe-0, .pb-0, .ps-0, .px-0, .py-0),
+.container :is(.gap-0) {
+  /* Keep zero spacing untouched. */
+}
+
+.container :is(.m-1, .mt-1, .me-1, .mb-1, .ms-1, .mx-1, .my-1),
+.container :is(.p-1, .pt-1, .pe-1, .pb-1, .ps-1, .px-1, .py-1),
+.container :is(.gap-1) {
+  --bs-spacer: calc(0.25rem * var(--rand-space-scale));
+}
+
+.container :is(.m-2, .mt-2, .me-2, .mb-2, .ms-2, .mx-2, .my-2),
+.container :is(.p-2, .pt-2, .pe-2, .pb-2, .ps-2, .px-2, .py-2),
+.container :is(.gap-2) {
+  --bs-spacer: calc(0.5rem * var(--rand-space-scale));
+}
+
+.container :is(.m-3, .mt-3, .me-3, .mb-3, .ms-3, .mx-3, .my-3),
+.container :is(.p-3, .pt-3, .pe-3, .pb-3, .ps-3, .px-3, .py-3),
+.container :is(.gap-3) {
+  --bs-spacer: calc(1rem * var(--rand-space-scale));
+}
+
+.container :is(.m-4, .mt-4, .me-4, .mb-4, .ms-4, .mx-4, .my-4),
+.container :is(.p-4, .pt-4, .pe-4, .pb-4, .ps-4, .px-4, .py-4),
+.container :is(.gap-4) {
+  --bs-spacer: calc(1.5rem * var(--rand-space-scale));
+}
+
+.container :is(.m-5, .mt-5, .me-5, .mb-5, .ms-5, .mx-5, .my-5),
+.container :is(.p-5, .pt-5, .pe-5, .pb-5, .ps-5, .px-5, .py-5),
+.container :is(.gap-5) {
+  --bs-spacer: calc(3rem * var(--rand-space-scale));
+}
+
+/* Common custom blocks not using Bootstrap spacing utilities directly. */
+.card,
+.output {
+  margin: calc(15px * var(--rand-space-scale));
+}
+
+.card-body {
+  padding: calc(15px * var(--rand-space-scale));
+  margin: calc(15px * var(--rand-space-scale));
 }
 
 /* Changelog styling (details/summary; .changelog-panel was only in CHANGELOG.md, now removed for GitHub) */

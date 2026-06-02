@@ -72,20 +72,6 @@
 .wheel-items-panel.wheel-weights-enabled .wheel-distribute-evenly-option {
     display: block;
 }
-
-.wheelitems {
-    --wheel-item-gap: 8px;
-    --wheel-item-spacing: 16px;
-}
-
-.wheelitem {
-    gap: var(--wheel-item-gap) !important;
-    margin-bottom: var(--wheel-item-spacing) !important;
-}
-
-.wheelitem:last-child {
-    margin-bottom: 0 !important;
-}
 </style>
 
 
@@ -138,14 +124,6 @@
                                 <button type="button" class="btn btn-sm btn-outline-danger remove-item" title="Remove item"><?= icon("trash") ?></button>
                             </div>
                         </div>
-                        <div class="mb-3">
-                            <label for="wheelItemSpacing" class="form-label mb-1">Item spacing</label>
-                            <div class="d-flex align-items-center gap-2">
-                                <input type="range" class="form-range" id="wheelItemSpacing" min="0" max="32" step="1" value="16">
-                                <span class="badge bg-secondary" id="wheelItemSpacingValue">16px</span>
-                            </div>
-                        </div>
-
                         <!-- Action Buttons -->
                         <div class="d-grid gap-2">
                             <button type="button" class="btn btn-success btn-lg" id="addtowheel"><?= icon("plus-circle") ?> Add Item</button>
@@ -188,7 +166,6 @@ let sectorArcs = [];
 let useWeights = false;
 let splitIntoSlices = false;
 let spinWinnerItemIndex = null;
-const wheelItemsContainer = document.querySelector(".wheelitems");
 
 function weightsEnabled() {
     return document.getElementById("wheelUseWeights")?.checked ?? false;
@@ -304,22 +281,9 @@ function wheelItemRowHtml(index, placeholder) {
     `;
 }
 
-function applyWheelItemSpacing(value) {
-    const sliderValue = parseInt(value, 10);
-    const spacing = Number.isFinite(sliderValue) ? sliderValue : 16;
-    if (wheelItemsContainer) {
-        wheelItemsContainer.style.setProperty("--wheel-item-spacing", `${spacing}px`);
-    }
-    const spacingValue = document.getElementById("wheelItemSpacingValue");
-    if (spacingValue) {
-        spacingValue.textContent = `${spacing}px`;
-    }
-}
-
 // Initialize on DOM ready
 $(document).ready(function() {
     // Populate sectors from the form inputs
-    applyWheelItemSpacing(document.getElementById("wheelItemSpacing")?.value);
     updateWheelFromInputs();
     init();
 });
@@ -517,10 +481,6 @@ $("#wheelUseWeights").on("change", function() {
 
 $("#wheelDistributeEvenly").on("change", function() {
     updateWheelFromInputs();
-});
-
-$("#wheelItemSpacing").on("input change", function() {
-    applyWheelItemSpacing(this.value);
 });
 
 function updateItemNumbers() {

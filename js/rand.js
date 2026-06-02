@@ -1790,6 +1790,7 @@ $(document).ready(function() {
         var p0 = window.randUiPrefs.read();
         $("#randPrefTheme").val(p0.theme);
         $("#randPrefUiScale").val(String(p0.uiScale));
+        $("#randPrefSpaceScale").val(String(p0.spaceScale));
         $("#randPrefTheme").on("change.randUiPrefs", function () {
             var p = window.randUiPrefs.read();
             p.theme = ($(this).val() === "light") ? "light" : "dark";
@@ -1800,6 +1801,12 @@ $(document).ready(function() {
             p.uiScale = parseFloat($(this).val(), 10);
             window.randUiPrefs.save(p);
             $("#randPrefUiScale").val(String(window.randUiPrefs.read().uiScale));
+        });
+        $("#randPrefSpaceScale").on("change.randUiPrefs", function () {
+            var p = window.randUiPrefs.read();
+            p.spaceScale = parseFloat($(this).val(), 10);
+            window.randUiPrefs.save(p);
+            $("#randPrefSpaceScale").val(String(window.randUiPrefs.read().spaceScale));
         });
     }
 

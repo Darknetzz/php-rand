@@ -309,6 +309,16 @@ $navHTML .= '
                 <option value="1.16">Extra large (116%)</option>
               </select>
             </div>
+            <div class="mt-3 mb-0">
+              <label class="form-label mb-1 small opacity-75" for="randPrefSpaceScale">Item spacing</label>
+              <select class="form-select form-select-sm" id="randPrefSpaceScale">
+                <option value="0.85">Tight (85%)</option>
+                <option value="0.95">Dense (95%)</option>
+                <option value="1">Standard (100%)</option>
+                <option value="1.1">Comfortable (110%)</option>
+                <option value="1.2">Relaxed (120%)</option>
+              </select>
+            </div>
           </div>
         </li>
         <li class="nav-item">
