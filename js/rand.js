@@ -72,6 +72,9 @@ function initSshKeyOutputFormatUi($root) {
 function showData(obj, data) {
     if (obj.is("div")) {
         obj.html(data);
+        if (typeof window.refreshCopyUiAvailability === "function") {
+            window.refreshCopyUiAvailability(obj[0]);
+        }
         if (obj.find(".crypto-ssh-key-output-card").length) {
             initSshKeyOutputFormatUi(obj);
         }

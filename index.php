@@ -113,6 +113,23 @@ include_once("modules/dashboard.php");
 <script defer src="js/rand.js"></script>
 
 <script>
+function canUseClipboardCopy() {
+    const hasModernClipboard = !!(navigator.clipboard && navigator.clipboard.writeText);
+    const hasExecCommand = typeof document.queryCommandSupported === "function"
+        ? document.queryCommandSupported("copy")
+        : typeof document.execCommand === "function";
+    return hasModernClipboard || hasExecCommand;
+}
+
+function refreshCopyUiAvailability(scope) {
+    const root = scope || document;
+    const canCopy = canUseClipboardCopy();
+    const actionBlocks = root.querySelectorAll(".copyable-actions");
+    actionBlocks.forEach((block) => {
+        block.style.display = canCopy ? "" : "none";
+    });
+}
+
 // Copy to clipboard function with fallback and explicit button target
 function copyToClipboard(elementId, btnEl) {
     const element = document.getElementById(elementId);
@@ -168,6 +185,12 @@ function fallbackCopy(text, setFeedback) {
         setFeedback(false);
     }
     document.body.removeChild(ta);
+}
+
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", () => refreshCopyUiAvailability(document));
+} else {
+    refreshCopyUiAvailability(document);
 }
 </script>
 
