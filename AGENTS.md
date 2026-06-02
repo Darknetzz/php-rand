@@ -52,3 +52,42 @@ Agents should preserve this format unless explicitly asked to change changelog s
 - Include a changelog update in the same branch/PR as the code change.
 - If no changelog entry exists, treat the task as incomplete.
 - When uncertain where an entry belongs, add it to `[Unreleased]` first and keep wording factual and brief.
+
+## Release Process (Scripts)
+
+This repository has an opinionated scripted release flow in `scripts/`.
+
+### Main Script: `scripts/release.sh`
+
+- Purpose:
+  - Rotate `## [Unreleased]` into `## [vX.Y.Z] (YYYY-MM-DD)` in `CHANGELOG.md`.
+  - Reset a fresh `## [Unreleased]` block with `### Major Features`.
+  - Bump `VERSION=` in `docker-image.config`.
+  - Optionally create commit/tag/push, GitHub release (`gh`), Docker publish, and merge release branch back to main.
+- Basic usage:
+  - `./scripts/release.sh` (suggests next patch from top release in changelog)
+  - `./scripts/release.sh 1.2.11`
+  - `./scripts/release.sh --dry-run`
+  - `./scripts/release.sh 1.2.11 --publish-only` (for already-pushed tags)
+- Important env toggles:
+  - `CREATE_GH_RELEASE=1`
+  - `PUBLISH_DOCKER=1`
+  - `MERGE_RELEASE_TO_MAIN=1`
+  - `MERGE_TO_MAIN_VIA_PR=1`
+  - `RELEASE_BRANCH` (default `dev`)
+  - `MAIN_BRANCH` (default `main`)
+
+### Supporting Scripts
+
+- `scripts/extract_changelog_section.sh`
+  - Extracts one release section from `CHANGELOG.md` by title (example: `[v1.2.9]`).
+- `scripts/update-release-descriptions.php`
+  - Updates existing GitHub release notes from changelog sections via `gh release edit`.
+  - Supports `--dry-run`.
+
+### Release Expectations for Agents
+
+- Before releasing, ensure `[Unreleased]` is accurate and complete.
+- Do not release if changelog entries are missing for shipped changes.
+- After release/tag push, ensure GitHub release notes and Docker publication steps are completed (script prompts or env flags).
+- Keep default branch aligned with the release branch per repo policy (merge or PR path in `release.sh`).
