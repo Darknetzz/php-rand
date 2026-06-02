@@ -1,4 +1,11 @@
 #!/usr/bin/env bash
+# Quick release checklist:
+# 1) Ensure CHANGELOG.md [Unreleased] contains all shipped changes.
+# 2) Run ./scripts/release.sh --dry-run and validate output.
+# 3) Run ./scripts/release.sh X.Y.Z and review modified files.
+# 4) Commit + tag + push (or follow interactive prompts).
+# 5) Complete GitHub release + Docker publish steps.
+# 6) Sync release branch into main (direct merge or PR path).
 # Rotate CHANGELOG.md [Unreleased] into [vX.Y.Z] (YYYY-MM-DD), reset Unreleased, bump docker-image.config,
 # then optionally commit + tag + push, GitHub release (gh), and local Docker publish.
 set -euo pipefail

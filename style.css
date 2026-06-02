@@ -12,52 +12,82 @@ body {
 }
 
 /* Global spacing scaler (driven by Settings -> Item spacing). */
-.container :is(.m-0, .mt-0, .me-0, .mb-0, .ms-0, .mx-0, .my-0),
-.container :is(.p-0, .pt-0, .pe-0, .pb-0, .ps-0, .px-0, .py-0),
-.container :is(.gap-0) {
-  /* Keep zero spacing untouched. */
-}
+.container .m-1 { margin: calc(0.25rem * var(--rand-space-scale)) !important; }
+.container .m-2 { margin: calc(0.5rem * var(--rand-space-scale)) !important; }
+.container .m-3 { margin: calc(1rem * var(--rand-space-scale)) !important; }
+.container .m-4 { margin: calc(1.5rem * var(--rand-space-scale)) !important; }
+.container .m-5 { margin: calc(3rem * var(--rand-space-scale)) !important; }
 
-.container :is(.m-1, .mt-1, .me-1, .mb-1, .ms-1, .mx-1, .my-1),
-.container :is(.p-1, .pt-1, .pe-1, .pb-1, .ps-1, .px-1, .py-1),
-.container :is(.gap-1) {
-  --bs-spacer: calc(0.25rem * var(--rand-space-scale));
-}
+.container .mt-1, .container .my-1 { margin-top: calc(0.25rem * var(--rand-space-scale)) !important; }
+.container .mt-2, .container .my-2 { margin-top: calc(0.5rem * var(--rand-space-scale)) !important; }
+.container .mt-3, .container .my-3 { margin-top: calc(1rem * var(--rand-space-scale)) !important; }
+.container .mt-4, .container .my-4 { margin-top: calc(1.5rem * var(--rand-space-scale)) !important; }
+.container .mt-5, .container .my-5 { margin-top: calc(3rem * var(--rand-space-scale)) !important; }
 
-.container :is(.m-2, .mt-2, .me-2, .mb-2, .ms-2, .mx-2, .my-2),
-.container :is(.p-2, .pt-2, .pe-2, .pb-2, .ps-2, .px-2, .py-2),
-.container :is(.gap-2) {
-  --bs-spacer: calc(0.5rem * var(--rand-space-scale));
-}
+.container .mb-1, .container .my-1 { margin-bottom: calc(0.25rem * var(--rand-space-scale)) !important; }
+.container .mb-2, .container .my-2 { margin-bottom: calc(0.5rem * var(--rand-space-scale)) !important; }
+.container .mb-3, .container .my-3 { margin-bottom: calc(1rem * var(--rand-space-scale)) !important; }
+.container .mb-4, .container .my-4 { margin-bottom: calc(1.5rem * var(--rand-space-scale)) !important; }
+.container .mb-5, .container .my-5 { margin-bottom: calc(3rem * var(--rand-space-scale)) !important; }
 
-.container :is(.m-3, .mt-3, .me-3, .mb-3, .ms-3, .mx-3, .my-3),
-.container :is(.p-3, .pt-3, .pe-3, .pb-3, .ps-3, .px-3, .py-3),
-.container :is(.gap-3) {
-  --bs-spacer: calc(1rem * var(--rand-space-scale));
-}
+.container .ms-1, .container .mx-1 { margin-left: calc(0.25rem * var(--rand-space-scale)) !important; }
+.container .ms-2, .container .mx-2 { margin-left: calc(0.5rem * var(--rand-space-scale)) !important; }
+.container .ms-3, .container .mx-3 { margin-left: calc(1rem * var(--rand-space-scale)) !important; }
+.container .ms-4, .container .mx-4 { margin-left: calc(1.5rem * var(--rand-space-scale)) !important; }
+.container .ms-5, .container .mx-5 { margin-left: calc(3rem * var(--rand-space-scale)) !important; }
 
-.container :is(.m-4, .mt-4, .me-4, .mb-4, .ms-4, .mx-4, .my-4),
-.container :is(.p-4, .pt-4, .pe-4, .pb-4, .ps-4, .px-4, .py-4),
-.container :is(.gap-4) {
-  --bs-spacer: calc(1.5rem * var(--rand-space-scale));
-}
+.container .me-1, .container .mx-1 { margin-right: calc(0.25rem * var(--rand-space-scale)) !important; }
+.container .me-2, .container .mx-2 { margin-right: calc(0.5rem * var(--rand-space-scale)) !important; }
+.container .me-3, .container .mx-3 { margin-right: calc(1rem * var(--rand-space-scale)) !important; }
+.container .me-4, .container .mx-4 { margin-right: calc(1.5rem * var(--rand-space-scale)) !important; }
+.container .me-5, .container .mx-5 { margin-right: calc(3rem * var(--rand-space-scale)) !important; }
 
-.container :is(.m-5, .mt-5, .me-5, .mb-5, .ms-5, .mx-5, .my-5),
-.container :is(.p-5, .pt-5, .pe-5, .pb-5, .ps-5, .px-5, .py-5),
-.container :is(.gap-5) {
-  --bs-spacer: calc(3rem * var(--rand-space-scale));
-}
+.container .p-1 { padding: calc(0.25rem * var(--rand-space-scale)) !important; }
+.container .p-2 { padding: calc(0.5rem * var(--rand-space-scale)) !important; }
+.container .p-3 { padding: calc(1rem * var(--rand-space-scale)) !important; }
+.container .p-4 { padding: calc(1.5rem * var(--rand-space-scale)) !important; }
+.container .p-5 { padding: calc(3rem * var(--rand-space-scale)) !important; }
 
-/* Common custom blocks not using Bootstrap spacing utilities directly. */
-.card,
-.output {
-  margin: calc(15px * var(--rand-space-scale));
-}
+.container .pt-1, .container .py-1 { padding-top: calc(0.25rem * var(--rand-space-scale)) !important; }
+.container .pt-2, .container .py-2 { padding-top: calc(0.5rem * var(--rand-space-scale)) !important; }
+.container .pt-3, .container .py-3 { padding-top: calc(1rem * var(--rand-space-scale)) !important; }
+.container .pt-4, .container .py-4 { padding-top: calc(1.5rem * var(--rand-space-scale)) !important; }
+.container .pt-5, .container .py-5 { padding-top: calc(3rem * var(--rand-space-scale)) !important; }
 
-.card-body {
-  padding: calc(15px * var(--rand-space-scale));
-  margin: calc(15px * var(--rand-space-scale));
-}
+.container .pb-1, .container .py-1 { padding-bottom: calc(0.25rem * var(--rand-space-scale)) !important; }
+.container .pb-2, .container .py-2 { padding-bottom: calc(0.5rem * var(--rand-space-scale)) !important; }
+.container .pb-3, .container .py-3 { padding-bottom: calc(1rem * var(--rand-space-scale)) !important; }
+.container .pb-4, .container .py-4 { padding-bottom: calc(1.5rem * var(--rand-space-scale)) !important; }
+.container .pb-5, .container .py-5 { padding-bottom: calc(3rem * var(--rand-space-scale)) !important; }
+
+.container .ps-1, .container .px-1 { padding-left: calc(0.25rem * var(--rand-space-scale)) !important; }
+.container .ps-2, .container .px-2 { padding-left: calc(0.5rem * var(--rand-space-scale)) !important; }
+.container .ps-3, .container .px-3 { padding-left: calc(1rem * var(--rand-space-scale)) !important; }
+.container .ps-4, .container .px-4 { padding-left: calc(1.5rem * var(--rand-space-scale)) !important; }
+.container .ps-5, .container .px-5 { padding-left: calc(3rem * var(--rand-space-scale)) !important; }
+
+.container .pe-1, .container .px-1 { padding-right: calc(0.25rem * var(--rand-space-scale)) !important; }
+.container .pe-2, .container .px-2 { padding-right: calc(0.5rem * var(--rand-space-scale)) !important; }
+.container .pe-3, .container .px-3 { padding-right: calc(1rem * var(--rand-space-scale)) !important; }
+.container .pe-4, .container .px-4 { padding-right: calc(1.5rem * var(--rand-space-scale)) !important; }
+.container .pe-5, .container .px-5 { padding-right: calc(3rem * var(--rand-space-scale)) !important; }
+
+.container .gap-1 { gap: calc(0.25rem * var(--rand-space-scale)) !important; }
+.container .gap-2 { gap: calc(0.5rem * var(--rand-space-scale)) !important; }
+.container .gap-3 { gap: calc(1rem * var(--rand-space-scale)) !important; }
+.container .gap-4 { gap: calc(1.5rem * var(--rand-space-scale)) !important; }
+.container .gap-5 { gap: calc(3rem * var(--rand-space-scale)) !important; }
+
+.container .g-1, .container .gx-1 { --bs-gutter-x: calc(0.25rem * var(--rand-space-scale)); }
+.container .g-2, .container .gx-2 { --bs-gutter-x: calc(0.5rem * var(--rand-space-scale)); }
+.container .g-3, .container .gx-3 { --bs-gutter-x: calc(1rem * var(--rand-space-scale)); }
+.container .g-4, .container .gx-4 { --bs-gutter-x: calc(1.5rem * var(--rand-space-scale)); }
+.container .g-5, .container .gx-5 { --bs-gutter-x: calc(3rem * var(--rand-space-scale)); }
+.container .g-1, .container .gy-1 { --bs-gutter-y: calc(0.25rem * var(--rand-space-scale)); }
+.container .g-2, .container .gy-2 { --bs-gutter-y: calc(0.5rem * var(--rand-space-scale)); }
+.container .g-3, .container .gy-3 { --bs-gutter-y: calc(1rem * var(--rand-space-scale)); }
+.container .g-4, .container .gy-4 { --bs-gutter-y: calc(1.5rem * var(--rand-space-scale)); }
+.container .g-5, .container .gy-5 { --bs-gutter-y: calc(3rem * var(--rand-space-scale)); }
 
 /* Changelog styling (details/summary; .changelog-panel was only in CHANGELOG.md, now removed for GitHub) */
 #changelogMarkdown details {
@@ -191,7 +221,7 @@ textarea.crontab-expression-textarea {
 
 .output,
 .card {
-  margin: 15px;
+  margin: calc(15px * var(--rand-space-scale));
 }
 
 /* Align syntax validator help panel with sibling .card (same 15px horizontal inset). */
@@ -202,8 +232,8 @@ textarea.crontab-expression-textarea {
 }
 
 .card-body {
-  padding: 15px;
-  margin: 15px;
+  padding: calc(15px * var(--rand-space-scale));
+  margin: calc(15px * var(--rand-space-scale));
 }
 
 /* Can be scrolled */
