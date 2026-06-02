@@ -113,7 +113,13 @@ include_once("modules/dashboard.php");
 <script defer src="js/rand.js"></script>
 
 <script>
+const COPY_UNAVAILABLE_TITLE =
+    "Copy to clipboard is not available in this browser or page context. Use HTTPS (or localhost), or select the text and copy manually.";
+
 function canUseClipboardCopy() {
+    if (window._copyUiForceUnavailable) {
+        return false;
+    }
     const hasModernClipboard = !!(navigator.clipboard && navigator.clipboard.writeText);
     const hasExecCommand = typeof document.queryCommandSupported === "function"
         ? document.queryCommandSupported("copy")
@@ -121,17 +127,60 @@ function canUseClipboardCopy() {
     return hasModernClipboard || hasExecCommand;
 }
 
+function findCopyButtons(root) {
+    return root.querySelectorAll(
+        'button[onclick*="copyToClipboard"], button.copyOutput, button.copyText'
+    );
+}
+
+function setCopyButtonEnabled(btn, enabled) {
+    const wrapClass = "copy-btn-tooltip-wrap";
+    let wrap = btn.closest("." + wrapClass);
+
+    if (enabled) {
+        btn.disabled = false;
+        btn.removeAttribute("aria-disabled");
+        btn.classList.remove("btn-copy-unavailable");
+        if (wrap && wrap.parentNode) {
+            wrap.parentNode.insertBefore(btn, wrap);
+            wrap.remove();
+        }
+        return;
+    }
+
+    if (!wrap) {
+        wrap = document.createElement("span");
+        wrap.className = wrapClass;
+        btn.parentNode.insertBefore(wrap, btn);
+        wrap.appendChild(btn);
+    }
+    wrap.title = COPY_UNAVAILABLE_TITLE;
+    btn.disabled = true;
+    btn.setAttribute("aria-disabled", "true");
+    btn.classList.add("btn-copy-unavailable");
+}
+
 function refreshCopyUiAvailability(scope) {
     const root = scope || document;
     const canCopy = canUseClipboardCopy();
-    const actionBlocks = root.querySelectorAll(".copyable-actions");
-    actionBlocks.forEach((block) => {
-        block.style.display = canCopy ? "" : "none";
-    });
+    findCopyButtons(root).forEach((btn) => setCopyButtonEnabled(btn, canCopy));
 }
+
+/** Dev/test: pass true to simulate unavailable clipboard, false to restore detection. */
+function setCopyUiTestMode(unavailable) {
+    window._copyUiForceUnavailable = !!unavailable;
+    refreshCopyUiAvailability(document);
+}
+
+window.canUseClipboardCopy = canUseClipboardCopy;
+window.refreshCopyUiAvailability = refreshCopyUiAvailability;
+window.setCopyUiTestMode = setCopyUiTestMode;
 
 // Copy to clipboard function with fallback and explicit button target
 function copyToClipboard(elementId, btnEl) {
+    if (!canUseClipboardCopy()) {
+        return;
+    }
     const element = document.getElementById(elementId);
     if (!element) return;
     const text = (element.textContent || "").trim();

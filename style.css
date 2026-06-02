@@ -243,6 +243,14 @@ th.tablehead,
   flex-shrink: 0;
 }
 
+.copy-btn-tooltip-wrap {
+  cursor: not-allowed;
+}
+
+.copy-btn-tooltip-wrap .btn:disabled {
+  pointer-events: none;
+}
+
 /* Random Data Button Styles */
 .input-with-random-btn {
   position: relative;
