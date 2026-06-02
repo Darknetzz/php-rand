@@ -2,6 +2,15 @@
 
 This file is guidance for coding agents (and contributors) working in this repository.
 
+## Quick Release Checklist
+
+1. Confirm all shipped changes are documented in `CHANGELOG.md` under `## [Unreleased]`.
+2. Run `./scripts/release.sh --dry-run` and verify the changelog rotation output looks correct.
+3. Run `./scripts/release.sh <X.Y.Z>` to rotate changelog and bump `docker-image.config`.
+4. Create/push release commit + annotated tag `vX.Y.Z` (or follow script prompts).
+5. Ensure GitHub release and Docker publish steps are completed (prompts or env toggles).
+6. Sync `RELEASE_BRANCH` to `MAIN_BRANCH` (direct merge or PR mode per repo policy).
+
 ## Project Core Concepts
 
 - `rand` is a modular PHP web app with many tools grouped by category in `includes/navbar.php`.
