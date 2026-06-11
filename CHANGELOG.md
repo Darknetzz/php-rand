@@ -8,7 +8,7 @@ All notable changes to this project are documented in this file.
 
 ### Major Features
 
-- **Docker (rolling dev images)** – Pushes to the **`dev`** branch now publish rolling **`dev`** and **`develop`** tags (plus immutable **`dev-<short-sha>`**) to Docker Hub and GHCR via **`.github/workflows/docker-dev.yml`**. The **`Dockerfile`** copies the build context instead of cloning GitHub so CI images match the checked-out branch/tag; **`.dockerignore`** excludes local secrets and VCS metadata.
+- **Docker (rolling dev images)** – Pushes to the **`dev`** branch republish rolling **`dev`** and **`develop`** tags to Docker Hub and GHCR via **`.github/workflows/docker-dev.yml`** (no per-commit image tags). The **`Dockerfile`** copies the build context instead of cloning GitHub so CI images match the checked-out branch/tag; **`.dockerignore`** excludes local secrets and VCS metadata.
 
 - **jQuery 4.0** – Upgraded CDN dependency from jQuery 3.7.1 to **4.0.0** (full build) in `index.php` and `test_random_buttons.html`; updated SRI hash. Migrate 4 audit (`test_jquery4_migrate_audit.html`) found no compatibility warnings across `js/rand.js` and modules with inline jQuery handlers.
 
