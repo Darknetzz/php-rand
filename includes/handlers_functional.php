@@ -1017,7 +1017,7 @@ function handle_stringtools(array $req): string {
         'shuffle' => str_shuffle($string),
         'uppercase' => strtoupper($string),
         'lowercase' => strtolower($string),
-        'titlecase' => ucwords($string),
+        'titlecase' => mb_convert_case($string, MB_CASE_TITLE, 'UTF-8'),
         'camelcase' => lcfirst(str_replace(' ', '', ucwords($string))),
         'slugify' => strtolower(preg_replace('/[^a-zA-Z0-9_]/', '', str_replace([" ", "-"], "_", $string))),
         'kebabcase' => strtolower(preg_replace('/[^a-zA-Z0-9_-]/', '', str_replace([" ", "_"], "-", $string))),
