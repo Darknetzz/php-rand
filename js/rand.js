@@ -2110,7 +2110,12 @@ $(document).ready(function() {
             rows.push(["Server software", data.server_software]);
         }
 
-        var html = '<div class="about-info-summary mb-4">';
+        var html = "";
+        if (data.demo_url) {
+            html += '<p class="mb-3"><a class="btn btn-outline-primary btn-sm" href="' + escapeHtml(data.demo_url) + '" target="_blank" rel="noopener noreferrer">';
+            html += '<i class="bi bi-box-arrow-up-right me-1" aria-hidden="true"></i>Live demo</a></p>';
+        }
+        html += '<div class="about-info-summary mb-4">';
         html += '<dl class="row about-info-dl mb-0">';
         rows.forEach(function(row) {
             html += '<dt class="col-sm-4 col-lg-3">' + escapeHtml(row[0]) + '</dt>';

@@ -16,7 +16,10 @@
                 <a href="#hash" class="link btn btn-outline-primary btn-lg">
                     <?= icon("shield-lock") ?> Explore Crypto
                 </a>
-                <a href="https://github.com/Darknetzz/phprand" target="_blank" class="btn btn-outline-secondary btn-lg">
+                <a href="<?= htmlspecialchars(DEMO_URL, ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener noreferrer" class="btn btn-outline-primary btn-lg">
+                    <?= icon("box-arrow-up-right") ?> Live Demo
+                </a>
+                <a href="https://github.com/Darknetzz/phprand" target="_blank" rel="noopener noreferrer" class="btn btn-outline-secondary btn-lg">
                     <?= icon("github") ?> View on GitHub
                 </a>
             </div>

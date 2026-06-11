@@ -322,7 +322,10 @@ $navHTML .= '
           </div>
         </li>
         <li class="nav-item">
-          <a class="nav-link" target="_blank" href="https://github.com/Darknetzz/phprand">'.icon('github').' GitHub</a>
+          <a class="nav-link" target="_blank" rel="noopener noreferrer" href="'.htmlspecialchars(DEMO_URL, ENT_QUOTES, 'UTF-8').'">'.icon('box-arrow-up-right').' Demo</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" target="_blank" rel="noopener noreferrer" href="https://github.com/Darknetzz/phprand">'.icon('github').' GitHub</a>
         </li>
         <li class="nav-item" data-bs-toggle="modal" data-bs-target="#aboutModal">
           <a class="nav-link" href="javascript:void(0);">'.icon('info-circle').' About</a>

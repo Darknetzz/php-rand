@@ -138,6 +138,7 @@ function getAboutInfo(): array
     }
 
     return [
+        'demo_url' => DEMO_URL,
         'php_rand_version' => getPhpRandVersionLabel(),
         'php_version' => PHP_VERSION,
         'php_sapi' => PHP_SAPI,
