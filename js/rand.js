@@ -2154,6 +2154,30 @@ $(document).ready(function() {
         return html;
     }
 
+    function parseAboutJsonResponse(text) {
+        if (text == null) {
+            return null;
+        }
+        var raw = String(text).trim();
+        if (!raw) {
+            return null;
+        }
+        try {
+            return JSON.parse(raw);
+        } catch (e1) {
+            var start = raw.indexOf("{");
+            var end = raw.lastIndexOf("}");
+            if (start === -1 || end <= start) {
+                return null;
+            }
+            try {
+                return JSON.parse(raw.slice(start, end + 1));
+            } catch (e2) {
+                return null;
+            }
+        }
+    }
+
     function loadAboutInfo() {
         if (aboutInfoLoaded) {
             return;
@@ -2162,9 +2186,14 @@ $(document).ready(function() {
         $.ajax({
             type: "GET",
             url: "about.php",
-            dataType: "json",
+            dataType: "text",
             cache: false
-        }).done(function(data) {
+        }).done(function(responseText) {
+            var data = parseAboutJsonResponse(responseText);
+            if (!data) {
+                aboutInfoPanel.html("<div class='alert alert-danger'>Failed to load environment details.</div>");
+                return;
+            }
             aboutInfoPanel.html(renderAboutInfo(data));
             aboutInfoLoaded = true;
         }).fail(function() {
@@ -2198,7 +2227,10 @@ $(document).ready(function() {
         });
     }
 
-    $("#aboutModal").on("show.bs.modal", function() {
+    $("#aboutModal").on("show.bs.modal shown.bs.modal", function() {
+        loadAboutInfo();
+    });
+    $("#navAbout").on("click", function() {
         loadAboutInfo();
     });
 

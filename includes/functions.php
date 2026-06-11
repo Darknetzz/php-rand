@@ -2048,5 +2048,3 @@ function logo_discover_font_files(): array {
     return $paths;
 }
 
-?>
-
