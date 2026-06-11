@@ -8,6 +8,10 @@ All notable changes to this project are documented in this file.
 
 ### Major Features
 
+- **Docker (rolling dev images)** – Pushes to the **`dev`** branch now publish rolling **`dev`** and **`develop`** tags (plus immutable **`dev-<short-sha>`**) to Docker Hub and GHCR via **`.github/workflows/docker-dev.yml`**. The **`Dockerfile`** copies the build context instead of cloning GitHub so CI images match the checked-out branch/tag; **`.dockerignore`** excludes local secrets and VCS metadata.
+
+- **jQuery 4.0** – Upgraded CDN dependency from jQuery 3.7.1 to **4.0.0** (full build) in `index.php` and `test_random_buttons.html`; updated SRI hash. Migrate 4 audit (`test_jquery4_migrate_audit.html`) found no compatibility warnings across `js/rand.js` and modules with inline jQuery handlers.
+
 - **Tool page descriptions** – Moved per-tool information alerts into each card as muted description text across tool modules (networking, units, crontab, serialization, shellcheck, validators, text/data tools, crypto, and others); dashboard “what’s new” banner unchanged.
 
 - **Global UI spacing preference + release guidance** – Added a new navbar **Settings → Item spacing** preference (Tight/Dense/Standard/Comfortable/Relaxed) persisted via `randUiPrefs` (`spaceScale`) and applied app-wide in `style.css` by scaling common spacing utilities (`m-*`, `p-*`, `gap-*`, `g*/gx*/gy*`) plus card spacing. Added repository agent guidance in **`AGENTS.md`** covering core architecture, mandatory changelog policy, scripted release flow (`scripts/release.sh`, `scripts/extract_changelog_section.sh`, `scripts/update-release-descriptions.php`), and a quick release checklist. Also added an inline quick release checklist comment block at the top of `scripts/release.sh`.

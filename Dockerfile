@@ -35,20 +35,8 @@ RUN { \
         echo "opcache.max_accelerated_files=20000"; \
     } > /usr/local/etc/php/conf.d/custom.ini
 
-RUN set -eux; \
-    rm -rf /var/www/html/*; \
-    git clone --depth=1 https://github.com/Darknetzz/php-rand.git /var/www/html; \
-    chown -R www-data:www-data /var/www/html
-
-# Document root (optional change)
-# ENV APACHE_DOCUMENT_ROOT /var/www/html/public
-# RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf /etc/apache2/apache2.conf
-
-# Copy application (uncomment when you have source)
-# COPY . /var/www/html
-
-# Fix permissions (optional, adapt UID/GID for your environment)
-# RUN chown -R www-data:www-data /var/www/html
+COPY . /var/www/html
+RUN chown -R www-data:www-data /var/www/html
 
 EXPOSE 80
 HEALTHCHECK --interval=30s --timeout=3s CMD curl -f http://localhost/ || exit 1

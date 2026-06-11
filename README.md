@@ -73,8 +73,13 @@ The published image and `Dockerfile` use **PHP 8.5** with **GMP**, **OpenSSH cli
 
 #### Pull from Docker Hub
 ```bash
-# Pull latest image
+# Pull latest stable image (release tags)
 docker pull darknetz/php-rand:latest
+
+# Pull rolling dev image (updated on every push to dev)
+docker pull darknetz/php-rand:dev
+# alias: darknetz/php-rand:develop
+# pin a specific dev build: darknetz/php-rand:dev-<short-sha>
 
 # Run container (replace 12345 with your desired port)
 docker run -d -p 12345:80 --name php-rand darknetz/php-rand:latest
@@ -240,6 +245,8 @@ Other release helpers (run from repo root):
 CI Docker publish requirements:
 - Docker Hub secrets: `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN`
 - GHCR publish uses `GITHUB_TOKEN` automatically
+- **Release images** (`latest`, `vX.Y.Z`): pushed on `v*` tags via `docker-release.yml`
+- **Dev images** (`dev`, `develop`, `dev-<short-sha>`): pushed on every push to `dev` via `docker-dev.yml`
 
 ## Key Features
 
