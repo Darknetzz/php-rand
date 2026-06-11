@@ -1,10 +1,8 @@
 <div id="keypair" class="content">
-    <div class="alert alert-info mb-4">
-        Generate asymmetric keypairs in PEM format. Supports RSA, ECDSA, and Ed25519.
-    </div>
     <div class="card card-primary">
         <h1 class="card-header">🔐 Private/Public Key Generator</h1>
         <div class="card-body">
+            <p class="text-muted mb-4">Generate asymmetric keypairs in PEM format. Supports RSA, ECDSA, and Ed25519.</p>
             <div class="client-crypto-generator-banner mb-3" aria-live="polite"></div>
 
             <form class="form" action="gen.php" method="POST" id="keypairForm" data-action="keypair_generate">

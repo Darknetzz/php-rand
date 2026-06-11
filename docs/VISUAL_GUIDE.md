@@ -264,7 +264,7 @@ Time: 1000ms
 | const/let | ✅ | ✅ | ✅ | ✅ |
 | Template Literals | ✅ | ✅ | ✅ | ✅ |
 | Bootstrap Icons | ✅ | ✅ | ✅ | ✅ |
-| jQuery 3.7+ | ✅ | ✅ | ✅ | ✅ |
+| jQuery 4.0+ | ✅ | ✅ | ✅ | ✅ |
 | CSS Transitions | ✅ | ✅ | ✅ | ✅ |
 
 ## Performance Metrics

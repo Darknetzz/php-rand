@@ -1,12 +1,9 @@
 <div id="diff" class="content">
 
-    <div class="alert alert-info mb-4">
-        <h4><?= icon("info-circle", color: "cyan") ?> Information</h4>
-        <p style="margin-bottom: 0;">Create a unified diff between two text inputs. Shows additions, deletions, and unchanged lines with standard diff formatting.</p>
-    </div>
     <div class="card card-primary">
         <h1 class="card-header">Diff (Unified)</h1>
         <div class="card-body">
+            <p class="text-muted mb-4">Create a unified diff between two text inputs. Shows additions, deletions, and unchanged lines with standard diff formatting.</p>
             <form class="form" action="gen.php" method="POST" id="diffForm" data-action="diff">
                 <div class="row g-4 mb-4">
                     <div class="col-12 col-lg-6">

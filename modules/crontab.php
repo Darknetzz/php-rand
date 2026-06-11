@@ -17,14 +17,10 @@ $moreOptionsOpen = ($effectiveTimezone !== $serverTimezone)
     || !empty($_POST['cron_include_current']);
 ?>
 <div id="crontab" class="content">
-    <div class="alert alert-info mb-4">
-        <strong>Cron at a glance.</strong>
-        Type a standard 5-field expression (or a macro like <code>@daily</code>); results update shortly after you stop typing.
-        Times use the server timezone <code><?= htmlspecialchars($serverTimezone, ENT_QUOTES, 'UTF-8') ?></code>, which is also shown in the analysis panel.
-    </div>
     <div class="card card-primary">
         <h1 class="card-header"><?= icon("calendar-event") ?> Crontab Explorer</h1>
         <div class="card-body">
+            <p class="text-muted mb-4">Type a standard 5-field expression (or a macro like <code>@daily</code>); results update shortly after you stop typing. Times use the server timezone <code><?= htmlspecialchars($serverTimezone, ENT_QUOTES, 'UTF-8') ?></code>, which is also shown in the analysis panel.</p>
             <form
                 class="form"
                 action="gen.php"

@@ -4,13 +4,10 @@
     $htmlModeVal = $_POST['htmlentities_mode'] ?? 'auto';
     ?>
 
-    <div class="alert alert-info mb-4">
-        <strong>ℹ️ Convert & Decode</strong>
-        Paste plain text or HTML-encoded strings to get the raw input, encoded entities, and decoded output side by side.
-    </div>
     <div class="card card-primary">
         <h1 class="card-header">🧩 HTML Entities</h1>
         <div class="card-body">
+            <p class="text-muted mb-4">Paste plain text or HTML-encoded strings to get the raw input, encoded entities, and decoded output side by side.</p>
             <form class="form" action="gen.php" method="POST" id="htmlentitiesForm" data-action="htmlentities">
                 <div class="row g-4 mb-4">
                     <div class="col-12 col-lg-6">

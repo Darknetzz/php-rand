@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>jQuery 4 Migrate Audit</title>
+    <script src="https://code.jquery.com/jquery-4.0.0.js"></script>
+    <script src="https://code.jquery.com/jquery-migrate-4.0.2.js"></script>
+</head>
+<body>
+    <h1>jQuery 4 Migrate Audit</h1>
+    <p>Open DevTools console. Warnings appear as <code>JQMIGRATE</code> messages.</p>
+    <div id="migrate-log"></div>
+    <script>
+        window.__migrateWarnings = [];
+        const origWarn = console.warn;
+        console.warn = function (...args) {
+            const msg = args.map(a => String(a)).join(" ");
+            if (msg.includes("JQMIGRATE")) {
+                window.__migrateWarnings.push(msg);
+                document.getElementById("migrate-log").insertAdjacentHTML(
+                    "beforeend",
+                    "<pre>" + msg.replace(/</g, "&lt;") + "</pre>"
+                );
+            }
+            origWarn.apply(console, args);
+        };
+    </script>
+    <script defer src="js/axios.min.js"></script>
+    <script defer src="js/rand.js"></script>
+</body>
+</html>

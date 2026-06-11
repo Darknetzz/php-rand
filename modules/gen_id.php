@@ -6,12 +6,10 @@
     $nanoLen = isset($_POST['nanoid_length']) ? (int) $_POST['nanoid_length'] : 21;
     $nanoLen = max(6, min(128, $nanoLen));
     ?>
-    <div class="alert alert-info mb-4">
-        Generate UUIDv4, ULID, or NanoID values in bulk.
-    </div>
     <div class="card card-primary">
         <h1 class="card-header">🆔 ID Generator</h1>
         <div class="card-body">
+            <p class="text-muted mb-4">Generate UUIDv4, ULID, or NanoID values in bulk.</p>
             <form class="form" action="gen.php" method="POST" id="genid" data-action="genid">
                 <div class="row g-4 mb-4">
                     <div class="col-12 col-lg-6">

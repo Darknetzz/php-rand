@@ -4,13 +4,10 @@
 // ─────────────────────────────────────────────────────────────────────────────────────────────── #
 -->
 <div id="regex" class="content">
-    <div class="alert alert-info mb-4">
-        <strong>ℹ️ About Regex</strong>
-        Test and debug regular expressions in real-time. See matches, groups, and replacements instantly. Supports PHP regex syntax (PCRE).
-    </div>
     <div class="card card-primary">
         <h1 class="card-header">🔍 Regex Tester</h1>
         <div class="card-body">
+            <p class="text-muted mb-4">Test and debug regular expressions in real-time. See matches, groups, and replacements instantly. Supports PHP regex syntax (PCRE).</p>
             <form class="form" action="gen.php" method="POST" id="regexForm" data-action="regex">
                 <div class="row g-4 mb-4">
                     <div class="col-12 col-lg-6">

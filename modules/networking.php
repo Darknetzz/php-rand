@@ -1,13 +1,10 @@
 <div id="networking" class="content">
 
     <!-- DNS Lookup -->
-    <div class="alert alert-info mb-4">
-        <h4><?= icon("info-circle", color: "cyan") ?> Information</h4>
-        <p style="margin-bottom: 0;">Resolve hostname to IP address or IP address to hostname.</p>
-    </div>
     <div class="card card-primary mb-4">
         <h1 class="card-header">DNS Lookup</h1>
         <div class="card-body">
+            <p class="text-muted mb-4">Resolve hostname to IP address or IP address to hostname.</p>
             <form class="form" action="gen.php" method="POST" id="dnslookup" data-action="ip">
                 <input type="hidden" name="action" value="ip">
                 <input type="hidden" name="tool" value="dnslookup">
@@ -32,13 +29,10 @@
     </div>
 
     <!-- CIDR to Range -->
-    <div class="alert alert-info mb-4">
-        <h4><?= icon("info-circle", color: "cyan") ?> Information</h4>
-        <p style="margin-bottom: 0;">Convert CIDR notation to IP range (start, end, total IPs).</p>
-    </div>
     <div class="card card-primary mb-4">
         <h1 class="card-header">CIDR to Range</h1>
         <div class="card-body">
+            <p class="text-muted mb-4">Convert CIDR notation to IP range (start, end, total IPs).</p>
             <form class="form" action="gen.php" method="POST" id="cidr2range" data-action="ip">
                 <input type="hidden" name="action" value="ip">
                 <input type="hidden" name="tool" value="cidr2range">
@@ -64,13 +58,10 @@
     </div>
 
     <!-- Range to CIDR -->
-    <div class="alert alert-info mb-4">
-        <h4><?= icon("info-circle", color: "cyan") ?> Information</h4>
-        <p style="margin-bottom: 0;">Convert IP range (start and end) to CIDR notation. Calculates the smallest possible subnet.</p>
-    </div>
     <div class="card card-primary mb-4">
         <h1 class="card-header">Range to CIDR</h1>
         <div class="card-body">
+            <p class="text-muted mb-4">Convert IP range (start and end) to CIDR notation. Calculates the smallest possible subnet.</p>
             <form class="form" action="gen.php" method="POST" id="range2cidr" data-action="ip">
                 <input type="hidden" name="action" value="ip">
                 <input type="hidden" name="tool" value="range2cidr">
@@ -96,13 +87,10 @@
     </div>
 
     <!-- Subnet Mask Calculator -->
-    <div class="alert alert-info mb-4">
-        <h4><?= icon("info-circle", color: "cyan") ?> Information</h4>
-        <p style="margin-bottom: 0;">Calculate subnet information: network, first IP, last IP, and broadcast address.</p>
-    </div>
     <div class="card card-primary mb-4">
         <h1 class="card-header">Subnet Mask Calculator</h1>
         <div class="card-body">
+            <p class="text-muted mb-4">Calculate subnet information: network, first IP, last IP, and broadcast address.</p>
             <form class="form" action="gen.php" method="POST" id="subnetmask" data-action="ip">
                 <input type="hidden" name="action" value="ip">
                 <input type="hidden" name="tool" value="subnetmask">
@@ -128,13 +116,10 @@
     </div>
 
     <!-- IP/Hex Converter -->
-    <div class="alert alert-info mb-4">
-        <h4><?= icon("info-circle", color: "cyan") ?> Information</h4>
-        <p style="margin-bottom: 0;">Convert between IP addresses and hexadecimal format. Supports multiple IPs separated by commas: <code>192.168.1.10, 192.168.1.20, 10.0.0.50</code></p>
-    </div>
     <div class="card card-primary mb-4">
         <h1 class="card-header">IP/Hex Converter</h1>
         <div class="card-body">
+            <p class="text-muted mb-4">Convert between IP addresses and hexadecimal format. Supports multiple IPs separated by commas: <code>192.168.1.10, 192.168.1.20, 10.0.0.50</code></p>
             <form class="form" action="gen.php" method="POST" id="iphex" data-action="hex">
                 <input type="hidden" name="action" value="hex">
                 <input type="hidden" name="tool" value="ip2hex" id="iphexTool">
