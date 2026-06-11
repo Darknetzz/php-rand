@@ -8,7 +8,7 @@ All notable changes to this project are documented in this file.
 
 ### Major Features
 
-- **Demo URL** – Centralized **`DEMO_URL`** (`https://rand.demo.roste.org/`) in **`includes/config.php`**; navbar, dashboard hero, About panel, and **`README.md`** now point to the live demo host (replacing **`roste.org/rand`**).
+- **Demo URL** – Centralized **`DEMO_URL`** (`https://rand.demo.roste.org/`) in **`includes/config.php`**; dashboard hero, About panel, and **`README.md`** point to the live demo host (replacing **`roste.org/rand`**).
 - **About modal** – Fixed stuck loading state: discard accidental PHP output in **`about.php`**, removed trailing **`?>`** from **`includes/functions.php`**, moved Bootstrap modal trigger to the About nav link, and hardened JSON parsing in **`js/rand.js`**.
 
 - **Docker CI** – Fixed invalid `secrets` usage in step `if` conditions in **`.github/workflows/docker-release.yml`** and **`.github/workflows/docker-dev.yml`** by detecting Docker Hub credentials in a shell step and gating publish steps on `steps.dockerhub.outputs.enabled`.

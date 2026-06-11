@@ -322,9 +322,6 @@ $navHTML .= '
           </div>
         </li>
         <li class="nav-item">
-          <a class="nav-link" target="_blank" rel="noopener noreferrer" href="'.htmlspecialchars(DEMO_URL, ENT_QUOTES, 'UTF-8').'">'.icon('box-arrow-up-right').' Demo</a>
-        </li>
-        <li class="nav-item">
           <a class="nav-link" target="_blank" rel="noopener noreferrer" href="https://github.com/Darknetzz/phprand">'.icon('github').' GitHub</a>
         </li>
         <li class="nav-item">
