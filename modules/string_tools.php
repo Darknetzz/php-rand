@@ -67,6 +67,13 @@
                             <label class="form-check-label" for="outputToTextbox">Auto-apply to input</label>
                         </div>
 
+                        <div class="mb-3">
+                            <label for="strtoolsCustomChars" class="form-label">Custom characters to remove</label>
+                            <input type="text" class="form-control form-control-sm" name="custom_characters"
+                                id="strtoolsCustomChars" placeholder="e.g. @#*" autocomplete="off">
+                            <div class="form-text">Used by the <strong>Custom characters</strong> remove tool.</div>
+                        </div>
+
                         <hr>
 
                         <h5>Tools</h5>
@@ -349,6 +356,29 @@ $(document).ready(function() {
         var tool = $(this).data("tool");
         var form = $("#strtools");
         var input = $("#strtoolsinput").val();
+
+        if (tool === "regex") {
+            var text = input || "";
+            if (typeof navigate === "function") {
+                navigate("#regex");
+            } else {
+                window.location.hash = "#regex";
+            }
+            var fillRegex = function(attempts) {
+                var $regexInput = $("#regexTestString");
+                if ($regexInput.length) {
+                    if (text) {
+                        $regexInput.val(text);
+                    }
+                    return;
+                }
+                if (attempts > 0) {
+                    setTimeout(function() { fillRegex(attempts - 1); }, 100);
+                }
+            };
+            fillRegex(30);
+            return;
+        }
 
         if (!input) {
             $("#strtoolsresponse").html('<div class="alert alert-warning mb-0">Please enter some text first.</div>');

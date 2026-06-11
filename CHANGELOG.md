@@ -10,7 +10,7 @@ All notable changes to this project are documented in this file.
 
 - **Demo URL** – Centralized **`DEMO_URL`** (`https://rand.demo.roste.org/`) in **`includes/config.php`**; dashboard hero, About panel, and **`README.md`** point to the live demo host (replacing **`roste.org/rand`**).
 - **About modal** – Fixed stuck loading state: discard accidental PHP output in **`about.php`**, removed trailing **`?>`** from **`includes/functions.php`**, moved Bootstrap modal trigger to the About nav link, and hardened JSON parsing in **`js/rand.js`**.
-- **String tools** – **Titlecase** now uses **`mb_convert_case(..., MB_CASE_TITLE)`** so all-caps input becomes proper title case (e.g. `HELLO WORLD` → `Hello World`), not unchanged uppercase from **`ucwords()`**.
+- **String tools** – **Titlecase** / **Camelcase** use **`mb_convert_case`** so all-caps input title-cases correctly; **CRLF→LF**, **LF→CRLF**, and **Format** normalize real line endings (old **`crlf2lf`** stripped all breaks); **Custom characters** remove is implemented; **Regex** opens the Regex Tester with the current input; case tools use **`mb_*`** where appropriate.
 
 - **Docker CI** – Fixed invalid `secrets` usage in step `if` conditions in **`.github/workflows/docker-release.yml`** and **`.github/workflows/docker-dev.yml`** by detecting Docker Hub credentials in a shell step and gating publish steps on `steps.dockerhub.outputs.enabled`.
 

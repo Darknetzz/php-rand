@@ -976,6 +976,32 @@ function handle_datetime(array $req): string {
 }
 
 /**
+ * Normalize CRLF/CR line endings to LF.
+ */
+function stringtools_normalize_line_endings_to_lf(string $string): string {
+    return preg_replace('/\r\n?/', "\n", $string) ?? $string;
+}
+
+/**
+ * Convert any line endings to CRLF.
+ */
+function stringtools_convert_line_endings_to_crlf(string $string): string {
+    return str_replace("\n", "\r\n", stringtools_normalize_line_endings_to_lf($string));
+}
+
+/**
+ * Remove all occurrences of the given characters from a string.
+ */
+function stringtools_remove_custom_characters(string $string, string $characters): string {
+    if ($characters === '') {
+        return $string;
+    }
+    $quoted = preg_quote($characters, '/');
+
+    return preg_replace('/[' . $quoted . ']/u', '', $string) ?? $string;
+}
+
+/**
  * Handle string transformation requests
  *
  * Applies various text transformations such as case conversion, whitespace handling,
@@ -1000,12 +1026,20 @@ function handle_stringtools(array $req): string {
         'l33t5p34k', 'crlf2lf', 'lf2crlf', 'formatlineendings', 'removehtmltags',
         'removepunctuation', 'removenewlines', 'removetabs', 'removespaces', 'removeslashes',
         'removebackslashes', 'removenonascii', 'removenonprintable', 'removewhitespaceext',
-        'removenumbers', 'removeletters', 'removesymbols', 'removeextendedsymbols'
+        'removenumbers', 'removeletters', 'removesymbols', 'removeextendedsymbols',
+        'removecustomcharacters'
     ];
     $tool = req_get($req, 'tool', '');
 
     if (empty($tool) || !in_array($tool, $allowedTools)) {
         return formatOutput("Invalid tool selected.", type: "danger");
+    }
+
+    if ($tool === 'removecustomcharacters') {
+        $customCharacters = (string) req_get($req, 'custom_characters', '');
+        if ($customCharacters === '') {
+            return formatOutput('Enter characters to remove in the "Custom characters" field.', type: 'danger');
+        }
     }
 
     // Apply string transformations
@@ -1015,18 +1049,19 @@ function handle_stringtools(array $req): string {
         'reverse' => strrev($string),
         'repeat' => str_repeat($string, 2),
         'shuffle' => str_shuffle($string),
-        'uppercase' => strtoupper($string),
-        'lowercase' => strtolower($string),
+        'uppercase' => mb_strtoupper($string, 'UTF-8'),
+        'lowercase' => mb_strtolower($string, 'UTF-8'),
         'titlecase' => mb_convert_case($string, MB_CASE_TITLE, 'UTF-8'),
-        'camelcase' => lcfirst(str_replace(' ', '', ucwords($string))),
+        'camelcase' => lcfirst(str_replace(' ', '', mb_convert_case($string, MB_CASE_TITLE, 'UTF-8'))),
         'slugify' => strtolower(preg_replace('/[^a-zA-Z0-9_]/', '', str_replace([" ", "-"], "_", $string))),
         'kebabcase' => strtolower(preg_replace('/[^a-zA-Z0-9_-]/', '', str_replace([" ", "_"], "-", $string))),
-        'randomcase' => implode('', array_map(fn($c) => (mt_rand(0, 100) >= 50) ? strtoupper($c) : strtolower($c), str_split($string))),
+        'randomcase' => implode('', array_map(fn($c) => (mt_rand(0, 100) >= 50) ? mb_strtoupper($c, 'UTF-8') : mb_strtolower($c, 'UTF-8'), preg_split('//u', $string, -1, PREG_SPLIT_NO_EMPTY))),
         'invertedcase' => strtr($string, 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ', 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'),
         'l33t5p34k' => str_replace(['a','e','o','t','l','s','b','A','E','O','T','L','S','B'], ['4','3','0','7','1','5','6','4','3','0','7','1','5','6'], $string),
-        'crlf2lf' => str_replace(["\r", "\n"], "", $string),
-        'lf2crlf' => str_replace(["\r", "\n"], "\r\n", $string),
-        'formatlineendings' => str_replace(["\\r", "\\n"], "\n", $string),
+        'crlf2lf' => stringtools_normalize_line_endings_to_lf($string),
+        'lf2crlf' => stringtools_convert_line_endings_to_crlf($string),
+        'formatlineendings' => stringtools_normalize_line_endings_to_lf($string),
+        'removecustomcharacters' => stringtools_remove_custom_characters($string, (string) req_get($req, 'custom_characters', '')),
         'removehtmltags' => strip_tags($string),
         'removepunctuation' => preg_replace('/[^\w\s]/', '', $string),
         'removenewlines' => str_replace(["\r\n", "\r", "\n"], '', $string),
