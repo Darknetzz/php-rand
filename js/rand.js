@@ -2079,10 +2079,98 @@ $(document).ready(function() {
 
 
     /* ===================================================================== */
-    /*                            Changelog modal                            */
+    /*                         About / Changelog modal                         */
     /* ===================================================================== */
+    var aboutInfoPanel = $("#aboutInfoPanel");
     var changelog = $("#changelogMarkdown");
-    $("#changelogModal").on("show.bs.modal", function() {
+    var aboutInfoLoaded = false;
+    var changelogLoaded = false;
+
+    function escapeHtml(text) {
+        return $("<div>").text(text == null ? "" : String(text)).html();
+    }
+
+    function renderAboutInfo(data) {
+        var isDocker = data.environment === "docker";
+        var envLabel = isDocker ? "Docker container" : "Native (non-Docker)";
+        var envBadgeClass = isDocker ? "bg-azure-lt text-azure" : "bg-secondary-lt text-secondary";
+
+        var rows = [
+            ["php-rand version", data.php_rand_version],
+            ["PHP version", data.php_version],
+            ["PHP SAPI", data.php_sapi],
+            ["Environment", '<span class="badge ' + envBadgeClass + '">' + escapeHtml(envLabel) + "</span>"],
+            ["Operating system", data.os]
+        ];
+
+        if (data.docker_image_version) {
+            rows.push(["Docker image label", data.docker_image_version]);
+        }
+        if (data.server_software) {
+            rows.push(["Server software", data.server_software]);
+        }
+
+        var html = '<div class="about-info-summary mb-4">';
+        html += '<dl class="row about-info-dl mb-0">';
+        rows.forEach(function(row) {
+            html += '<dt class="col-sm-4 col-lg-3">' + escapeHtml(row[0]) + '</dt>';
+            html += '<dd class="col-sm-8 col-lg-9">' + row[1] + "</dd>";
+        });
+        html += "</dl>";
+        if (data.has_unreleased_changes && !isDocker) {
+            html += '<p class="text-muted small mb-0 mt-2">This install includes unreleased changes from <code>CHANGELOG.md</code>.</p>';
+        }
+        html += "</div>";
+
+        html += '<h3 class="h5 mb-2">Key PHP extensions</h3>';
+        html += '<p class="text-muted small">Extensions commonly used by php-rand tools.</p>';
+        html += '<div class="about-key-extensions mb-4">';
+        (data.key_extensions || []).forEach(function(ext) {
+            var badgeClass = ext.loaded ? "bg-green-lt text-green" : "bg-red-lt text-red";
+            var iconClass = ext.loaded ? "bi-check-circle-fill" : "bi-x-circle-fill";
+            html += '<span class="badge ' + badgeClass + ' about-ext-badge me-1 mb-1" title="' + escapeHtml(ext.label) + '">';
+            html += '<i class="bi ' + iconClass + ' me-1" aria-hidden="true"></i>';
+            html += escapeHtml(ext.name);
+            html += "</span>";
+        });
+        html += "</div>";
+
+        var loaded = data.loaded_extensions || [];
+        html += '<details class="about-extensions-all">';
+        html += '<summary class="h6 mb-0">All loaded PHP extensions (' + (data.loaded_extension_count || loaded.length) + ")</summary>";
+        html += '<div class="about-extensions-list small text-muted mt-2">';
+        if (loaded.length) {
+            html += escapeHtml(loaded.join(", "));
+        } else {
+            html += "No extensions reported.";
+        }
+        html += "</div></details>";
+
+        return html;
+    }
+
+    function loadAboutInfo() {
+        if (aboutInfoLoaded) {
+            return;
+        }
+        aboutInfoPanel.html(buildLoadingHtml("Loading environment details…"));
+        $.ajax({
+            type: "GET",
+            url: "about.php",
+            dataType: "json",
+            cache: false
+        }).done(function(data) {
+            aboutInfoPanel.html(renderAboutInfo(data));
+            aboutInfoLoaded = true;
+        }).fail(function() {
+            aboutInfoPanel.html("<div class='alert alert-danger'>Failed to load environment details.</div>");
+        });
+    }
+
+    function loadChangelog() {
+        if (changelogLoaded) {
+            return;
+        }
         changelog.html(buildLoadingHtml("Loading changelog…"));
         $.ajax({
             type: "GET",
@@ -2095,12 +2183,22 @@ $(document).ready(function() {
                     gfm: true
                 });
                 changelog.html(marked.parse(markdownText));
+                changelogLoaded = true;
             }).fail(function() {
                 changelog.html("<pre>" + $("<div>").text(markdownText).html() + "</pre>");
+                changelogLoaded = true;
             });
         }).fail(function() {
             changelog.html("<div class='alert alert-danger'>Failed to load changelog.</div>");
         });
+    }
+
+    $("#aboutModal").on("show.bs.modal", function() {
+        loadAboutInfo();
+    });
+
+    $("#changelogTabBtn").on("shown.bs.tab", function() {
+        loadChangelog();
     });
 
     /* ===================================================================== */

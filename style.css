@@ -89,15 +89,47 @@ body {
 .container .g-4, .container .gy-4 { --bs-gutter-y: calc(1.5rem * var(--rand-space-scale)); }
 .container .g-5, .container .gy-5 { --bs-gutter-y: calc(3rem * var(--rand-space-scale)); }
 
+/* About modal */
+.about-modal-tab-content {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+.about-info-dl dt {
+  font-weight: 600;
+}
+.about-info-dl dd {
+  margin-bottom: 0.65rem;
+}
+.about-ext-badge {
+  font-weight: 500;
+  font-size: 0.85rem;
+}
+.about-extensions-all {
+  margin-bottom: 0;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+}
+.about-extensions-all summary {
+  cursor: pointer;
+}
+.about-extensions-list {
+  line-height: 1.6;
+  word-break: break-word;
+}
+
 /* Changelog styling (details/summary; .changelog-panel was only in CHANGELOG.md, now removed for GitHub) */
-#changelogMarkdown details {
+#changelogMarkdown details,
+.about-modal-tab-content details {
   margin-bottom: 16px;
   padding: 12px 14px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.04);
 }
-#changelogMarkdown details summary {
+#changelogMarkdown details summary,
+.about-modal-tab-content details summary {
   cursor: pointer;
 }
 
@@ -535,7 +567,8 @@ th.tablehead,
   border-top: 1px solid rgba(15, 23, 42, 0.08);
 }
 
-[data-bs-theme="light"] #changelogMarkdown details {
+[data-bs-theme="light"] #changelogMarkdown details,
+[data-bs-theme="light"] .about-extensions-all {
   border-color: rgba(15, 23, 42, 0.12);
   background: rgba(255, 255, 255, 0.85);
 }

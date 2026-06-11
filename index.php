@@ -48,16 +48,43 @@ include_once("modules/dashboard.php");
     </div>
     </div> <!-- CONTAINER END -->
 
-    <div class="modal fade" tabindex="-1" id="changelogModal">
-        <div class="modal-dialog modal-xl" role="document">
-            <div class="modal-content" data-backdrop="static">
-                <h1 class="modal-header">Changelog</h1>
-                <div class="modal-body" id="changelogMarkdown" style="max-height: 70vh; overflow-y: auto;">
-                    <div class="tool-loading">
-                        <div class="spinner-border text-primary tool-loading-spinner" role="status">
-                            <span class="visually-hidden">Loading...</span>
+    <div class="modal fade" tabindex="-1" id="aboutModal" aria-labelledby="aboutModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title h4 mb-0" id="aboutModalLabel"><?= icon("info-circle") ?> About php-rand</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <ul class="nav nav-tabs px-3 pt-2" id="aboutModalTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="aboutTabBtn" data-bs-toggle="tab" data-bs-target="#aboutTabPane" type="button" role="tab" aria-controls="aboutTabPane" aria-selected="true">About</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="changelogTabBtn" data-bs-toggle="tab" data-bs-target="#changelogTabPane" type="button" role="tab" aria-controls="changelogTabPane" aria-selected="false">Changelog</button>
+                        </li>
+                    </ul>
+                    <div class="tab-content p-3 about-modal-tab-content" id="aboutModalTabContent">
+                        <div class="tab-pane fade show active" id="aboutTabPane" role="tabpanel" aria-labelledby="aboutTabBtn" tabindex="0">
+                            <div id="aboutInfoPanel">
+                                <div class="tool-loading">
+                                    <div class="spinner-border text-primary tool-loading-spinner" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                    <p class="tool-loading-text">Loading environment details...</p>
+                                </div>
+                            </div>
                         </div>
-                        <p class="tool-loading-text">Loading changelog...</p>
+                        <div class="tab-pane fade" id="changelogTabPane" role="tabpanel" aria-labelledby="changelogTabBtn" tabindex="0">
+                            <div id="changelogMarkdown">
+                                <div class="tool-loading">
+                                    <div class="spinner-border text-primary tool-loading-spinner" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                    <p class="tool-loading-text">Loading changelog...</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
