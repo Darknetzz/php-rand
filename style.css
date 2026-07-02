@@ -1,6 +1,7 @@
 html {
   height: 100%;
   --rand-space-scale: 1;
+  --rand-output-font-size: 1.05rem;
 }
 
 body {
@@ -300,6 +301,10 @@ th.tablehead,
 }
 
 /* Shared tool response + output helpers */
+.responseDiv {
+  font-size: var(--rand-output-font-size);
+}
+
 .tool-loading {
   text-align: center;
   padding: 3rem 0;
@@ -331,7 +336,7 @@ th.tablehead,
   padding: 14px;
   border-radius: 0.4rem;
   font-family: monospace;
-  font-size: 0.95rem;
+  font-size: var(--rand-output-font-size);
   border: 1px solid #334155;
   box-shadow: 0 6px 14px rgba(0, 0, 0, 0.25);
 }

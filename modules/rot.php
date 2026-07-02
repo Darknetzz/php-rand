@@ -23,7 +23,7 @@
                     </div>
                     <div class="col-12 col-lg-6 d-flex flex-column">
                         <label class="form-label mb-3"><strong style="font-size: 1.1rem;">Rotated Output</strong></label>
-                        <div class="responseDiv flex-grow-1" id="rotresponse" style="border: 2px solid #495057; padding: 20px; min-height: 300px; max-height: 500px; overflow-y: auto; background: linear-gradient(135deg, rgba(102, 16, 242, 0.1) 0%, rgba(108, 92, 231, 0.05) 100%); border-radius: 0.5rem; font-family: monospace; font-size: 0.95rem; white-space: pre-wrap; word-break: break-all;">
+                        <div class="responseDiv flex-grow-1" id="rotresponse" style="border: 2px solid #495057; padding: 20px; min-height: 300px; max-height: 500px; overflow-y: auto; background: linear-gradient(135deg, rgba(102, 16, 242, 0.1) 0%, rgba(108, 92, 231, 0.05) 100%); border-radius: 0.5rem; font-family: monospace; white-space: pre-wrap; word-break: break-all;">
                             <div style="opacity: 0.5; text-align: center; padding-top: 100px;">
                                 <div style="font-size: 3rem; margin-bottom: 10px;">🔄</div>
                                 <div>Rotated text will appear here...</div>

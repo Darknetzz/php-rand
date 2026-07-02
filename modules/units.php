@@ -140,7 +140,7 @@
         var id = 'uc_' + (id || Date.now() + '_' + Math.random().toString(36).slice(2));
         var v = typeof val === 'number' ? (Number.isInteger(val) ? val : Number(val.toPrecision(10))) : val;
         return '<div class="copyable-content" style="padding:8px;gap:6px;min-width:0;">' +
-            '<div class="copyable-body" id="' + id + '" style="max-height:none;overflow:visible;font-size:0.9rem;">' + v + '</div>' +
+            '<div class="copyable-body" id="' + id + '" style="max-height:none;overflow:visible;">' + v + '</div>' +
             '<div class="copyable-actions"><button type="button" class="btn btn-sm btn-outline-light" onclick="copyToClipboard(\'' + id + '\', this)"><i class="bi bi-files"></i> Copy</button></div></div>';
     }
 

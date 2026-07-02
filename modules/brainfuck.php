@@ -50,7 +50,7 @@
                 </div>
 
                 <!-- Output Section -->
-                <div class="responseDiv" id="brainfuckresponse" style="border: 2px solid #495057; padding: 20px; min-height: 200px; max-height: 500px; overflow-y: auto; background: linear-gradient(135deg, rgba(102, 16, 242, 0.1) 0%, rgba(108, 92, 231, 0.05) 100%); border-radius: 0.5rem; font-family: monospace; font-size: 0.95rem; white-space: pre-wrap; word-break: break-all;">
+                <div class="responseDiv" id="brainfuckresponse" style="border: 2px solid #495057; padding: 20px; min-height: 200px; max-height: 500px; overflow-y: auto; background: linear-gradient(135deg, rgba(102, 16, 242, 0.1) 0%, rgba(108, 92, 231, 0.05) 100%); border-radius: 0.5rem; font-family: monospace; white-space: pre-wrap; word-break: break-all;">
                     <div style="opacity: 0.5; text-align: center; padding-top: 50px;">
                         <div style="font-size: 3rem; margin-bottom: 10px;">🧠</div>
                         <div>Conversion result will appear here...</div>

@@ -18,7 +18,7 @@
                 
                 <div class="mb-4">
                     <label class="form-label mb-3"><strong style="font-size: 1.1rem;">Diff Result</strong></label>
-                    <div class="responseDiv" data-formid="diffForm" style="border: 2px solid #495057; padding: 20px; min-height: 200px; max-height: 600px; overflow-y: auto; background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(168, 85, 247, 0.08) 100%); border-radius: 0.5rem; font-family: monospace; white-space: pre-wrap; word-break: break-word; font-size: 0.9rem;">
+                    <div class="responseDiv" data-formid="diffForm" style="border: 2px solid #495057; padding: 20px; min-height: 200px; max-height: 600px; overflow-y: auto; background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(168, 85, 247, 0.08) 100%); border-radius: 0.5rem; font-family: monospace; white-space: pre-wrap; word-break: break-word;">
                         <div style="opacity: 0.5; text-align: center; padding-top: 70px;">
                             <div style="font-size: 3rem;">📝</div>
                             <div>Diff output will appear here...</div>

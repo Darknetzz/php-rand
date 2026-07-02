@@ -29,7 +29,7 @@
                     
                     <div class="col-12 col-lg-6 d-flex flex-column">
                         <label class="form-label mb-3"><strong style="font-size: 1.1rem;">Results</strong></label>
-                        <div class="responseDiv flex-grow-1" id="regexresponse" style="border: 2px solid #495057; padding: 20px; min-height: 400px; max-height: 600px; overflow-y: auto; background: linear-gradient(135deg, rgba(32, 201, 151, 0.1) 0%, rgba(13, 110, 253, 0.05) 100%); border-radius: 0.5rem; font-family: monospace; font-size: 0.9rem; white-space: pre-wrap; word-break: break-word;">
+                        <div class="responseDiv flex-grow-1" id="regexresponse" style="border: 2px solid #495057; padding: 20px; min-height: 400px; max-height: 600px; overflow-y: auto; background: linear-gradient(135deg, rgba(32, 201, 151, 0.1) 0%, rgba(13, 110, 253, 0.05) 100%); border-radius: 0.5rem; font-family: monospace; white-space: pre-wrap; word-break: break-word;">
                             <div style="opacity: 0.5; text-align: center; padding-top: 150px;">
                                 <div style="font-size: 3rem; margin-bottom: 10px;">🔍</div>
                                 <div>Regex test results will appear here...</div>

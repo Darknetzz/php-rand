@@ -41,7 +41,7 @@
 
                     <div class="col-lg-6 d-flex flex-column">
                         <label class="form-label mb-3"><strong style="font-size: 1.1rem;">Output</strong></label>
-                        <div class="copyable-content flex-grow-1 d-flex flex-column" style="min-height: 320px; padding: 0; background: linear-gradient(135deg, rgba(108, 92, 231, 0.12) 0%, rgba(13, 110, 253, 0.08) 100%); border: 2px solid #495057; border-radius: 0.5rem; box-shadow: 0 6px 16px rgba(0,0,0,0.25); font-size: 0.95rem;">
+                        <div class="copyable-content flex-grow-1 d-flex flex-column" style="min-height: 320px; padding: 0; background: linear-gradient(135deg, rgba(108, 92, 231, 0.12) 0%, rgba(13, 110, 253, 0.08) 100%); border: 2px solid #495057; border-radius: 0.5rem; box-shadow: 0 6px 16px rgba(0,0,0,0.25);">
                         <div class="responseDiv copyable-body flex-grow-1" id="strtoolsresponse" style="margin:0; padding:20px; min-height: 200px; max-height: 480px; overflow-y: auto; background: transparent; border: none; border-radius: 0; box-shadow: none; font-family: monospace; white-space: pre-wrap; word-break: break-word; user-select: all;">
                           <div style="opacity: 0.55; text-align: center; padding-top: 110px;">
                             <div style="font-size: 3rem; margin-bottom: 10px;">🧵</div>

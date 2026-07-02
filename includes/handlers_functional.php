@@ -2383,7 +2383,7 @@ function handle_regex(array $req): string {
     }
     $fullPattern = $delim . $pattern . $delim . $flags;
     
-    $output = "<div style='font-family: monospace; font-size: 0.9rem;'>";
+    $output = "<div style='font-family: monospace;'>";
     
     // Test the regex
     $matchCount = 0;
