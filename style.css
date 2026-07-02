@@ -1,7 +1,7 @@
 html {
   height: 100%;
   --rand-space-scale: 1;
-  --rand-output-font-size: 1.05rem;
+  --rand-output-font-size: 1.2rem;
 }
 
 body {
@@ -345,6 +345,7 @@ th.tablehead,
   flex: 1;
   min-width: 0;
   min-height: 0;
+  font-size: inherit;
   word-break: break-all;
   white-space: pre-wrap;
   user-select: all;

@@ -8,7 +8,7 @@ All notable changes to this project are documented in this file.
 
 ### Major Features
 
-- **Output typography** – Tool result text is slightly larger app-wide via **`--rand-output-font-size`** (`1.05rem`) on **`.responseDiv`** and **`.copyable-content`**; redundant per-module inline output font sizes removed.
+- **Output typography** – Tool result text is larger app-wide via **`--rand-output-font-size`** (`1.2rem`) on **`.responseDiv`** and **`.copyable-content`**; redundant per-module inline output font sizes removed.
 
 - **Demo URL** – Centralized **`DEMO_URL`** (`https://rand.demo.roste.org/`) in **`includes/config.php`**; dashboard hero, About panel, and **`README.md`** point to the live demo host (replacing **`roste.org/rand`**).
 - **About modal** – Fixed stuck loading state: discard accidental PHP output in **`about.php`**, removed trailing **`?>`** from **`includes/functions.php`**, moved Bootstrap modal trigger to the About nav link, and hardened JSON parsing in **`js/rand.js`**.
