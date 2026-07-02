@@ -44,7 +44,7 @@
                             </div>
                         </div>
                         <div class="copyable-actions" style="padding: 8px 14px; border-top: 1px solid rgba(255,255,255,0.12);">
-                        <button type="button" class="btn btn-sm btn-outline-light" style="width: 100%; border: 1px solid #e9ecef;" onclick="copyToClipboard('serializationresponse', this)"><?= icon("files") ?> Copy Output</button>
+                        <button type="button" class="btn btn-sm btn-outline-light" style="border: 1px solid #e9ecef;" onclick="copyToClipboard('serializationresponse', this)"><?= icon("files") ?> Copy Output</button>
                         </div>
                         </div>
                     </div>

@@ -327,8 +327,9 @@ th.tablehead,
 
 .copyable-content {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 12px;
   width: 100%;
   min-width: 200px;
   background-color: #0f172a;
@@ -339,6 +340,12 @@ th.tablehead,
   font-size: var(--rand-output-font-size);
   border: 1px solid #334155;
   box-shadow: 0 6px 14px rgba(0, 0, 0, 0.25);
+}
+
+.copyable-content.flex-column,
+.copyable-content.d-flex.flex-column {
+  flex-direction: column;
+  gap: 0;
 }
 
 .copyable-body {
@@ -355,9 +362,21 @@ th.tablehead,
 
 .copyable-actions {
   display: flex;
+  flex-direction: column;
+  align-items: flex-end;
   gap: 6px;
-  flex-wrap: wrap;
   flex-shrink: 0;
+  align-self: flex-start;
+}
+
+.copyable-content.flex-column .copyable-actions,
+.copyable-content.d-flex.flex-column .copyable-actions {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  align-self: stretch;
+  width: 100%;
 }
 
 .copy-btn-tooltip-wrap {
