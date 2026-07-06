@@ -8,6 +8,8 @@ All notable changes to this project are documented in this file.
 
 ### Major Features
 
+- **Docker (local publish)** – `docker-pushimage.sh` supports `SKIP_DOCKERHUB=1` for GHCR-only pushes when GitHub Actions are disabled, falls back to `gh auth token` when `GITHUB_TOKEN` is unset, and publishes the stripped version tag (e.g. `1.4.0`) to match CI.
+
 _Add entries here during development; rotate into a dated release section when tagging._
 
 ---
