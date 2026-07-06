@@ -8,16 +8,21 @@ All notable changes to this project are documented in this file.
 
 ### Major Features
 
+_Add entries here during development; rotate into a dated release section when tagging._
+
+---
+
+## [v1.4.0] (2026-07-06)
+### Major Features
+
 - **Output typography** – Tool result text is larger app-wide via **`--rand-output-font-size`** (`1.2rem`) on **`.responseDiv`** and **`.copyable-content`**; redundant per-module inline output font sizes removed.
 - **Copyable outputs** – Copy/action buttons sit on the **right** of output text (stacked for multi-action boxes); large split-pane outputs keep a footer bar with right-aligned actions.
 
 - **Demo URL** – Centralized **`DEMO_URL`** (`https://rand.demo.roste.org/`) in **`includes/config.php`**; dashboard hero, About panel, and **`README.md`** point to the live demo host (replacing **`roste.org/rand`**).
-- **About modal** – Fixed stuck loading state: discard accidental PHP output in **`about.php`**, removed trailing **`?>`** from **`includes/functions.php`**, moved Bootstrap modal trigger to the About nav link, and hardened JSON parsing in **`js/rand.js`**.
+- **About modal** – Navbar **About** opens a combined modal with **About** (php-rand version, Docker vs native, PHP version/SAPI, OS, server software, key extension status, full loaded extension list) and **Changelog** tabs (lazy-loaded on tab switch). Data from **`about.php`** / **`includes/about_info.php`**. Fixed stuck loading state: discard accidental PHP output in **`about.php`**, removed trailing **`?>`** from **`includes/functions.php`**, moved Bootstrap modal trigger to the About nav link, and hardened JSON parsing in **`js/rand.js`**.
 - **String tools** – **Titlecase** / **Camelcase** use **`mb_convert_case`** so all-caps input title-cases correctly; **CRLF→LF**, **LF→CRLF**, and **Format** normalize real line endings (old **`crlf2lf`** stripped all breaks); **Custom characters** remove is implemented; **Regex** opens the Regex Tester with the current input; case tools use **`mb_*`** where appropriate.
 
 - **Docker CI** – Fixed invalid `secrets` usage in step `if` conditions in **`.github/workflows/docker-release.yml`** and **`.github/workflows/docker-dev.yml`** by detecting Docker Hub credentials in a shell step and gating publish steps on `steps.dockerhub.outputs.enabled`.
-
-- **About modal** – Navbar **About** opens a combined modal with **About** (php-rand version, Docker vs native, PHP version/SAPI, OS, server software, key extension status, full loaded extension list) and **Changelog** tabs. Data from **`about.php`** / **`includes/about_info.php`**; changelog loading unchanged but lazy-loaded on tab switch.
 
 - **Docker (rolling dev images)** – Pushes to the **`dev`** branch republish rolling **`dev`** and **`develop`** tags to Docker Hub and GHCR via **`.github/workflows/docker-dev.yml`** (no per-commit image tags). The **`Dockerfile`** copies the build context instead of cloning GitHub so CI images match the checked-out branch/tag; **`.dockerignore`** excludes local secrets and VCS metadata.
 
@@ -25,7 +30,10 @@ All notable changes to this project are documented in this file.
 
 - **Tool page descriptions** – Moved per-tool information alerts into each card as muted description text across tool modules (networking, units, crontab, serialization, shellcheck, validators, text/data tools, crypto, and others); dashboard “what’s new” banner unchanged.
 
-- **Global UI spacing preference + release guidance** – Added a new navbar **Settings → Item spacing** preference (Tight/Dense/Standard/Comfortable/Relaxed) persisted via `randUiPrefs` (`spaceScale`) and applied app-wide in `style.css` by scaling common spacing utilities (`m-*`, `p-*`, `gap-*`, `g*/gx*/gy*`) plus card spacing. Added repository agent guidance in **`AGENTS.md`** covering core architecture, mandatory changelog policy, scripted release flow (`scripts/release.sh`, `scripts/extract_changelog_section.sh`, `scripts/update-release-descriptions.php`), and a quick release checklist. Also added an inline quick release checklist comment block at the top of `scripts/release.sh`.
+- **Theme and UI scale preferences** – Navbar **Settings → Theme** (dark/light) and **Interface size** (compact through extra large) persisted via **`randUiPrefs`** (`js/rand_ui_boot.js`, **`includes/navbar.php`**); light-theme polish in **`style.css`**.
+- **Global UI spacing preference + release guidance** – Navbar **Settings → Item spacing** (Tight/Dense/Standard/Comfortable/Relaxed) persisted via `randUiPrefs` (`spaceScale`) and applied app-wide in `style.css` by scaling common spacing utilities (`m-*`, `p-*`, `gap-*`, `g*/gx*/gy*`) plus card spacing. Added repository agent guidance in **`AGENTS.md`** covering core architecture, mandatory changelog policy, scripted release flow (`scripts/release.sh`, `scripts/extract_changelog_section.sh`, `scripts/update-release-descriptions.php`), and a quick release checklist. Also added an inline quick release checklist comment block at the top of `scripts/release.sh`.
+- **Spin the wheel** – Per-item **weights** with optional **even distribution**; sector building supports **item slicing** for long lists; item rows honor the global spacing preference (`modules/spin_the_wheel.php`, **`handle_spinwheel()`**).
+- **Clipboard UX** – Copy buttons reflect Clipboard API availability (disabled state + tooltip when copy is unavailable); complements the copyable-output layout refresh (`index.php`, **`style.css`**).
 
 - **Syntax validators (many languages)** – New **Miscellaneous → Validators** checks pasted content **without executing** it. Kinds: **JSON** (`json_decode` + `JSON_THROW_ON_ERROR`), **YAML** (**`symfony/yaml`**), **XML** (DOM parse), **INI** (`parse_ini_string`), **JSON Lines** (per-line JSON, capped line count), **cron** (shared **`cron_parse_expression_fields()`** with the Crontab tool / **`dragonmantank/cron-expression`**), **PHP** (`php -l`, optional `<?php` prepend for snippets), **Python** (`ast.parse` via **`python3`/`python`**), **Ruby** (`ruby -c`), **JavaScript** (`node --check`), **shell** (`bash -n` / `sh -n` when available). Handler **`handle_syntax_validate`**, logic in **`includes/syntax_validate.php`**, UI in **`modules/syntax_validate.php`** and embed **`modules/validators.php`**. Layout/help copy refined for clarity; help panel aligned with sibling cards.
 - **Navigation (Misc)** – **ShellCheck** and **Validators** are separate items under **Miscellaneous**. ShellCheck stays **`modules/shellcheck.php`**; Validators is syntax-only and embeds the validator section.
@@ -64,7 +72,15 @@ All notable changes to this project are documented in this file.
 - **`symfony/yaml`**, **`matthiasmullie/minify`** (and transitive **`path-converter`**) for the features above.
 
 #### Styling
-- **`style.css`** – Adjustments including Crontab / diff presentation.
+- **`style.css`** – Adjustments including Crontab / diff presentation, light theme, copy-button tooltips, and spacing scale utilities.
+
+#### Spin the wheel
+- **`modules/spin_the_wheel.php`** – Weight inputs, even-distribution toggle, weighted random selection, and canvas sector layout for large item sets.
+- **`includes/handlers_functional.php`** – **`handle_spinwheel()`** returns weighted pick results aligned with client-side animation.
+
+#### UI preferences
+- **`js/rand_ui_boot.js`** – Early-load **`randUiPrefs`** (theme, `uiScale`, `spaceScale`) applied before paint.
+- **`includes/navbar.php`** – Settings dropdown for theme, interface size, and item spacing.
 
 #### Other
 - **`modules/currency.php`**, **`modules/units.php`** – Minor copy or wiring updates where touched for consistency.
