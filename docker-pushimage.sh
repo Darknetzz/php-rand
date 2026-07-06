@@ -84,8 +84,10 @@ if [[ -n "$GHCR_IMAGE" && -n "${GITHUB_TOKEN:-}" ]]; then
   docker push "$GHCR_IMAGE:$VERSION"
   if [[ "$VERSION" != "$STRIPPED_TAG" ]]; then
     docker push "$GHCR_IMAGE:$STRIPPED_TAG"
+    echo "Pushed $GHCR_IMAGE:$TAG, $GHCR_IMAGE:$VERSION, and $GHCR_IMAGE:$STRIPPED_TAG"
+  else
+    echo "Pushed $GHCR_IMAGE:$TAG and $GHCR_IMAGE:$VERSION"
   fi
-  echo "Pushed $GHCR_IMAGE:$TAG, $GHCR_IMAGE:$VERSION, and $GHCR_IMAGE:$STRIPPED_TAG"
 else
   echo "Skipping GHCR (set GITHUB_TOKEN in .env/.env.local, or run: gh auth refresh -s write:packages)."
 fi
