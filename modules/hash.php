@@ -9,11 +9,7 @@
     <div class="card card-primary">
         <h1 class="card-header">🔑 Hash Generator</h1>
         <div class="card-body">
-            <div class="alert alert-info mb-4">
-                <strong>ℹ️ About Hashing</strong><br>
-                Generate cryptographic hashes from any input text. Supports MD5, SHA1, SHA256, SHA512, and many more algorithms.
-            </div>
-
+            <p class="text-muted mb-4">Generate cryptographic hashes from any input text. Supports MD5, SHA1, SHA256, SHA512, and many more algorithms.</p>
             <form class="form" action="gen.php" method="POST" id="hasher" data-action="hasher">
                 <!-- Input/Output Section -->
                 <div class="row g-4 mb-4">
@@ -23,7 +19,7 @@
                     </div>
                     <div class="col-12 col-lg-6 d-flex flex-column">
                         <label class="form-label mb-3"><strong style="font-size: 1.1rem;">Hash Output</strong></label>
-                        <div class="responseDiv flex-grow-1" id="hasherresponse" style="border: 2px solid #495057; padding: 20px; min-height: 300px; max-height: 500px; overflow-y: auto; background: linear-gradient(135deg, rgba(32, 201, 151, 0.1) 0%, rgba(13, 110, 253, 0.05) 100%); border-radius: 0.5rem; font-family: monospace; font-size: 0.9rem; white-space: pre-wrap; word-break: break-all;">
+                        <div class="responseDiv flex-grow-1" id="hasherresponse" style="border: 2px solid #495057; padding: 20px; min-height: 300px; max-height: 500px; overflow-y: auto; background: linear-gradient(135deg, rgba(32, 201, 151, 0.1) 0%, rgba(13, 110, 253, 0.05) 100%); border-radius: 0.5rem; font-family: monospace; white-space: pre-wrap; word-break: break-all;">
                             <div style="opacity: 0.5; text-align: center; padding-top: 100px;">
                                 <div style="font-size: 3rem; margin-bottom: 10px;">#️⃣</div>
                                 <div>Hash values will appear here...</div>

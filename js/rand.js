@@ -72,11 +72,12 @@ function initSshKeyOutputFormatUi($root) {
 function showData(obj, data) {
     if (obj.is("div")) {
         obj.html(data);
+        if (typeof window.refreshCopyUiAvailability === "function") {
+            window.refreshCopyUiAvailability(obj[0]);
+        }
         if (obj.find(".crypto-ssh-key-output-card").length) {
             initSshKeyOutputFormatUi(obj);
         }
-    } else if (obj.is("code-input")) {
-        obj.val(data.trim());
     } else {
         data = data.replace(/<(.|\n)*?>/g, '');
         obj.val(data.trim());
@@ -151,48 +152,10 @@ function ensureMarkdownAssets() {
 }
 
 /* ===================================================================== */
-/*                    FUNCTION: ensureCodeInputAssets                     */
-/* ===================================================================== */
-function ensureCodeInputAssets() {
-    return $.when(
-        loadStyleOnce("https://cdn.jsdelivr.net/npm/@webcoder49/code-input@2.7.1/code-input.min.css"),
-        loadScriptOnce("https://cdn.jsdelivr.net/npm/@webcoder49/code-input@2.7.1/code-input.min.js"),
-        loadScriptOnce("js/hljs_autodetect.js"),
-        loadScriptOnce("js/hljs_indent.js"),
-        loadStyleOnce("https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/dark.min.css"),
-        loadScriptOnce("https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js")
-    );
-}
-
-/* ===================================================================== */
-/*                     FUNCTION: initCodeInputTemplate                    */
-/* ===================================================================== */
-window._codeInputTemplateReady = window._codeInputTemplateReady || false;
-function initCodeInputTemplate() {
-    if (window._codeInputTemplateReady) {
-        return;
-    }
-    if (typeof codeInput === "undefined" || typeof hljs === "undefined") {
-        return;
-    }
-    codeInput.registerTemplate("default", codeInput.templates.hljs(hljs, [
-        new codeInput.plugins.Autodetect(),
-        new codeInput.plugins.Indent(true, 2)
-    ]));
-    window._codeInputTemplateReady = true;
-}
-
-/* ===================================================================== */
 /*                    FUNCTION: ensureEnhancersForScope                   */
 /* ===================================================================== */
 function ensureEnhancersForScope($scope) {
-    const hasCodeInput = $scope.find("code-input").length > 0;
-    if (!hasCodeInput) {
-        return $.Deferred().resolve().promise();
-    }
-    return ensureCodeInputAssets().done(function() {
-        initCodeInputTemplate();
-    });
+    return $.Deferred().resolve().promise();
 }
 
 /* ===================================================================== */
@@ -1076,6 +1039,605 @@ function initKeypairSignFormUi($scope) {
 }
 
 /* ===================================================================== */
+/*           Logo generator: localStorage (survives refresh)            */
+/* ===================================================================== */
+var RAND_LOGO_GENERATOR_STORAGE_KEY = "randLogoGenerator_v1";
+var RAND_LOGO_GENERATOR_STORAGE_VER = 1;
+
+function collectLogoGeneratorState(form) {
+    var payload = { v: RAND_LOGO_GENERATOR_STORAGE_VER };
+    var seen = new Set();
+    for (var i = 0; i < form.elements.length; i++) {
+        var el = form.elements[i];
+        var name = el.name;
+        if (!name || name.indexOf("logo_") !== 0) {
+            continue;
+        }
+        if (el.type === "button" || el.type === "submit") {
+            continue;
+        }
+        if (seen.has(name)) {
+            continue;
+        }
+        if (el.type === "radio") {
+            seen.add(name);
+            var rnodes = form.querySelectorAll("[name=\"" + name + "\"]");
+            for (var j = 0; j < rnodes.length; j++) {
+                if (rnodes[j].checked) {
+                    payload[name] = rnodes[j].value;
+                    break;
+                }
+            }
+            continue;
+        }
+        if (el.type === "checkbox") {
+            seen.add(name);
+            payload[name] = el.checked;
+            continue;
+        }
+        seen.add(name);
+        payload[name] = el.value;
+    }
+    return payload;
+}
+
+function applyLogoGeneratorState(form, payload, setVal) {
+    if (!payload || payload.v !== RAND_LOGO_GENERATOR_STORAGE_VER) {
+        return;
+    }
+    var skipFont = false;
+    var fontSel = form.querySelector("[name=\"logo_font\"]");
+    if (fontSel && payload.logo_font) {
+        var fontOk = false;
+        for (var fi = 0; fi < fontSel.options.length; fi++) {
+            if (fontSel.options[fi].value === payload.logo_font) {
+                fontOk = true;
+                break;
+            }
+        }
+        if (!fontOk) {
+            skipFont = true;
+        }
+    }
+    Object.keys(payload).forEach(function(key) {
+        if (key === "v" || key.indexOf("logo_") !== 0) {
+            return;
+        }
+        if (skipFont && key === "logo_font") {
+            return;
+        }
+        setVal(key, payload[key]);
+    });
+}
+
+function tryLoadLogoGeneratorState(form, setVal) {
+    try {
+        var raw = localStorage.getItem(RAND_LOGO_GENERATOR_STORAGE_KEY);
+        if (!raw) {
+            return;
+        }
+        applyLogoGeneratorState(form, JSON.parse(raw), setVal);
+    } catch (e) {
+        /* ignore */
+    }
+}
+
+function trySaveLogoGeneratorState(form) {
+    try {
+        localStorage.setItem(RAND_LOGO_GENERATOR_STORAGE_KEY, JSON.stringify(collectLogoGeneratorState(form)));
+    } catch (e) {
+        /* quota / private mode */
+    }
+}
+
+/* ===================================================================== */
+/*                    FUNCTION: initLogoGeneratorUi                      */
+/* ===================================================================== */
+function initLogoGeneratorUi($scope) {
+    const $form = $scope.find("#logoGeneratorForm");
+    if (!$form.length) {
+        return;
+    }
+    if ($form.data("randLogoGenBound")) {
+        return;
+    }
+    $form.data("randLogoGenBound", true);
+
+    const form = $form[0];
+    const $hint = $scope.find("#logoHintText");
+    let debounceTimer = null;
+    let sliderPreviewTimer = null;
+    let persistTimer = null;
+    let activeXhr = null;
+    const DEBOUNCE_MS = 0;
+    const SLIDER_PREVIEW_DEBOUNCE_MS = 120;
+    const PERSIST_DEBOUNCE_MS = 400;
+
+    const setVal = (name, value) => {
+        const nodes = form.querySelectorAll("[name=\"" + name + "\"]");
+        if (!nodes.length) {
+            return;
+        }
+        const first = nodes[0];
+        if (first.type === "checkbox") {
+            first.checked = !!value;
+            return;
+        }
+        if (first.type === "radio") {
+            const str = String(value);
+            nodes.forEach((r) => {
+                r.checked = r.value === str;
+            });
+            return;
+        }
+        first.value = value;
+    };
+
+    const syncGradientSwitchesFromHidden = () => {
+        const bg = form.querySelector("#logo_style");
+        const bgSw = form.querySelector("#logoGradientSwitch");
+        if (bg && bgSw) {
+            bgSw.checked = String(bg.value) === "gradient";
+        }
+        const tx = form.querySelector("#logo_text_style");
+        const txSw = form.querySelector("#logoTextGradientSwitch");
+        if (tx && txSw) {
+            txSw.checked = String(tx.value) === "gradient";
+        }
+    };
+
+    tryLoadLogoGeneratorState(form, setVal);
+    syncGradientSwitchesFromHidden();
+
+    const $borderToggle = $form.find("#logoBorderEnabled");
+    const $borderInput = $form.find("#logo_border");
+    const $borderWidthWrap = $form.find("#logoBorderWidthWrap");
+    const $borderColorWrap = $form.find("#logoBorderColorWrap");
+    const $borderColorInput = $form.find("#logo_border_color");
+    const $borderColorRandomBtn = $form.find(".logo-color-random[data-target='logo_border_color']");
+    const $textAccentWrap = $form.find("#logoTextAccentWrap");
+    const $textAccentInput = $form.find("#logo_text_accent_color");
+    const $textAccentRandomBtn = $form.find(".logo-color-random[data-target='logo_text_accent_color']");
+    const $bgAccentWrap = $form.find("#logoBgAccentWrap");
+    const $bgAccentInput = $form.find("#logo_accent_color");
+    const $bgAccentRandomBtn = $form.find(".logo-color-random[data-target='logo_accent_color']");
+    const $bgGradStrengthWrap = $form.find("#logoBgGradientStrengthWrap");
+    const $bgGradStrengthInput = $form.find("#logo_bg_gradient_strength");
+    const $textGradStrengthWrap = $form.find("#logoTextGradientStrengthWrap");
+    const $textGradStrengthInput = $form.find("#logo_text_gradient_strength");
+    const clampBorderWidth = (value, fallback) => {
+        let parsed = parseInt(value, 10);
+        if (Number.isNaN(parsed)) {
+            parsed = fallback;
+        }
+        return Math.max(0, Math.min(24, parsed));
+    };
+    const setBorderEnabled = (enabled) => {
+        if ($borderToggle.length) {
+            $borderToggle.prop("checked", !!enabled);
+        }
+    };
+    const syncBorderUi = () => {
+        if (!$borderToggle.length || !$borderInput.length) {
+            return;
+        }
+        const enabled = $borderToggle.prop("checked");
+        const currentWidth = clampBorderWidth($borderInput.val(), 0);
+        if (currentWidth > 0) {
+            $form.data("logoLastBorderWidth", currentWidth);
+        }
+        if ($borderColorWrap.length) {
+            $borderColorWrap.toggleClass("d-none", !enabled);
+        }
+        if (enabled) {
+            const restoredWidth = clampBorderWidth($form.data("logoLastBorderWidth"), 4);
+            $borderWidthWrap.removeClass("d-none");
+            $borderInput.prop("disabled", false);
+            $borderColorInput.prop("disabled", false);
+            $borderColorRandomBtn.prop("disabled", false);
+            $borderInput.val(String(currentWidth > 0 ? currentWidth : Math.max(1, restoredWidth)));
+            return;
+        }
+        $borderWidthWrap.addClass("d-none");
+        $borderInput.val("0").prop("disabled", true);
+        $borderColorInput.prop("disabled", true);
+        $borderColorRandomBtn.prop("disabled", true);
+    };
+
+    const syncBgGradStrengthLabel = () => {
+        const r = form.querySelector("#logo_bg_gradient_strength");
+        const sp = form.querySelector("#logo_bg_gradient_strength_val");
+        if (r && sp) {
+            sp.textContent = r.value + "%";
+            r.setAttribute("aria-valuenow", r.value);
+        }
+    };
+    const syncTextGradStrengthLabel = () => {
+        const r = form.querySelector("#logo_text_gradient_strength");
+        const sp = form.querySelector("#logo_text_gradient_strength_val");
+        if (r && sp) {
+            sp.textContent = r.value + "%";
+            r.setAttribute("aria-valuenow", r.value);
+        }
+    };
+
+    const syncBackgroundStyleUi = () => {
+        if (!$bgAccentInput.length) {
+            return;
+        }
+        const styleEl = form.querySelector("[name=\"logo_style\"]");
+        const grad = styleEl && String(styleEl.value) === "gradient";
+        if ($bgAccentWrap.length) {
+            $bgAccentWrap.toggleClass("d-none", !grad);
+        }
+        $bgAccentInput.prop("disabled", !grad);
+        if ($bgAccentRandomBtn.length) {
+            $bgAccentRandomBtn.prop("disabled", !grad);
+        }
+        if ($bgGradStrengthWrap.length) {
+            $bgGradStrengthWrap.toggleClass("d-none", !grad);
+        }
+        if ($bgGradStrengthInput.length) {
+            $bgGradStrengthInput.prop("disabled", !grad);
+        }
+        syncBgGradStrengthLabel();
+    };
+
+    const syncTextFillUi = () => {
+        if (!$textAccentInput.length) {
+            return;
+        }
+        const styleEl = form.querySelector("[name=\"logo_text_style\"]");
+        const grad = styleEl && String(styleEl.value) === "gradient";
+        if ($textAccentWrap.length) {
+            $textAccentWrap.toggleClass("d-none", !grad);
+        }
+        $textAccentInput.prop("disabled", !grad);
+        if ($textAccentRandomBtn.length) {
+            $textAccentRandomBtn.prop("disabled", !grad);
+        }
+        if ($textGradStrengthWrap.length) {
+            $textGradStrengthWrap.toggleClass("d-none", !grad);
+        }
+        if ($textGradStrengthInput.length) {
+            $textGradStrengthInput.prop("disabled", !grad);
+        }
+        syncTextGradStrengthLabel();
+    };
+
+    const $sizeInput = $form.find("#logo_font_size");
+    const $sizeRange = $form.find("#logo_font_size_range");
+    const syncFontSizeUi = () => {
+        if (!$sizeInput.length || !$sizeRange.length) {
+            return;
+        }
+        let v = parseInt($sizeInput.val(), 10);
+        if (Number.isNaN(v)) {
+            v = 96;
+        }
+        v = Math.max(12, Math.min(400, v));
+        $sizeInput.val(String(v));
+        $sizeRange.val(String(v));
+    };
+    $sizeInput.off("input.randLogoGen").on("input.randLogoGen", syncFontSizeUi);
+    $sizeRange.off("input.randLogoGen").on("input.randLogoGen", function() {
+        $sizeInput.val($sizeRange.val());
+    });
+
+    $form.find("#logo_bg_gradient_strength, #logo_text_gradient_strength").off("input.randLogoGradStr").on("input.randLogoGradStr", function() {
+        if (this.id === "logo_bg_gradient_strength") {
+            syncBgGradStrengthLabel();
+        } else {
+            syncTextGradStrengthLabel();
+        }
+    });
+
+    const runLogoPreview = () => {
+        if (typeof setFormVal !== "function" || typeof showData !== "function") {
+            return;
+        }
+        clearTimeout(sliderPreviewTimer);
+        sliderPreviewTimer = null;
+        syncBackgroundStyleUi();
+        syncTextFillUi();
+        if (activeXhr) {
+            activeXhr.abort();
+            activeXhr = null;
+        }
+        const $response = $form.find(".responseDiv");
+        setFormVal($form, "responsetype", "html");
+        setFormVal($form, "action", $form.data("action") || "logo_generate");
+        activeXhr = $.ajax({
+            type: "POST",
+            url: $form.attr("action") || "gen.php",
+            data: $form.serialize(),
+            success: function(html) {
+                activeXhr = null;
+                showData($response, html);
+            },
+            error: function(jqXHR, textStatus) {
+                activeXhr = null;
+                if (textStatus === "abort") {
+                    return;
+                }
+                const msg = jqXHR && jqXHR.statusText ? jqXHR.statusText : "request failed";
+                showData($response, "<div class='alert alert-danger'>Preview error: " + msg + "</div>");
+            }
+        });
+    };
+
+    const scheduleLogoPreview = () => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(runLogoPreview, DEBOUNCE_MS);
+    };
+
+    const scheduleLogoPreviewSoon = () => {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(runLogoPreview, 0);
+    };
+
+    const scheduleLogoPersist = () => {
+        clearTimeout(persistTimer);
+        persistTimer = setTimeout(function() {
+            trySaveLogoGeneratorState(form);
+        }, PERSIST_DEBOUNCE_MS);
+    };
+
+    $form.find("#logoGradientSwitch").off("change.randLogoGrad").on("change.randLogoGrad", function(e) {
+        e.stopPropagation();
+        setVal("logo_style", this.checked ? "gradient" : "solid");
+        syncBackgroundStyleUi();
+        syncTextFillUi();
+        clearTimeout(debounceTimer);
+        clearTimeout(sliderPreviewTimer);
+        sliderPreviewTimer = null;
+        runLogoPreview();
+        scheduleLogoPersist();
+    });
+    $form.find("#logoTextGradientSwitch").off("change.randLogoGrad").on("change.randLogoGrad", function(e) {
+        e.stopPropagation();
+        setVal("logo_text_style", this.checked ? "gradient" : "solid");
+        syncBackgroundStyleUi();
+        syncTextFillUi();
+        clearTimeout(debounceTimer);
+        clearTimeout(sliderPreviewTimer);
+        sliderPreviewTimer = null;
+        runLogoPreview();
+        scheduleLogoPersist();
+    });
+
+    $form.off(".randLogoLive").on("input.randLogoLive change.randLogoLive", "input:not([type='hidden']), select, textarea", function(ev) {
+        const tid = ev.target && ev.target.id;
+        if (tid === "logo_bg_gradient_strength" || tid === "logo_text_gradient_strength") {
+            clearTimeout(sliderPreviewTimer);
+            sliderPreviewTimer = setTimeout(function() {
+                sliderPreviewTimer = null;
+                scheduleLogoPreview();
+            }, SLIDER_PREVIEW_DEBOUNCE_MS);
+            scheduleLogoPersist();
+            return;
+        }
+        scheduleLogoPreview();
+        scheduleLogoPersist();
+    });
+    $form.off("submit.randLogoLive").on("submit.randLogoLive", function(e) {
+        e.preventDefault();
+        e.stopPropagation(); /* keep document’s .form delegate from also submitting */
+        scheduleLogoPreviewSoon();
+        return false;
+    });
+
+    const setPreset = (preset) => {
+        if (preset === "app-icon") {
+            setVal("logo_width", 512);
+            setVal("logo_height", 512);
+            setVal("logo_shape", "rounded");
+            setVal("logo_style", "gradient");
+            setVal("logo_font_size", 120);
+            setBorderEnabled(false);
+            setVal("logo_border", 0);
+            setVal("logo_initials", true);
+            setVal("logo_uppercase", true);
+            if ($hint.length) {
+                $hint.text("App icon: square canvas, rounded shape, initials + caps — good for launcher icons.");
+            }
+            syncGradientSwitchesFromHidden();
+            syncFontSizeUi();
+            syncBorderUi();
+            scheduleLogoPreviewSoon();
+            scheduleLogoPersist();
+            return;
+        }
+        if (preset === "banner") {
+            setVal("logo_width", 1200);
+            setVal("logo_height", 400);
+            setVal("logo_shape", "rectangle");
+            setVal("logo_style", "gradient");
+            setVal("logo_font_size", 110);
+            setBorderEnabled(false);
+            setVal("logo_border", 0);
+            setVal("logo_initials", false);
+            setVal("logo_uppercase", false);
+            if ($hint.length) {
+                $hint.text("Banner: wide rectangle with full text — headers and cover images.");
+            }
+            syncGradientSwitchesFromHidden();
+            syncFontSizeUi();
+            syncBorderUi();
+            scheduleLogoPreviewSoon();
+            scheduleLogoPersist();
+            return;
+        }
+        if (preset === "initials-badge") {
+            setVal("logo_width", 384);
+            setVal("logo_height", 384);
+            setVal("logo_shape", "circle");
+            setVal("logo_style", "solid");
+            setVal("logo_font_size", 132);
+            setBorderEnabled(true);
+            setVal("logo_border", 8);
+            setVal("logo_initials", true);
+            setVal("logo_uppercase", true);
+            if ($hint.length) {
+                $hint.text("Initials badge: circle, solid fill, visible border — avatars and seals.");
+            }
+            syncGradientSwitchesFromHidden();
+            syncFontSizeUi();
+            syncBorderUi();
+            scheduleLogoPreviewSoon();
+            scheduleLogoPersist();
+        }
+    };
+
+    const rndHex = () => "#" + Math.floor(Math.random() * 16777215).toString(16).padStart(6, "0");
+    const randomizePalette = () => {
+        setVal("logo_bg_color", rndHex());
+        setVal("logo_accent_color", rndHex());
+        setVal("logo_text_color", "#ffffff");
+        setVal("logo_text_accent_color", rndHex());
+        setVal("logo_border_color", rndHex());
+        if ($hint.length) {
+            $hint.text("Colors shuffled — preview updating.");
+        }
+        scheduleLogoPreviewSoon();
+        scheduleLogoPersist();
+    };
+
+    $form.find(".logo-preset-btn").off("click.randLogoPreset").on("click.randLogoPreset", function() {
+        setPreset($(this).data("preset") || "");
+    });
+
+    $form.find("#logoRandomizeBtn").off("click.randLogoRand").on("click.randLogoRand", randomizePalette);
+
+    $form.find(".logo-color-random").off("click.randLogoColor").on("click.randLogoColor", function() {
+        const id = this.getAttribute("data-target");
+        const el = id ? document.getElementById(id) : null;
+        if (el && el.type === "color") {
+            el.value = rndHex();
+            scheduleLogoPreviewSoon();
+            scheduleLogoPersist();
+        }
+    });
+
+    $form.find("#logoOffsetReset").off("click.randLogoOff").on("click.randLogoOff", function() {
+        setVal("logo_text_offset_x", 0);
+        setVal("logo_text_offset_y", 0);
+        scheduleLogoPreviewSoon();
+        scheduleLogoPersist();
+    });
+
+    $borderToggle.off("change.randLogoBorder").on("change.randLogoBorder", function(e) {
+        e.stopPropagation();
+        syncBorderUi();
+        clearTimeout(debounceTimer);
+        clearTimeout(sliderPreviewTimer);
+        sliderPreviewTimer = null;
+        runLogoPreview();
+        scheduleLogoPersist();
+    });
+
+    $borderInput.off("input.randLogoBorder").on("input.randLogoBorder", function(e) {
+        e.stopPropagation();
+        const width = clampBorderWidth($borderInput.val(), 0);
+        setBorderEnabled(width > 0);
+        syncBorderUi();
+        clearTimeout(debounceTimer);
+        clearTimeout(sliderPreviewTimer);
+        sliderPreviewTimer = null;
+        runLogoPreview();
+        scheduleLogoPersist();
+    });
+
+    syncFontSizeUi();
+    setBorderEnabled(clampBorderWidth($borderInput.val(), 0) > 0);
+    syncBorderUi();
+    syncBackgroundStyleUi();
+    syncTextFillUi();
+    scheduleLogoPreviewSoon();
+}
+
+/* ===================================================================== */
+/*                    FUNCTION: initCrontabLiveAnalyzeUi                  */
+/* ===================================================================== */
+function initCrontabLiveAnalyzeUi($scope) {
+    const $form = $scope.find("#crontabForm");
+    if (!$form.length) {
+        return;
+    }
+
+    const $expression = $form.find("#crontabExpression");
+    const $responseDiv = $form.find(".responseDiv");
+    if (!$expression.length || !$responseDiv.length) {
+        return;
+    }
+
+    if ($form.data("crontabPlaceholderHtml") === undefined) {
+        $form.data("crontabPlaceholderHtml", $responseDiv.html());
+    }
+
+    let debounceTimer = null;
+    let analyzeSeq = 0;
+
+    function getPlaceholderHtml() {
+        return $form.data("crontabPlaceholderHtml") || "";
+    }
+
+    function runFullAnalyze() {
+        const expr = ($expression.val() || "").trim();
+        if (!expr) {
+            showData($responseDiv, getPlaceholderHtml());
+            return;
+        }
+
+        const myId = ++analyzeSeq;
+        setFormVal($form, "responsetype", "html");
+        setFormVal($form, "action", "crontab");
+        showData($responseDiv, buildLoadingHtml("Analyzing schedule…"));
+
+        $.ajax({
+            type: "POST",
+            url: $form.attr("action") || "gen.php",
+            data: $form.serialize()
+        }).done(function(html) {
+            if (myId !== analyzeSeq) {
+                return;
+            }
+            showData($responseDiv, html);
+        }).fail(function(xhr) {
+            if (myId !== analyzeSeq) {
+                return;
+            }
+            const message = "<div class='alert alert-danger'>Error: " + xhr.statusText + "</div>";
+            showData($responseDiv, message);
+        });
+    }
+
+    function scheduleAnalyze() {
+        if (debounceTimer) {
+            clearTimeout(debounceTimer);
+        }
+
+        const expr = ($expression.val() || "").trim();
+        if (!expr) {
+            showData($responseDiv, getPlaceholderHtml());
+            return;
+        }
+
+        debounceTimer = setTimeout(runFullAnalyze, 400);
+    }
+
+    $expression.off(".crontabLiveAnalyze").on("input.crontabLiveAnalyze", scheduleAnalyze);
+    $form.find("[name='cron_timezone'], [name='cron_run_count'], [name='cron_reference_time']")
+        .off(".crontabLiveAnalyze")
+        .on("change.crontabLiveAnalyze input.crontabLiveAnalyze", scheduleAnalyze);
+    $form.find("[name='cron_include_current']")
+        .off(".crontabLiveAnalyze")
+        .on("change.crontabLiveAnalyze", scheduleAnalyze);
+
+    scheduleAnalyze();
+}
+
+/* ===================================================================== */
 /*                           FUNCTION: navigate                          */
 /* ===================================================================== */
 function navigate(to) {
@@ -1092,20 +1654,34 @@ function navigate(to) {
         history.replaceState(null, "", normalizedTo);
     }
 
-    // Reset all nav links
-    var navLinks = $(".link.nav-link");
-    navLinks.prop("class", "link nav-link");
+    // Reset all navbar link states
+    const $navbarLinks = $(".navbar .nav-link, .navbar .dropdown-item.link");
+    $navbarLinks.removeClass("active link-success");
 
-    // Set this nav link as active
-    var navLink = $(`.link.nav-link[href='${normalizedTo}']`);
-    navLink.prop("class", "link nav-link link-success active");
+    // Set direct (top-level) nav link active
+    const $navLink = $(`.link.nav-link[data-show='${moduleName}']`);
+    if ($navLink.length) {
+        $navLink.addClass("link-success active");
+    }
+
+    // Set dropdown item active and highlight its parent dropdown toggle
+    const $dropdownItem = $(`.dropdown-item.link[data-show='${moduleName}']`);
+    if ($dropdownItem.length) {
+        $dropdownItem.addClass("active");
+        $dropdownItem
+            .closest(".nav-item.dropdown")
+            .find("> .nav-link.dropdown-toggle")
+            .addClass("active link-success");
+    }
 
     const showTarget = function() {
         $(".content").hide();
         $(normalizedTo).fadeIn();
         addRandomDataButtons($(normalizedTo));
+        initLogoGeneratorUi($(normalizedTo));
         initCsrFormUi($(normalizedTo));
         initKeypairSignFormUi($(normalizedTo));
+        initCrontabLiveAnalyzeUi($(normalizedTo));
         refreshClientCryptoGeneratorUi($(normalizedTo));
     };
 
@@ -1155,8 +1731,10 @@ function loadModule(moduleName) {
             cache: true
         }).done(function(html) {
             $placeholder.replaceWith(html);
-            addRandomDataButtons($(selector));
-            ensureEnhancersForScope($(selector));
+            const $mod = $(selector);
+            ensureEnhancersForScope($mod).always(function() {
+                addRandomDataButtons($mod);
+            });
         }).fail(function() {
             $placeholder.remove();
         });
@@ -1208,6 +1786,30 @@ function randomizeDice() {
 /* ===================================================================== */
 $(document).ready(function() {
 
+    if (window.randUiPrefs) {
+        var p0 = window.randUiPrefs.read();
+        $("#randPrefTheme").val(p0.theme);
+        $("#randPrefUiScale").val(String(p0.uiScale));
+        $("#randPrefSpaceScale").val(String(p0.spaceScale));
+        $("#randPrefTheme").on("change.randUiPrefs", function () {
+            var p = window.randUiPrefs.read();
+            p.theme = ($(this).val() === "light") ? "light" : "dark";
+            window.randUiPrefs.save(p);
+        });
+        $("#randPrefUiScale").on("change.randUiPrefs", function () {
+            var p = window.randUiPrefs.read();
+            p.uiScale = parseFloat($(this).val(), 10);
+            window.randUiPrefs.save(p);
+            $("#randPrefUiScale").val(String(window.randUiPrefs.read().uiScale));
+        });
+        $("#randPrefSpaceScale").on("change.randUiPrefs", function () {
+            var p = window.randUiPrefs.read();
+            p.spaceScale = parseFloat($(this).val(), 10);
+            window.randUiPrefs.save(p);
+            $("#randPrefSpaceScale").val(String(window.randUiPrefs.read().spaceScale));
+        });
+    }
+
     var tz = getTimeZone();
     $(".timezone").text(tz);
 
@@ -1248,6 +1850,34 @@ $(document).ready(function() {
         document.execCommand("copy");
         $(this).html("Copied!");
         $(this).addClass("btn-success");
+    });
+
+    $(document).on("click", ".syntax-validate-random-sample", function() {
+        var $form = $(this).closest("#syntaxValidateForm");
+        if (!$form.length) {
+            return;
+        }
+        var $ta = $form.find("#syntaxValidateInput");
+        if (!$ta.length) {
+            return;
+        }
+        randomDataGetCompatibleFormBundle($form);
+        var text = generateRandomData("textarea", "Paste content to validate...", $ta);
+        $ta.val(text).trigger("change").trigger("input");
+    });
+
+    $(document).on("click", ".serialization-random-sample", function() {
+        var $form = $(this).closest("#serializationForm");
+        if (!$form.length) {
+            return;
+        }
+        var $ta = $form.find("#serializationInput");
+        if (!$ta.length) {
+            return;
+        }
+        randomDataGetCompatibleFormBundle($form);
+        var text = generateRandomData("textarea", "Paste JSON, YAML, or XML here...", $ta);
+        $ta.val(text).trigger("change").trigger("input");
     });
 
     /* ===================================================================== */
@@ -1449,10 +2079,132 @@ $(document).ready(function() {
 
 
     /* ===================================================================== */
-    /*                            Changelog modal                            */
+    /*                         About / Changelog modal                         */
     /* ===================================================================== */
+    var aboutInfoPanel = $("#aboutInfoPanel");
     var changelog = $("#changelogMarkdown");
-    $("#changelogModal").on("show.bs.modal", function() {
+    var aboutInfoLoaded = false;
+    var changelogLoaded = false;
+
+    function escapeHtml(text) {
+        return $("<div>").text(text == null ? "" : String(text)).html();
+    }
+
+    function renderAboutInfo(data) {
+        var isDocker = data.environment === "docker";
+        var envLabel = isDocker ? "Docker container" : "Native (non-Docker)";
+        var envBadgeClass = isDocker ? "bg-azure-lt text-azure" : "bg-secondary-lt text-secondary";
+
+        var rows = [
+            ["php-rand version", data.php_rand_version],
+            ["PHP version", data.php_version],
+            ["PHP SAPI", data.php_sapi],
+            ["Environment", '<span class="badge ' + envBadgeClass + '">' + escapeHtml(envLabel) + "</span>"],
+            ["Operating system", data.os]
+        ];
+
+        if (data.docker_image_version) {
+            rows.push(["Docker image label", data.docker_image_version]);
+        }
+        if (data.server_software) {
+            rows.push(["Server software", data.server_software]);
+        }
+
+        var html = "";
+        if (data.demo_url) {
+            html += '<p class="mb-3"><a class="btn btn-outline-primary btn-sm" href="' + escapeHtml(data.demo_url) + '" target="_blank" rel="noopener noreferrer">';
+            html += '<i class="bi bi-box-arrow-up-right me-1" aria-hidden="true"></i>Live demo</a></p>';
+        }
+        html += '<div class="about-info-summary mb-4">';
+        html += '<dl class="row about-info-dl mb-0">';
+        rows.forEach(function(row) {
+            html += '<dt class="col-sm-4 col-lg-3">' + escapeHtml(row[0]) + '</dt>';
+            html += '<dd class="col-sm-8 col-lg-9">' + row[1] + "</dd>";
+        });
+        html += "</dl>";
+        if (data.has_unreleased_changes && !isDocker) {
+            html += '<p class="text-muted small mb-0 mt-2">This install includes unreleased changes from <code>CHANGELOG.md</code>.</p>';
+        }
+        html += "</div>";
+
+        html += '<h3 class="h5 mb-2">Key PHP extensions</h3>';
+        html += '<p class="text-muted small">Extensions commonly used by php-rand tools.</p>';
+        html += '<div class="about-key-extensions mb-4">';
+        (data.key_extensions || []).forEach(function(ext) {
+            var badgeClass = ext.loaded ? "bg-green-lt text-green" : "bg-red-lt text-red";
+            var iconClass = ext.loaded ? "bi-check-circle-fill" : "bi-x-circle-fill";
+            html += '<span class="badge ' + badgeClass + ' about-ext-badge me-1 mb-1" title="' + escapeHtml(ext.label) + '">';
+            html += '<i class="bi ' + iconClass + ' me-1" aria-hidden="true"></i>';
+            html += escapeHtml(ext.name);
+            html += "</span>";
+        });
+        html += "</div>";
+
+        var loaded = data.loaded_extensions || [];
+        html += '<details class="about-extensions-all">';
+        html += '<summary class="h6 mb-0">All loaded PHP extensions (' + (data.loaded_extension_count || loaded.length) + ")</summary>";
+        html += '<div class="about-extensions-list small text-muted mt-2">';
+        if (loaded.length) {
+            html += escapeHtml(loaded.join(", "));
+        } else {
+            html += "No extensions reported.";
+        }
+        html += "</div></details>";
+
+        return html;
+    }
+
+    function parseAboutJsonResponse(text) {
+        if (text == null) {
+            return null;
+        }
+        var raw = String(text).trim();
+        if (!raw) {
+            return null;
+        }
+        try {
+            return JSON.parse(raw);
+        } catch (e1) {
+            var start = raw.indexOf("{");
+            var end = raw.lastIndexOf("}");
+            if (start === -1 || end <= start) {
+                return null;
+            }
+            try {
+                return JSON.parse(raw.slice(start, end + 1));
+            } catch (e2) {
+                return null;
+            }
+        }
+    }
+
+    function loadAboutInfo() {
+        if (aboutInfoLoaded) {
+            return;
+        }
+        aboutInfoPanel.html(buildLoadingHtml("Loading environment details…"));
+        $.ajax({
+            type: "GET",
+            url: "about.php",
+            dataType: "text",
+            cache: false
+        }).done(function(responseText) {
+            var data = parseAboutJsonResponse(responseText);
+            if (!data) {
+                aboutInfoPanel.html("<div class='alert alert-danger'>Failed to load environment details.</div>");
+                return;
+            }
+            aboutInfoPanel.html(renderAboutInfo(data));
+            aboutInfoLoaded = true;
+        }).fail(function() {
+            aboutInfoPanel.html("<div class='alert alert-danger'>Failed to load environment details.</div>");
+        });
+    }
+
+    function loadChangelog() {
+        if (changelogLoaded) {
+            return;
+        }
         changelog.html(buildLoadingHtml("Loading changelog…"));
         $.ajax({
             type: "GET",
@@ -1465,12 +2217,25 @@ $(document).ready(function() {
                     gfm: true
                 });
                 changelog.html(marked.parse(markdownText));
+                changelogLoaded = true;
             }).fail(function() {
                 changelog.html("<pre>" + $("<div>").text(markdownText).html() + "</pre>");
+                changelogLoaded = true;
             });
         }).fail(function() {
             changelog.html("<div class='alert alert-danger'>Failed to load changelog.</div>");
         });
+    }
+
+    $("#aboutModal").on("show.bs.modal shown.bs.modal", function() {
+        loadAboutInfo();
+    });
+    $("#navAbout").on("click", function() {
+        loadAboutInfo();
+    });
+
+    $("#changelogTabBtn").on("shown.bs.tab", function() {
+        loadChangelog();
     });
 
     /* ===================================================================== */
@@ -1481,18 +2246,430 @@ $(document).ready(function() {
 }); // document.ready
 
 /* ===================================================================== */
+/*           SCENARIO DATA + randomPickAvoidRepeatFromForm              */
+/* ===================================================================== */
+function randomPickAvoidRepeatFromForm($form, items, storageSubkey) {
+    const n = items.length;
+    if (n === 0) {
+        return null;
+    }
+    if (n === 1) {
+        return items[0];
+    }
+    const randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+    const key = "randomPickLast_" + storageSubkey;
+    const lastIdx = $form.data(key);
+    let idx = randomInt(0, n - 1);
+    let tries = 0;
+    while (idx === lastIdx && tries < 64) {
+        idx = randomInt(0, n - 1);
+        tries++;
+    }
+    $form.data(key, idx);
+    return items[idx];
+}
+
+const CRONTAB_RANDOM_SCENARIOS = [
+    { expression: "*/15 9-17 * * MON-FRI", timezone: "Europe/Stockholm" },
+    { expression: "0 2 1 * *", timezone: "UTC" },
+    { expression: "30 6 * * 1-5", timezone: "America/New_York" },
+    { expression: "@daily", timezone: "Asia/Tokyo" },
+    { expression: "*/5 * * * *", timezone: "UTC" },
+    { expression: "0 * * * *", timezone: "Europe/London" },
+    { expression: "0 0 * * 0", timezone: "America/Los_Angeles" },
+    { expression: "0 0 * * 6", timezone: "Australia/Sydney" },
+    { expression: "15 14 * * MON-FRI", timezone: "America/Chicago" },
+    { expression: "0 9 * * 1", timezone: "Europe/Berlin" },
+    { expression: "45 23 * * *", timezone: "Pacific/Auckland" },
+    { expression: "0 0 1,15 * *", timezone: "America/Toronto" },
+    { expression: "0 12 * * SUN", timezone: "Africa/Johannesburg" },
+    { expression: "*/10 8-18 * * *", timezone: "Asia/Singapore" },
+    { expression: "0 3 * * 2,4", timezone: "America/Denver" },
+    { expression: "@hourly", timezone: "UTC" },
+    { expression: "@weekly", timezone: "Europe/Paris" },
+    { expression: "@monthly", timezone: "America/Sao_Paulo" },
+    { expression: "0 0 1 1 *", timezone: "UTC" },
+    { expression: "30 2 * * *", timezone: "Asia/Kolkata" },
+    { expression: "0 0 * * 1-5", timezone: "America/Mexico_City" },
+    { expression: "5,25,45 * * * *", timezone: "Europe/Warsaw" },
+    { expression: "0 0-23/2 * * *", timezone: "UTC" },
+    { expression: "0 0 * * SUN#2", timezone: "America/New_York" },
+    { expression: "0 0 L * *", timezone: "UTC" },
+    { expression: "0 0 15W * *", timezone: "America/Vancouver" }
+];
+
+const SYNTAX_VALIDATE_KIND_OPTIONS = [
+    { kind: "json" },
+    { kind: "yaml" },
+    { kind: "xml" },
+    { kind: "ini" },
+    { kind: "jsonl" },
+    { kind: "cron" },
+    { kind: "php" },
+    { kind: "python" },
+    { kind: "ruby" },
+    { kind: "javascript" },
+    { kind: "shell" }
+];
+
+const SYNTAX_VALIDATE_SCENARIOS = [
+    {
+        kind: "json",
+        content: '{\n  "service": "demo",\n  "port": 8080,\n  "enabled": true\n}'
+    },
+    {
+        kind: "yaml",
+        content: "app:\n  name: phprand\n  env: production\nlisten:\n  host: 127.0.0.1\n  port: 9000\n"
+    },
+    {
+        kind: "xml",
+        content: '<?xml version="1.0" encoding="UTF-8"?>\n<config>\n  <service name="demo" port="8080"/>\n</config>\n'
+    },
+    {
+        kind: "ini",
+        content: "; sample ini\n[app]\nname = phprand\nenv = production\n\n[listen]\nhost = 127.0.0.1\nport = 9000\n"
+    },
+    {
+        kind: "jsonl",
+        content: '{"id":1,"msg":"alpha"}\n{"id":2,"msg":"beta"}\n{"id":3,"msg":"gamma"}\n'
+    },
+    {
+        kind: "cron",
+        content: "# daily at 02:00 (five fields only; command goes in crontab UI elsewhere)\n0 2 * * *\n"
+    },
+    {
+        kind: "php",
+        content: "<?php\n\ndeclare(strict_types=1);\n\n$items = [1, 2, 3];\necho array_sum($items);\n"
+    },
+    {
+        kind: "python",
+        content: "def total(values: list[int]) -> int:\n    return sum(values)\n\nprint(total([10, 20, 12]))\n"
+    },
+    {
+        kind: "ruby",
+        content: "# frozen_string_literal: true\n\ndef total(values)\n  values.sum\nend\n\nputs total([10, 20, 12])\n"
+    },
+    {
+        kind: "javascript",
+        content: "function total(values) {\n  return values.reduce((a, b) => a + b, 0);\n}\n\nconsole.log(total([10, 20, 12]));\n"
+    },
+    {
+        kind: "shell",
+        content: "#!/usr/bin/env bash\nset -euo pipefail\nfor f in *.log; do\n  echo \"processing $f\"\ndone\n"
+    }
+];
+
+const SHELLCHECK_RANDOM_SCENARIOS = [
+    {
+        filename: "deploy.sh",
+        shell: "bash",
+        script: "#!/usr/bin/env bash\nfor file in *.log; do\n  echo Processing $file\n  grep ERROR $file\n  rm $file\ndone\n"
+    },
+    {
+        filename: "backup.sh",
+        shell: "sh",
+        script: "#!/bin/sh\nfor archive in $(ls /var/backups); do\n  echo \"$archive\"\ndone\n"
+    },
+    {
+        filename: "check-users.sh",
+        shell: "bash",
+        script: "#!/usr/bin/env bash\nif [ $USER = root ]; then\n  echo admin mode\nfi\n"
+    },
+    {
+        filename: "parse-json.sh",
+        shell: "bash",
+        script: "#!/usr/bin/env bash\nname=`jq -r .name < config.json`\necho $name\n"
+    },
+    {
+        filename: "read-lines.sh",
+        shell: "bash",
+        script: "#!/usr/bin/env bash\nwhile read line; do\n  echo \"$line\" | wc -c\ndone < input.txt\n"
+    },
+    {
+        filename: "paths.sh",
+        shell: "bash",
+        script: "#!/usr/bin/env bash\npath=\"/tmp/my files/report.txt\"\ncat $path\n"
+    },
+    {
+        filename: "legacy-echo.sh",
+        shell: "sh",
+        script: "#!/bin/sh\necho -n \"done\"\n"
+    },
+    {
+        filename: "find-exec.sh",
+        shell: "bash",
+        script: "#!/usr/bin/env bash\nfind . -name \"*.tmp\" -exec rm {} \\;\n"
+    },
+    {
+        filename: "sudo-tee.sh",
+        shell: "bash",
+        script: "#!/usr/bin/env bash\necho \"config line\" | sudo tee -a /etc/app.conf\n"
+    },
+    {
+        filename: "subshell-cd.sh",
+        shell: "bash",
+        script: "#!/usr/bin/env bash\n(cd /var/log && ls)\npwd\n"
+    },
+    {
+        filename: "array-ish.sh",
+        shell: "sh",
+        script: "#!/bin/sh\nitems=(one two three)\necho ${items[0]}\n"
+    },
+    {
+        filename: "double-grep.sh",
+        shell: "bash",
+        script: "#!/usr/bin/env bash\ncat access.log | grep GET | grep -v health\n"
+    },
+    {
+        filename: "curl-pipe.sh",
+        shell: "bash",
+        script: "#!/usr/bin/env bash\nurl=\"https://example.com/data.json\"\ncurl $url | jq .\n"
+    },
+    {
+        filename: "test-brackets.sh",
+        shell: "bash",
+        script: "#!/usr/bin/env bash\nif [[ $1 == \"yes\" ]]; then\n  echo ok\nfi\n"
+    },
+    {
+        filename: "dash-printf.sh",
+        shell: "dash",
+        script: "#!/bin/dash\nfor i in 1 2 3; do\n  echo $i\ndone\n"
+    },
+    {
+        filename: "ksh-typo.sh",
+        shell: "ksh",
+        script: "#!/bin/ksh\nset -e\ncd /maybe/missing/dir\nls\n"
+    },
+    {
+        filename: "source-args.sh",
+        shell: "bash",
+        script: "#!/usr/bin/env bash\n. ./lib.sh $1\n"
+    },
+    {
+        filename: "seq-printf.sh",
+        shell: "bash",
+        script: "#!/usr/bin/env bash\nfor i in $(seq 1 10); do\n  printf \"%s\\n\" $i\ndone\n"
+    },
+    {
+        filename: "local-wrong.sh",
+        shell: "sh",
+        script: "#!/bin/sh\nfoo() {\n  local x=1\n  echo $x\n}\nfoo\n"
+    },
+    {
+        filename: "mkdir-cd.sh",
+        shell: "bash",
+        script: "#!/usr/bin/env bash\nmkdir -p /tmp/build\ncd /tmp/build || exit 1\nrm -f *.o\n"
+    },
+    {
+        filename: "wget-string.sh",
+        shell: "bash",
+        script: "#!/usr/bin/env bash\nname=\"report 2026.pdf\"\nwget -O \"$name\" https://example.com/file\n"
+    },
+    {
+        filename: "eval-dynamic.sh",
+        shell: "bash",
+        script: "#!/usr/bin/env bash\ncmd=\"echo hello\"\neval $cmd\n"
+    },
+    {
+        filename: "sleep-rand.sh",
+        shell: "bash",
+        script: "#!/usr/bin/env bash\nsleep $RANDOM % 5\necho done\n"
+    },
+    {
+        filename: "docker-run.sh",
+        shell: "bash",
+        script: "#!/usr/bin/env bash\ndocker run --rm -it myimage:latest /bin/bash -c \"apt update && apt install -y curl\"\n"
+    },
+    {
+        filename: "strict-assign.sh",
+        shell: "bash",
+        script: "#!/usr/bin/env bash\nset -u\necho $UNSET_VAR\n"
+    },
+    {
+        filename: "heredoc-tabs.sh",
+        shell: "bash",
+        script: "#!/usr/bin/env bash\ncat <<-EOF\n\tindented line\nEOF\n"
+    }
+];
+
+function randomDataGetCompatibleFormBundle($form) {
+    if (!$form || !$form.length) {
+        return null;
+    }
+    let bundle = $form.data("randomDataBundle");
+    if (bundle && typeof bundle === "object") {
+        return bundle;
+    }
+
+    const formAction = String($form.attr("data-action") || "").toLowerCase();
+    const formId = String($form.attr("id") || "").toLowerCase();
+    const randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+    const randomStr = (len) => {
+        const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        let out = "";
+        for (let i = 0; i < len; i++) out += chars.charAt(Math.floor(Math.random() * chars.length));
+        return out;
+    };
+    const randomPick = (items) => items[randomInt(0, items.length - 1)];
+    /** Prefer a different item than last time (reduces repeat streaks when shuffling). */
+
+    // Shared cryptographic samples used by multiple crypto modules.
+    const sample = {
+        jwtSecret: "your-256-bit-secret",
+        jwtToken: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c",
+        jwtPayload: JSON.stringify({
+            sub: "1234567890",
+            name: "John Doe",
+            iat: 1516239022
+        }, null, 2),
+        jwtHeader: JSON.stringify({
+            typ: "JWT",
+            alg: "HS256"
+        }, null, 2),
+        privatePem: "-----BEGIN PRIVATE KEY-----\nMIICdwIBADANBgkqhkiG9w0BAQEFAASCAmEwggJdAgEAAoGBAPAiPsgyjDSODZlQ\nwn753DTvSplSqnzGcqP3pO20yECSlxXO0wM0wsMe6IxH6w5v2ydKd6ZmV0Y4TurD\nBHGtMeqbiRfoSAiJJvORiEZFI7hJEbEKewoErBeFALimkB0HPF+TNW9uMd1/Ok1q\nuIpK3E17lkatAHzdKzlWh/WRD9tdAgMBAAECgYA7/vJcpnRtNQikw460lsyz1Q14\nXTUHU7WUzezBDyfxKi7hXflOlcILag+D7PwHcV755Bsc0fkALFVbRjo4BKOxlCGh\nBTviXkJQpXdebdxnrfGpzcjVK6HC37Zakc92B/3Cx7I8rVr9zGnbSu5MUwwyxn4R\n0Dvy+10BNP/i6SOUaQJBAPhViJT+FlX2d0anU+P6DbZIhAH3VpzHSCYAhoDTzVnq\noVAbNvh9Pgh0Fn0wcwGPsv5AI+zIL0TvDCOdFhB/ltsCQQD3i+iFxjc1ZhkMPxmC\nW4QzZOZfrsZQ/YE05LS5e0YmBW9A7dAHBKdaYyigJaLhulRXnNyUClmM2nOl6Hd8\nNaAnAkEAyhRASo3g+x7OvM3Y9EE8+0JTOY5eCsIXseTnjtnL1wmZLyiWOOshmZtt\n2X2deH3I+CCVm07jOEMWK7zegZpx1QJBAMx6ljTCWeJTFsel67VhUR9+7kkFPq2x\n6aO+c4ZvTK+ld5PDnT3e2zpvhCRdUmFxH7BLU20562TNIhBeqSxBw6sCQBEMwBcj\nn+Brt59NhqVGg9tEZYLkmbs7LRGFuGPT4JfLk1RmU4s1mi6oCptQjgO+24c+Y6op\n23uswjXgpji6Yh8=\n-----END PRIVATE KEY-----",
+        publicPem: "-----BEGIN PUBLIC KEY-----\nMIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQDwIj7IMow0jg2ZUMJ++dw070qZ\nUqp8xnKj96TttMhAkpcVztMDNMLDHuiMR+sOb9snSnemZldGOE7qwwRxrTHqm4kX\n6EgIiSbzkYhGRSO4SRGxCnsKBKwXhQC4ppAdBzxfkzVvbjHdfzpNariKStxNe5ZG\nrQB83Ss5Vof1kQ/bXQIDAQAB\n-----END PUBLIC KEY-----",
+        opensshPublic: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAAAgQDwIj7IMow0jg2ZUMJ++dw070qZUqp8xnKj96TttMhAkpcVztMDNMLDHuiMR+sOb9snSnemZldGOE7qwwRxrTHqm4kX6EgIiSbzkYhGRSO4SRGxCnsKBKwXhQC4ppAdBzxfkzVvbjHdfzpNariKStxNe5ZGrQB83Ss5Vof1kQ/bXQ==",
+        signatureB64: "EcbiXUIHfKBIw83cJb/KA2jrNeSpD3IgO2KBvb2McXvQgWN9J/xBxqNcjbqyratl7pKzI+PhSWVEHVBoCTDf4X4HIV5VReCRmaI6/cAqn09mNvyS9+6DVQlRbruWJUqa6+gMkKSCGwVGpdOVS1fnXGDVewVwR1/MjIG1jn6S5VU=",
+        signMessage: "sample message for signature"
+    };
+    const regexScenarios = [
+        {
+            pattern: "([a-z0-9._%+-]+)@([a-z0-9.-]+\\.[a-z]{2,})",
+            testString: "Contact alice.smith@example.com or dev-team@test.org for support.",
+            replacement: "$1 at $2"
+        },
+        {
+            pattern: "(\\d{4})-(\\d{2})-(\\d{2})",
+            testString: "Release dates: 2026-04-02, 2025-12-18, and 2024-07-09.",
+            replacement: "$3/$2/$1"
+        },
+        {
+            pattern: "\\b([A-Z][a-z]+)\\s+([A-Z][a-z]+)\\b",
+            testString: "Assigned to John Smith, Jane Miller, and Robert Brown.",
+            replacement: "$2, $1"
+        },
+        {
+            pattern: "\\b(item)-(\\d{3})\\b",
+            testString: "Queued item-104, item-287, and item-931 for review.",
+            replacement: "$1#$2"
+        }
+    ];
+
+    bundle = {};
+    if (formAction === "jwt" || formId === "jwtform") {
+        bundle = {
+            kind: "jwt",
+            jwtSecret: sample.jwtSecret,
+            jwtToken: sample.jwtToken,
+            jwtPayload: sample.jwtPayload,
+            jwtHeader: sample.jwtHeader
+        };
+    } else if (formAction === "keypair_sign_verify") {
+        bundle = {
+            kind: "keypair_sign_verify",
+            keypairMessage: sample.signMessage,
+            keypairPrivatePem: sample.privatePem,
+            keypairPublicPem: sample.publicPem,
+            keypairSignatureB64: sample.signatureB64
+        };
+    } else if (formAction === "ssh_key_verify") {
+        bundle = {
+            kind: "ssh_key_verify",
+            verifyPublicPem: sample.publicPem,
+            verifyPublicOpenSsh: sample.opensshPublic + " random-check@" + randomStr(6).toLowerCase(),
+            verifyPrivatePem: sample.privatePem
+        };
+    } else if (formAction === "pem_openssh_convert") {
+        bundle = {
+            kind: "pem_openssh_convert",
+            publicPem: sample.publicPem,
+            opensshPublic: sample.opensshPublic + " generated-by-phprand",
+            sshComment: "generated-by-phprand-" + randomStr(4).toLowerCase()
+        };
+    } else if (formId === "range2cidr") {
+        const a = randomInt(10, 172);
+        const b = randomInt(0, 255);
+        const c = randomInt(0, 255);
+        bundle = {
+            kind: "range2cidr",
+            startIp: a + "." + b + "." + c + ".0",
+            endIp: a + "." + b + "." + c + ".255"
+        };
+    } else if (formId === "subnetmask") {
+        const a = randomInt(10, 172);
+        const b = randomInt(0, 255);
+        const c = randomInt(0, 255);
+        bundle = {
+            kind: "subnetmask",
+            ip: a + "." + b + "." + c + "." + randomInt(2, 253),
+            subnet: "255.255.255.0"
+        };
+    } else if (formAction === "numgen" || formId === "numgen") {
+        const from = randomInt(1, 500);
+        const to = randomInt(from + 1, from + 1000);
+        const minDigits = randomInt(1, 4);
+        const maxDigits = randomInt(minDigits, 8);
+        bundle = {
+            kind: "numgen",
+            from: String(from),
+            to: String(to),
+            minDigits: String(minDigits),
+            maxDigits: String(maxDigits),
+            fixedDigits: String(randomInt(minDigits, maxDigits)),
+            qty: String(randomInt(1, 32)),
+            seed: randomStr(12)
+        };
+    } else if (formAction === "regex" || formId === "regexform") {
+        const regexSample = randomPick(regexScenarios);
+        bundle = {
+            kind: "regex",
+            regexPattern: regexSample.pattern,
+            regexTestString: regexSample.testString,
+            regexReplacement: regexSample.replacement
+        };
+    } else if (formAction === "crontab" || formId === "crontabform") {
+        const cronSample = randomPickAvoidRepeatFromForm($form, CRONTAB_RANDOM_SCENARIOS, "crontabScenario");
+        bundle = {
+            kind: "crontab",
+            cronExpression: cronSample.expression,
+            cronTimezone: cronSample.timezone
+        };
+    } else if (formAction === "shellcheck" || formId === "shellcheckform") {
+        const shellcheckSample = randomPickAvoidRepeatFromForm($form, SHELLCHECK_RANDOM_SCENARIOS, "shellcheckScenario");
+        bundle = {
+            kind: "shellcheck",
+            shellcheckFilename: shellcheckSample.filename,
+            shellcheckShell: shellcheckSample.shell,
+            shellcheckScript: shellcheckSample.script
+        };
+    } else if (formAction === "syntax_validate" || formId === "syntaxvalidateform") {
+        const svSample = randomPickAvoidRepeatFromForm($form, SYNTAX_VALIDATE_SCENARIOS, "syntaxValidateScenario");
+        if (svSample) {
+            bundle = {
+                kind: "syntax_validate",
+                syntaxValidateKind: svSample.kind,
+                syntaxValidateInput: svSample.content
+            };
+        }
+    }
+
+    $form.data("randomDataBundle", bundle);
+    return bundle;
+}
+
+/* ===================================================================== */
 /*                    FUNCTION: generateRandomData                       */
 /* ===================================================================== */
 /**
  * Generate contextually appropriate random data for input fields
- * 
+ *
  * Detects the form/module context and generates relevant sample data:
  * - Calculator: Math expressions (e.g., "25+8*3")
  * - Networking: IP addresses, CIDR notations, domain names
  * - Hashing/Encoding: Text, JSON, code snippets
- * - String tools: Lorem ipsum text, emails
+ * - String tools: Short lorem ipsum (2–3 sentences for generic textareas), emails
  * And many more context-specific generators
- * 
+ *
  * @param {string} type - Input type ('text', 'textarea', 'number', etc.)
  * @param {string} placeholder - Input placeholder text for context detection
  * @param {jQuery|string} $input - The input element or container form for additional context
@@ -1510,14 +2687,14 @@ function generateRandomData(type, placeholder = '', $input = null) {
 
     const randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
 
-    const randomText = (sentences = 3) => {
+    const randomText = (sentences = 3, wordMin = 8, wordMax = 15) => {
         const words = ['lorem', 'ipsum', 'dolor', 'sit', 'amet', 'consectetur', 'adipiscing', 'elit', 
                       'sed', 'do', 'eiusmod', 'tempor', 'incididunt', 'ut', 'labore', 'et', 'dolore',
                       'magna', 'aliqua', 'enim', 'ad', 'minim', 'veniam', 'quis', 'nostrud', 'exercitation'];
         let result = [];
         for (let i = 0; i < sentences; i++) {
             let sentence = [];
-            const wordCount = randomInt(8, 15);
+            const wordCount = randomInt(wordMin, wordMax);
             for (let j = 0; j < wordCount; j++) {
                 sentence.push(words[randomInt(0, words.length - 1)]);
             }
@@ -1625,12 +2802,109 @@ function generateRandomData(type, placeholder = '', $input = null) {
     // Detect form context via $input element
     let formAction = '';
     let formId = '';
+    let inputName = '';
+    let inputId = '';
+    let $form = null;
     if ($input && $input.length) {
-        const $form = $input.closest('form');
+        $form = $input.closest('form');
         if ($form.length) {
             formAction = ($form.attr('data-action') || '').toLowerCase();
             formId = ($form.attr('id') || '').toLowerCase();
         }
+        inputName = ($input.attr("name") || "").toLowerCase();
+        inputId = ($input.attr("id") || "").toLowerCase();
+    }
+    if ($form && $form.length) {
+        if (formAction === "shellcheck" || formId === "shellcheckform") {
+            if (inputName === "shellcheck_script" || inputName === "shellcheck_filename") {
+                const sample = randomPickAvoidRepeatFromForm($form, SHELLCHECK_RANDOM_SCENARIOS, "shellcheckScenario");
+                if (sample) {
+                    return inputName === "shellcheck_script" ? sample.script : sample.filename;
+                }
+            }
+        }
+        if (formAction === "crontab" || formId === "crontabform") {
+            if (inputName === "cron_expression" || inputName === "cron_timezone") {
+                const sample = randomPickAvoidRepeatFromForm($form, CRONTAB_RANDOM_SCENARIOS, "crontabScenario");
+                if (sample) {
+                    return inputName === "cron_expression" ? sample.expression : sample.timezone;
+                }
+            }
+        }
+        if (formAction === "syntax_validate" || formId === "syntaxvalidateform") {
+            if (inputName === "syntax_validate_kind") {
+                const picked = randomPickAvoidRepeatFromForm($form, SYNTAX_VALIDATE_KIND_OPTIONS, "syntaxValidateKindOnly");
+                return picked ? picked.kind : "json";
+            }
+            if (inputName === "syntax_validate_input") {
+                const kind = String($form.find("[name='syntax_validate_kind']").val() || "json").toLowerCase();
+                const pool = SYNTAX_VALIDATE_SCENARIOS.filter((s) => s.kind === kind);
+                const usePool = pool.length > 0 ? pool : SYNTAX_VALIDATE_SCENARIOS;
+                const sample = randomPickAvoidRepeatFromForm($form, usePool, "syntaxValidateContent_" + kind);
+                return sample ? sample.content : "";
+            }
+        }
+    }
+    const bundle = randomDataGetCompatibleFormBundle($form);
+    // Strict compatibility generators for modules that require related fields.
+    if (bundle && bundle.kind === "jwt") {
+        if (inputName === "jwt_secret") return bundle.jwtSecret;
+        if (inputName === "jwt_token") return bundle.jwtToken;
+        if (inputName === "jwt_payload") return bundle.jwtPayload;
+        if (inputName === "jwt_header") return bundle.jwtHeader;
+    }
+
+    if (bundle && bundle.kind === "keypair_sign_verify") {
+        if (inputName === "keypair_message") return bundle.keypairMessage;
+        if (inputName === "keypair_private_pem") return bundle.keypairPrivatePem;
+        if (inputName === "keypair_public_pem") return bundle.keypairPublicPem;
+        if (inputName === "keypair_signature_b64") return bundle.keypairSignatureB64;
+        if (inputName === "keypair_private_passphrase") return "";
+    }
+
+    if (bundle && bundle.kind === "ssh_key_verify") {
+        if (inputName === "verify_private_pem") return bundle.verifyPrivatePem;
+        if (inputName === "verify_public_input") {
+            const mode = String(($form.find("[name='verify_public_format']").val() || "auto")).toLowerCase();
+            return mode === "pem" ? bundle.verifyPublicPem : bundle.verifyPublicOpenSsh;
+        }
+        if (inputName === "verify_private_passphrase") return "";
+    }
+
+    if (bundle && bundle.kind === "pem_openssh_convert") {
+        if (inputName === "public_pem") return bundle.publicPem;
+        if (inputName === "openssh_public") return bundle.opensshPublic;
+        if (inputName === "ssh_comment") return bundle.sshComment;
+    }
+
+    if (bundle && bundle.kind === "range2cidr") {
+        if (inputName === "startip" || inputId.includes("start")) return bundle.startIp;
+        if (inputName === "endip" || inputId.includes("end")) return bundle.endIp;
+    }
+
+    if (bundle && bundle.kind === "subnetmask") {
+        if (inputName === "ip") return bundle.ip;
+        if (inputName === "subnet") return bundle.subnet;
+    }
+
+    if (bundle && bundle.kind === "numgen") {
+        if (inputName === "numgenfrom") return bundle.from;
+        if (inputName === "numgento") return bundle.to;
+        if (inputName === "numgenmindig") return bundle.minDigits;
+        if (inputName === "numgenmaxdig") return bundle.maxDigits;
+        if (inputName === "numgendigits") return bundle.fixedDigits;
+        if (inputName === "numgenqty") return bundle.qty;
+        if (inputName === "numgenseed") return bundle.seed;
+    }
+
+    if (bundle && bundle.kind === "regex") {
+        if (inputName === "pattern") return bundle.regexPattern;
+        if (inputName === "teststring") return bundle.regexTestString;
+        if (inputName === "replacement") return bundle.regexReplacement;
+    }
+
+    if (bundle && bundle.kind === "syntax_validate") {
+        if (inputName === "syntax_validate_input") return bundle.syntaxValidateInput;
     }
 
     // Detect what type of data to generate based on context
@@ -1640,6 +2914,17 @@ function generateRandomData(type, placeholder = '', $input = null) {
     // =====================================================================
     // CONTEXT-AWARE DETECTION BY FORM/MODULE
     // =====================================================================
+
+    if (formAction === "logo_generate" || formId === "logogeneratorform") {
+        if (type === "textarea" && inputName === "logo_text") {
+            const brands = [
+                "Acme Co", "Northwind", "Harbor Labs", "Atlas Works", "Rand Studio",
+                "Cedar & Co.", "Pixel Foundry", "Blue Oak", "Signal Nine", "Kestrel"
+            ];
+            const pick = brands[randomInt(0, brands.length - 1)];
+            return pick + (Math.random() > 0.45 ? "\n" + randomText(randomInt(1, 2), 3, 8) : "");
+        }
+    }
 
     // OpenSSL encryption module - generate hex strings for IV and key
     if (formAction === 'openssl' || formId === 'openssl') {
@@ -1692,9 +2977,18 @@ function generateRandomData(type, placeholder = '', $input = null) {
         return randomIP();
     }
 
-    // Serialization/Encoding modules
-    if (formAction === 'serialization' || formId.includes('serial')) {
-        return randomJSON();
+    // Serialization — sample matches selected output format (JSON / YAML / XML)
+    if (formAction === "serialization" || formId === "serializationform") {
+        if (inputName === "input" || inputId === "serializationinput") {
+            const t = String(($form && $form.find("[name='type']").val()) || "JSON").toUpperCase();
+            if (t === "YAML") {
+                return randomYAML();
+            }
+            if (t === "XML") {
+                return randomXML();
+            }
+            return randomJSON();
+        }
     }
 
     // Base/Encoding conversion
@@ -1719,6 +3013,18 @@ function generateRandomData(type, placeholder = '', $input = null) {
     // =====================================================================
 
     if (typeLower === 'number') {
+        if ($input && $input.length) {
+            const minAttr = $input.attr("min");
+            const maxAttr = $input.attr("max");
+            const hasMin = minAttr !== undefined && minAttr !== "";
+            const hasMax = maxAttr !== undefined && maxAttr !== "";
+            if (hasMin || hasMax) {
+                const min = hasMin ? parseInt(minAttr, 10) : 0;
+                const max = hasMax ? parseInt(maxAttr, 10) : (min + 1000);
+                const safeMax = max >= min ? max : min;
+                return randomInt(min, safeMax).toString();
+            }
+        }
         return randomInt(1, 1000).toString();
     }
 
@@ -1734,7 +3040,12 @@ function generateRandomData(type, placeholder = '', $input = null) {
         return randomUrl();
     }
 
-    if (placeholderLower.includes('ip') || placeholderLower.includes('address')) {
+    /* Avoid "multiple" → false positive on substring "ip" (e.g. logo generator textarea). */
+    const looksLikeIpPlaceholder = /\bipv6\b/.test(placeholderLower)
+        || /\bipv4\b/.test(placeholderLower)
+        || /\b(ip\s+address|ip-address|host\s*ip|enter\s+ip)\b/.test(placeholderLower)
+        || /(^|[^a-z0-9])ip([-:\s/]|$)/.test(placeholderLower);
+    if (looksLikeIpPlaceholder) {
         if (placeholderLower.includes('ipv6')) {
             return randomIPv6();
         }
@@ -1787,7 +3098,7 @@ function generateRandomData(type, placeholder = '', $input = null) {
         if (placeholderLower.includes('json')) {
             return randomJSON();
         }
-        return randomText(5) + '\n\n' + randomText(4);
+        return randomText(randomInt(2, 3), 5, 10);
     }
 
     // Default for text inputs
@@ -1808,7 +3119,9 @@ function addRandomDataButtons($root = null) {
     const selectors = [
         'input[type="text"]:not([readonly]):not([disabled])',
         'input[type="number"]:not([readonly]):not([disabled])',
-        'textarea:not([readonly]):not([disabled])'
+        'textarea:not([readonly]):not([disabled])',
+        '#syntaxValidateKind:not([disabled])',
+        '#crontabTimezone:not([disabled])'
     ];
 
     $scope.find(selectors.join(',')).each(function() {
@@ -1843,7 +3156,9 @@ function addRandomDataButtons($root = null) {
         }
 
         // Get input details
-        const inputType = $input.is('textarea') ? 'textarea' : $input.attr('type');
+        const inputType = $input.is('textarea')
+            ? 'textarea'
+            : ($input.is('select') ? 'select' : $input.attr('type'));
         const placeholder = $input.attr('placeholder') || '';
         const inputId = $input.attr('id') || 'input_' + Math.random().toString(36).substr(2, 9);
         
@@ -1856,11 +3171,17 @@ function addRandomDataButtons($root = null) {
             $input.wrap('<div class="input-with-random-btn" style="position: relative; display: flex; gap: 8px; align-items: flex-start;"></div>');
         }
 
+        const inputIdForTitle = $input.attr('id') || '';
+        let randomBtnTitle = 'Generate random data';
+        if (inputIdForTitle === 'syntaxValidateKind') {
+            randomBtnTitle = 'Random language';
+        }
+
         // Create the random button
         const $btn = $('<button>', {
             type: 'button',
             class: 'btn btn-sm btn-outline-secondary random-data-btn',
-            title: 'Generate random data',
+            title: randomBtnTitle,
             html: '<i class="bi bi-shuffle"></i>',
             css: {
                 'flex-shrink': '0',
@@ -1871,9 +3192,20 @@ function addRandomDataButtons($root = null) {
 
         // Add click handler
         $btn.on('click', function() {
+            const $form = $input.closest('form');
+            const formAction = (($form.attr('data-action') || '') + '').toLowerCase();
             const randomData = generateRandomData(inputType, placeholder, $input);
             $input.val(randomData).trigger('change').trigger('input');
-            
+            if (formAction === 'crontab') {
+                const inputName = ($input.attr('name') || '').toLowerCase();
+                if (inputName === 'cron_timezone') {
+                    const det = document.getElementById('crontabMoreDetails');
+                    if (det) {
+                        det.open = true;
+                    }
+                }
+            }
+
             // Visual feedback
             const originalHtml = $btn.html();
             $btn.html('<i class="bi bi-check"></i>').addClass('btn-success').removeClass('btn-outline-secondary');

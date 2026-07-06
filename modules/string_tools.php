@@ -41,7 +41,7 @@
 
                     <div class="col-lg-6 d-flex flex-column">
                         <label class="form-label mb-3"><strong style="font-size: 1.1rem;">Output</strong></label>
-                        <div class="copyable-content flex-grow-1 d-flex flex-column" style="min-height: 320px; padding: 0; background: linear-gradient(135deg, rgba(108, 92, 231, 0.12) 0%, rgba(13, 110, 253, 0.08) 100%); border: 2px solid #495057; border-radius: 0.5rem; box-shadow: 0 6px 16px rgba(0,0,0,0.25); font-size: 0.95rem;">
+                        <div class="copyable-content flex-grow-1 d-flex flex-column" style="min-height: 320px; padding: 0; background: linear-gradient(135deg, rgba(108, 92, 231, 0.12) 0%, rgba(13, 110, 253, 0.08) 100%); border: 2px solid #495057; border-radius: 0.5rem; box-shadow: 0 6px 16px rgba(0,0,0,0.25);">
                         <div class="responseDiv copyable-body flex-grow-1" id="strtoolsresponse" style="margin:0; padding:20px; min-height: 200px; max-height: 480px; overflow-y: auto; background: transparent; border: none; border-radius: 0; box-shadow: none; font-family: monospace; white-space: pre-wrap; word-break: break-word; user-select: all;">
                           <div style="opacity: 0.55; text-align: center; padding-top: 110px;">
                             <div style="font-size: 3rem; margin-bottom: 10px;">🧵</div>
@@ -49,7 +49,7 @@
                           </div>
                         </div>
                         <div class="copyable-actions" style="padding: 8px 14px; border-top: 1px solid rgba(255,255,255,0.12);">
-                        <button type="button" class="btn btn-sm btn-outline-light copyOutput" data-target="#strtoolsresponse" style="width: 100%; border: 1px solid #e9ecef;"><?= icon("files") ?> Copy Output</button>
+                        <button type="button" class="btn btn-sm btn-outline-light copyOutput" data-target="#strtoolsresponse" style="border: 1px solid #e9ecef;"><?= icon("files") ?> Copy Output</button>
                         </div>
                         </div>
                     </div>
@@ -65,6 +65,13 @@
                             <input class="form-check-input" type="checkbox" name="outputToTextbox" id="outputToTextbox"
                                 value="1" role="switch">
                             <label class="form-check-label" for="outputToTextbox">Auto-apply to input</label>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="strtoolsCustomChars" class="form-label">Custom characters to remove</label>
+                            <input type="text" class="form-control form-control-sm" name="custom_characters"
+                                id="strtoolsCustomChars" placeholder="e.g. @#*" autocomplete="off">
+                            <div class="form-text">Used by the <strong>Custom characters</strong> remove tool.</div>
                         </div>
 
                         <hr>
@@ -349,6 +356,29 @@ $(document).ready(function() {
         var tool = $(this).data("tool");
         var form = $("#strtools");
         var input = $("#strtoolsinput").val();
+
+        if (tool === "regex") {
+            var text = input || "";
+            if (typeof navigate === "function") {
+                navigate("#regex");
+            } else {
+                window.location.hash = "#regex";
+            }
+            var fillRegex = function(attempts) {
+                var $regexInput = $("#regexTestString");
+                if ($regexInput.length) {
+                    if (text) {
+                        $regexInput.val(text);
+                    }
+                    return;
+                }
+                if (attempts > 0) {
+                    setTimeout(function() { fillRegex(attempts - 1); }, 100);
+                }
+            };
+            fillRegex(30);
+            return;
+        }
 
         if (!input) {
             $("#strtoolsresponse").html('<div class="alert alert-warning mb-0">Please enter some text first.</div>');

@@ -8,14 +8,14 @@
   href="https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/css/tabler.min.css" />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
 
-<script defer src="https://code.jquery.com/jquery-3.7.1.min.js"
-    integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
+<script defer src="https://code.jquery.com/jquery-4.0.0.min.js"
+    integrity="sha256-OaVG6prZf4v69dPg6PhVattBXkcOWQB62pdZ3ORyrao=" crossorigin="anonymous"></script>
 <!-- <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script> -->
 <script defer
   src="https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/js/tabler.min.js">
 </script>
 
-<!-- Marked / Highlight.js / code-input are loaded on demand in js/rand.js -->
+<!-- Marked / Highlight.js (e.g. markdown) are loaded on demand in js/rand.js -->
 
 <!-- Axios for AJAX requests -->
 <script defer src="js/axios.min.js"></script>
@@ -27,6 +27,7 @@
 <title>Rand</title>
 
 <body class="theme-dark">
+    <script src="js/rand_ui_boot.js"></script>
     <?php
         require_once("includes/_includes.php");
         require_once("includes/navbar.php");
@@ -47,16 +48,43 @@ include_once("modules/dashboard.php");
     </div>
     </div> <!-- CONTAINER END -->
 
-    <div class="modal fade" tabindex="-1" id="changelogModal">
-        <div class="modal-dialog modal-xl" role="document">
-            <div class="modal-content" data-backdrop="static">
-                <h1 class="modal-header">Changelog</h1>
-                <div class="modal-body" id="changelogMarkdown" style="max-height: 70vh; overflow-y: auto;">
-                    <div class="tool-loading">
-                        <div class="spinner-border text-primary tool-loading-spinner" role="status">
-                            <span class="visually-hidden">Loading...</span>
+    <div class="modal fade" tabindex="-1" id="aboutModal" aria-labelledby="aboutModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2 class="modal-title h4 mb-0" id="aboutModalLabel"><?= icon("info-circle") ?> About php-rand</h2>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <ul class="nav nav-tabs px-3 pt-2" id="aboutModalTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="aboutTabBtn" data-bs-toggle="tab" data-bs-target="#aboutTabPane" type="button" role="tab" aria-controls="aboutTabPane" aria-selected="true">About</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="changelogTabBtn" data-bs-toggle="tab" data-bs-target="#changelogTabPane" type="button" role="tab" aria-controls="changelogTabPane" aria-selected="false">Changelog</button>
+                        </li>
+                    </ul>
+                    <div class="tab-content p-3 about-modal-tab-content" id="aboutModalTabContent">
+                        <div class="tab-pane fade show active" id="aboutTabPane" role="tabpanel" aria-labelledby="aboutTabBtn" tabindex="0">
+                            <div id="aboutInfoPanel">
+                                <div class="tool-loading">
+                                    <div class="spinner-border text-primary tool-loading-spinner" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                    <p class="tool-loading-text">Loading environment details...</p>
+                                </div>
+                            </div>
                         </div>
-                        <p class="tool-loading-text">Loading changelog...</p>
+                        <div class="tab-pane fade" id="changelogTabPane" role="tabpanel" aria-labelledby="changelogTabBtn" tabindex="0">
+                            <div id="changelogMarkdown">
+                                <div class="tool-loading">
+                                    <div class="spinner-border text-primary tool-loading-spinner" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                    <p class="tool-loading-text">Loading changelog...</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -80,7 +108,7 @@ include_once("modules/dashboard.php");
 
                     <h4 class="h6">Processed on server (submitted to <code>gen.php</code>)</h4>
                     <p class="text-muted small mb-3">
-                        Most tools (generators, crypto, encoding, convert, and misc tools) send input to the server and return results immediately.
+                        Most tools (generators, crypto, encoding, text &amp; data, math, and misc tools) send input to the server and return results immediately.
                     </p>
 
                     <h4 class="h6">Client-side only</h4>
@@ -112,8 +140,74 @@ include_once("modules/dashboard.php");
 <script defer src="js/rand.js"></script>
 
 <script>
+const COPY_UNAVAILABLE_TITLE =
+    "Copy to clipboard is not available in this browser or page context. Use HTTPS (or localhost), or select the text and copy manually.";
+
+function canUseClipboardCopy() {
+    if (window._copyUiForceUnavailable) {
+        return false;
+    }
+    const hasModernClipboard = !!(navigator.clipboard && navigator.clipboard.writeText);
+    const hasExecCommand = typeof document.queryCommandSupported === "function"
+        ? document.queryCommandSupported("copy")
+        : typeof document.execCommand === "function";
+    return hasModernClipboard || hasExecCommand;
+}
+
+function findCopyButtons(root) {
+    return root.querySelectorAll(
+        'button[onclick*="copyToClipboard"], button.copyOutput, button.copyText'
+    );
+}
+
+function setCopyButtonEnabled(btn, enabled) {
+    const wrapClass = "copy-btn-tooltip-wrap";
+    let wrap = btn.closest("." + wrapClass);
+
+    if (enabled) {
+        btn.disabled = false;
+        btn.removeAttribute("aria-disabled");
+        btn.classList.remove("btn-copy-unavailable");
+        if (wrap && wrap.parentNode) {
+            wrap.parentNode.insertBefore(btn, wrap);
+            wrap.remove();
+        }
+        return;
+    }
+
+    if (!wrap) {
+        wrap = document.createElement("span");
+        wrap.className = wrapClass;
+        btn.parentNode.insertBefore(wrap, btn);
+        wrap.appendChild(btn);
+    }
+    wrap.title = COPY_UNAVAILABLE_TITLE;
+    btn.disabled = true;
+    btn.setAttribute("aria-disabled", "true");
+    btn.classList.add("btn-copy-unavailable");
+}
+
+function refreshCopyUiAvailability(scope) {
+    const root = scope || document;
+    const canCopy = canUseClipboardCopy();
+    findCopyButtons(root).forEach((btn) => setCopyButtonEnabled(btn, canCopy));
+}
+
+/** Dev/test: pass true to simulate unavailable clipboard, false to restore detection. */
+function setCopyUiTestMode(unavailable) {
+    window._copyUiForceUnavailable = !!unavailable;
+    refreshCopyUiAvailability(document);
+}
+
+window.canUseClipboardCopy = canUseClipboardCopy;
+window.refreshCopyUiAvailability = refreshCopyUiAvailability;
+window.setCopyUiTestMode = setCopyUiTestMode;
+
 // Copy to clipboard function with fallback and explicit button target
 function copyToClipboard(elementId, btnEl) {
+    if (!canUseClipboardCopy()) {
+        return;
+    }
     const element = document.getElementById(elementId);
     if (!element) return;
     const text = (element.textContent || "").trim();
@@ -167,6 +261,12 @@ function fallbackCopy(text, setFeedback) {
         setFeedback(false);
     }
     document.body.removeChild(ta);
+}
+
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", () => refreshCopyUiAvailability(document));
+} else {
+    refreshCopyUiAvailability(document);
 }
 </script>
 

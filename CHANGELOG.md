@@ -12,6 +12,154 @@ _Add entries here during development; rotate into a dated release section when t
 
 ---
 
+## [v1.4.0] (2026-07-06)
+### Major Features
+
+- **Output typography** – Tool result text is larger app-wide via **`--rand-output-font-size`** (`1.2rem`) on **`.responseDiv`** and **`.copyable-content`**; redundant per-module inline output font sizes removed.
+- **Copyable outputs** – Copy/action buttons sit on the **right** of output text (stacked for multi-action boxes); large split-pane outputs keep a footer bar with right-aligned actions.
+
+- **Demo URL** – Centralized **`DEMO_URL`** (`https://rand.demo.roste.org/`) in **`includes/config.php`**; dashboard hero, About panel, and **`README.md`** point to the live demo host (replacing **`roste.org/rand`**).
+- **About modal** – Navbar **About** opens a combined modal with **About** (php-rand version, Docker vs native, PHP version/SAPI, OS, server software, key extension status, full loaded extension list) and **Changelog** tabs (lazy-loaded on tab switch). Data from **`about.php`** / **`includes/about_info.php`**. Fixed stuck loading state: discard accidental PHP output in **`about.php`**, removed trailing **`?>`** from **`includes/functions.php`**, moved Bootstrap modal trigger to the About nav link, and hardened JSON parsing in **`js/rand.js`**.
+- **String tools** – **Titlecase** / **Camelcase** use **`mb_convert_case`** so all-caps input title-cases correctly; **CRLF→LF**, **LF→CRLF**, and **Format** normalize real line endings (old **`crlf2lf`** stripped all breaks); **Custom characters** remove is implemented; **Regex** opens the Regex Tester with the current input; case tools use **`mb_*`** where appropriate.
+
+- **Docker CI** – Fixed invalid `secrets` usage in step `if` conditions in **`.github/workflows/docker-release.yml`** and **`.github/workflows/docker-dev.yml`** by detecting Docker Hub credentials in a shell step and gating publish steps on `steps.dockerhub.outputs.enabled`.
+
+- **Docker (rolling dev images)** – Pushes to the **`dev`** branch republish rolling **`dev`** and **`develop`** tags to Docker Hub and GHCR via **`.github/workflows/docker-dev.yml`** (no per-commit image tags). The **`Dockerfile`** copies the build context instead of cloning GitHub so CI images match the checked-out branch/tag; **`.dockerignore`** excludes local secrets and VCS metadata.
+
+- **jQuery 4.0** – Upgraded CDN dependency from jQuery 3.7.1 to **4.0.0** (full build) in `index.php` and `test_random_buttons.html`; updated SRI hash. Migrate 4 audit (`test_jquery4_migrate_audit.html`) found no compatibility warnings across `js/rand.js` and modules with inline jQuery handlers.
+
+- **Tool page descriptions** – Moved per-tool information alerts into each card as muted description text across tool modules (networking, units, crontab, serialization, shellcheck, validators, text/data tools, crypto, and others); dashboard “what’s new” banner unchanged.
+
+- **Theme and UI scale preferences** – Navbar **Settings → Theme** (dark/light) and **Interface size** (compact through extra large) persisted via **`randUiPrefs`** (`js/rand_ui_boot.js`, **`includes/navbar.php`**); light-theme polish in **`style.css`**.
+- **Global UI spacing preference + release guidance** – Navbar **Settings → Item spacing** (Tight/Dense/Standard/Comfortable/Relaxed) persisted via `randUiPrefs` (`spaceScale`) and applied app-wide in `style.css` by scaling common spacing utilities (`m-*`, `p-*`, `gap-*`, `g*/gx*/gy*`) plus card spacing. Added repository agent guidance in **`AGENTS.md`** covering core architecture, mandatory changelog policy, scripted release flow (`scripts/release.sh`, `scripts/extract_changelog_section.sh`, `scripts/update-release-descriptions.php`), and a quick release checklist. Also added an inline quick release checklist comment block at the top of `scripts/release.sh`.
+- **Spin the wheel** – Per-item **weights** with optional **even distribution**; sector building supports **item slicing** for long lists; item rows honor the global spacing preference (`modules/spin_the_wheel.php`, **`handle_spinwheel()`**).
+- **Clipboard UX** – Copy buttons reflect Clipboard API availability (disabled state + tooltip when copy is unavailable); complements the copyable-output layout refresh (`index.php`, **`style.css`**).
+
+- **Syntax validators (many languages)** – New **Miscellaneous → Validators** checks pasted content **without executing** it. Kinds: **JSON** (`json_decode` + `JSON_THROW_ON_ERROR`), **YAML** (**`symfony/yaml`**), **XML** (DOM parse), **INI** (`parse_ini_string`), **JSON Lines** (per-line JSON, capped line count), **cron** (shared **`cron_parse_expression_fields()`** with the Crontab tool / **`dragonmantank/cron-expression`**), **PHP** (`php -l`, optional `<?php` prepend for snippets), **Python** (`ast.parse` via **`python3`/`python`**), **Ruby** (`ruby -c`), **JavaScript** (`node --check`), **shell** (`bash -n` / `sh -n` when available). Handler **`handle_syntax_validate`**, logic in **`includes/syntax_validate.php`**, UI in **`modules/syntax_validate.php`** and embed **`modules/validators.php`**. Layout/help copy refined for clarity; help panel aligned with sibling cards.
+- **Navigation (Misc)** – **ShellCheck** and **Validators** are separate items under **Miscellaneous**. ShellCheck stays **`modules/shellcheck.php`**; Validators is syntax-only and embeds the validator section.
+- **Text & Data tools** – **URL encoding** (RFC 3986 via `rawurlencode` / decode preview), **HTML entities** (encode, decode, both, or **auto** from content), **Levenshtein** distance with tunable insertion/replacement/deletion costs (PHP length limits documented in UI), **Metaphone** (word keys), **Minify** JS/CSS via **`matthiasmullie/minify`** plus light HTML whitespace cleanup. Handlers and navbar entries in **`includes/handlers_functional.php`** / **`includes/navbar.php`**; modules **`urlencoding.php`**, **`htmlentities.php`**, **`levenshtein.php`**, **`metaphone.php`**, **`minify.php`**.
+- **Logo generator** – **Circle / rounded-rectangle** output uses **`logo_apply_shape_alpha_mask()`** so transparency matches the shape (fixes incorrect white fill from the old merge path). **Font** picker uses **`logo_discover_font_files()`** (**.ttf** and **.otf** under **`fonts/`**); bundled **DejaVu** TTFs; labels strip extensions. **Font size** **12–400** px with **number + range slider** kept in sync; presets call **`syncFontSizeUi()`**. Default **background** **`#000000`**; border row and **“Text transform”** section reorganized in **`modules/gen_image.php`**.
+- **Logo generator (follow-up)** – **Export** as **PNG / WebP / JPEG** (`logo_build_raster_data_uri()`, JPEG flattened onto background color). **Multiline** text (**textarea**, 500 chars), **word-wrap**, optional **autofit** (binary-search font size to inner box), **nudge X/Y** offsets, **per-color shuffle** buttons beside each swatch, **instant** preview (**0 ms** debounce + **`textarea`** in delegated events). Layout helpers: **`logo_wrap_paragraph`**, **`logo_build_wrapped_lines`**, **`logo_autofit_font_size`**, **`logo_draw_ttf_text_block`** in **`includes/handlers_functional.php`**.
+- **Crontab** – **`cron_parse_expression_fields()`** in **`includes/tooling_helpers.php`** centralizes expression validation, **`@reboot`**, and `CronExpression` construction for both the explorer and syntax validator. **UI**: layout tweaks and **diff output** styling (**`modules/crontab.php`**, **`style.css`**).
+- **Docker** – Image installs **`python3`** so Python (and related CLI checks where applicable) work in containers.
+- **Random data (syntax validator)** – **`js/rand.js`**: shuffle for **language** (`#syntaxValidateKind`) vs **sample textarea**; samples follow the **active** kind with avoid-repeat keys.
+- **Config & repo hygiene** – **`APP_ROOT`** set with **`dirname(__FILE__, 2)`** in **`includes/config.php`**. **`.gitignore`** no longer ignores **`scripts/`** (release tooling tracked). **`README.md`** feature list reorganized (e.g. cryptography, text & data, misc tools).
+- **Release automation** – **`scripts/release.sh`** rotates **`[Unreleased]`**, bumps **`docker-image.config`**, optional commit/tag/push, GitHub release, Docker publish; **`scripts/extract_changelog_section.sh`** and **`scripts/update-release-descriptions.php`** support changelog/release descriptions.
+
+<details>
+<summary>📋 Detailed Changes (click to expand)</summary>
+
+#### Syntax validation
+- **Dependencies** – `composer require symfony/yaml` (^7.x); YAML lint binary under **`vendor/`** as shipped by the package.
+- **Registry** – `syntax_validate` → `handle_syntax_validate()` in **`includes/handlers_functional.php`** (lazy-loads **`includes/syntax_validate.php`**).
+- **Limits** – Input length capped (e.g. 200k characters); JSON Lines capped per **`syntax_validate_jsonl_max_lines()`**.
+- **Privacy copy** – **`index.php`** privacy modal lists server-processed tools without a separate “validators” top-level line (validators under Misc).
+
+#### Navigation and modules
+- **`includes/navbar.php`** – Misc: `shellcheck`, `validators`; Text & Data entries for new tools as applicable.
+- **`modules/validators.php`** – `#validators` shell; embeds syntax validator via `$validatorsEmbed` so nested panels are not hidden by global `.content` toggling in **`js/rand.js`**.
+- **`modules/syntax_validate.php`** – Embed mode (`<section class="validators-block">`) vs standalone `#syntax_validate` for **`load_module.php?module=syntax_validate`**.
+
+#### Random data (`js/rand.js`)
+- **`SYNTAX_VALIDATE_KIND_OPTIONS`** – Language-only shuffle pool.
+- **`SYNTAX_VALIDATE_SCENARIOS`** – Per-kind samples; textarea shuffle uses the selected kind (`syntaxValidateContent_<kind>`, avoid-repeat).
+- **`addRandomDataButtons`** – Includes `#syntaxValidateKind`; titles distinguish language vs sample actions.
+
+#### Docker
+- **`Dockerfile`** – `apt-get install` adds **`python3`** alongside **`shellcheck`** and **`openssh-client`**.
+
+#### Dependencies (`composer.json`)
+- **`symfony/yaml`**, **`matthiasmullie/minify`** (and transitive **`path-converter`**) for the features above.
+
+#### Styling
+- **`style.css`** – Adjustments including Crontab / diff presentation, light theme, copy-button tooltips, and spacing scale utilities.
+
+#### Spin the wheel
+- **`modules/spin_the_wheel.php`** – Weight inputs, even-distribution toggle, weighted random selection, and canvas sector layout for large item sets.
+- **`includes/handlers_functional.php`** – **`handle_spinwheel()`** returns weighted pick results aligned with client-side animation.
+
+#### UI preferences
+- **`js/rand_ui_boot.js`** – Early-load **`randUiPrefs`** (theme, `uiScale`, `spaceScale`) applied before paint.
+- **`includes/navbar.php`** – Settings dropdown for theme, interface size, and item spacing.
+
+#### Other
+- **`modules/currency.php`**, **`modules/units.php`** – Minor copy or wiring updates where touched for consistency.
+
+</details>
+
+_Add entries here during development; rotate into a dated release section when tagging._
+
+---
+
+## [v1.3.0] (2026-04-03)
+### Major Features
+
+- **Navbar and IA updates** – Navigation structure now reflects the `Math` grouping better, labels were clarified (`Convert` -> **Text & Data**), and active-link handling was refactored so current tool context is highlighted more reliably.
+- **Logo Generator upgrade** – `gen_image` received a substantial UI/UX refresh with improved layout, richer interactions, and live preview-focused iteration.
+- **Crypto compatibility hardening** – Added RSA signing/verification padding fallback and broader algorithm compatibility updates (including Ed25519/Ed448 handling paths).
+- **Shared output actions** – `copyableOutput` and related rendering paths now support optional HTML actions and more consistent action/button styling across tools.
+- **Tool card intros** – Top-of-card guidance was tightened and aligned across many modules (encoding, crypto, JWT, networking, ShellCheck, SSH, and others) so descriptions and alert-style blocks are shorter, more consistent, and easier to scan.
+- **Runtime/deployment refresh** – Docker image/runtime config updated for PHP 8.5 + `openssh-client`; release workflow/docs (`README`, workflow, config, ignore rules) were refined to reduce release friction.
+- **Networking IP backend** – Centralized `handle_ip` flows for DNS forward/reverse lookup, IPv4 **CIDR ↔ range** conversion, and **subnet** math; subnet inputs accept dotted masks or **`/prefix`** via `handle_ip_normalize_subnet_mask()`; results render through shared `handle_ip_kv_table()` for consistent key/value output.
+- **Crontab Explorer** – New **Misc** tool to validate cron expressions (including macros like `@daily` and Vixie **`@reboot`** as a one-shot at daemon start), human-readable summaries, field breakdown, and timezone-aware previous/next run listings powered by **`dragonmantank/cron-expression`**. The **full analysis** runs automatically on debounced edits (expression, timezone, run count, reference time, include-current); **Analyze Schedule** remains as an explicit action. **More options** collapses advanced fields; schedule summaries use a dedicated **human-readable** block, **`*/1` step fields** are described like wildcards in the time summary for clearer copy, and the results layout was refined.
+- **ShellCheck** – New **Misc** tool to lint pasted shell scripts via the host **`shellcheck`** binary when available; JSON-backed diagnostics with severity, excerpts, and wiki links. Temp-file linting only (no persistence). Carriage returns are **stripped from pasted scripts** before linting to avoid spurious CRLF-related **SC1017** warnings.
+- **Form-aware random data** – `randomDataGetCompatibleFormBundle()` extends `generateRandomData()` so random fills line up with more tool-specific forms (JWT, keypair sign/verify, SSH verification, CIDR/networking, and others) and handle `<select>` elements reliably.
+- **Random shuffle samples** – Crontab and ShellCheck random-data buttons use **larger scenario pools**, **avoid picking the same scenario twice in a row**, and keep **related fields in sync** (cron + timezone; script + filename + shell dialect).
+
+<details>
+<summary>📋 Detailed Changes (click to expand)</summary>
+
+#### Navigation and Module Organization
+- **Active state behavior** - Refactored navbar link state handling so current modules are marked more consistently during navigation.
+- **Math grouping** - Updated navbar/module structure to better align math-related entries (including currency/units context) with dashboard category mapping updates.
+- **Naming clarity** - Updated wording in `index.php` and navbar labels to better describe available tool groups.
+
+#### Logo Generator
+- **UI redesign** - Reworked `modules/gen_image.php` with improved structure, styling, and interaction flow.
+- **Live feedback** - Enhanced generation flow to better support iterative logo design with preview-oriented controls.
+
+#### Cryptography
+- **RSA compatibility** - Added OpenSSL padding fallback in signing/verification paths to improve compatibility across environments.
+- **Algorithm handling** - Improved support logic for modern key algorithms including Ed25519/Ed448 handling paths.
+
+#### Shared UX Utilities
+- **Reusable actions** - Extended shared output helpers to accept optional HTML actions, reducing per-module divergence and improving DRY reuse.
+- **Action styling** - Standardized button/link styles around copy/download and related output actions.
+
+#### Tool card intros
+- **Consistency pass** - Reworked introductory/description blocks at the top of many `modules/*.php` files (BinHex, Brainfuck, Browser, Crontab, crypto and PEM tools, datetime, JWT, networking, ShellCheck, SSH, units, and more) for uniform structure and brevity.
+
+#### Infrastructure and Docs
+- **Docker runtime** - Updated Dockerfile and image config for PHP 8.5, removed unused OPcache install steps, and added `openssh-client`.
+- **Release process docs** - Expanded release workflow guidance and environment toggle documentation in `README` and workflow-related files.
+- **Repo hygiene** - Updated ignore rules for local release tooling artifacts.
+
+#### Networking
+- **Backend** - `handle_ip()`, `handle_ip_normalize_subnet_mask()`, and `handle_ip_kv_table()` in `includes/handlers_functional.php` for DNS lookup, IPv4 CIDR↔range conversion, and subnet calculations aligned with `modules/networking.php`.
+
+#### Crontab Explorer
+- **UI** - `modules/crontab.php` under **Misc**; navbar entries in `includes/navbar.php`.
+- **Backend** - `handle_crontab()` in `includes/handlers_functional.php`; shared **`cron_evaluate_schedule()`**, humanization helpers, and CLI helpers in `includes/tooling_helpers.php` (loaded from `includes/_includes.php`).
+- **Dependency** - `composer require dragonmantank/cron-expression` for parsing and next/previous run calculation.
+- **`@reboot`** - Handled explicitly (not expressible as five cron fields); dedicated summary and “no periodic next runs” messaging instead of a parser error.
+- **Live analysis** - `initCrontabLiveAnalyzeUi()` in `js/rand.js` POSTs the same payload as **Analyze Schedule** into the main results panel with debouncing and out-of-order response guarding; removed the separate `crontab_preview` action.
+- **Human summary** - `crontab_human_summary_block()` presents schedule summaries in a dedicated styled block for clearer hierarchy.
+- **Form UX** - “More options” `<details>` hides secondary fields; shared native `<details>` styling in `style.css`; timezone is honored in random-data payloads and live analysis.
+- **Time summary** - `cron_time_summary()` treats `*/1` step fields like `*` for more natural wording; follow-up layout tweaks to the main results container in `modules/crontab.php`.
+
+#### ShellCheck
+- **UI** - `modules/shellcheck.php` under **Misc** (script textarea, optional filename, dialect, minimum severity).
+- **Backend** - `handle_shellcheck()` runs `shellcheck --format=json1` via `proc_open` (`cli_run_command()` / `cli_find_binary()` in `includes/tooling_helpers.php`); structured HTML cards per finding.
+- **Input** - `handle_shellcheck()` strips `\r` from script input before linting to reduce CRLF-driven SC1017 noise.
+- **Random samples** - Expanded `shellcheckScenarios` in `js/rand.js` with `randomPickAvoidRepeat()`; shuffle clears the per-form bundle and syncs script, filename, and dialect from the chosen scenario.
+
+#### Random data
+- **`js/rand.js`** - `randomDataGetCompatibleFormBundle()` and `generateRandomData()` updates for context-specific bundles (JWT, keypair sign/verify, SSH verification, CIDR/networking, etc.), improved handling of `<select>` elements, and crontab timezone included when shuffling cron scenarios.
+
+</details>
+
+---
+
 ## [v1.2.10] (2026-03-30)
 ### Major Features
 - **Number Generator: up to 50 digits (digit mode)** – For digit ranges that exceed native PHP integer bounds, generation uses a dedicated large-number path (requires the **GMP** extension, including `gmp_prob_prime`). Supported types include **any**, **odd**, **even**, **palindromic**, **prime**, and **composite**. **Square** and **Fibonacci** remain limited to the server’s native integer range.

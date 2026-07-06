@@ -125,7 +125,7 @@ $navbarItems = [
     ],
     "convert" => [
         "name"      => "convert",
-        "formalName" => "Convert",
+        "formalName" => "Text & Data",
         "icon"      => icon('arrow-left-right'),
         "subitems" => [
             "string_tools" => [
@@ -217,6 +217,21 @@ $navbarItems = [
                 "formalName" => "Browser",
                 "icon"       => icon("browser-chrome"),
             ],
+            "crontab" => [
+                "name"       => "crontab",
+                "formalName" => "Crontab",
+                "icon"       => icon("calendar-event"),
+            ],
+            "shellcheck" => [
+                "name"       => "shellcheck",
+                "formalName" => "ShellCheck",
+                "icon"       => icon("terminal"),
+            ],
+            "validators" => [
+                "name"       => "validators",
+                "formalName" => "Validators",
+                "icon"       => icon('patch-check'),
+            ],
         ],
     ],
 ];
@@ -268,22 +283,55 @@ foreach ($navbarItems as $moduleName => $module) {
       </li>
     ';
 }
-$navHTML .= "</div>
-    <div class='nav-right'>";
-
 $navHTML .= '
+      </ul>
+    </div>
+    <div class="nav-right">
       <ul class="navbar-nav mx-2">
-        <li class="nav-item">
-          <a class="nav-link" target="_blank" href="https://github.com/Darknetzz/phprand">'.icon('github').' GitHub</a>
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#" id="navRandSettings" role="button" data-bs-toggle="dropdown" aria-expanded="false" data-bs-auto-close="outside">'.icon('sliders').' Settings</a>
+          <div class="dropdown-menu dropdown-menu-end p-3 shadow-sm" aria-labelledby="navRandSettings" style="min-width: 280px;">
+            <div class="mb-3">
+              <label class="form-label mb-1 small opacity-75" for="randPrefTheme">Theme</label>
+              <select class="form-select form-select-sm" id="randPrefTheme">
+                <option value="dark">Dark</option>
+                <option value="light">Light</option>
+              </select>
+            </div>
+            <div class="mb-0">
+              <label class="form-label mb-1 small opacity-75" for="randPrefUiScale">Interface size</label>
+              <select class="form-select form-select-sm" id="randPrefUiScale">
+                <option value="0.8">Compact (80%)</option>
+                <option value="0.85">Dense (85%)</option>
+                <option value="0.92">Cozy (92%)</option>
+                <option value="1">Standard (100%)</option>
+                <option value="1.08">Large (108%)</option>
+                <option value="1.16">Extra large (116%)</option>
+              </select>
+            </div>
+            <div class="mt-3 mb-0">
+              <label class="form-label mb-1 small opacity-75" for="randPrefSpaceScale">Item spacing</label>
+              <select class="form-select form-select-sm" id="randPrefSpaceScale">
+                <option value="0.85">Tight (85%)</option>
+                <option value="0.95">Dense (95%)</option>
+                <option value="1">Standard (100%)</option>
+                <option value="1.1">Comfortable (110%)</option>
+                <option value="1.2">Relaxed (120%)</option>
+              </select>
+            </div>
+          </div>
         </li>
-        <li class="nav-item" data-bs-toggle="modal" data-bs-target="#changelogModal">
-          <a class="nav-link" href="javascript:void(0);">'.icon('journal-text').' Changelog</a>
+        <li class="nav-item">
+          <a class="nav-link" target="_blank" rel="noopener noreferrer" href="https://github.com/Darknetzz/phprand">'.icon('github').' GitHub</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#aboutModal" id="navAbout">'.icon('info-circle').' About</a>
         </li>
       </ul>
-    </ul>
+    </div>
   </div>
-</nav>
 </div>
+</nav>
 ';
 
 echo $navHTML;

@@ -2,9 +2,7 @@
     <div class="card card-primary">
         <h1 class="card-header">🔁 PEM / OpenSSH Converter</h1>
         <div class="card-body">
-            <div class="alert alert-info mb-4">
-                Convert public keys between PEM and OpenSSH formats. OpenSSH -> PEM uses host `ssh-keygen` when available.
-            </div>
+            <p class="text-muted mb-4">Convert public keys between PEM and OpenSSH formats. OpenSSH → PEM uses host <code>ssh-keygen</code> when available.</p>
             <form class="form" action="gen.php" method="POST" id="pemOpenSshForm" data-action="pem_openssh_convert">
                 <div class="row g-3 mb-4">
                     <div class="col-12 col-md-6">

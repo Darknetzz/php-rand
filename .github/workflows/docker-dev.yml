@@ -1,0 +1,78 @@
+name: Publish Dev Docker Images
+
+on:
+  push:
+    branches:
+      - dev
+
+jobs:
+  docker-publish-dev:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    env:
+      IMAGE_DOCKERHUB: darknetz/php-rand
+      IMAGE_GHCR: ghcr.io/darknetzz/php-rand
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Detect Docker Hub credentials
+        id: dockerhub
+        env:
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: |
+          if [[ -n "$DOCKERHUB_USERNAME" && -n "$DOCKERHUB_TOKEN" ]]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Login to Docker Hub
+        if: steps.dockerhub.outputs.enabled == 'true'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push dev images (Docker Hub + GHCR)
+        if: steps.dockerhub.outputs.enabled == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          push: true
+          provenance: false
+          build-args: |
+            PHP_RAND_VERSION=dev
+          tags: |
+            ${{ env.IMAGE_DOCKERHUB }}:dev
+            ${{ env.IMAGE_DOCKERHUB }}:develop
+            ${{ env.IMAGE_GHCR }}:dev
+            ${{ env.IMAGE_GHCR }}:develop
+
+      - name: Build and push dev images (GHCR only fallback)
+        if: steps.dockerhub.outputs.enabled != 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          push: true
+          provenance: false
+          build-args: |
+            PHP_RAND_VERSION=dev
+          tags: |
+            ${{ env.IMAGE_GHCR }}:dev
+            ${{ env.IMAGE_GHCR }}:develop

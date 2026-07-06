@@ -10,11 +10,15 @@ RUN printf '%s\n' '#!/bin/sh' 'echo "php-rand ${PHP_RAND_VERSION:-unknown}"' 'ex
     && chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # Install system dependencies and common PHP extensions (adjust as needed).
+# CLIs for handlers: shellcheck (lint), openssh-client (ssh-keygen); curl for HEALTHCHECK.
 # PHP 8.5: OPcache is built-in; do not use docker-php-ext-install opcache (it fails).
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         libzip-dev libicu-dev libonig-dev libpng-dev libjpeg-dev libfreetype6-dev libxml2-dev libgmp-dev git unzip \
+        curl \
         openssh-client \
+        shellcheck \
+        python3 \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install pdo pdo_mysql mysqli intl zip gd gmp \
     && a2enmod rewrite headers expires \
@@ -31,20 +35,8 @@ RUN { \
         echo "opcache.max_accelerated_files=20000"; \
     } > /usr/local/etc/php/conf.d/custom.ini
 
-RUN set -eux; \
-    rm -rf /var/www/html/*; \
-    git clone --depth=1 https://github.com/Darknetzz/php-rand.git /var/www/html; \
-    chown -R www-data:www-data /var/www/html
-
-# Document root (optional change)
-# ENV APACHE_DOCUMENT_ROOT /var/www/html/public
-# RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf /etc/apache2/apache2.conf
-
-# Copy application (uncomment when you have source)
-# COPY . /var/www/html
-
-# Fix permissions (optional, adapt UID/GID for your environment)
-# RUN chown -R www-data:www-data /var/www/html
+COPY . /var/www/html
+RUN chown -R www-data:www-data /var/www/html
 
 EXPOSE 80
 HEALTHCHECK --interval=30s --timeout=3s CMD curl -f http://localhost/ || exit 1

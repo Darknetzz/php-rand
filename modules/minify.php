@@ -5,11 +5,7 @@
     <div class="card card-primary">
         <h1 class="card-header">⚡ Minify</h1>
         <div class="card-body">
-            <div class="alert alert-info mb-4">
-                <strong>ℹ️ Code Compression</strong><br>
-                <span style="display: inline-block; margin-top: 4px;">Minify HTML, CSS, and JavaScript to reduce file size and improve load times.</span>
-            </div>
-
+            <p class="text-muted mb-4">Minify HTML, CSS, and JavaScript to reduce file size and improve load times.</p>
             <form id="minifyForm" class="form" action="gen.php" method="POST" data-action="minify">
                 <input type="hidden" name="tool" value="minify">
                 <input type="hidden" name="responsetype" value="text">
@@ -21,7 +17,7 @@
                     </div>
                     <div class="col-12 col-lg-6 d-flex flex-column">
                         <label class="form-label mb-3"><strong style="font-size: 1.1rem;">Minified Output</strong></label>
-                        <div id="minifyOutput" class="flex-grow-1 responseDiv" style="border: 2px solid #495057; padding: 20px; min-height: 380px; max-height: 580px; overflow-y: auto; background: linear-gradient(135deg, rgba(255, 193, 7, 0.12) 0%, rgba(255, 87, 34, 0.08) 100%); border-radius: 0.5rem; font-family: monospace; font-size: 0.9rem; white-space: pre-wrap; word-break: break-word; box-shadow: 0 6px 16px rgba(0,0,0,0.25);" data-formid="minifyForm">
+                        <div id="minifyOutput" class="flex-grow-1 responseDiv" style="border: 2px solid #495057; padding: 20px; min-height: 380px; max-height: 580px; overflow-y: auto; background: linear-gradient(135deg, rgba(255, 193, 7, 0.12) 0%, rgba(255, 87, 34, 0.08) 100%); border-radius: 0.5rem; font-family: monospace; white-space: pre-wrap; word-break: break-word; box-shadow: 0 6px 16px rgba(0,0,0,0.25);" data-formid="minifyForm">
                             <div style="opacity: 0.5; text-align: center; padding-top: 150px;">
                                 <div style="font-size: 3rem; margin-bottom: 10px;">⚡</div>
                                 <div>Minified code will appear here...</div>

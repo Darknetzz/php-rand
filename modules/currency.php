@@ -88,10 +88,11 @@
 </div>
 
 <script>
-    // Currency form handling
-    $("#currency").on("submit", function(e) {
+    // Currency form handling (stopPropagation so delegated .form on document does not double-post)
+    $("#currencyForm").on("submit", function(e) {
         e.preventDefault();
-        
+        e.stopPropagation();
+
         var formData = $(this).serialize();
         var responseDiv = $("#currencyresponse");
         

@@ -2028,5 +2028,23 @@ function getLatestChangelogVersion(): ?array {
     ];
 }
 
-?>
+/**
+ * Absolute paths to font files in fonts/ (TTF and OTF), sorted by filename.
+ *
+ * @return list<string>
+ */
+function logo_discover_font_files(): array {
+    $dir = APP_ROOT . DIRSEP . 'fonts';
+    $paths = [];
+    foreach (['*.ttf', '*.otf'] as $pattern) {
+        $g = glob($dir . DIRSEP . $pattern);
+        if (is_array($g)) {
+            $paths = array_merge($paths, $g);
+        }
+    }
+    usort($paths, static function (string $a, string $b): int {
+        return strcasecmp(basename($a), basename($b));
+    });
+    return $paths;
+}
 

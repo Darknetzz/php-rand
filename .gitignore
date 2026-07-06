@@ -4,5 +4,3 @@
 .archive
 debug.log
 settings.json
-!scripts/release.sh
-scripts/

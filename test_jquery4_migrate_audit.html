@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>jQuery 4 Migrate Audit</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/css/tabler.min.css" />
+    <script src="https://code.jquery.com/jquery-4.0.0.js"></script>
+    <script src="https://code.jquery.com/jquery-migrate-4.0.2.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/js/tabler.min.js"></script>
+    <script src="js/axios.min.js"></script>
+</head>
+<body class="theme-dark">
+    <div class="container pt-4">
+        <h1>jQuery 4 Migrate Audit</h1>
+        <p id="status">Starting…</p>
+        <pre id="report"></pre>
+    </div>
+    <div class="container pt-5" id="module-host"></div>
+    <script src="js/rand.js"></script>
+    <script>
+        window.__audit = { warnings: [], errors: [], modules: [] };
+        const origWarn = console.warn;
+        console.warn = function (...args) {
+            const msg = args.map(a => String(a)).join(" ");
+            if (msg.includes("JQMIGRATE")) window.__audit.warnings.push(msg);
+            origWarn.apply(console, args);
+        };
+        window.addEventListener("error", (e) => {
+            window.__audit.errors.push((e.message || "error") + " @ " + (e.filename || "") + ":" + (e.lineno || ""));
+        });
+
+        const MODULES_WITH_INLINE_JQ = [
+            "spin_the_wheel", "string_tools", "gen_number", "networking",
+            "binhex", "brainfuck", "markdown", "rot", "currency", "gen_string"
+        ];
+
+        async function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+        async function runAudit() {
+            const status = document.getElementById("status");
+            const report = document.getElementById("report");
+            const lines = [];
+            lines.push("jQuery version: " + $.fn.jquery);
+            lines.push("Migrate: " + (window.jQuery.migrateVersion || "not loaded"));
+            lines.push("");
+
+            for (const mod of MODULES_WITH_INLINE_JQ) {
+                status.textContent = "Loading module: " + mod;
+                const before = window.__audit.warnings.length;
+                try {
+                    await loadModule(mod);
+                    await sleep(150);
+                    const $scope = $("#" + mod);
+                    if ($scope.length) {
+                        $scope.find("input[type=checkbox], select").first().trigger("change");
+                        await sleep(50);
+                    }
+                    const added = window.__audit.warnings.length - before;
+                    lines.push(mod + ": loaded OK" + (added ? " (" + added + " migrate warning(s))" : ""));
+                    window.__audit.modules.push({ mod, ok: true, warnings: added });
+                } catch (e) {
+                    lines.push(mod + ": FAIL - " + e.message);
+                    window.__audit.errors.push(mod + ": " + e.message);
+                    window.__audit.modules.push({ mod, ok: false });
+                }
+            }
+
+            if (window.__audit.warnings.length) {
+                lines.push("", "=== JQMIGRATE warnings ===");
+                window.__audit.warnings.forEach((w, i) => lines.push((i + 1) + ". " + w));
+            }
+            if (window.__audit.errors.length) {
+                lines.push("", "=== Errors ===");
+                window.__audit.errors.forEach((e, i) => lines.push((i + 1) + ". " + e));
+            }
+            lines.push("", "Total migrate warnings: " + window.__audit.warnings.length);
+            lines.push("Total errors: " + window.__audit.errors.length);
+            report.textContent = lines.join("\n");
+            status.textContent = window.__audit.errors.length
+                ? "Audit finished with errors"
+                : (window.__audit.warnings.length ? "Audit finished with migrate warnings" : "Audit passed — no migrate warnings or errors");
+        }
+
+        $(function () {
+            runAudit();
+        });
+    </script>
+</body>
+</html>

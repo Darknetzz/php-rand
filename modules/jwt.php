@@ -10,9 +10,7 @@
     <div class="card card-primary">
         <h1 class="card-header">🔐 JWT Inspector</h1>
         <div class="card-body">
-            <div class="alert alert-info mb-4">
-                Decode, verify, or sign JWT tokens with HMAC (HS256/HS384/HS512).
-            </div>
+            <p class="text-muted mb-4">Decode, verify, or sign JWT tokens with HMAC (HS256/HS384/HS512).</p>
             <form class="form" action="gen.php" method="POST" id="jwtform" data-action="jwt">
                 <div class="row g-3 mb-4">
                     <div class="col-12 col-md-4">

@@ -4,7 +4,7 @@
     <div class="card border-0 mb-4" style="background: linear-gradient(135deg, rgba(32, 201, 151, 0.15) 0%, rgba(13, 110, 253, 0.15) 100%);">
         <div class="card-body text-center py-5">
             <h1 class="display-3 mb-3" style="font-weight: 700;">
-                <?= icon("dice-".mt_rand(1,6), 3) ?> RAND
+                <?= icon("dice-".mt_rand(1,6), 3) ?> RAND<span class="text-muted small">OM</span>
             </h1>
             <p class="lead text-muted mb-4" style="font-size: 1.3rem;">
                 Your Swiss Army Knife for Random Generation, Encoding, Cryptography & Data Transformation
@@ -16,7 +16,10 @@
                 <a href="#hash" class="link btn btn-outline-primary btn-lg">
                     <?= icon("shield-lock") ?> Explore Crypto
                 </a>
-                <a href="https://github.com/Darknetzz/phprand" target="_blank" class="btn btn-outline-secondary btn-lg">
+                <a href="<?= htmlspecialchars(DEMO_URL, ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener noreferrer" class="btn btn-outline-primary btn-lg">
+                    <?= icon("box-arrow-up-right") ?> Live Demo
+                </a>
+                <a href="https://github.com/Darknetzz/phprand" target="_blank" rel="noopener noreferrer" class="btn btn-outline-secondary btn-lg">
                     <?= icon("github") ?> View on GitHub
                 </a>
             </div>

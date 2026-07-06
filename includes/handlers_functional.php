@@ -1,5 +1,8 @@
 <?php
 
+use Symfony\Component\Yaml\Exception\ParseException;
+use Symfony\Component\Yaml\Yaml;
+
 /**
  * Handler Registry - Functional approach to mapping actions to handler functions
  * 
@@ -39,9 +42,12 @@ function getHandlerRegistry(): array {
         'qrcode' => 'handle_qrcode',
         'logo_generate' => 'handle_logo_generate',
         'regex' => 'handle_regex',
+        'crontab' => 'handle_crontab',
         'brainfuck' => 'handle_brainfuck',
         'genid' => 'handle_genid',
         'jwt' => 'handle_jwt',
+        'shellcheck' => 'handle_shellcheck',
+        'syntax_validate' => 'handle_syntax_validate',
         'ssh_keygen' => 'handle_ssh_keygen',
         'keypair_generate' => 'handle_keypair_generate',
         'csr_generate' => 'handle_csr_generate',
@@ -586,6 +592,186 @@ function handle_hex(array $req): string {
 }
 
 /**
+ * Normalize subnet field: dotted IPv4 mask or /prefix (e.g. /24).
+ */
+function handle_ip_normalize_subnet_mask(string $subnet): ?string {
+    $subnet = trim($subnet);
+    if ($subnet === '') {
+        return null;
+    }
+    if (preg_match('/^\/?(\d{1,2})$/', $subnet, $m)) {
+        $p = (int) $m[1];
+        if ($p < 0 || $p > 32) {
+            return null;
+        }
+        if ($p === 0) {
+            return '0.0.0.0';
+        }
+        if ($p === 32) {
+            return '255.255.255.255';
+        }
+        $mask = (-1 << (32 - $p)) & 0xFFFFFFFF;
+
+        return long2ip($mask);
+    }
+    if (filter_var($subnet, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+        return $subnet;
+    }
+
+    return null;
+}
+
+/**
+ * Render a key/value result table for networking tools.
+ *
+ * @param array<string, string> $rows
+ */
+function handle_ip_kv_table(array $rows): string {
+    $out = '<div class="table-responsive"><table class="table table-dark table-striped table-hover align-middle mb-0" style="border: 1px solid #334155;"><tbody>';
+    foreach ($rows as $k => $v) {
+        $out .= '<tr><th class="text-nowrap" scope="row">' . htmlspecialchars((string) $k, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</th><td style="font-family: monospace;">' . htmlspecialchars((string) $v, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</td></tr>';
+    }
+    $out .= '</tbody></table></div>';
+
+    return $out;
+}
+
+/**
+ * Handle DNS lookup, CIDR/range conversion, and subnet calculator (action ip).
+ *
+ * @param array $req Request with 'tool': dnslookup|cidr2range|range2cidr|subnetmask
+ */
+function handle_ip(array $req): string {
+    $allowedTools = ['dnslookup', 'cidr2range', 'range2cidr', 'subnetmask'];
+    $tool = req_get($req, 'tool');
+    if (!in_array($tool, $allowedTools, true)) {
+        return formatOutput('Invalid networking tool selected.', type: 'danger');
+    }
+
+    if ($tool === 'dnslookup') {
+        $q = trim(req_get($req, 'hostname', ''));
+        if ($q === '') {
+            return formatOutput('Hostname or IP is required.', type: 'danger');
+        }
+        if (strlen($q) > 253 || preg_match('/\s/', $q)) {
+            return formatOutput('Invalid input.', type: 'danger');
+        }
+
+        if (filter_var($q, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4 | FILTER_FLAG_IPV6)) {
+            $ptr = @gethostbyaddr($q);
+            $ptrLabel = ($ptr !== false && $ptr !== $q) ? $ptr : '—';
+
+            return handle_ip_kv_table(['Query' => $q, 'PTR (reverse DNS)' => $ptrLabel]);
+        }
+
+        if (filter_var($q, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME) === false) {
+            return formatOutput('Invalid hostname.', type: 'danger');
+        }
+
+        $ipv4 = [];
+        $ipv6 = [];
+        if (function_exists('dns_get_record')) {
+            foreach (@dns_get_record($q, DNS_A) ?: [] as $rec) {
+                if (!empty($rec['ip'])) {
+                    $ipv4[] = $rec['ip'];
+                }
+            }
+            foreach (@dns_get_record($q, DNS_AAAA) ?: [] as $rec) {
+                if (!empty($rec['ipv6'])) {
+                    $ipv6[] = $rec['ipv6'];
+                }
+            }
+        }
+        $gb = @gethostbyname($q);
+        if ($gb !== $q && filter_var($gb, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+            if (!in_array($gb, $ipv4, true)) {
+                array_unshift($ipv4, $gb);
+            }
+        }
+
+        return handle_ip_kv_table([
+            'Query' => $q,
+            'A (IPv4)' => $ipv4 ? implode(', ', array_unique($ipv4)) : '—',
+            'AAAA (IPv6)' => $ipv6 ? implode(', ', array_unique($ipv6)) : '—',
+        ]);
+    }
+
+    if ($tool === 'cidr2range') {
+        $cidr = trim(req_get($req, 'cidr', ''));
+        if ($cidr === '') {
+            return formatOutput('CIDR is required.', type: 'danger');
+        }
+        if (strlen($cidr) > 128) {
+            return formatOutput('CIDR input is too long.', type: 'danger');
+        }
+        $range = cidr2range($cidr);
+        if ($range === false) {
+            return formatOutput('Invalid CIDR notation.', type: 'danger');
+        }
+
+        return handle_ip_kv_table([
+            'CIDR' => $range['cidr'],
+            'Start' => $range['start'],
+            'End' => $range['end'],
+            'Total addresses' => (string) $range['total'],
+        ]);
+    }
+
+    if ($tool === 'range2cidr') {
+        $start = trim(req_get($req, 'startip', ''));
+        $end = trim(req_get($req, 'endip', ''));
+        if ($start === '' || $end === '') {
+            return formatOutput('Start and end IP are required.', type: 'danger');
+        }
+        if (ip2long($start) !== false && ip2long($end) !== false && ip2long($start) > ip2long($end)) {
+            [$start, $end] = [$end, $start];
+        }
+        $result = range2cidr($start, $end);
+        if ($result === false || empty($result['cidrs'])) {
+            return formatOutput('Invalid IPv4 range.', type: 'danger');
+        }
+
+        return handle_ip_kv_table([
+            'Start' => $result['start'],
+            'End' => $result['end'],
+            'CIDR block(s)' => implode(', ', $result['cidrs']),
+            'Block count' => (string) $result['total'],
+            'IPs in range' => (string) $result['total_ips'],
+        ]);
+    }
+
+    // subnetmask
+    $ip = trim(req_get($req, 'ip', ''));
+    $subnetRaw = trim(req_get($req, 'subnet', ''));
+    if ($ip === '' || $subnetRaw === '') {
+        return formatOutput('IP and subnet (mask or /prefix) are required.', type: 'danger');
+    }
+    if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === false) {
+        return formatOutput('Invalid IPv4 address.', type: 'danger');
+    }
+    $subnet = handle_ip_normalize_subnet_mask($subnetRaw);
+    if ($subnet === null) {
+        return formatOutput('Invalid subnet mask or prefix (use dotted mask or /0–/32).', type: 'danger');
+    }
+    $info = subnetmask($ip, $subnet);
+    if ($info === false) {
+        return formatOutput('Could not compute subnet information.', type: 'danger');
+    }
+
+    return handle_ip_kv_table([
+        'Address' => $ip,
+        'Subnet mask' => $info['subnet'],
+        'CIDR' => $info['cidr'],
+        'Network' => $info['network'],
+        'Broadcast' => $info['broadcast'],
+        'First usable' => $info['start'],
+        'Last usable' => $info['end'],
+        'Usable hosts' => (string) $info['total_ips'],
+        'Total addresses' => (string) $info['total'],
+    ]);
+}
+
+/**
  * Handle ROT cipher requests
  *
  * Performs ROT (rotate cipher) transformation on text. Can apply a single
@@ -790,6 +976,32 @@ function handle_datetime(array $req): string {
 }
 
 /**
+ * Normalize CRLF/CR line endings to LF.
+ */
+function stringtools_normalize_line_endings_to_lf(string $string): string {
+    return preg_replace('/\r\n?/', "\n", $string) ?? $string;
+}
+
+/**
+ * Convert any line endings to CRLF.
+ */
+function stringtools_convert_line_endings_to_crlf(string $string): string {
+    return str_replace("\n", "\r\n", stringtools_normalize_line_endings_to_lf($string));
+}
+
+/**
+ * Remove all occurrences of the given characters from a string.
+ */
+function stringtools_remove_custom_characters(string $string, string $characters): string {
+    if ($characters === '') {
+        return $string;
+    }
+    $quoted = preg_quote($characters, '/');
+
+    return preg_replace('/[' . $quoted . ']/u', '', $string) ?? $string;
+}
+
+/**
  * Handle string transformation requests
  *
  * Applies various text transformations such as case conversion, whitespace handling,
@@ -814,12 +1026,20 @@ function handle_stringtools(array $req): string {
         'l33t5p34k', 'crlf2lf', 'lf2crlf', 'formatlineendings', 'removehtmltags',
         'removepunctuation', 'removenewlines', 'removetabs', 'removespaces', 'removeslashes',
         'removebackslashes', 'removenonascii', 'removenonprintable', 'removewhitespaceext',
-        'removenumbers', 'removeletters', 'removesymbols', 'removeextendedsymbols'
+        'removenumbers', 'removeletters', 'removesymbols', 'removeextendedsymbols',
+        'removecustomcharacters'
     ];
     $tool = req_get($req, 'tool', '');
 
     if (empty($tool) || !in_array($tool, $allowedTools)) {
         return formatOutput("Invalid tool selected.", type: "danger");
+    }
+
+    if ($tool === 'removecustomcharacters') {
+        $customCharacters = (string) req_get($req, 'custom_characters', '');
+        if ($customCharacters === '') {
+            return formatOutput('Enter characters to remove in the "Custom characters" field.', type: 'danger');
+        }
     }
 
     // Apply string transformations
@@ -829,18 +1049,19 @@ function handle_stringtools(array $req): string {
         'reverse' => strrev($string),
         'repeat' => str_repeat($string, 2),
         'shuffle' => str_shuffle($string),
-        'uppercase' => strtoupper($string),
-        'lowercase' => strtolower($string),
-        'titlecase' => ucwords($string),
-        'camelcase' => lcfirst(str_replace(' ', '', ucwords($string))),
+        'uppercase' => mb_strtoupper($string, 'UTF-8'),
+        'lowercase' => mb_strtolower($string, 'UTF-8'),
+        'titlecase' => mb_convert_case($string, MB_CASE_TITLE, 'UTF-8'),
+        'camelcase' => lcfirst(str_replace(' ', '', mb_convert_case($string, MB_CASE_TITLE, 'UTF-8'))),
         'slugify' => strtolower(preg_replace('/[^a-zA-Z0-9_]/', '', str_replace([" ", "-"], "_", $string))),
         'kebabcase' => strtolower(preg_replace('/[^a-zA-Z0-9_-]/', '', str_replace([" ", "_"], "-", $string))),
-        'randomcase' => implode('', array_map(fn($c) => (mt_rand(0, 100) >= 50) ? strtoupper($c) : strtolower($c), str_split($string))),
+        'randomcase' => implode('', array_map(fn($c) => (mt_rand(0, 100) >= 50) ? mb_strtoupper($c, 'UTF-8') : mb_strtolower($c, 'UTF-8'), preg_split('//u', $string, -1, PREG_SPLIT_NO_EMPTY))),
         'invertedcase' => strtr($string, 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ', 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'),
         'l33t5p34k' => str_replace(['a','e','o','t','l','s','b','A','E','O','T','L','S','B'], ['4','3','0','7','1','5','6','4','3','0','7','1','5','6'], $string),
-        'crlf2lf' => str_replace(["\r", "\n"], "", $string),
-        'lf2crlf' => str_replace(["\r", "\n"], "\r\n", $string),
-        'formatlineendings' => str_replace(["\\r", "\\n"], "\n", $string),
+        'crlf2lf' => stringtools_normalize_line_endings_to_lf($string),
+        'lf2crlf' => stringtools_convert_line_endings_to_crlf($string),
+        'formatlineendings' => stringtools_normalize_line_endings_to_lf($string),
+        'removecustomcharacters' => stringtools_remove_custom_characters($string, (string) req_get($req, 'custom_characters', '')),
         'removehtmltags' => strip_tags($string),
         'removepunctuation' => preg_replace('/[^\w\s]/', '', $string),
         'removenewlines' => str_replace(["\r\n", "\r", "\n"], '', $string),
@@ -865,6 +1086,432 @@ function handle_stringtools(array $req): string {
     return formatOutput(nl2br($string));
 }
 
+function handle_urlencode(array $req): string {
+    $input = (string) req_get($req, 'urlencode', '');
+    if ($input === '') {
+        return formatOutput('Input text is required.', type: 'danger');
+    }
+    if (strlen($input) > 1_000_000) {
+        return formatOutput('Input must be at most 1,000,000 characters.', type: 'danger');
+    }
+    $encoded = rawurlencode($input);
+    $decodedTry = rawurldecode($input);
+    $blocks = '<div class="mb-3"><strong>Original</strong><pre class="mb-0 p-2 rounded" style="background:rgba(0,0,0,0.2);white-space:pre-wrap;word-break:break-word;">'
+        . htmlspecialchars($input, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</pre></div>';
+    $blocks .= '<div class="mb-3"><strong>URL-encoded (RFC 3986)</strong><pre class="mb-0 p-2 rounded" style="background:rgba(0,0,0,0.2);white-space:pre-wrap;word-break:break-all;">'
+        . htmlspecialchars($encoded, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</pre></div>';
+    $blocks .= '<div class="mb-0"><strong>Decoded from input</strong><p class="text-muted small">If the input was encoded, this shows the decoded form; otherwise it may match the original.</p><pre class="mb-0 p-2 rounded" style="background:rgba(0,0,0,0.2);white-space:pre-wrap;word-break:break-word;">'
+        . htmlspecialchars($decodedTry, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</pre></div>';
+    return formatOutput($blocks);
+}
+
+function handle_htmlentities(array $req): string {
+    $input = (string) req_get($req, 'htmlentities', '');
+    if ($input === '') {
+        return formatOutput('Input text is required.', type: 'danger');
+    }
+    if (strlen($input) > 1_000_000) {
+        return formatOutput('Input must be at most 1,000,000 characters.', type: 'danger');
+    }
+    $mode = strtolower((string) req_get($req, 'htmlentities_mode', 'auto'));
+    if (!in_array($mode, ['auto', 'encode', 'decode', 'both'], true)) {
+        $mode = 'auto';
+    }
+    if ($mode === 'auto') {
+        $mode = preg_match('/&(?:#(?:x[0-9a-fA-F]+|\d+)|[a-zA-Z][a-zA-Z0-9]*);/', $input) ? 'decode' : 'encode';
+    }
+    $encoded = htmlspecialchars($input, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    $decoded = html_entity_decode($input, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    $html = '';
+    if ($mode === 'encode' || $mode === 'both') {
+        $html .= '<div class="mb-3"><strong>HTML-encoded</strong><pre class="mb-0 p-2 rounded" style="background:rgba(0,0,0,0.2);white-space:pre-wrap;word-break:break-word;">'
+            . htmlspecialchars($encoded, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</pre></div>';
+    }
+    if ($mode === 'decode' || $mode === 'both') {
+        $html .= '<div class="mb-0"><strong>Decoded</strong><pre class="mb-0 p-2 rounded" style="background:rgba(0,0,0,0.2);white-space:pre-wrap;word-break:break-word;">'
+            . htmlspecialchars($decoded, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</pre></div>';
+    }
+    return formatOutput($html);
+}
+
+function handle_levenshtein(array $req): string {
+    $s1 = (string) req_get($req, 'levenshtein1', '');
+    $s2 = (string) req_get($req, 'levenshtein2', '');
+    $ins = max(0, req_int($req, 'insertion_cost', 1));
+    $rep = max(0, req_int($req, 'replacement_cost', 1));
+    $del = max(0, req_int($req, 'deletion_cost', 1));
+    if (strlen($s1) > 255 || strlen($s2) > 255) {
+        return formatOutput(
+            'Each string must be at most 255 characters for Levenshtein distance (PHP limit). Shorten the input or compare smaller chunks.',
+            type: 'warning'
+        );
+    }
+    $dist = levenshtein($s1, $s2, $ins, $rep, $del);
+    if ($dist < 0) {
+        return formatOutput('Could not compute distance (invalid arguments or empty strings).', type: 'danger');
+    }
+    $body = '<p class="lead mb-2"><strong>Distance:</strong> ' . (int) $dist . '</p>';
+    $body .= '<p class="text-muted small mb-0">Costs used — insertion: ' . $ins . ', replacement: ' . $rep . ', deletion: ' . $del . '</p>';
+    return formatOutput($body);
+}
+
+/**
+ * @return string Unified-style diff text (plain)
+ */
+function diff_unified_fallback(string $old, string $new): string {
+    $a = explode("\n", str_replace(["\r\n", "\r"], "\n", $old));
+    $b = explode("\n", str_replace(["\r\n", "\r"], "\n", $new));
+    $lines = ['--- old', '+++ new'];
+    $n = max(count($a), count($b));
+    for ($i = 0; $i < $n; $i++) {
+        $oa = $a[$i] ?? '';
+        $ob = $b[$i] ?? '';
+        if ($oa !== $ob) {
+            $lines[] = '@@ line ' . ($i + 1) . ' @@';
+            $lines[] = '-' . $oa;
+            $lines[] = '+' . $ob;
+        }
+    }
+    if (count($lines) === 2) {
+        return 'No differences.';
+    }
+    return implode("\n", $lines);
+}
+
+/**
+ * Escape unified diff text and wrap each line for red/green (and muted headers) in HTML.
+ */
+function diff_output_to_colored_html(string $out): string {
+    $out = str_replace(["\r\n", "\r"], "\n", $out);
+    if ($out === 'No differences.' || $out === '') {
+        return htmlspecialchars($out, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    }
+    $lines = explode("\n", $out);
+    $chunks = [];
+    foreach ($lines as $line) {
+        $class = 'diff-line-context';
+        if (str_starts_with($line, '---')) {
+            $class = 'diff-line-meta';
+        } elseif (str_starts_with($line, '+++')) {
+            $class = 'diff-line-meta';
+        } elseif (str_starts_with($line, '@@')) {
+            $class = 'diff-line-hunk';
+        } elseif (str_starts_with($line, '-')) {
+            $class = 'diff-line-del';
+        } elseif (str_starts_with($line, '+')) {
+            $class = 'diff-line-add';
+        } elseif (str_starts_with($line, '\\')) {
+            $class = 'diff-line-meta';
+        }
+        $chunks[] = '<span class="' . $class . '">' . htmlspecialchars($line, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</span>';
+    }
+    return implode("\n", $chunks);
+}
+
+function handle_diff(array $req): string {
+    $old = (string) req_get($req, 'diff1', '');
+    $new = (string) req_get($req, 'diff2', '');
+    if (strlen($old) > 500_000 || strlen($new) > 500_000) {
+        return formatOutput('Each side must be at most 500,000 characters.', type: 'danger');
+    }
+    $out = '';
+    $t1 = @tempnam(sys_get_temp_dir(), 'rndd1_');
+    $t2 = @tempnam(sys_get_temp_dir(), 'rndd2_');
+    if ($t1 !== false && $t2 !== false) {
+        if (file_put_contents($t1, $old) !== false && file_put_contents($t2, $new) !== false) {
+            $cmd = 'diff -u ' . escapeshellarg($t1) . ' ' . escapeshellarg($t2) . ' 2>/dev/null';
+            $shellOut = shell_exec($cmd);
+            if (is_string($shellOut) && $shellOut !== '') {
+                $out = $shellOut;
+            } elseif ($old === $new) {
+                $out = 'No differences.';
+            }
+        }
+        @unlink($t1);
+        @unlink($t2);
+    }
+    if ($out === '') {
+        $out = diff_unified_fallback($old, $new);
+    }
+    return formatOutput('<pre class="diff-colored-output mb-0 text-start" style="white-space:pre-wrap;word-break:break-word;">'
+        . diff_output_to_colored_html($out) . '</pre>');
+}
+
+function serialization_strip_comment_lines(string $input): string {
+    $lines = preg_split('/\R/', $input);
+    if ($lines === false) {
+        return $input;
+    }
+    $kept = [];
+    foreach ($lines as $line) {
+        $t = ltrim($line);
+        if ($t === '' || str_starts_with($t, '#') || str_starts_with($t, '//')) {
+            continue;
+        }
+        $kept[] = $line;
+    }
+    return implode("\n", $kept);
+}
+
+/**
+ * @return array{0: mixed, 1: string} Parsed data and detected source label
+ */
+function serialization_parse_input(string $input): array {
+    $input = str_replace("\r\n", "\n", $input);
+    $input = preg_replace('/^\xEF\xBB\xBF/', '', $input) ?? $input;
+    $trimmed = trim($input);
+    if ($trimmed === '') {
+        throw new InvalidArgumentException('Input is empty.');
+    }
+    try {
+        $data = json_decode($trimmed, true, 512, JSON_THROW_ON_ERROR);
+        if (is_object($data)) {
+            $data = (array) $data;
+        }
+        if (!is_array($data)) {
+            $data = ['value' => $data];
+        }
+        return [$data, 'JSON'];
+    } catch (\JsonException) {
+        // try YAML / XML
+    }
+    $lastYaml = null;
+    try {
+        $data = Yaml::parse($trimmed);
+        if ($data === null || $data === '') {
+            throw new InvalidArgumentException('YAML parsed to empty value.');
+        }
+        if (!is_array($data)) {
+            $data = ['value' => $data];
+        }
+        return [$data, 'YAML'];
+    } catch (ParseException $e) {
+        $lastYaml = $e->getMessage();
+    } catch (InvalidArgumentException $e) {
+        $lastYaml = $e->getMessage();
+    }
+    libxml_use_internal_errors(true);
+    $xml = simplexml_load_string($trimmed, 'SimpleXMLElement', LIBXML_NONET);
+    if ($xml === false) {
+        $hint = $lastYaml !== null ? ' Could not parse as YAML: ' . $lastYaml : '';
+        throw new InvalidArgumentException('Could not parse as JSON, YAML, or XML.' . $hint);
+    }
+    $asJson = json_encode($xml);
+    if ($asJson === false) {
+        throw new InvalidArgumentException('Could not convert XML to data.');
+    }
+    $data = json_decode($asJson, true);
+    return [is_array($data) ? $data : ['value' => $data], 'XML'];
+}
+
+function rand_dom_append_data(DOMDocument $dom, DOMElement $parent, mixed $data, string $listItemTag = 'item'): void {
+    if (!is_array($data)) {
+        $parent->appendChild($dom->createTextNode((string) $data));
+        return;
+    }
+    foreach ($data as $key => $value) {
+        $name = is_int($key)
+            ? $listItemTag
+            : (preg_replace('/[^a-zA-Z0-9_-]/', '_', (string) $key) ?: 'key');
+        $el = $dom->createElement($name);
+        $parent->appendChild($el);
+        if (is_array($value)) {
+            rand_dom_append_data($dom, $el, $value, $listItemTag);
+        } else {
+            $el->appendChild($dom->createTextNode((string) $value));
+        }
+    }
+}
+
+function serialization_render_output(array $data, string $type): string {
+    $type = strtoupper(trim($type));
+    if ($type === 'JSON') {
+        $flags = JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES;
+        $json = json_encode($data, $flags);
+        if ($json === false) {
+            throw new RuntimeException('Could not encode JSON.');
+        }
+        return $json;
+    }
+    if ($type === 'YAML') {
+        return Yaml::dump($data, 6, 2, Yaml::DUMP_MULTI_LINE_LITERAL_BLOCK);
+    }
+    if ($type === 'XML') {
+        $dom = new DOMDocument('1.0', 'UTF-8');
+        $dom->formatOutput = true;
+        $root = $dom->createElement('root');
+        $dom->appendChild($root);
+        rand_dom_append_data($dom, $root, $data);
+        $xml = $dom->saveXML();
+        if ($xml === false) {
+            throw new RuntimeException('Could not build XML.');
+        }
+        return $xml;
+    }
+    throw new InvalidArgumentException('Unknown output type.');
+}
+
+function handle_serialization(array $req): string {
+    $input = (string) req_get($req, 'input', '');
+    if (req_bool($req, 'stripcomments')) {
+        $input = serialization_strip_comment_lines($input);
+    }
+    $type = (string) req_get($req, 'type', 'JSON');
+    try {
+        [$data, $src] = serialization_parse_input($input);
+        $out = serialization_render_output($data, $type);
+    } catch (Throwable $e) {
+        return formatOutput(htmlspecialchars($e->getMessage(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'), type: 'danger');
+    }
+    $note = '<p class="text-muted small mb-2">Detected input as <strong>' . htmlspecialchars($src, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')
+        . '</strong> → output <strong>' . htmlspecialchars(strtoupper($type), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</strong></p>';
+    return formatOutput(
+        $note . '<pre class="mb-0" style="white-space:pre-wrap;word-break:break-word;">'
+        . htmlspecialchars($out, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</pre>'
+    );
+}
+
+function handle_spinwheel(array $req): string {
+    $items = $req['wheelitem'] ?? [];
+    if (!is_array($items)) {
+        return formatOutput('Invalid wheel items.', type: 'danger');
+    }
+    $weights = $req['wheelweight'] ?? [];
+    $useWeights = !empty($req['wheel_use_weights']);
+    $labels = [];
+    $itemWeights = [];
+    foreach ($items as $i => $v) {
+        $t = trim((string) $v);
+        if ($t === '') {
+            continue;
+        }
+        $labels[] = $t;
+        $w = 1;
+        if ($useWeights && isset($weights[$i])) {
+            $w = max(1, (int) $weights[$i]);
+        }
+        $itemWeights[] = $w;
+    }
+    if ($labels === []) {
+        return formatOutput('Add at least one non-empty wheel item.', type: 'warning');
+    }
+    if ($useWeights) {
+        $total = array_sum($itemWeights);
+        $roll = random_int(1, $total);
+        $running = 0;
+        $pick = $labels[0];
+        foreach ($labels as $idx => $label) {
+            $running += $itemWeights[$idx];
+            if ($roll <= $running) {
+                $pick = $label;
+                break;
+            }
+        }
+    } else {
+        $pick = $labels[array_rand($labels)];
+    }
+    return formatOutput(
+        '<div class="alert alert-success mb-0">Winner: <strong>'
+        . htmlspecialchars($pick, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</strong></div>'
+    );
+}
+
+function handle_calculator(array $req): string {
+    return formatOutput(
+        'This calculator runs entirely in your browser. Use the on-screen keypad to compute results.',
+        type: 'info'
+    );
+}
+
+function handle_currency(array $req): string {
+    $amount = req_float($req, 'currency_amount', 0.0);
+    $from = strtoupper(trim((string) req_get($req, 'currency_from', '')));
+    $to = strtoupper(trim((string) req_get($req, 'currency_to', '')));
+    $overrideRaw = req_get($req, 'currency_rate', null);
+    if ($amount < 0 || !is_finite($amount)) {
+        return formatOutput('Enter a valid non-negative amount.', type: 'danger');
+    }
+    if ($from === '' || $to === '' || !preg_match('/^[A-Z]{3}$/', $from) || !preg_match('/^[A-Z]{3}$/', $to)) {
+        return formatOutput('Select valid source and target currencies.', type: 'danger');
+    }
+    if ($from === $to) {
+        $formatted = number_format($amount, 2, '.', ',');
+        return formatOutput(
+            '<p class="mb-0"><strong>' . htmlspecialchars($formatted, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . ' ' . htmlspecialchars($from, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</strong> (same currency)</p>'
+        );
+    }
+    $rate = null;
+    if ($overrideRaw !== null && $overrideRaw !== '') {
+        $rate = floatval($overrideRaw);
+        if ($rate <= 0 || !is_finite($rate)) {
+            return formatOutput('Custom exchange rate must be a positive number.', type: 'danger');
+        }
+    } else {
+        $url = 'https://api.exchangerate-api.com/v4/latest/' . rawurlencode($from);
+        $ctx = stream_context_create([
+            'http' => ['timeout' => 12, 'header' => "Accept: application/json\r\n"],
+            'https' => ['timeout' => 12, 'header' => "Accept: application/json\r\n"],
+        ]);
+        $raw = @file_get_contents($url, false, $ctx);
+        if ($raw === false) {
+            return formatOutput('Could not reach the exchange-rate service. Try again later or enter a custom rate.', type: 'danger');
+        }
+        try {
+            $payload = json_decode($raw, true, 512, JSON_THROW_ON_ERROR);
+        } catch (JsonException) {
+            return formatOutput('Unexpected response from exchange-rate service.', type: 'danger');
+        }
+        if (!is_array($payload) || empty($payload['rates'][$to])) {
+            return formatOutput('Rate for the selected currency pair was not found.', type: 'danger');
+        }
+        $rate = (float) $payload['rates'][$to];
+    }
+    $converted = $amount * $rate;
+    $outAmt = number_format($converted, 2, '.', ',');
+    $outRate = rtrim(rtrim(number_format($rate, 8, '.', ''), '0'), '.') ?: '0';
+    $html = '<p class="lead mb-1"><strong>' . htmlspecialchars(number_format($amount, 2, '.', ','), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . ' '
+        . htmlspecialchars($from, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</strong> = <strong>'
+        . htmlspecialchars($outAmt, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . ' ' . htmlspecialchars($to, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</strong></p>';
+    $html .= '<p class="text-muted small mb-0">Applied rate: 1 ' . htmlspecialchars($from, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . ' = '
+        . htmlspecialchars($outRate, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . ' ' . htmlspecialchars($to, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</p>';
+    return formatOutput($html);
+}
+
+/**
+ * Metaphone phonetic keys per word (line structure preserved).
+ *
+ * @param array $req Request with POST field `metaphone`
+ */
+function handle_metaphone(array $req): string {
+    $input = (string) req_get($req, 'metaphone', '');
+    if (trim($input) === '') {
+        return formatOutput("Input text is required.", type: "danger");
+    }
+    if (strlen($input) > 1_000_000) {
+        return formatOutput("Input must be at most 1,000,000 characters.", type: "danger");
+    }
+
+    $blocks = [];
+    foreach (preg_split('/\R/u', $input) as $line) {
+        $words = preg_split('/\s+/u', $line, -1, PREG_SPLIT_NO_EMPTY);
+        if ($words === []) {
+            $blocks[] = '';
+            continue;
+        }
+        $pairs = [];
+        foreach ($words as $word) {
+            $key = metaphone($word);
+            $pairs[] = htmlspecialchars($word, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')
+                . ' → '
+                . htmlspecialchars($key === false ? '' : $key, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        }
+        $blocks[] = implode("\n", $pairs);
+    }
+    $text = implode("\n\n", $blocks);
+
+    return formatOutput(nl2br($text));
+}
+
 /**
  * Parse #RRGGBB color to RGB tuple.
  *
@@ -883,8 +1530,7 @@ function logo_hex_to_rgb(string $hex, string $fallback = '#1f2937'): array {
 }
 
 function logo_get_fonts(): array {
-    $fonts = glob(APP_ROOT . DIRSEP . 'fonts' . DIRSEP . '*.ttf');
-    return is_array($fonts) ? $fonts : [];
+    return logo_discover_font_files();
 }
 
 function logo_pick_font(string $fontFile): ?string {
@@ -900,6 +1546,95 @@ function logo_pick_font(string $fontFile): ?string {
     return $fonts[0];
 }
 
+/**
+ * Whether (x, y) lies inside the ellipse drawn by imagefilledellipse(..., w/2, h/2, w, h, ...).
+ */
+function logo_point_inside_ellipse(int $x, int $y, int $w, int $h): bool {
+    if ($w <= 0 || $h <= 0) {
+        return false;
+    }
+    $cx = $w / 2.0;
+    $cy = $h / 2.0;
+    $rx = max($w / 2.0, 1e-9);
+    $ry = max($h / 2.0, 1e-9);
+    $dx = ($x - $cx) / $rx;
+    $dy = ($y - $cy) / $ry;
+    return ($dx * $dx + $dy * $dy) <= 1.0;
+}
+
+/**
+ * Whether (x, y) is inside a rounded rectangle matching logo generator GD drawing (radius r).
+ */
+function logo_point_inside_rounded_rect(int $x, int $y, int $w, int $h, int $r): bool {
+    if ($x < 0 || $y < 0 || $x >= $w || $y >= $h) {
+        return false;
+    }
+    if ($r <= 0) {
+        return true;
+    }
+    if ($x >= $r && $x <= $w - $r) {
+        return true;
+    }
+    if ($y >= $r && $y <= $h - $r) {
+        return true;
+    }
+    if ($x < $r && $y < $r) {
+        $dx = $x - $r;
+        $dy = $y - $r;
+        return ($dx * $dx + $dy * $dy) <= $r * $r;
+    }
+    if ($x >= $w - $r && $y < $r) {
+        $dx = $x - ($w - $r);
+        $dy = $y - $r;
+        return ($dx * $dx + $dy * $dy) <= $r * $r;
+    }
+    if ($x < $r && $y >= $h - $r) {
+        $dx = $x - $r;
+        $dy = $y - ($h - $r);
+        return ($dx * $dx + $dy * $dy) <= $r * $r;
+    }
+    if ($x >= $w - $r && $y >= $h - $r) {
+        $dx = $x - ($w - $r);
+        $dy = $y - ($h - $r);
+        return ($dx * $dx + $dy * $dy) <= $r * $r;
+    }
+    return false;
+}
+
+/**
+ * Copy $src to a new image, making pixels outside the shape fully transparent.
+ * Destroys $src and returns the new handle.
+ *
+ * @param resource|\GdImage $src
+ * @return resource|\GdImage
+ */
+function logo_apply_shape_alpha_mask($src, string $shape, int $width, int $height) {
+    $radius = 0;
+    if ($shape === 'rounded') {
+        $radius = (int) max(12, min((int) floor(min($width, $height) * 0.15), 80));
+    }
+
+    $out = imagecreatetruecolor($width, $height);
+    imagealphablending($out, false);
+    imagesavealpha($out, true);
+    $transparent = imagecolorallocatealpha($out, 0, 0, 0, 127);
+    imagefilledrectangle($out, 0, 0, $width - 1, $height - 1, $transparent);
+
+    for ($y = 0; $y < $height; $y++) {
+        for ($x = 0; $x < $width; $x++) {
+            $inside = $shape === 'circle'
+                ? logo_point_inside_ellipse($x, $y, $width, $height)
+                : logo_point_inside_rounded_rect($x, $y, $width, $height, $radius);
+            if ($inside) {
+                imagesetpixel($out, $x, $y, imagecolorat($src, $x, $y));
+            }
+        }
+    }
+
+    imagealphablending($out, true);
+    return $out;
+}
+
 function logo_build_png_data_uri($image): string {
     ob_start();
     imagepng($image);
@@ -907,13 +1642,389 @@ function logo_build_png_data_uri($image): string {
     return 'data:image/png;base64,' . base64_encode($binary);
 }
 
-function logo_draw_background($image, int $width, int $height, string $style, array $bgRgb, array $accentRgb): void {
+/**
+ * Flatten alpha onto an opaque canvas (for JPEG output).
+ *
+ * @param resource|\GdImage $src
+ * @return resource|\GdImage
+ */
+function logo_flatten_image_for_lossy($src, int $w, int $h, array $matteRgb) {
+    $dst = imagecreatetruecolor($w, $h);
+    imagealphablending($dst, true);
+    imagesavealpha($dst, false);
+    $matte = imagecolorallocate($dst, $matteRgb[0], $matteRgb[1], $matteRgb[2]);
+    imagefilledrectangle($dst, 0, 0, max(0, $w - 1), max(0, $h - 1), $matte);
+    imagecopy($dst, $src, 0, 0, 0, 0, $w, $h);
+    return $dst;
+}
+
+/**
+ * Encode GD image to a data URI (PNG, JPEG, or WebP).
+ *
+ * @param resource|\GdImage $image
+ * @return array{mime:string,data_uri:string,ext:string,format:string}
+ */
+function logo_build_raster_data_uri($image, string $format, int $quality, array $matteRgb, int $w, int $h): array {
+    $format = strtolower($format);
+    if (!in_array($format, ['png', 'jpeg', 'webp'], true)) {
+        $format = 'png';
+    }
+    $qLossy = max(60, min(95, $quality));
+
+    if ($format === 'jpeg' && function_exists('imagejpeg')) {
+        $flat = logo_flatten_image_for_lossy($image, $w, $h, $matteRgb);
+        ob_start();
+        imagejpeg($flat, null, $qLossy);
+        $binary = (string) ob_get_clean();
+
+        return [
+            'mime' => 'image/jpeg',
+            'data_uri' => 'data:image/jpeg;base64,' . base64_encode($binary),
+            'ext' => 'jpg',
+            'format' => 'jpeg',
+        ];
+    }
+
+    if ($format === 'webp' && function_exists('imagewebp')) {
+        ob_start();
+        imagewebp($image, null, $qLossy);
+        $binary = (string) ob_get_clean();
+
+        return [
+            'mime' => 'image/webp',
+            'data_uri' => 'data:image/webp;base64,' . base64_encode($binary),
+            'ext' => 'webp',
+            'format' => 'webp',
+        ];
+    }
+
+    ob_start();
+    imagepng($image);
+    $binary = (string) ob_get_clean();
+
+    return [
+        'mime' => 'image/png',
+        'data_uri' => 'data:image/png;base64,' . base64_encode($binary),
+        'ext' => 'png',
+        'format' => 'png',
+    ];
+}
+
+function logo_ttf_line_width(string $fontPath, float $fontSize, string $line): int {
+    if ($line === '') {
+        return 0;
+    }
+    $bbox = imagettfbbox($fontSize, 0, $fontPath, $line);
+    if ($bbox === false) {
+        return 0;
+    }
+
+    return (int) abs(($bbox[2] ?? 0) - ($bbox[0] ?? 0));
+}
+
+function logo_ttf_line_height(string $fontPath, float $fontSize): int {
+    $bbox = imagettfbbox($fontSize, 0, $fontPath, 'Mg');
+    if ($bbox === false) {
+        return (int) max(12, round($fontSize * 1.2));
+    }
+
+    return (int) abs(($bbox[7] ?? 0) - ($bbox[1] ?? 0));
+}
+
+/**
+ * Split a single token into chunks that fit maxWidth.
+ *
+ * @return list<string>
+ */
+function logo_hard_break_token(string $token, string $fontPath, float $fontSize, int $maxWidth): array {
+    if ($token === '' || $maxWidth < 4) {
+        return $token === '' ? [] : [$token];
+    }
+    if (logo_ttf_line_width($fontPath, $fontSize, $token) <= $maxWidth) {
+        return [$token];
+    }
+    $out = [];
+    $len = mb_strlen($token);
+    $buf = '';
+    for ($i = 0; $i < $len; $i++) {
+        $ch = mb_substr($token, $i, 1);
+        $trial = $buf . $ch;
+        if ($buf !== '' && logo_ttf_line_width($fontPath, $fontSize, $trial) > $maxWidth) {
+            $out[] = $buf;
+            $buf = $ch;
+        } else {
+            $buf = $trial;
+        }
+    }
+    if ($buf !== '') {
+        $out[] = $buf;
+    }
+
+    return $out !== [] ? $out : [$token];
+}
+
+/**
+ * Word-wrap one paragraph to a maximum pixel width (TTF).
+ *
+ * @return list<string>
+ */
+function logo_wrap_paragraph(string $paragraph, string $fontPath, float $fontSize, int $maxWidth): array {
+    $paragraph = trim($paragraph);
+    if ($paragraph === '') {
+        return [];
+    }
+    $words = preg_split('/\s+/u', $paragraph, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+    $lines = [];
+    $current = '';
+    foreach ($words as $w) {
+        $chunks = logo_hard_break_token($w, $fontPath, $fontSize, $maxWidth);
+        foreach ($chunks as $chunk) {
+            $trial = $current === '' ? $chunk : $current . ' ' . $chunk;
+            if (logo_ttf_line_width($fontPath, $fontSize, $trial) <= $maxWidth) {
+                $current = $trial;
+            } else {
+                if ($current !== '') {
+                    $lines[] = $current;
+                }
+                $current = $chunk;
+            }
+        }
+    }
+    if ($current !== '') {
+        $lines[] = $current;
+    }
+
+    return $lines;
+}
+
+/**
+ * Build display lines from user text: explicit newlines + soft wrap per paragraph.
+ *
+ * @return list<string>
+ */
+function logo_build_wrapped_lines(string $displayText, string $fontPath, float $fontSize, int $maxWidth): array {
+    $parts = preg_split("/\r\n|\n|\r/", $displayText);
+    $all = [];
+    $first = true;
+    foreach ($parts as $part) {
+        if (!$first && $part === '' && $all !== []) {
+            $all[] = '';
+        }
+        $first = false;
+        if ($part === '') {
+            continue;
+        }
+        $wrapped = logo_wrap_paragraph($part, $fontPath, $fontSize, $maxWidth);
+        foreach ($wrapped as $ln) {
+            $all[] = $ln;
+        }
+    }
+
+    return $all;
+}
+
+/**
+ * Split on line breaks only — no word-wrapping (used when Autofit is off).
+ *
+ * @return list<string>
+ */
+function logo_split_explicit_lines_only(string $displayText): array {
+    $parts = preg_split("/\r\n|\n|\r/", $displayText);
+    $all = [];
+    $first = true;
+    foreach ($parts as $part) {
+        if (!$first && $part === '' && $all !== []) {
+            $all[] = '';
+        }
+        $first = false;
+        if ($part === '') {
+            continue;
+        }
+        $all[] = $part;
+    }
+
+    return $all;
+}
+
+/**
+ * @param list<string> $lines
+ * @return array{w:int,h:int,lineH:int,gap:int}
+ */
+function logo_measure_text_block(string $fontPath, float $fontSize, array $lines): array {
+    $lineH = logo_ttf_line_height($fontPath, $fontSize);
+    $gap = max(2, (int) round($fontSize * 0.12));
+    $maxW = 0;
+    foreach ($lines as $ln) {
+        $draw = $ln === '' ? ' ' : $ln;
+        $maxW = max($maxW, logo_ttf_line_width($fontPath, $fontSize, $draw));
+    }
+    $n = count($lines);
+    $totalH = $n === 0 ? 0 : $n * $lineH + ($n - 1) * $gap;
+
+    return ['w' => $maxW, 'h' => $totalH, 'lineH' => $lineH, 'gap' => $gap];
+}
+
+/**
+ * Largest font size (within [12, $maxSize]) so wrapped text fits the inner box.
+ */
+function logo_autofit_font_size(
+    string $displayText,
+    string $fontPath,
+    int $maxSize,
+    int $maxTextW,
+    int $maxTextH
+): int {
+    $maxSize = max(12, min(400, $maxSize));
+    if ($maxTextW < 8 || $maxTextH < 8) {
+        return 12;
+    }
+    $low = 12;
+    $high = $maxSize;
+    $best = 12;
+    while ($low <= $high) {
+        $mid = intdiv($low + $high, 2);
+        $lines = logo_build_wrapped_lines($displayText, $fontPath, (float) $mid, $maxTextW);
+        $m = logo_measure_text_block($fontPath, (float) $mid, $lines);
+        if ($m['h'] <= $maxTextH && $m['w'] <= $maxTextW) {
+            $best = $mid;
+            $low = $mid + 1;
+        } else {
+            $high = $mid - 1;
+        }
+    }
+
+    return $best;
+}
+
+/**
+ * Draw centered, multi-line TTF text with optional pixel offsets.
+ *
+ * @param resource|\GdImage $image
+ * @param list<string> $lines
+ */
+function logo_draw_ttf_text_block(
+    $image,
+    string $fontPath,
+    float $fontSize,
+    array $lines,
+    int $canvasW,
+    int $canvasH,
+    int $fontColor,
+    int $offsetX,
+    int $offsetY
+): void {
+    if ($lines === []) {
+        return;
+    }
+    $m = logo_measure_text_block($fontPath, $fontSize, $lines);
+    $lineH = $m['lineH'];
+    $gap = $m['gap'];
+    $totalH = $m['h'];
+    $top = (int) floor(($canvasH - $totalH) / 2) + $offsetY;
+    $yCursor = $top;
+
+    foreach ($lines as $line) {
+        $draw = $line === '' ? ' ' : $line;
+        $bbox = imagettfbbox($fontSize, 0, $fontPath, $draw);
+        if ($bbox === false) {
+            continue;
+        }
+        $ymin = (int) min($bbox[1], $bbox[3], $bbox[5], $bbox[7]);
+        $baselineY = $yCursor - $ymin;
+        $w = logo_ttf_line_width($fontPath, $fontSize, $draw);
+        $x = (int) floor(($canvasW - $w) / 2) + $offsetX;
+        imagettftext($image, $fontSize, 0, $x, $baselineY, $fontColor, $fontPath, $draw);
+        $yCursor += $lineH + $gap;
+    }
+}
+
+/**
+ * Draw TTF text with a vertical gradient (top = rgbStart, bottom = rgbEnd) using a white-on-black mask.
+ *
+ * @param resource|\GdImage $image
+ * @param list<string> $lines
+ * @param array{0:int,1:int,2:int} $rgbStart
+ * @param array{0:int,1:int,2:int} $rgbEnd
+ * @param float $gradientStrength 0–100; scales how far the fill moves toward the end color (0 = solid start color, 100 = full top-to-bottom blend)
+ */
+function logo_draw_ttf_text_block_gradient(
+    $image,
+    string $fontPath,
+    float $fontSize,
+    array $lines,
+    int $canvasW,
+    int $canvasH,
+    array $rgbStart,
+    array $rgbEnd,
+    int $offsetX,
+    int $offsetY,
+    float $gradientStrength = 100.0
+): void {
+    if ($lines === []) {
+        return;
+    }
+
+    $tmp = imagecreatetruecolor($canvasW, $canvasH);
+    if ($tmp === false) {
+        return;
+    }
+    imagealphablending($tmp, true);
+    $black = imagecolorallocate($tmp, 0, 0, 0);
+    if ($black === false) {
+        return;
+    }
+    imagefilledrectangle($tmp, 0, 0, $canvasW, $canvasH, $black);
+    $white = imagecolorallocate($tmp, 255, 255, 255);
+    if ($white === false) {
+        return;
+    }
+    logo_draw_ttf_text_block($tmp, $fontPath, $fontSize, $lines, $canvasW, $canvasH, $white, $offsetX, $offsetY);
+
+    $s = max(0.0, min(100.0, $gradientStrength)) / 100.0;
+    $colCache = [];
+    for ($y = 0; $y < $canvasH; $y++) {
+        $t = $canvasH > 1 ? $y / ($canvasH - 1) : 0;
+        $tEff = $t * $s;
+        $gr = (int) round($rgbStart[0] + ($rgbEnd[0] - $rgbStart[0]) * $tEff);
+        $gg = (int) round($rgbStart[1] + ($rgbEnd[1] - $rgbStart[1]) * $tEff);
+        $gb = (int) round($rgbStart[2] + ($rgbEnd[2] - $rgbStart[2]) * $tEff);
+        for ($x = 0; $x < $canvasW; $x++) {
+            $ci = imagecolorat($tmp, $x, $y);
+            $mr = ($ci >> 16) & 0xFF;
+            if ($mr < 1) {
+                continue;
+            }
+            $m = $mr / 255.0;
+            $base = imagecolorat($image, $x, $y);
+            $br = ($base >> 16) & 0xFF;
+            $bgc = ($base >> 8) & 0xFF;
+            $bb = $base & 0xFF;
+            $nr = (int) round($br * (1.0 - $m) + $gr * $m);
+            $ng = (int) round($bgc * (1.0 - $m) + $gg * $m);
+            $nb = (int) round($bb * (1.0 - $m) + $gb * $m);
+            $k = ($nr << 16) | ($ng << 8) | $nb;
+            if (!isset($colCache[$k])) {
+                $colCache[$k] = imagecolorallocate($image, $nr, $ng, $nb);
+            }
+            /** @var int $ciOut */
+            $ciOut = $colCache[$k];
+            if ($ciOut === false) {
+                continue;
+            }
+            imagesetpixel($image, $x, $y, $ciOut);
+        }
+    }
+}
+
+function logo_draw_background($image, int $width, int $height, string $style, array $bgRgb, array $accentRgb, float $gradientStrength = 100.0): void {
     if ($style === 'gradient') {
+        $s = max(0.0, min(100.0, $gradientStrength)) / 100.0;
         for ($y = 0; $y < $height; $y++) {
             $t = $height > 1 ? ($y / ($height - 1)) : 0;
-            $r = (int) round($bgRgb[0] + ($accentRgb[0] - $bgRgb[0]) * $t);
-            $g = (int) round($bgRgb[1] + ($accentRgb[1] - $bgRgb[1]) * $t);
-            $b = (int) round($bgRgb[2] + ($accentRgb[2] - $bgRgb[2]) * $t);
+            $tEff = $t * $s;
+            $r = (int) round($bgRgb[0] + ($accentRgb[0] - $bgRgb[0]) * $tEff);
+            $g = (int) round($bgRgb[1] + ($accentRgb[1] - $bgRgb[1]) * $tEff);
+            $b = (int) round($bgRgb[2] + ($accentRgb[2] - $bgRgb[2]) * $tEff);
             $line = imagecolorallocate($image, $r, $g, $b);
             imageline($image, 0, $y, $width, $y, $line);
         }
@@ -935,71 +2046,69 @@ function handle_logo_generate(array $req): string {
         return formatOutput("GD extension is required for logo generation.", type: "danger");
     }
 
-    $text = trim((string) req_get($req, 'logo_text', 'Rand'));
+    $text = (string) req_get($req, 'logo_text', 'Rand');
+    $text = str_replace(["\r\n", "\r"], "\n", $text);
+    $text = trim($text);
     if ($text === '') {
         $text = 'Rand';
     }
-    $text = mb_substr($text, 0, 40);
+    $text = mb_substr($text, 0, 500);
 
     $width = max(128, min(1600, req_int($req, 'logo_width', 512)));
     $height = max(128, min(1600, req_int($req, 'logo_height', 512)));
-    $fontSize = max(12, min(220, req_int($req, 'logo_font_size', 96)));
+    $fontSizeReq = max(12, min(400, req_int($req, 'logo_font_size', 96)));
     $shape = (string) req_get($req, 'logo_shape', 'rounded');
     $style = (string) req_get($req, 'logo_style', 'gradient');
+    $textStyle = (string) req_get($req, 'logo_text_style', 'solid');
+    if (!in_array($textStyle, ['solid', 'gradient'], true)) {
+        $textStyle = 'solid';
+    }
     $uppercase = req_bool($req, 'logo_uppercase');
     $useInitials = req_bool($req, 'logo_initials');
     $border = max(0, min(24, req_int($req, 'logo_border', 0)));
     $fontFile = (string) req_get($req, 'logo_font', '');
+    $autofit = req_bool($req, 'logo_autofit');
+    $format = strtolower((string) req_get($req, 'logo_format', 'png'));
+    if (!in_array($format, ['png', 'jpeg', 'webp'], true)) {
+        $format = 'png';
+    }
+    $quality = max(60, min(95, req_int($req, 'logo_jpeg_quality', 90)));
+
+    $offsetMax = 400;
+    $offsetX = max(-$offsetMax, min($offsetMax, req_int($req, 'logo_text_offset_x', 0)));
+    $offsetY = max(-$offsetMax, min($offsetMax, req_int($req, 'logo_text_offset_y', 0)));
 
     $displayText = $uppercase ? mb_strtoupper($text) : $text;
     if ($useInitials) {
-        $parts = preg_split('/\s+/', trim($displayText)) ?: [];
+        $forInitials = preg_replace('/\s+/u', ' ', trim(str_replace("\n", ' ', $displayText)));
+        $parts = preg_split('/\s+/u', $forInitials, -1, PREG_SPLIT_NO_EMPTY) ?: [];
         $initials = '';
         foreach ($parts as $part) {
             if ($part !== '') {
                 $initials .= mb_substr($part, 0, 1);
             }
         }
-        $displayText = $initials !== '' ? mb_substr($initials, 0, 4) : mb_substr($displayText, 0, 3);
+        $displayText = $initials !== '' ? mb_substr($initials, 0, 4) : mb_substr(preg_replace('/\s+/u', '', $forInitials), 0, 3);
     }
 
-    $bgRgb = logo_hex_to_rgb((string) req_get($req, 'logo_bg_color', '#111827'));
+    $bgGradStrength = max(0, min(100, req_int($req, 'logo_bg_gradient_strength', 100)));
+    $textGradStrength = max(0, min(100, req_int($req, 'logo_text_gradient_strength', 100)));
+
+    $bgRgb = logo_hex_to_rgb((string) req_get($req, 'logo_bg_color', '#000000'));
     $accentRgb = logo_hex_to_rgb((string) req_get($req, 'logo_accent_color', '#1d4ed8'));
     $textRgb = logo_hex_to_rgb((string) req_get($req, 'logo_text_color', '#ffffff'), '#ffffff');
+    $textAccentRgb = logo_hex_to_rgb((string) req_get($req, 'logo_text_accent_color', '#94a3b8'), '#94a3b8');
     $borderRgb = logo_hex_to_rgb((string) req_get($req, 'logo_border_color', '#ffffff'), '#ffffff');
 
     $image = imagecreatetruecolor($width, $height);
     imagealphablending($image, true);
     imagesavealpha($image, true);
 
-    logo_draw_background($image, $width, $height, $style, $bgRgb, $accentRgb);
+    logo_draw_background($image, $width, $height, $style, $bgRgb, $accentRgb, (float) $bgGradStrength);
 
-    if ($shape === 'circle') {
-        $mask = imagecreatetruecolor($width, $height);
-        $transparent = imagecolorallocatealpha($mask, 0, 0, 0, 127);
-        imagefill($mask, 0, 0, $transparent);
-        imagealphablending($mask, true);
-        $white = imagecolorallocate($mask, 255, 255, 255);
-        imagefilledellipse($mask, (int) ($width / 2), (int) ($height / 2), $width, $height, $white);
-        imagecolortransparent($mask, $transparent);
-        imagecopymerge($image, $mask, 0, 0, 0, 0, $width, $height, 100);
-        imagedestroy($mask);
-    } elseif ($shape === 'rounded') {
-        $radius = (int) max(12, min((int) floor(min($width, $height) * 0.15), 80));
-        $overlay = imagecreatetruecolor($width, $height);
-        imagesavealpha($overlay, true);
-        $trans = imagecolorallocatealpha($overlay, 0, 0, 0, 127);
-        imagefill($overlay, 0, 0, $trans);
-        $fill = imagecolorallocate($overlay, 255, 255, 255);
-        imagefilledrectangle($overlay, $radius, 0, $width - $radius, $height, $fill);
-        imagefilledrectangle($overlay, 0, $radius, $width, $height - $radius, $fill);
-        imagefilledellipse($overlay, $radius, $radius, $radius * 2, $radius * 2, $fill);
-        imagefilledellipse($overlay, $width - $radius, $radius, $radius * 2, $radius * 2, $fill);
-        imagefilledellipse($overlay, $radius, $height - $radius, $radius * 2, $radius * 2, $fill);
-        imagefilledellipse($overlay, $width - $radius, $height - $radius, $radius * 2, $radius * 2, $fill);
-        imagecolortransparent($overlay, $trans);
-        imagecopymerge($image, $overlay, 0, 0, 0, 0, $width, $height, 100);
-        imagedestroy($overlay);
+    // imagecopymerge + white mask incorrectly painted the interior white; copy pixels only inside the shape.
+    if ($shape === 'circle' || $shape === 'rounded') {
+        $image = logo_apply_shape_alpha_mask($image, $shape, $width, $height);
     }
 
     if ($border > 0) {
@@ -1011,36 +2120,69 @@ function handle_logo_generate(array $req): string {
 
     $fontColor = imagecolorallocate($image, $textRgb[0], $textRgb[1], $textRgb[2]);
     $fontPath = logo_pick_font($fontFile);
+    $padding = max(8, (int) round(min($width, $height) * 0.06));
+    $maxTextW = max(8, $width - 2 * $border - 2 * $padding);
+    $maxTextH = max(8, $height - 2 * $border - 2 * $padding);
+
     if ($fontPath !== null && function_exists('imagettfbbox') && function_exists('imagettftext')) {
-        $bbox = imagettfbbox($fontSize, 0, $fontPath, $displayText);
-        $textWidth = (int) abs(($bbox[2] ?? 0) - ($bbox[0] ?? 0));
-        $textHeight = (int) abs(($bbox[7] ?? 0) - ($bbox[1] ?? 0));
-        $x = (int) floor(($width - $textWidth) / 2);
-        $y = (int) floor(($height + $textHeight) / 2);
-        imagettftext($image, $fontSize, 0, $x, $y, $fontColor, $fontPath, $displayText);
+        $fontSize = (float) $fontSizeReq;
+        if ($autofit) {
+            $fontSize = (float) logo_autofit_font_size($displayText, $fontPath, $fontSizeReq, $maxTextW, $maxTextH);
+            $lines = logo_build_wrapped_lines($displayText, $fontPath, $fontSize, $maxTextW);
+        } else {
+            $lines = logo_split_explicit_lines_only($displayText);
+        }
+        if ($lines === []) {
+            $lines = [' '];
+        }
+        if ($textStyle === 'gradient') {
+            logo_draw_ttf_text_block_gradient(
+                $image,
+                $fontPath,
+                $fontSize,
+                $lines,
+                $width,
+                $height,
+                $textRgb,
+                $textAccentRgb,
+                $offsetX,
+                $offsetY,
+                (float) $textGradStrength
+            );
+        } else {
+            logo_draw_ttf_text_block($image, $fontPath, $fontSize, $lines, $width, $height, $fontColor, $offsetX, $offsetY);
+        }
     } else {
         $font = 5;
-        $textWidth = imagefontwidth($font) * strlen($displayText);
+        $line = preg_replace('/\s+/u', ' ', trim(str_replace("\n", ' ', $displayText)));
+        $textWidth = imagefontwidth($font) * strlen($line);
         $textHeight = imagefontheight($font);
-        $x = (int) floor(($width - $textWidth) / 2);
-        $y = (int) floor(($height - $textHeight) / 2);
-        imagestring($image, $font, $x, $y, $displayText, $fontColor);
+        $x = (int) floor(($width - $textWidth) / 2) + $offsetX;
+        $y = (int) floor(($height - $textHeight) / 2) + $offsetY;
+        imagestring($image, $font, $x, $y, $line, $fontColor);
     }
 
-    $dataUri = logo_build_png_data_uri($image);
-    imagedestroy($image);
+    $encoded = logo_build_raster_data_uri($image, $format, $quality, $bgRgb, $width, $height);
+
+    $dataUri = $encoded['data_uri'];
+    $ext = $encoded['ext'];
+    $dlLabel = strtoupper($ext === 'jpg' ? 'JPEG' : $ext);
 
     $safeDataUri = htmlspecialchars($dataUri, ENT_QUOTES, 'UTF-8');
-    $safeAlt = htmlspecialchars($displayText, ENT_QUOTES, 'UTF-8');
-    $filenameBase = preg_replace('/[^a-zA-Z0-9_-]+/', '-', strtolower($displayText)) ?: 'logo';
-    $filename = $filenameBase . '.png';
+    $altLine = preg_replace('/\s+/u', ' ', trim(str_replace("\n", ' ', $displayText)));
+    $safeAlt = htmlspecialchars(mb_substr($altLine, 0, 120), ENT_QUOTES, 'UTF-8');
+    $filenameSeed = preg_split("/\r\n|\n|\r/", $displayText)[0] ?? 'logo';
+    $filenameSeed = preg_replace('/\s+/u', ' ', trim($filenameSeed));
+    $filenameBase = preg_replace('/[^a-zA-Z0-9_-]+/', '-', strtolower($filenameSeed)) ?: 'logo';
+    $filename = $filenameBase . '.' . $ext;
 
     $output = "<div style='text-align:center; padding:12px;'>";
     $output .= "<img src='{$safeDataUri}' alt='{$safeAlt}' style='max-width:100%; height:auto; border-radius:8px; border:1px solid #334155;' />";
     $output .= "<div style='margin-top:12px;'>";
-    $output .= "<a class='btn btn-primary btn-sm' href='{$safeDataUri}' download='" . htmlspecialchars($filename, ENT_QUOTES, 'UTF-8') . "'>" . icon('download') . " Download PNG</a>";
+    $output .= "<a class='btn btn-primary btn-sm' href='{$safeDataUri}' download='" . htmlspecialchars($filename, ENT_QUOTES, 'UTF-8') . "'>" . icon('download') . " Download {$dlLabel}</a>";
     $output .= "</div>";
     $output .= "</div>";
+
     return $output;
 }
 
@@ -1110,6 +2252,75 @@ function handle_qrcode(array $req): string {
 }
 
 /**
+ * Build HTML for the full test string with full-match regions wrapped in a green highlight.
+ *
+ * @param array $allMatches Output of preg_match_all with PREG_SET_ORDER | PREG_OFFSET_CAPTURE
+ */
+function regex_format_test_string_with_highlights(string $testString, array $allMatches): string {
+    $intervals = [];
+    foreach ($allMatches as $matchSet) {
+        if (!isset($matchSet[0]) || !is_array($matchSet[0])) {
+            continue;
+        }
+        $text = $matchSet[0][0];
+        $start = (int) $matchSet[0][1];
+        $end = $start + strlen($text);
+        if ($end < $start) {
+            continue;
+        }
+        $intervals[] = [$start, $end];
+    }
+    if ($intervals === []) {
+        return htmlspecialchars($testString, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    }
+    usort($intervals, static fn(array $a, array $b): int => $a[0] <=> $b[0]);
+    $merged = [];
+    foreach ($intervals as [$s, $e]) {
+        if ($merged === []) {
+            $merged[] = [$s, $e];
+            continue;
+        }
+        $last = count($merged) - 1;
+        [$ls, $le] = $merged[$last];
+        if ($s <= $le) {
+            $merged[$last] = [$ls, max($le, $e)];
+        } else {
+            $merged[] = [$s, $e];
+        }
+    }
+
+    $esc = static fn(string $chunk): string => htmlspecialchars($chunk, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    $hlOpen = '<span style="background-color: rgba(74, 222, 128, 0.45); border-radius: 2px; box-decoration-break: clone; -webkit-box-decoration-break: clone;">';
+    $hlClose = '</span>';
+    $zeroWidthMarker = '<span style="display:inline-block;width:0;height:1em;vertical-align:bottom;border-left:2px solid rgba(74,222,128,0.95);" title="Zero-width match"></span>';
+
+    $len = strlen($testString);
+    $html = '';
+    $pos = 0;
+    foreach ($merged as [$s, $e]) {
+        $s = max(0, min($s, $len));
+        $e = max(0, min($e, $len));
+        if ($s < $pos) {
+            continue;
+        }
+        if ($s > $pos) {
+            $html .= $esc(substr($testString, $pos, $s - $pos));
+        }
+        if ($e > $s) {
+            $html .= $hlOpen . $esc(substr($testString, $s, $e - $s)) . $hlClose;
+        } else {
+            $html .= $hlOpen . $zeroWidthMarker . $hlClose;
+        }
+        $pos = $e;
+    }
+    if ($pos < $len) {
+        $html .= $esc(substr($testString, $pos));
+    }
+
+    return $html;
+}
+
+/**
  * Handle regex testing requests
  *
  * Tests regular expressions against input text, showing matches, groups,
@@ -1172,7 +2383,7 @@ function handle_regex(array $req): string {
     }
     $fullPattern = $delim . $pattern . $delim . $flags;
     
-    $output = "<div style='font-family: monospace; font-size: 0.9rem;'>";
+    $output = "<div style='font-family: monospace;'>";
     
     // Test the regex
     $matchCount = 0;
@@ -1196,6 +2407,13 @@ function handle_regex(array $req): string {
         $output .= "</div>";
         
         if ($matchCount > 0) {
+            $output .= "<div style='margin-bottom: 20px;'>";
+            $output .= "<h5 style='margin-bottom: 10px;'>Full test string (matches highlighted)</h5>";
+            $output .= "<div style='padding: 10px; background: #0f172a; color: #e9ecef; border-radius: 0.25rem; white-space: pre-wrap; word-break: break-word; line-height: 1.5;'>";
+            $output .= regex_format_test_string_with_highlights($testString, $allMatches);
+            $output .= "</div>";
+            $output .= "</div>";
+
             // Display matches
             $output .= "<div style='margin-bottom: 20px;'>";
             $output .= "<h5 style='margin-bottom: 15px;'>Match Details:</h5>";
@@ -1262,6 +2480,384 @@ function handle_regex(array $req): string {
     $output .= "</div>";
     
     return $output;
+}
+
+function crontab_human_summary_block(string $summary): string {
+    return '<div class="crontab-human-summary border border-primary border-opacity-25 rounded-3 px-4 py-4 mb-4 text-center bg-primary bg-opacity-10">'
+        . '<p class="mb-0 fs-3 fw-semibold lh-sm">' . htmlspecialchars($summary, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</p>'
+        . '</div>';
+}
+
+function handle_crontab(array $req): string {
+    $timezone = trim((string) req_get($req, 'cron_timezone', date_default_timezone_get() ?: 'UTC'));
+    $runCount = req_int($req, 'cron_run_count', 8);
+    $referenceRaw = trim((string) req_get($req, 'cron_reference_time', ''));
+    $allowCurrent = req_bool($req, 'cron_include_current');
+
+    $evaluation = cron_evaluate_schedule(
+        (string) req_get($req, 'cron_expression', ''),
+        $timezone,
+        $referenceRaw,
+        $allowCurrent,
+        $runCount
+    );
+    if (($evaluation['ok'] ?? false) !== true) {
+        return formatOutput(
+            htmlspecialchars((string) ($evaluation['error'] ?? 'Unable to evaluate cron expression.'), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
+            type: "danger"
+        );
+    }
+
+    if (!empty($evaluation['reboot'])) {
+        $summary = (string) $evaluation['summary'];
+        $referenceTime = $evaluation['reference_time'];
+        $timezone = (string) $evaluation['timezone'];
+
+        $output = '';
+        $output .= "<div class='row g-3 align-items-start crontab-analysis-cols'>";
+        $output .= "<div class='col-12 col-xl-6'>";
+        $output .= "<div class='card border-info mb-3 mb-xl-0'><h5 class='card-header'>Schedule Summary</h5><div class='card-body'>";
+        $output .= crontab_human_summary_block($summary);
+        $output .= "<div class='d-flex flex-wrap gap-2 mb-3'>";
+        $output .= "<span class='badge bg-info text-white'>" . icon('arrow-repeat') . " One-shot at cron startup</span>";
+        $output .= "<span class='badge bg-primary text-white'>" . icon('globe2') . ' ' . htmlspecialchars($timezone, ENT_QUOTES, 'UTF-8') . "</span>";
+        $output .= "</div>";
+        $output .= "<div class='alert alert-info mb-3'><strong>@reboot</strong> is a Vixie-style crontab extension: the job runs once when the cron daemon starts (often after a system reboot), not on a repeating calendar schedule.</div>";
+        $output .= "<div class='mb-3'><strong>Reference time:</strong> <code>" . htmlspecialchars($referenceTime->format('Y-m-d H:i:s T'), ENT_QUOTES, 'UTF-8') . "</code></div>";
+        $output .= copyableOutput('@reboot', 'Expression');
+        $output .= "</div></div>";
+        $output .= "</div>";
+
+        $output .= "<div class='col-12 col-xl-6'>";
+        $output .= "<div class='card border-secondary mb-3'><h5 class='card-header'>Field Breakdown</h5><div class='card-body p-0'>";
+        $output .= "<div class='table-responsive'><table class='table table-sm table-dark table-striped mb-0'><tbody>";
+        $output .= "<tr><td colspan='3' class='text-muted'>"
+            . htmlspecialchars('@reboot is not a five-field cron pattern; there are no minute/hour/day/month/day-of-week fields to expand.', ENT_QUOTES, 'UTF-8')
+            . "</td></tr>";
+        $output .= "</tbody></table></div></div>";
+
+        $output .= "<div class='card border-success mb-0'><h5 class='card-header'>Upcoming Run Times</h5><div class='card-body p-0'>";
+        $output .= "<div class='table-responsive'><table class='table table-sm table-dark table-striped mb-0'><tbody>";
+        $output .= "<tr><td colspan='3' class='text-muted'>No repeating schedule — periodic next run times are not applicable.</td></tr>";
+        $output .= "</tbody></table></div></div>";
+        $output .= "</div>";
+        $output .= "</div>";
+
+        return $output;
+    }
+
+    $expression = (string) $evaluation['expression'];
+    $parts = $evaluation['parts'];
+    $normalizedExpression = (string) $evaluation['normalized_expression'];
+    $summary = (string) $evaluation['summary'];
+    $isDue = (bool) $evaluation['is_due'];
+    $referenceTime = $evaluation['reference_time'];
+    $previousRun = $evaluation['previous_run'];
+    $nextRuns = $evaluation['next_runs'];
+    $runCount = intval($evaluation['run_count']);
+    $timezone = (string) $evaluation['timezone'];
+
+    $fieldMap = [
+        ['label' => 'Minute', 'expression' => $parts[0] ?? '*', 'field' => 'minute'],
+        ['label' => 'Hour', 'expression' => $parts[1] ?? '*', 'field' => 'hour'],
+        ['label' => 'Day of month', 'expression' => $parts[2] ?? '*', 'field' => 'dom'],
+        ['label' => 'Month', 'expression' => $parts[3] ?? '*', 'field' => 'month'],
+        ['label' => 'Day of week', 'expression' => $parts[4] ?? '*', 'field' => 'dow'],
+    ];
+
+    $fieldRows = '';
+    foreach ($fieldMap as $field) {
+        $fieldRows .= '<tr>'
+            . '<td><code>' . htmlspecialchars($field['label'], ENT_QUOTES, 'UTF-8') . '</code></td>'
+            . '<td><code>' . htmlspecialchars($field['expression'], ENT_QUOTES, 'UTF-8') . '</code></td>'
+            . '<td>' . htmlspecialchars(cron_describe_field((string) $field['expression'], (string) $field['field']), ENT_QUOTES, 'UTF-8') . '</td>'
+            . '</tr>';
+    }
+
+    $nextRunRows = '';
+    foreach ($nextRuns as $index => $date) {
+        $nextRunRows .= '<tr>'
+            . '<td>' . ($index + 1) . '</td>'
+            . '<td><code>' . htmlspecialchars($date->format('Y-m-d H:i:s T'), ENT_QUOTES, 'UTF-8') . '</code></td>'
+            . '<td>' . htmlspecialchars($date->format('D, j M Y'), ENT_QUOTES, 'UTF-8') . '</td>'
+            . '</tr>';
+    }
+
+    $dueBadge = $isDue
+        ? "<span class='badge bg-success text-white'>" . icon('check-circle') . " Due at reference time</span>"
+        : "<span class='badge bg-secondary text-white'>" . icon('clock') . " Not due at reference time</span>";
+
+    $macroNotice = '';
+    if (str_starts_with($expression, '@') && $normalizedExpression !== $expression) {
+        $macroNotice = "<div class='alert alert-info mb-3'><strong>Macro expanded:</strong> <code>"
+            . htmlspecialchars($expression, ENT_QUOTES, 'UTF-8')
+            . "</code> becomes <code>"
+            . htmlspecialchars($normalizedExpression, ENT_QUOTES, 'UTF-8')
+            . "</code>.</div>";
+    }
+
+    $orSemanticsNotice = '';
+    if (!cron_is_wildcard($parts[2] ?? '*') && !cron_is_wildcard($parts[4] ?? '*')) {
+        $orSemanticsNotice = "<div class='alert alert-warning mb-0'><strong>Day-of-month vs day-of-week:</strong> standard cron treats these as an <strong>OR</strong> match, so the schedule runs when either field matches.</div>";
+    }
+
+    $output = '';
+    $output .= "<div class='row g-3 align-items-start crontab-analysis-cols'>";
+    $output .= "<div class='col-12 col-xl-6'>";
+    $output .= "<div class='card border-info mb-3 mb-xl-0'><h5 class='card-header'>Schedule Summary</h5><div class='card-body'>";
+    $output .= crontab_human_summary_block($summary);
+    $output .= "<div class='d-flex flex-wrap gap-2 mb-3'>{$dueBadge}";
+    $output .= "<span class='badge bg-primary text-white'>" . icon('globe2') . ' ' . htmlspecialchars($timezone, ENT_QUOTES, 'UTF-8') . "</span>";
+    $output .= "<span class='badge bg-dark text-white'>" . icon('list-ol') . ' ' . intval($runCount) . " future runs</span>";
+    $output .= "</div>";
+    $output .= $macroNotice;
+    $output .= "<div class='mb-3'><strong>Reference time:</strong> <code>" . htmlspecialchars($referenceTime->format('Y-m-d H:i:s T'), ENT_QUOTES, 'UTF-8') . "</code></div>";
+    $output .= "<div class='mb-3'><strong>Previous matching run:</strong> <code>" . htmlspecialchars($previousRun->format('Y-m-d H:i:s T'), ENT_QUOTES, 'UTF-8') . "</code></div>";
+    $output .= copyableOutput($normalizedExpression, 'Normalized expression');
+    $output .= "</div></div>";
+    $output .= "</div>";
+
+    $output .= "<div class='col-12 col-xl-6'>";
+    $output .= "<div class='card border-secondary mb-3'><h5 class='card-header'>Field Breakdown</h5><div class='card-body p-0'>";
+    $output .= "<div class='table-responsive'><table class='table table-sm table-dark table-striped mb-0'><thead><tr><th>Field</th><th>Value</th><th>Meaning</th></tr></thead><tbody>{$fieldRows}</tbody></table></div>";
+    $output .= "</div></div>";
+
+    $output .= "<div class='card border-success mb-3 mb-xl-0'><h5 class='card-header'>Upcoming Run Times</h5><div class='card-body p-0'>";
+    $output .= "<div class='table-responsive'><table class='table table-sm table-dark table-striped mb-0'><thead><tr><th>#</th><th>Date/Time</th><th>Day</th></tr></thead><tbody>{$nextRunRows}</tbody></table></div>";
+    $output .= "</div></div>";
+
+    if ($orSemanticsNotice !== '') {
+        $output .= $orSemanticsNotice;
+    }
+    $output .= "</div>";
+    $output .= "</div>";
+
+    return $output;
+}
+
+function shellcheck_level_badge_html(string $level): string {
+    $level = strtolower(trim($level));
+    return match ($level) {
+        'error' => "<span class='badge bg-danger text-white'>error</span>",
+        'warning' => "<span class='badge bg-warning text-dark'>warning</span>",
+        'style' => "<span class='badge bg-info text-dark'>style</span>",
+        default => "<span class='badge bg-secondary text-white'>" . htmlspecialchars($level !== '' ? $level : 'info', ENT_QUOTES, 'UTF-8') . "</span>",
+    };
+}
+
+function shellcheck_excerpt_html(array $lines, array $comment): string {
+    $lineNumber = max(1, intval($comment['line'] ?? 1));
+    $column = max(1, intval($comment['column'] ?? 1));
+    $endColumn = max($column, intval($comment['endColumn'] ?? $column + 1));
+
+    $line = $lines[$lineNumber - 1] ?? '';
+    $line = str_replace("\t", '    ', $line);
+    $pointer = str_repeat(' ', max(0, $column - 1)) . str_repeat('^', max(1, $endColumn - $column));
+
+    return "<pre style='margin: 0; background: #0f172a; color: #e9ecef; padding: 12px; border-radius: 0.5rem; overflow-x: auto;'><code>"
+        . htmlspecialchars($line, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')
+        . "\n"
+        . htmlspecialchars($pointer, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')
+        . "</code></pre>";
+}
+
+function handle_shellcheck(array $req): string {
+    $script = (string) req_get($req, 'shellcheck_script', '');
+    // CRLF / Mac CR: shellcheck SC1017 otherwise; normalize like tr -d '\r'
+    $script = str_replace("\r", '', $script);
+    if (trim($script) === '') {
+        return formatOutput("Shell script input is required.", type: "danger");
+    }
+    if (strlen($script) > 200000) {
+        return formatOutput("Shell script input is too large. Maximum 200,000 characters allowed.", type: "danger");
+    }
+
+    $severity = strtolower(trim((string) req_get($req, 'shellcheck_severity', 'info')));
+    $allowedSeverities = ['style', 'info', 'warning', 'error'];
+    if (!in_array($severity, $allowedSeverities, true)) {
+        return formatOutput("Invalid severity selected.", type: "danger");
+    }
+
+    $shell = strtolower(trim((string) req_get($req, 'shellcheck_shell', 'auto')));
+    $allowedShells = ['auto', 'bash', 'sh', 'dash', 'ksh'];
+    if (!in_array($shell, $allowedShells, true)) {
+        return formatOutput("Invalid shell dialect selected.", type: "danger");
+    }
+
+    $filenameInput = trim((string) req_get($req, 'shellcheck_filename', 'snippet.sh'));
+    if (strlen($filenameInput) > 180) {
+        return formatOutput("Filename hint is too long. Maximum 180 characters allowed.", type: "danger");
+    }
+    $displayFilename = basename(str_replace('\\', '/', $filenameInput));
+    $displayFilename = preg_replace('/[^A-Za-z0-9._-]+/', '-', $displayFilename ?? '') ?: 'snippet.sh';
+
+    $shellcheckPath = cli_find_binary('shellcheck');
+    if ($shellcheckPath === '') {
+        return formatOutput("shellcheck is not available on this host.", type: "danger");
+    }
+
+    $tempBase = tempnam(sys_get_temp_dir(), 'shellcheck_');
+    if ($tempBase === false) {
+        return formatOutput("Unable to create a temporary file for linting.", type: "danger");
+    }
+
+    $extension = pathinfo($displayFilename, PATHINFO_EXTENSION);
+    $suffix = $extension !== '' ? '.' . $extension : ($shell === 'bash' ? '.bash' : '.sh');
+    $tempPath = $tempBase . $suffix;
+    if (!@rename($tempBase, $tempPath)) {
+        $tempPath = $tempBase;
+    }
+
+    if (@file_put_contents($tempPath, $script) === false) {
+        @unlink($tempPath);
+        return formatOutput("Unable to write temporary shell script for linting.", type: "danger");
+    }
+
+    $command = [
+        $shellcheckPath,
+        '--format=json1',
+        '--severity=' . $severity,
+    ];
+    if ($shell !== 'auto') {
+        $command[] = '--shell=' . $shell;
+    }
+    $command[] = $tempPath;
+
+    $result = cli_run_command($command);
+
+    if (($result['ok'] ?? false) !== true) {
+        @unlink($tempPath);
+        return formatOutput((string) ($result['error'] ?? 'Unable to run shellcheck.'), type: "danger");
+    }
+
+    $exitCode = intval($result['exit_code'] ?? 1);
+    $stdout = trim((string) ($result['stdout'] ?? ''));
+    $stderr = trim((string) ($result['stderr'] ?? ''));
+
+    if (!in_array($exitCode, [0, 1], true)) {
+        @unlink($tempPath);
+        $message = $stderr !== '' ? $stderr : ($stdout !== '' ? $stdout : 'shellcheck returned an unexpected error.');
+        return formatOutput(htmlspecialchars($message, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'), type: "danger");
+    }
+
+    $decoded = $stdout !== '' ? json_decode($stdout, true) : ['comments' => []];
+    if (!is_array($decoded)) {
+        @unlink($tempPath);
+        return formatOutput("shellcheck produced unreadable output.", type: "danger");
+    }
+
+    $shellArgs = ['--severity=' . $severity];
+    if ($shell !== 'auto') {
+        $shellArgs[] = '--shell=' . $shell;
+    }
+    $fixedScript = shellcheck_apply_autofix($tempPath, $shellcheckPath, $shellArgs);
+    @unlink($tempPath);
+
+    $comments = $decoded['comments'] ?? [];
+    if (!is_array($comments)) {
+        $comments = [];
+    }
+
+    $counts = ['error' => 0, 'warning' => 0, 'info' => 0, 'style' => 0];
+    foreach ($comments as $comment) {
+        $level = strtolower((string) ($comment['level'] ?? 'info'));
+        if (!isset($counts[$level])) {
+            $counts[$level] = 0;
+        }
+        $counts[$level]++;
+    }
+
+    $lines = preg_split("/\r\n|\r|\n/", $script);
+    if (!is_array($lines)) {
+        $lines = [];
+    }
+
+    $output = '';
+    $output .= "<div class='card border-info mb-3'><h5 class='card-header'>ShellCheck Summary</h5><div class='card-body'>";
+    $output .= "<div class='d-flex flex-wrap gap-2 mb-3'>";
+    $output .= "<span class='badge bg-primary text-white'>" . icon('terminal') . ' ' . htmlspecialchars($displayFilename, ENT_QUOTES, 'UTF-8') . "</span>";
+    $output .= "<span class='badge bg-dark text-white'>" . icon('filter') . ' min severity: ' . htmlspecialchars($severity, ENT_QUOTES, 'UTF-8') . "</span>";
+    $output .= "<span class='badge bg-secondary text-white'>" . icon('cpu') . ' shell: ' . htmlspecialchars($shell === 'auto' ? 'auto' : $shell, ENT_QUOTES, 'UTF-8') . "</span>";
+    $output .= "<span class='badge bg-success text-white'>" . icon('check-circle') . ' binary: ' . htmlspecialchars($shellcheckPath, ENT_QUOTES, 'UTF-8') . "</span>";
+    $output .= "</div>";
+    $output .= "<div class='d-flex flex-wrap gap-2'>";
+    foreach (['error', 'warning', 'info', 'style'] as $level) {
+        $badgeClass = match ($level) {
+            'error' => 'bg-danger text-white',
+            'warning' => 'bg-warning text-dark',
+            'info' => 'bg-secondary text-white',
+            default => 'bg-info text-dark',
+        };
+        $output .= "<span class='badge {$badgeClass}'>" . strtoupper($level) . ': ' . intval($counts[$level] ?? 0) . "</span>";
+    }
+    $output .= "</div></div></div>";
+
+    if ($fixedScript !== null && $fixedScript !== '' && $fixedScript !== $script) {
+        $output .= "<div class='card border-success mb-3'><h5 class='card-header'>" . icon('magic') . " Auto-fixed script</h5><div class='card-body'>";
+        $output .= "<p class='small text-muted mb-2'>ShellCheck suggested edits (for the same severity and shell options) were applied with GNU <code>patch</code>. Review the result before running it.</p>";
+        $output .= copyableOutput($fixedScript, '', ['inputName' => 'shellcheck_script']);
+        $output .= "</div></div>";
+    }
+
+    if ($comments === []) {
+        $output .= "<div class='alert alert-success mb-0'><strong>No issues found.</strong> This script passed ShellCheck for the selected severity threshold.</div>";
+        return $output;
+    }
+
+    foreach ($comments as $comment) {
+        $code = intval($comment['code'] ?? 0);
+        $level = strtolower((string) ($comment['level'] ?? 'info'));
+        $lineNumber = max(1, intval($comment['line'] ?? 1));
+        $endLine = max($lineNumber, intval($comment['endLine'] ?? $lineNumber));
+        $column = max(1, intval($comment['column'] ?? 1));
+        $endColumn = max($column, intval($comment['endColumn'] ?? ($column + 1)));
+        $message = (string) ($comment['message'] ?? 'Unknown ShellCheck diagnostic.');
+        $hasFix = !empty($comment['fix']);
+        $wikiUrl = 'https://www.shellcheck.net/wiki/SC' . str_pad((string) $code, 4, '0', STR_PAD_LEFT);
+
+        $output .= "<div class='card border-warning mb-3'><div class='card-header d-flex flex-wrap justify-content-between align-items-center gap-2'>";
+        $output .= "<div><strong><code>SC" . str_pad((string) $code, 4, '0', STR_PAD_LEFT) . "</code></strong></div>";
+        $output .= "<div class='d-flex gap-2 align-items-center'>" . shellcheck_level_badge_html($level);
+        if ($hasFix) {
+            $output .= "<span class='badge bg-success text-white'>autofix available</span>";
+        }
+        $output .= "</div></div><div class='card-body'>";
+        $output .= "<div class='mb-2'>" . htmlspecialchars($message, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "</div>";
+        $output .= "<div class='small text-muted mb-3'>Line " . $lineNumber . ':' . $column;
+        if ($endLine !== $lineNumber || $endColumn !== $column) {
+            $output .= ' to ' . $endLine . ':' . $endColumn;
+        }
+        $output .= "</div>";
+        $output .= shellcheck_excerpt_html($lines, $comment);
+        $output .= "<div class='mt-3'><a href='" . htmlspecialchars($wikiUrl, ENT_QUOTES, 'UTF-8') . "' target='_blank' rel='noopener noreferrer' class='btn btn-sm btn-outline-light'>"
+            . icon('box-arrow-up-right') . " Open SC" . str_pad((string) $code, 4, '0', STR_PAD_LEFT) . " docs</a></div>";
+        $output .= "</div></div>";
+    }
+
+    return $output;
+}
+
+function handle_syntax_validate(array $req): string {
+    require_once __DIR__ . '/syntax_validate.php';
+
+    $kind = strtolower(trim((string) req_get($req, 'syntax_validate_kind', 'json')));
+    if (!in_array($kind, syntax_validate_allowed_kinds(), true)) {
+        return formatOutput('Invalid language selected.', type: 'danger');
+    }
+
+    $input = (string) req_get($req, 'syntax_validate_input', '');
+    $input = str_replace("\r", '', $input);
+    if (strlen($input) > syntax_validate_max_len()) {
+        return formatOutput('Input is too large (max ' . (string) syntax_validate_max_len() . ' characters).', type: 'danger');
+    }
+
+    $result = syntax_validate_dispatch($kind, $input);
+    $msg = htmlspecialchars($result['message'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    if (!empty($result['detail'])) {
+        $msg .= '<br><small class="text-muted">' . htmlspecialchars((string) $result['detail'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</small>';
+    }
+
+    return formatOutput($msg, type: $result['ok'] ? 'success' : 'danger');
 }
 
 /**
@@ -1542,6 +3138,67 @@ function handle_genid(array $req): string {
     $output .= "<div style='margin-top: 8px; font-size: 0.85rem; opacity: 0.75;'>Generated <strong>{$qty}</strong> ID" . ($qty > 1 ? "s" : "") . ".</div>";
 
     return $output;
+}
+
+/**
+ * Light HTML minification: strip comments and collapse whitespace between tags.
+ */
+function handle_minify_html_whitespace(string $html): string {
+    $html = preg_replace('/<!--[\s\S]*?-->/', '', $html) ?? $html;
+    $html = preg_replace('/>\s+</', '><', $html) ?? $html;
+
+    return trim($html);
+}
+
+/**
+ * Minify JS/CSS (matthiasmullie/minify) or apply light cleanup for HTML.
+ *
+ * @param array $req Request with input, type (js|css|html)
+ */
+function handle_minify(array $req): string {
+    $input = req_get($req, 'input', '');
+    if ($input === '') {
+        return formatOutput('Input code is required.', type: 'danger');
+    }
+
+    $maxLen = 500000;
+    if (strlen($input) > $maxLen) {
+        return formatOutput("Input is too long. Maximum {$maxLen} characters allowed.", type: 'danger');
+    }
+
+    $type = strtolower(trim((string) req_get($req, 'type', 'js')));
+    if (!in_array($type, ['js', 'css', 'html'], true)) {
+        return formatOutput('Invalid code type.', type: 'danger');
+    }
+
+    try {
+        if ($type === 'js') {
+            $minifier = new \MatthiasMullie\Minify\JS($input);
+            $out = $minifier->minify();
+        } elseif ($type === 'css') {
+            $minifier = new \MatthiasMullie\Minify\CSS($input);
+            $out = $minifier->minify();
+        } else {
+            $out = handle_minify_html_whitespace($input);
+        }
+    } catch (\Throwable $e) {
+        return formatOutput(
+            'Minify failed: ' . htmlspecialchars($e->getMessage(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
+            type: 'danger'
+        );
+    }
+
+    $inLen = strlen($input);
+    $outLen = strlen($out);
+    $pct = $inLen > 0 ? round(100 * (1 - $outLen / $inLen), 1) : 0.0;
+    $delta = $pct >= 0
+        ? htmlspecialchars((string) $pct, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '% smaller'
+        : htmlspecialchars((string) abs($pct), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '% larger';
+
+    $meta = '<div class="small text-muted mb-2">'
+        . (int) $inLen . ' → ' . (int) $outLen . ' bytes (~' . $delta . ')</div>';
+
+    return $meta . output_copyable($out, 'Minified', ['inputName' => 'input']);
 }
 
 function crypto_available_key_algorithms(): array {
@@ -1875,13 +3532,120 @@ function crypto_signature_digest_for_key($key): int {
     return OPENSSL_ALGO_SHA256;
 }
 
+/**
+ * Algorithm argument for openssl_sign/openssl_verify. PHP 8.4+ expects 0 for pure Ed25519/Ed448 (not a digest OID).
+ *
+ * @param OpenSSLAsymmetricKey|resource $key
+ */
+function crypto_openssl_sign_verify_algorithm_for_key($key): int {
+    if (PHP_VERSION_ID >= 80400) {
+        $d = openssl_pkey_get_details($key);
+        if (is_array($d)) {
+            $type = $d['type'] ?? null;
+            if (defined('OPENSSL_KEYTYPE_ED25519') && $type === OPENSSL_KEYTYPE_ED25519) {
+                return 0;
+            }
+            if (defined('OPENSSL_KEYTYPE_ED448') && $type === OPENSSL_KEYTYPE_ED448) {
+                return 0;
+            }
+            if (isset($d['ed25519']) || isset($d['ed448'])) {
+                return 0;
+            }
+        }
+    }
+
+    return crypto_signature_digest_for_key($key);
+}
+
 function crypto_digest_label(int $algo): string {
     return match ($algo) {
+        0 => 'Ed25519/Ed448 (native)',
         OPENSSL_ALGO_SHA384 => 'SHA-384',
         OPENSSL_ALGO_SHA512 => 'SHA-512',
         OPENSSL_ALGO_SHA256 => 'SHA-256',
         default => 'SHA-256',
     };
+}
+
+/** @param OpenSSLAsymmetricKey|resource $key */
+function crypto_openssl_key_type_is_rsa($key): bool {
+    $d = openssl_pkey_get_details($key);
+
+    return is_array($d) && ($d['type'] ?? null) === OPENSSL_KEYTYPE_RSA;
+}
+
+/**
+ * RSA / RSA-PSS keys: OpenSSL 3 RSA-PSS may surface as type -1 in openssl_pkey_get_details() until PHP maps EVP_PKEY_RSA_PSS.
+ *
+ * @param OpenSSLAsymmetricKey|resource $key
+ */
+function crypto_openssl_key_may_be_rsa_for_pss_retry($key): bool {
+    $d = openssl_pkey_get_details($key);
+    if (!is_array($d)) {
+        return false;
+    }
+    $t = $d['type'] ?? null;
+    if ($t === OPENSSL_KEYTYPE_RSA) {
+        return true;
+    }
+    if (defined('OPENSSL_KEYTYPE_RSA_PSS') && $t === OPENSSL_KEYTYPE_RSA_PSS) {
+        return true;
+    }
+    if ($t === OPENSSL_KEYTYPE_EC || $t === OPENSSL_KEYTYPE_DSA || $t === OPENSSL_KEYTYPE_DH) {
+        return false;
+    }
+    if (defined('OPENSSL_KEYTYPE_ED25519') && ($t === OPENSSL_KEYTYPE_ED25519 || $t === OPENSSL_KEYTYPE_X25519)) {
+        return false;
+    }
+    if (defined('OPENSSL_KEYTYPE_ED448') && ($t === OPENSSL_KEYTYPE_ED448 || $t === OPENSSL_KEYTYPE_X448)) {
+        return false;
+    }
+
+    return $t === -1;
+}
+
+/**
+ * PKCS#1 v1.5 RSASSA first; for RSA keys, retry with RSASSA-PSS when v1.5 is refused (PHP 8.5+).
+ *
+ * @param OpenSSLAsymmetricKey|resource $privateKey
+ * @return array{ok: true, rsa_padding: 'pkcs1'|'pss'|null}|array{ok: false}
+ */
+function crypto_openssl_sign_rsa_padding_fallback(string $message, string &$signature, $privateKey, int $digestAlgorithm): array {
+    $signature = '';
+    if (@openssl_sign($message, $signature, $privateKey, $digestAlgorithm)) {
+        return ['ok' => true, 'rsa_padding' => crypto_openssl_key_type_is_rsa($privateKey) ? 'pkcs1' : null];
+    }
+    if (!crypto_openssl_key_may_be_rsa_for_pss_retry($privateKey)) {
+        return ['ok' => false];
+    }
+    if (PHP_VERSION_ID < 80500 || !defined('OPENSSL_PKCS1_PSS_PADDING')) {
+        return ['ok' => false];
+    }
+    if (@openssl_sign($message, $signature, $privateKey, $digestAlgorithm, OPENSSL_PKCS1_PSS_PADDING)) {
+        return ['ok' => true, 'rsa_padding' => 'pss'];
+    }
+
+    return ['ok' => false];
+}
+
+/**
+ * Verify PKCS#1 v1.5 signature; if invalid (0) and RSA, try RSASSA-PSS (PHP 8.5+).
+ *
+ * @param OpenSSLAsymmetricKey|resource $publicKey
+ */
+function crypto_openssl_verify_rsa_padding_fallback(string $message, string $signature, $publicKey, int $digestAlgorithm): int {
+    $r = openssl_verify($message, $signature, $publicKey, $digestAlgorithm);
+    if ($r === 1 || $r === -1) {
+        return $r;
+    }
+    if (!crypto_openssl_key_may_be_rsa_for_pss_retry($publicKey)) {
+        return 0;
+    }
+    if (PHP_VERSION_ID < 80500 || !defined('OPENSSL_PKCS1_PSS_PADDING')) {
+        return 0;
+    }
+
+    return openssl_verify($message, $signature, $publicKey, $digestAlgorithm, OPENSSL_PKCS1_PSS_PADDING);
 }
 
 function crypto_pem_public_from_private_pem(string $privatePem, string $passphrase = ''): ?string {
@@ -2217,16 +3981,30 @@ function handle_keypair_sign_verify(array $req): string {
             return formatOutput('Could not load private key (check PEM and passphrase).', type: 'danger');
         }
 
-        $digest = crypto_signature_digest_for_key($res);
+        $digest = crypto_openssl_sign_verify_algorithm_for_key($res);
         $digestLabel = crypto_digest_label($digest);
         $sig = '';
-        if (!@openssl_sign($message, $sig, $res, $digest)) {
-            return formatOutput('Signing failed for this key type (RSA/EC/Ed25519 required). RSA-PSS-only keys from some tools may not sign with OpenSSL here.', type: 'danger');
+        $signed = crypto_openssl_sign_rsa_padding_fallback($message, $sig, $res, $digest);
+        if (!$signed['ok']) {
+            $hint = (crypto_openssl_key_may_be_rsa_for_pss_retry($res) && PHP_VERSION_ID < 80500)
+                ? ' RSA PSS-only keys need PHP 8.5+ for RSASSA-PSS signing here.'
+                : '';
+
+            return formatOutput(
+                'Signing failed for this key type (RSA/EC/Ed25519 required), or the key cannot use the default RSA padding. RSA-PSS-only keys need RSASSA-PSS (PHP 8.5+).' . $hint,
+                type: 'danger'
+            );
         }
 
         $b64 = base64_encode($sig);
+        $paddingHtml = '';
+        if (($signed['rsa_padding'] ?? null) === 'pss') {
+            $paddingHtml = ' <strong>RSA RSASSA-PSS</strong> padding — verify on PHP 8.5+ with the same message and key.';
+        } elseif (($signed['rsa_padding'] ?? null) === 'pkcs1') {
+            $paddingHtml = ' RSA PKCS#1 v1.5 padding.';
+        }
         $info = formatOutput(
-            'Signed with OpenSSL using <strong>' . htmlspecialchars($digestLabel, ENT_QUOTES, 'UTF-8') . '</strong> (chosen for this key type). Verify with the matching public key and the same message.',
+            'Signed with OpenSSL using <strong>' . htmlspecialchars($digestLabel, ENT_QUOTES, 'UTF-8') . '</strong> (chosen for this key type).' . $paddingHtml . ' Verify with the matching public key and the same message.',
             type: 'info'
         );
 
@@ -2259,8 +4037,8 @@ function handle_keypair_sign_verify(array $req): string {
             return formatOutput('Could not load public key PEM.', type: 'danger');
         }
 
-        $digest = crypto_signature_digest_for_key($pub);
-        $ok = openssl_verify($message, $sig, $pub, $digest);
+        $digest = crypto_openssl_sign_verify_algorithm_for_key($pub);
+        $ok = crypto_openssl_verify_rsa_padding_fallback($message, $sig, $pub, $digest);
         if ($ok === 1) {
             return formatOutput(
                 '<strong>Signature valid.</strong> Digest: ' . htmlspecialchars(crypto_digest_label($digest), ENT_QUOTES, 'UTF-8'),

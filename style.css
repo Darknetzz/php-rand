@@ -1,5 +1,7 @@
 html {
   height: 100%;
+  --rand-space-scale: 1;
+  --rand-output-font-size: 1.2rem;
 }
 
 body {
@@ -10,15 +12,125 @@ body {
   min-height: 100vh;
 }
 
+/* Global spacing scaler (driven by Settings -> Item spacing). */
+.container .m-1 { margin: calc(0.25rem * var(--rand-space-scale)) !important; }
+.container .m-2 { margin: calc(0.5rem * var(--rand-space-scale)) !important; }
+.container .m-3 { margin: calc(1rem * var(--rand-space-scale)) !important; }
+.container .m-4 { margin: calc(1.5rem * var(--rand-space-scale)) !important; }
+.container .m-5 { margin: calc(3rem * var(--rand-space-scale)) !important; }
+
+.container .mt-1, .container .my-1 { margin-top: calc(0.25rem * var(--rand-space-scale)) !important; }
+.container .mt-2, .container .my-2 { margin-top: calc(0.5rem * var(--rand-space-scale)) !important; }
+.container .mt-3, .container .my-3 { margin-top: calc(1rem * var(--rand-space-scale)) !important; }
+.container .mt-4, .container .my-4 { margin-top: calc(1.5rem * var(--rand-space-scale)) !important; }
+.container .mt-5, .container .my-5 { margin-top: calc(3rem * var(--rand-space-scale)) !important; }
+
+.container .mb-1, .container .my-1 { margin-bottom: calc(0.25rem * var(--rand-space-scale)) !important; }
+.container .mb-2, .container .my-2 { margin-bottom: calc(0.5rem * var(--rand-space-scale)) !important; }
+.container .mb-3, .container .my-3 { margin-bottom: calc(1rem * var(--rand-space-scale)) !important; }
+.container .mb-4, .container .my-4 { margin-bottom: calc(1.5rem * var(--rand-space-scale)) !important; }
+.container .mb-5, .container .my-5 { margin-bottom: calc(3rem * var(--rand-space-scale)) !important; }
+
+.container .ms-1, .container .mx-1 { margin-left: calc(0.25rem * var(--rand-space-scale)) !important; }
+.container .ms-2, .container .mx-2 { margin-left: calc(0.5rem * var(--rand-space-scale)) !important; }
+.container .ms-3, .container .mx-3 { margin-left: calc(1rem * var(--rand-space-scale)) !important; }
+.container .ms-4, .container .mx-4 { margin-left: calc(1.5rem * var(--rand-space-scale)) !important; }
+.container .ms-5, .container .mx-5 { margin-left: calc(3rem * var(--rand-space-scale)) !important; }
+
+.container .me-1, .container .mx-1 { margin-right: calc(0.25rem * var(--rand-space-scale)) !important; }
+.container .me-2, .container .mx-2 { margin-right: calc(0.5rem * var(--rand-space-scale)) !important; }
+.container .me-3, .container .mx-3 { margin-right: calc(1rem * var(--rand-space-scale)) !important; }
+.container .me-4, .container .mx-4 { margin-right: calc(1.5rem * var(--rand-space-scale)) !important; }
+.container .me-5, .container .mx-5 { margin-right: calc(3rem * var(--rand-space-scale)) !important; }
+
+.container .p-1 { padding: calc(0.25rem * var(--rand-space-scale)) !important; }
+.container .p-2 { padding: calc(0.5rem * var(--rand-space-scale)) !important; }
+.container .p-3 { padding: calc(1rem * var(--rand-space-scale)) !important; }
+.container .p-4 { padding: calc(1.5rem * var(--rand-space-scale)) !important; }
+.container .p-5 { padding: calc(3rem * var(--rand-space-scale)) !important; }
+
+.container .pt-1, .container .py-1 { padding-top: calc(0.25rem * var(--rand-space-scale)) !important; }
+.container .pt-2, .container .py-2 { padding-top: calc(0.5rem * var(--rand-space-scale)) !important; }
+.container .pt-3, .container .py-3 { padding-top: calc(1rem * var(--rand-space-scale)) !important; }
+.container .pt-4, .container .py-4 { padding-top: calc(1.5rem * var(--rand-space-scale)) !important; }
+.container .pt-5, .container .py-5 { padding-top: calc(3rem * var(--rand-space-scale)) !important; }
+
+.container .pb-1, .container .py-1 { padding-bottom: calc(0.25rem * var(--rand-space-scale)) !important; }
+.container .pb-2, .container .py-2 { padding-bottom: calc(0.5rem * var(--rand-space-scale)) !important; }
+.container .pb-3, .container .py-3 { padding-bottom: calc(1rem * var(--rand-space-scale)) !important; }
+.container .pb-4, .container .py-4 { padding-bottom: calc(1.5rem * var(--rand-space-scale)) !important; }
+.container .pb-5, .container .py-5 { padding-bottom: calc(3rem * var(--rand-space-scale)) !important; }
+
+.container .ps-1, .container .px-1 { padding-left: calc(0.25rem * var(--rand-space-scale)) !important; }
+.container .ps-2, .container .px-2 { padding-left: calc(0.5rem * var(--rand-space-scale)) !important; }
+.container .ps-3, .container .px-3 { padding-left: calc(1rem * var(--rand-space-scale)) !important; }
+.container .ps-4, .container .px-4 { padding-left: calc(1.5rem * var(--rand-space-scale)) !important; }
+.container .ps-5, .container .px-5 { padding-left: calc(3rem * var(--rand-space-scale)) !important; }
+
+.container .pe-1, .container .px-1 { padding-right: calc(0.25rem * var(--rand-space-scale)) !important; }
+.container .pe-2, .container .px-2 { padding-right: calc(0.5rem * var(--rand-space-scale)) !important; }
+.container .pe-3, .container .px-3 { padding-right: calc(1rem * var(--rand-space-scale)) !important; }
+.container .pe-4, .container .px-4 { padding-right: calc(1.5rem * var(--rand-space-scale)) !important; }
+.container .pe-5, .container .px-5 { padding-right: calc(3rem * var(--rand-space-scale)) !important; }
+
+.container .gap-1 { gap: calc(0.25rem * var(--rand-space-scale)) !important; }
+.container .gap-2 { gap: calc(0.5rem * var(--rand-space-scale)) !important; }
+.container .gap-3 { gap: calc(1rem * var(--rand-space-scale)) !important; }
+.container .gap-4 { gap: calc(1.5rem * var(--rand-space-scale)) !important; }
+.container .gap-5 { gap: calc(3rem * var(--rand-space-scale)) !important; }
+
+.container .g-1, .container .gx-1 { --bs-gutter-x: calc(0.25rem * var(--rand-space-scale)); }
+.container .g-2, .container .gx-2 { --bs-gutter-x: calc(0.5rem * var(--rand-space-scale)); }
+.container .g-3, .container .gx-3 { --bs-gutter-x: calc(1rem * var(--rand-space-scale)); }
+.container .g-4, .container .gx-4 { --bs-gutter-x: calc(1.5rem * var(--rand-space-scale)); }
+.container .g-5, .container .gx-5 { --bs-gutter-x: calc(3rem * var(--rand-space-scale)); }
+.container .g-1, .container .gy-1 { --bs-gutter-y: calc(0.25rem * var(--rand-space-scale)); }
+.container .g-2, .container .gy-2 { --bs-gutter-y: calc(0.5rem * var(--rand-space-scale)); }
+.container .g-3, .container .gy-3 { --bs-gutter-y: calc(1rem * var(--rand-space-scale)); }
+.container .g-4, .container .gy-4 { --bs-gutter-y: calc(1.5rem * var(--rand-space-scale)); }
+.container .g-5, .container .gy-5 { --bs-gutter-y: calc(3rem * var(--rand-space-scale)); }
+
+/* About modal */
+.about-modal-tab-content {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+.about-info-dl dt {
+  font-weight: 600;
+}
+.about-info-dl dd {
+  margin-bottom: 0.65rem;
+}
+.about-ext-badge {
+  font-weight: 500;
+  font-size: 0.85rem;
+}
+.about-extensions-all {
+  margin-bottom: 0;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+}
+.about-extensions-all summary {
+  cursor: pointer;
+}
+.about-extensions-list {
+  line-height: 1.6;
+  word-break: break-word;
+}
+
 /* Changelog styling (details/summary; .changelog-panel was only in CHANGELOG.md, now removed for GitHub) */
-#changelogMarkdown details {
+#changelogMarkdown details,
+.about-modal-tab-content details {
   margin-bottom: 16px;
   padding: 12px 14px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.04);
 }
-#changelogMarkdown details summary {
+#changelogMarkdown details summary,
+.about-modal-tab-content details summary {
   cursor: pointer;
 }
 
@@ -72,7 +184,7 @@ footer {
   left: 50%;
   transform: translateX(-50%);
   width: 100%;
-  max-width: 1600px;
+  max-width: 1920px;
   min-height: calc(100vh - 100px);
   overflow-y: auto;
   box-sizing: border-box;
@@ -82,14 +194,79 @@ footer {
   display: none;
 }
 
+/* Monospace editors (Serialization, Syntax validator): visible text, no overlay */
+textarea.rand-code-textarea {
+  display: block;
+  width: 100%;
+  max-width: none !important;
+  min-height: 320px;
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  box-sizing: border-box;
+  resize: vertical;
+  overflow: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  tab-size: 2;
+  -moz-tab-size: 2;
+  white-space: pre;
+  word-wrap: normal;
+  color: #e6edf3;
+  background-color: #2d2d2d;
+  border: 2px solid #495057;
+  border-radius: 0.5rem;
+  color-scheme: dark;
+}
+#syntaxValidateForm textarea.rand-code-textarea,
+.validators-block textarea.rand-code-textarea {
+  min-height: 420px;
+}
+[data-bs-theme="light"] textarea.rand-code-textarea {
+  color: #24292f;
+  background-color: #f6f8fa;
+  border-color: #adb5bd;
+  color-scheme: light;
+}
+
+/* Crontab expression: compact monospace field */
+textarea.crontab-expression-textarea {
+  max-width: none !important;
+  min-height: 3.25rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+  font-size: 1.09375rem;
+  line-height: 1.5;
+  white-space: pre;
+  color: #e6edf3;
+  background-color: #2d2d2d;
+  border: 2px solid #495057 !important;
+  border-radius: 0.5rem;
+  color-scheme: dark;
+}
+[data-bs-theme="light"] textarea.crontab-expression-textarea {
+  color: #24292f;
+  background-color: #f6f8fa;
+  border-color: #adb5bd !important;
+  color-scheme: light;
+}
+
 .output,
 .card {
-  margin: 15px;
+  margin: calc(15px * var(--rand-space-scale));
+}
+
+/* Align syntax validator help panel with sibling .card (same 15px horizontal inset). */
+#syntax_validate > .alert.alert-info,
+.validators-block > .alert.alert-info {
+  margin-left: 15px;
+  margin-right: 15px;
 }
 
 .card-body {
-  padding: 15px;
-  margin: 15px;
+  padding: calc(15px * var(--rand-space-scale));
+  margin: calc(15px * var(--rand-space-scale));
 }
 
 /* Can be scrolled */
@@ -124,6 +301,10 @@ th.tablehead,
 }
 
 /* Shared tool response + output helpers */
+.responseDiv {
+  font-size: var(--rand-output-font-size);
+}
+
 .tool-loading {
   text-align: center;
   padding: 3rem 0;
@@ -146,8 +327,9 @@ th.tablehead,
 
 .copyable-content {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 12px;
   width: 100%;
   min-width: 200px;
   background-color: #0f172a;
@@ -155,15 +337,22 @@ th.tablehead,
   padding: 14px;
   border-radius: 0.4rem;
   font-family: monospace;
-  font-size: 0.95rem;
+  font-size: var(--rand-output-font-size);
   border: 1px solid #334155;
   box-shadow: 0 6px 14px rgba(0, 0, 0, 0.25);
+}
+
+.copyable-content.flex-column,
+.copyable-content.d-flex.flex-column {
+  flex-direction: column;
+  gap: 0;
 }
 
 .copyable-body {
   flex: 1;
   min-width: 0;
   min-height: 0;
+  font-size: inherit;
   word-break: break-all;
   white-space: pre-wrap;
   user-select: all;
@@ -173,9 +362,29 @@ th.tablehead,
 
 .copyable-actions {
   display: flex;
+  flex-direction: column;
+  align-items: flex-end;
   gap: 6px;
-  flex-wrap: wrap;
   flex-shrink: 0;
+  align-self: flex-start;
+}
+
+.copyable-content.flex-column .copyable-actions,
+.copyable-content.d-flex.flex-column .copyable-actions {
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  align-self: stretch;
+  width: 100%;
+}
+
+.copy-btn-tooltip-wrap {
+  cursor: not-allowed;
+}
+
+.copy-btn-tooltip-wrap .btn:disabled {
+  pointer-events: none;
 }
 
 /* Random Data Button Styles */
@@ -326,4 +535,124 @@ th.tablehead,
 
 .calc-equals:hover {
   background: #a96bb8;
+}
+
+/* Native <details> disclosure without double marker (crontab, shellcheck, …) */
+.crontab-more-options summary,
+.shellcheck-lint-options summary {
+  list-style: none;
+}
+.crontab-more-options summary::-webkit-details-marker,
+.shellcheck-lint-options summary::-webkit-details-marker {
+  display: none;
+}
+
+/* Crontab Explorer: analysis uses a nested row; keep tables readable in split columns */
+@media (min-width: 1200px) {
+  .crontab-analysis-cols .table-responsive {
+    max-height: min(70vh, 520px);
+    overflow-y: auto;
+  }
+}
+
+/* Diff tool: unified diff line colors */
+.diff-colored-output .diff-line-del {
+  color: #f87171;
+}
+.diff-colored-output .diff-line-add {
+  color: #4ade80;
+}
+.diff-colored-output .diff-line-meta {
+  color: #94a3b8;
+}
+.diff-colored-output .diff-line-hunk {
+  color: #7dd3fc;
+}
+.diff-colored-output .diff-line-context {
+  color: inherit;
+}
+
+/* ---------- Appearance: light theme (paired with data-bs-theme + theme-light on body) ---------- */
+[data-bs-theme="light"] body.theme-light {
+  background-color: #f1f5f9;
+  color: #1e293b;
+}
+
+[data-bs-theme="light"] .description {
+  color: #64748b;
+}
+
+[data-bs-theme="light"] li.active {
+  background-color: #e2e8f0;
+}
+
+[data-bs-theme="light"] footer {
+  color: #64748b;
+  background-color: rgba(255, 255, 255, 0.92);
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+[data-bs-theme="light"] #changelogMarkdown details,
+[data-bs-theme="light"] .about-extensions-all {
+  border-color: rgba(15, 23, 42, 0.12);
+  background: rgba(255, 255, 255, 0.85);
+}
+
+[data-bs-theme="light"] .box {
+  border-color: #cbd5e1;
+  background-color: #fff;
+}
+
+[data-bs-theme="light"] .copyable-content {
+  background-color: #f8fafc;
+  color: #0f172a;
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+}
+
+[data-bs-theme="light"] .modal-backdrop {
+  background-color: #fff;
+  opacity: 0.85 !important;
+}
+
+[data-bs-theme="light"] .calc-card {
+  background: #fff;
+  border-color: rgba(15, 23, 42, 0.12);
+}
+
+[data-bs-theme="light"] .calc-mode {
+  color: rgba(15, 23, 42, 0.55);
+}
+
+[data-bs-theme="light"] .calc-body {
+  background: transparent;
+}
+
+[data-bs-theme="light"] .calc-display-wrap {
+  background: #e2e8f0;
+}
+
+[data-bs-theme="light"] .calc-expression {
+  color: rgba(15, 23, 42, 0.55);
+}
+
+[data-bs-theme="light"] .calc-display {
+  color: #0f172a;
+}
+
+[data-bs-theme="light"] .calc-btn {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+[data-bs-theme="light"] .calc-btn:hover {
+  background: #cbd5e1;
+}
+
+[data-bs-theme="light"] .calc-op {
+  color: #0369a1;
+}
+
+[data-bs-theme="light"] .navbar.border-bottom {
+  border-color: rgba(15, 23, 42, 0.1) !important;
 }

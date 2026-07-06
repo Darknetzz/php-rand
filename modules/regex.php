@@ -7,11 +7,7 @@
     <div class="card card-primary">
         <h1 class="card-header">🔍 Regex Tester</h1>
         <div class="card-body">
-            <div class="alert alert-info mb-4">
-                <strong>ℹ️ About Regex</strong><br>
-                Test and debug regular expressions in real-time. See matches, groups, and replacements instantly. Supports PHP regex syntax (PCRE).
-            </div>
-
+            <p class="text-muted mb-4">Test and debug regular expressions in real-time. See matches, groups, and replacements instantly. Supports PHP regex syntax (PCRE).</p>
             <form class="form" action="gen.php" method="POST" id="regexForm" data-action="regex">
                 <div class="row g-4 mb-4">
                     <div class="col-12 col-lg-6">
@@ -33,7 +29,7 @@
                     
                     <div class="col-12 col-lg-6 d-flex flex-column">
                         <label class="form-label mb-3"><strong style="font-size: 1.1rem;">Results</strong></label>
-                        <div class="responseDiv flex-grow-1" id="regexresponse" style="border: 2px solid #495057; padding: 20px; min-height: 400px; max-height: 600px; overflow-y: auto; background: linear-gradient(135deg, rgba(32, 201, 151, 0.1) 0%, rgba(13, 110, 253, 0.05) 100%); border-radius: 0.5rem; font-family: monospace; font-size: 0.9rem; white-space: pre-wrap; word-break: break-word;">
+                        <div class="responseDiv flex-grow-1" id="regexresponse" style="border: 2px solid #495057; padding: 20px; min-height: 400px; max-height: 600px; overflow-y: auto; background: linear-gradient(135deg, rgba(32, 201, 151, 0.1) 0%, rgba(13, 110, 253, 0.05) 100%); border-radius: 0.5rem; font-family: monospace; white-space: pre-wrap; word-break: break-word;">
                             <div style="opacity: 0.5; text-align: center; padding-top: 150px;">
                                 <div style="font-size: 3rem; margin-bottom: 10px;">🔍</div>
                                 <div>Regex test results will appear here...</div>

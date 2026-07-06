@@ -22,10 +22,7 @@ $isSelected = static function(string $current, string $expected): string {
     <div class="card card-primary">
         <h1 class="card-header">📱 QR Code Generator</h1>
         <div class="card-body">
-            <div class="alert alert-info mb-4">
-                <strong>ℹ️ About QR Codes</strong> Generate QR codes locally from any text, URL, or data. Nothing is sent to an external QR code API.
-            </div>
-
+            <p class="text-muted mb-4">Generate QR codes locally from any text, URL, or data. Nothing is sent to an external QR code API.</p>
             <form class="form" action="gen.php" method="POST" id="qrcodeForm" data-action="qrcode">
                 <div class="row g-4 mb-4">
                     <div class="col-12 col-lg-6">

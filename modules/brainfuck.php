@@ -2,12 +2,7 @@
     <div class="card card-primary">
         <h1 class="card-header">🧠 Brainfuck Converter</h1>
         <div class="card card-body">
-            <div class="alert alert-info mb-4">
-                <strong>ℹ️ About Brainfuck</strong><br>
-                Brainfuck is an esoteric programming language with only 8 commands: <code>&gt;</code> <code>&lt;</code> <code>+</code> <code>-</code> <code>.</code> <code>,</code> <code>[</code> <code>]</code>.
-                This tool converts between text and Brainfuck code, or executes Brainfuck code.
-            </div>
-
+            <p class="text-muted mb-4">Brainfuck is an esoteric programming language with only 8 commands: <code>&gt;</code> <code>&lt;</code> <code>+</code> <code>-</code> <code>.</code> <code>,</code> <code>[</code> <code>]</code>. This tool converts between text and Brainfuck code, or executes Brainfuck code.</p>
             <form class="form" action="gen.php" method="POST" data-action="brainfuck">
                 <?php
                   $brainfuckInput = $_POST['brainfuck'] ?? '';
@@ -55,7 +50,7 @@
                 </div>
 
                 <!-- Output Section -->
-                <div class="responseDiv" id="brainfuckresponse" style="border: 2px solid #495057; padding: 20px; min-height: 200px; max-height: 500px; overflow-y: auto; background: linear-gradient(135deg, rgba(102, 16, 242, 0.1) 0%, rgba(108, 92, 231, 0.05) 100%); border-radius: 0.5rem; font-family: monospace; font-size: 0.95rem; white-space: pre-wrap; word-break: break-all;">
+                <div class="responseDiv" id="brainfuckresponse" style="border: 2px solid #495057; padding: 20px; min-height: 200px; max-height: 500px; overflow-y: auto; background: linear-gradient(135deg, rgba(102, 16, 242, 0.1) 0%, rgba(108, 92, 231, 0.05) 100%); border-radius: 0.5rem; font-family: monospace; white-space: pre-wrap; word-break: break-all;">
                     <div style="opacity: 0.5; text-align: center; padding-top: 50px;">
                         <div style="font-size: 3rem; margin-bottom: 10px;">🧠</div>
                         <div>Conversion result will appear here...</div>

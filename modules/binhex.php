@@ -3,11 +3,7 @@
     <div class="card card-primary">
         <h1 class="card-header">Binary ⟷ Hexadecimal Converter</h1>
         <div class="card-body">
-            <div class="alert alert-info mb-4">
-                <strong>ℹ️ Binary-to-Text Encoding</strong><br>
-                Convert between binary and hexadecimal representations. These encodings are used to represent binary data in a text format, ensuring data integrity during storage and transmission.
-            </div>
-
+            <p class="text-muted mb-4">Convert between binary and hexadecimal representations. These encodings are used to represent binary data in a text format, ensuring data integrity during storage and transmission.</p>
             <form class="form" action="gen.php" method="POST" id="binhexForm" data-action="hex">
                 
                 <!-- Input/Output Section -->
@@ -19,7 +15,7 @@
                     </div>
                     <div class="col-12 col-lg-6 d-flex flex-column">
                         <label class="form-label mb-3"><strong style="font-size: 1.1rem;">Output</strong></label>
-                        <div class="responseDiv flex-grow-1" data-formid="binhexForm" style="border: 2px solid #495057; padding: 20px; min-height: 300px; max-height: 500px; overflow-y: auto; background: linear-gradient(135deg, rgba(138, 43, 226, 0.1) 0%, rgba(75, 0, 130, 0.05) 100%); border-radius: 0.5rem; font-family: monospace; font-size: 0.95rem; white-space: pre-wrap; word-break: break-all;">
+                        <div class="responseDiv flex-grow-1" data-formid="binhexForm" style="border: 2px solid #495057; padding: 20px; min-height: 300px; max-height: 500px; overflow-y: auto; background: linear-gradient(135deg, rgba(138, 43, 226, 0.1) 0%, rgba(75, 0, 130, 0.05) 100%); border-radius: 0.5rem; font-family: monospace; white-space: pre-wrap; word-break: break-all;">
                             <div style="opacity: 0.5; text-align: center; padding-top: 100px;">
                                 <div style="font-size: 3rem; margin-bottom: 10px;">⟳</div>
                                 <div>Converted result will appear here...</div>

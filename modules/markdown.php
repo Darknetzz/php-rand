@@ -2,11 +2,7 @@
     <div class="card card-primary">
         <h1 class="card-header">📝 Markdown Editor</h1>
         <div class="card-body">
-            <div class="alert alert-info mb-4">
-                <strong>ℹ️ Live Markdown Preview</strong><br>
-                <span style="display: inline-block; margin-top: 4px;">Uses <a href="https://marked.js.org/" target="_blank" class="alert-link">marked.js</a> and <a href="https://highlightjs.org/" target="_blank" class="alert-link">highlight.js</a> for real-time rendering with syntax highlighting.</span>
-            </div>
-            
+            <p class="text-muted mb-4">Uses <a href="https://marked.js.org/" target="_blank">marked.js</a> and <a href="https://highlightjs.org/" target="_blank">highlight.js</a> for real-time rendering with syntax highlighting.</p>
             <div class="row g-4 mb-4">
                 <div class="col-12 col-lg-6">
                     <label for="markdownTextarea" class="form-label mb-3"><strong style="font-size: 1.1rem;">Markdown Input</strong></label>
@@ -38,7 +34,7 @@ console.log('Hello World!');
                 </div>
                 <div class="card-body" style="padding: 0;">
                     <div class="copyable-content" style="padding: 0; border-radius: 0 0 0.4rem 0.4rem;">
-                        <pre class="copyable-body" style="border: none; padding: 20px; margin: 0; background: transparent;"><code id="markdownHtmlOutput" style="white-space: pre-wrap; word-break: break-word; color: #e9ecef; font-family: monospace; font-size: 0.9rem;">&lt;h1&gt;Marked in the browser&lt;/h1&gt;</code></pre>
+                        <pre class="copyable-body" style="border: none; padding: 20px; margin: 0; background: transparent;"><code id="markdownHtmlOutput" style="white-space: pre-wrap; word-break: break-word; color: #e9ecef; font-family: monospace;">&lt;h1&gt;Marked in the browser&lt;/h1&gt;</code></pre>
                         <div class="copyable-actions" style="padding: 0 14px 14px;">
                             <button type="button" class="btn btn-sm btn-outline-light" style="border: 1px solid #e9ecef;" onclick="copyToClipboard('markdownHtmlOutput', this)">
                                 <i class="bi bi-files"></i> Copy HTML
