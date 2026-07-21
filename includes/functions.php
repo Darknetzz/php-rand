@@ -1588,6 +1588,19 @@ function is_base_selector($b) {
     return is_int($b) && $b >= 1 && $b <= 64;
 }
 
+/**
+ * Whether a from/to selector is accepted by convert_any().
+ * Accepts named encodings (text, hex, base64) and numeric bases 1..64
+ * (including aliases like bin/oct/dec and digit strings).
+ */
+function is_convert_any_selector($selector): bool {
+    $normalized = normalize_selector($selector);
+    if (is_base_selector($normalized)) {
+        return true;
+    }
+    return in_array($normalized, ['text', 'hex', 'base64'], true);
+}
+
 # ─────────────────────────────────────────────────────────────────────────── //
 #                            FUNCTION: str_to_bytes                           //
 # ─────────────────────────────────────────────────────────────────────────── //

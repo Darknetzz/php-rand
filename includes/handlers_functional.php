@@ -495,15 +495,14 @@ function handle_base(array $req): string {
         return formatOutput("Input must be at most 1,000,000 characters.", type: "danger");
     }
 
-    // Validate source and target formats (whitelist allowed formats)
-    $allowedFormats = ['text', 'base64', 'base32', 'hex', '64', '32', '16', '2', 64, 32, 16, 2];
+    // Validate against what convert_any() actually supports (UI offers bases 2..64 + text/base64)
     $from = req_get($req, 'from', 'text');
-    $to = req_get($req, 'to', 64);
+    $to = req_get($req, 'to', 'base64');
 
-    if (!in_array($from, $allowedFormats, true)) {
+    if (!is_convert_any_selector($from)) {
         return formatOutput("Invalid source format specified.", type: "danger");
     }
-    if (!in_array($to, $allowedFormats, true)) {
+    if (!is_convert_any_selector($to)) {
         return formatOutput("Invalid target format specified.", type: "danger");
     }
 
