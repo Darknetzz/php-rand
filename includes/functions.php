@@ -1601,6 +1601,195 @@ function is_convert_any_selector($selector): bool {
     return in_array($normalized, ['text', 'hex', 'base64'], true);
 }
 
+/**
+ * Human-readable label for a convert_any() selector.
+ */
+function convert_any_selector_label($selector): string {
+    $normalized = normalize_selector($selector);
+    if ($normalized === 'text') {
+        return 'Text';
+    }
+    if ($normalized === 'hex') {
+        return 'Hex (encoding)';
+    }
+    if ($normalized === 'base64') {
+        return 'Base64 (encoding)';
+    }
+    if (!is_base_selector($normalized)) {
+        return (string) $selector;
+    }
+    $named = [
+        2 => 'Base 2 (binary)',
+        8 => 'Base 8 (octal)',
+        10 => 'Base 10 (decimal)',
+        16 => 'Base 16 (hexadecimal)',
+    ];
+    return $named[$normalized] ?? ('Base ' . $normalized);
+}
+
+/**
+ * Guess a convert_any() from-selector for free-form input.
+ * Prefers common bases/encodings; caller can still force an explicit from.
+ *
+ * @return string|int 'text'|'hex'|'base64'|1..64
+ */
+function detect_convert_any_selector(string $input) {
+    $input = trim($input);
+    if ($input === '') {
+        throw new InvalidArgumentException('Input is empty.');
+    }
+
+    // Spaces / newlines → plain text (encodings and numeric bases are single tokens)
+    if (preg_match('/\s/', $input)) {
+        return 'text';
+    }
+
+    if (convert_any_input_looks_like_base64($input)) {
+        return 'base64';
+    }
+
+    // Strip padding from failed base64/base32-looking tokens and keep detecting
+    if (strpos($input, '=') !== false) {
+        $input = rtrim($input, '=');
+        if ($input === '') {
+            return 'text';
+        }
+        if (convert_any_input_looks_like_base64($input)) {
+            return 'base64';
+        }
+    }
+
+    // Fast paths for unambiguous digit alphabets
+    if (preg_match('/^[01]+$/', $input)) {
+        return 2;
+    }
+    if (preg_match('/^[0-9]+$/', $input)) {
+        return 10;
+    }
+    if (preg_match('/^[0-9A-Fa-f]+$/', $input)) {
+        return 16;
+    }
+
+    // Remaining single-token alphabets: letters beyond F, or +/
+    if (!preg_match('#^[0-9A-Za-z+/]+$#', $input)) {
+        return 'text';
+    }
+
+    $maxDigit = convert_any_input_max_digit_value($input);
+    $minBase = max(2, $maxDigit + 1);
+
+    // Letter-only: mixed/lowercase reads as text; ALL CAPS → high numeric base
+    if (preg_match('/^[A-Za-z]+$/', $input)) {
+        if (preg_match('/^[A-Z]+$/', $input)) {
+            if ($minBase <= 32) {
+                return 32;
+            }
+            return min(36, $minBase);
+        }
+        return 'text';
+    }
+
+    if (strpbrk($input, '+/') !== false) {
+        return 64;
+    }
+
+    if ($minBase <= 32) {
+        return 32;
+    }
+    if ($minBase <= 36) {
+        return 36;
+    }
+    return min(64, $minBase);
+}
+
+/**
+ * Highest digit value in $input using bases≤36 case-insensitivity (a-z ≡ A-Z ≡ 10..35),
+ * and +/ as 62/63 for higher bases.
+ */
+function convert_any_input_max_digit_value(string $input): int {
+    $max = -1;
+    $len = strlen($input);
+    for ($i = 0; $i < $len; $i++) {
+        $ch = $input[$i];
+        if ($ch >= '0' && $ch <= '9') {
+            $pos = ord($ch) - ord('0');
+        } elseif ($ch >= 'A' && $ch <= 'Z') {
+            $pos = 10 + (ord($ch) - ord('A'));
+        } elseif ($ch >= 'a' && $ch <= 'z') {
+            $pos = 10 + (ord($ch) - ord('a'));
+        } elseif ($ch === '+') {
+            $pos = 62;
+        } elseif ($ch === '/') {
+            $pos = 63;
+        } else {
+            continue;
+        }
+        if ($pos > $max) {
+            $max = $pos;
+        }
+    }
+    return $max;
+}
+
+/**
+ * Whether $input is confidently RFC 4648 Base64 (encoding), not a numeric base.
+ */
+function convert_any_input_looks_like_base64(string $input): bool {
+    if ($input === '' || preg_match('/\s/', $input)) {
+        return false;
+    }
+
+    // Length mod 4 == 1 is never valid base64
+    if ((strlen($input) % 4) === 1) {
+        return false;
+    }
+
+    $padded = $input;
+    $mod = strlen($input) % 4;
+    if ($mod > 0) {
+        $padded .= str_repeat('=', 4 - $mod);
+    }
+
+    if (!preg_match('#^[A-Za-z0-9+/]+={0,2}$#', $padded)) {
+        return false;
+    }
+
+    $decoded = base64_decode($padded, true);
+    if ($decoded === false || $decoded === '') {
+        return false;
+    }
+
+    // Strong signals: padding or base64 punctuation
+    if (strpbrk($input, '+/=') !== false) {
+        return true;
+    }
+
+    // Pure digits → numeric base, not base64 ("1000" etc. can decode by chance)
+    if (preg_match('/^[0-9]+$/', $input)) {
+        return false;
+    }
+
+    // Hex alphabet → prefer base 16 over base64
+    if (preg_match('/^[0-9A-Fa-f]+$/', $input)) {
+        return false;
+    }
+
+    // Mixed alphanumeric that decodes cleanly and is mostly printable
+    if (strlen($input) < 4) {
+        return false;
+    }
+
+    $printable = 0;
+    $bytes = strlen($decoded);
+    for ($i = 0; $i < $bytes; $i++) {
+        $o = ord($decoded[$i]);
+        if ($o === 9 || $o === 10 || $o === 13 || ($o >= 32 && $o <= 126)) {
+            $printable++;
+        }
+    }
+    return $bytes > 0 && ($printable / $bytes) >= 0.85;
+}
+
 # ─────────────────────────────────────────────────────────────────────────── //
 #                            FUNCTION: str_to_bytes                           //
 # ─────────────────────────────────────────────────────────────────────────── //

@@ -32,16 +32,6 @@ $base_options = [
       "attr" => null,
       "emoji" => "⬡",
     ],
-    32 => [
-      "name" => "Base 32",
-      "attr" => null,
-      "emoji" => "🔢",
-    ],
-    64 => [
-      "name" => "Base 64",
-      "attr" => null,
-      "emoji" => "🔢",
-    ],
     0 => [
       "name" => "---",
       "attr" => "disabled",
@@ -70,7 +60,7 @@ foreach ($base_options as $value => $data) {
     <div class="card card-primary">
         <h1 class="card-header">Base Converter</h1>
         <div class="card-body">
-            <span class="description">Convert between different base systems (binary, octal, decimal, hexadecimal, base64, etc.)</span>
+            <span class="description">Convert between different base systems (binary, octal, decimal, hexadecimal, base64, etc.). Source defaults to auto-detect; override when needed.</span>
             <hr>
             <form class="form" action="gen.php" method="POST" id="baseForm" data-action="base">
                 
@@ -99,7 +89,7 @@ foreach ($base_options as $value => $data) {
                             <div class="col-12 col-md-5">
                                 <label for="fromBase" class="form-label"><strong>Convert From:</strong></label>
                                 <select name="from" id="fromBase" class="form-select form-select-lg" style="font-family: monospace; border: 2px solid #0d6efd;">
-                                    <option value="text" selected>📝 Text</option>
+                                    <option value="auto" selected>✨ Auto-detect</option>
                                     <?= $base_options_html ?>
                                 </select>
                             </div>
@@ -131,6 +121,12 @@ foreach ($base_options as $value => $data) {
         document.getElementById('baseSwapBtn').addEventListener('click', function () {
             var fromVal = fromEl.value;
             var toVal = toEl.value;
+            // Auto-detect is only valid as a source; don't put it in Convert To
+            if (fromVal === 'auto') {
+                fromEl.value = toVal;
+                toEl.value = 'text';
+                return;
+            }
             fromEl.value = toVal;
             toEl.value = fromVal;
         });

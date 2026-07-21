@@ -495,21 +495,38 @@ function handle_base(array $req): string {
         return formatOutput("Input must be at most 1,000,000 characters.", type: "danger");
     }
 
-    // Validate against what convert_any() actually supports (UI offers bases 2..64 + text/base64)
-    $from = req_get($req, 'from', 'text');
+    $fromRaw = req_get($req, 'from', 'auto');
     $to = req_get($req, 'to', 'base64');
+    $autoDetected = false;
 
-    if (!is_convert_any_selector($from)) {
-        return formatOutput("Invalid source format specified.", type: "danger");
+    if (strtolower(trim((string) $fromRaw)) === 'auto') {
+        try {
+            $from = detect_convert_any_selector($input);
+            $autoDetected = true;
+        } catch (Exception $e) {
+            return formatOutput($e->getMessage(), type: "danger");
+        }
+    } else {
+        $from = $fromRaw;
+        if (!is_convert_any_selector($from)) {
+            return formatOutput("Invalid source format specified.", type: "danger");
+        }
     }
+
     if (!is_convert_any_selector($to)) {
         return formatOutput("Invalid target format specified.", type: "danger");
     }
 
     try {
         $result = convert_any($input, $from, $to);
+        $fromLabel = convert_any_selector_label($from);
+        $toLabel = convert_any_selector_label($to);
+        $heading = htmlspecialchars($fromLabel . ' → ' . $toLabel, ENT_QUOTES, 'UTF-8');
+        if ($autoDetected) {
+            $heading .= ' <span class="text-muted fw-normal">(auto-detected source)</span>';
+        }
         $output = "<div style='margin-bottom: 20px;'>";
-        $output .= "<div style='margin-bottom: 15px;'><strong>Base $from → Base $to</strong></div>";
+        $output .= "<div style='margin-bottom: 15px;'><strong>{$heading}</strong></div>";
         $output .= copyableOutput($result, '', ['inputName' => 'base', 'swapNames' => ['from', 'to']]);
         $output .= "</div>";
         return $output;
