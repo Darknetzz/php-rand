@@ -147,9 +147,15 @@
     function renderTable(caption, rows) {
         var html = '<div class="table-responsive"><table class="table table-dark table-striped table-hover align-middle mb-0" style="border: 1px solid #334155;">';
         html += '<caption class="text-start fw-bold" style="caption-side: top; color: var(--bs-body-color);">' + caption + '</caption>';
-        html += '<thead><tr><th>Unit</th><th>Value</th></tr></thead><tbody>';
+        html += '<thead><tr><th>Conversion</th></tr></thead><tbody>';
         for (var i = 0; i < rows.length; i++) {
-            html += '<tr><td>' + rows[i][0] + '</td><td style="max-width: 280px;">' + copyableRow(rows[i][1], 'r' + i) + '</td></tr>';
+            var unitLabel = rows[i][0];
+            var value = rows[i][1];
+            var cellContent = '<div style="display: flex; justify-content: space-between; align-items: center; gap: 12px;">' +
+                '<div style="flex: 1; min-width: 0;">' + copyableRow(value, 'r' + i) + '</div>' +
+                '<div style="white-space: nowrap; font-weight: 600; color: #a0aec0;">' + unitLabel + '</div>' +
+                '</div>';
+            html += '<tr><td style="max-width: 400px;">' + cellContent + '</td></tr>';
         }
         html += '</tbody></table></div>';
         return html;
