@@ -145,6 +145,17 @@
     }
 
     function renderTable(caption, rows) {
+        // Calculate the maximum width needed for values to align copy buttons
+        var maxValueLength = 0;
+        for (var i = 0; i < rows.length; i++) {
+            var val = typeof rows[i][1] === 'number' ? (Number.isInteger(rows[i][1]) ? rows[i][1] : Number(rows[i][1].toPrecision(10))) : rows[i][1];
+            var valStr = String(val);
+            if (valStr.length > maxValueLength) maxValueLength = valStr.length;
+        }
+        
+        // Estimate width based on character count for monospace font plus padding and button
+        var estimatedWidth = Math.max(150, maxValueLength * 10 + 100) + 'px';
+        
         var html = '<div class="table-responsive"><table class="table table-dark table-striped table-hover align-middle mb-0" style="border: 1px solid #334155;">';
         html += '<caption class="text-start fw-bold" style="caption-side: top; color: var(--bs-body-color);">' + caption + '</caption>';
         html += '<thead><tr><th>Conversion</th></tr></thead><tbody>';
@@ -152,7 +163,7 @@
             var unitLabel = rows[i][0];
             var value = rows[i][1];
             var cellContent = '<div style="display: flex; justify-content: space-between; align-items: center; gap: 12px;">' +
-                '<div style="flex: 1; min-width: 0;">' + copyableRow(value, 'r' + i) + '</div>' +
+                '<div style="flex: 0 0 ' + estimatedWidth + ';">' + copyableRow(value, 'r' + i) + '</div>' +
                 '<div style="white-space: nowrap; font-weight: 600; color: #a0aec0;">' + unitLabel + '</div>' +
                 '</div>';
             html += '<tr><td style="max-width: 400px;">' + cellContent + '</td></tr>';
