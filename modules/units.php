@@ -144,29 +144,23 @@
             '<div class="copyable-actions"><button type="button" class="btn btn-sm btn-outline-light" onclick="copyToClipboard(\'' + id + '\', this)"><i class="bi bi-files"></i> Copy</button></div></div>';
     }
 
+    function copyableRowWithUnit(val, unitLabel, id) {
+        var id = 'uc_' + (id || Date.now() + '_' + Math.random().toString(36).slice(2));
+        var v = typeof val === 'number' ? (Number.isInteger(val) ? val : Number(val.toPrecision(10))) : val;
+        var displayText = v + ' <span style="color: #a0aec0; font-weight: 600;">' + unitLabel + '</span>';
+        return '<div class="copyable-content" style="padding:8px;gap:6px;min-width:0;">' +
+            '<div class="copyable-body" id="' + id + '" style="max-height:none;overflow:visible;">' + displayText + '</div>' +
+            '<div class="copyable-actions"><button type="button" class="btn btn-sm btn-outline-light" onclick="copyToClipboard(\'' + id + '\', this)"><i class="bi bi-files"></i> Copy</button></div></div>';
+    }
+
     function renderTable(caption, rows) {
-        // Calculate the maximum width needed for values to align copy buttons
-        var maxValueLength = 0;
-        for (var i = 0; i < rows.length; i++) {
-            var val = typeof rows[i][1] === 'number' ? (Number.isInteger(rows[i][1]) ? rows[i][1] : Number(rows[i][1].toPrecision(10))) : rows[i][1];
-            var valStr = String(val);
-            if (valStr.length > maxValueLength) maxValueLength = valStr.length;
-        }
-        
-        // Estimate width based on character count for monospace font plus padding and button
-        var estimatedWidth = Math.max(150, maxValueLength * 10 + 100) + 'px';
-        
         var html = '<div class="table-responsive"><table class="table table-dark table-striped table-hover align-middle mb-0" style="border: 1px solid #334155;">';
         html += '<caption class="text-start fw-bold" style="caption-side: top; color: var(--bs-body-color);">' + caption + '</caption>';
         html += '<thead><tr><th>Conversion</th></tr></thead><tbody>';
         for (var i = 0; i < rows.length; i++) {
             var unitLabel = rows[i][0];
             var value = rows[i][1];
-            var cellContent = '<div style="display: flex; justify-content: space-between; align-items: center; gap: 12px;">' +
-                '<div style="flex: 0 0 ' + estimatedWidth + ';">' + copyableRow(value, 'r' + i) + '</div>' +
-                '<div style="white-space: nowrap; font-weight: 600; color: #a0aec0;">' + unitLabel + '</div>' +
-                '</div>';
-            html += '<tr><td style="max-width: 400px;">' + cellContent + '</td></tr>';
+            html += '<tr><td style="max-width: 400px;">' + copyableRowWithUnit(value, unitLabel, 'r' + i) + '</td></tr>';
         }
         html += '</tbody></table></div>';
         return html;
