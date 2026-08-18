@@ -34,22 +34,22 @@
                 $opts = [
                   "a" => [
                     "desc" =>"Alphanumeric",
-                    "checked" => "checked",
+                    "checked" => "",
                     "chars" => "0-9a-zA-Z",
                   ],
                   "n" => [
                     "desc" =>"Numbers",
-                    "checked" => "",
+                    "checked" => "checked",
                     "chars" => "0-9",
                   ],
                   "l" => [
                     "desc" =>"Lowercase letters",
-                    "checked" => "",
+                    "checked" => "checked",
                     "chars" => "a-z",
                   ],
                   "u" => [
                     "desc" =>"Uppercase letters",
-                    "checked" => "",
+                    "checked" => "checked",
                     "chars" => "A-Z",
                   ],
                   "s" => [
@@ -120,14 +120,14 @@
         const $alphanumericRow = $form.find('.stringgen-charset-row[data-charset="a"]');
         const otherThanNumbers = "#l, #u, #s, #e, #c";
 
-        function syncAlphanumericOption() {
+        function syncAlphanumericOption(immediate) {
             const hideAlphanumeric = $form.find(otherThanNumbers).is(":checked");
             if (hideAlphanumeric) {
                 $alphanumeric.prop("checked", false).prop("disabled", true);
-                $alphanumericRow.slideUp();
+                immediate ? $alphanumericRow.hide() : $alphanumericRow.slideUp();
             } else {
                 $alphanumeric.prop("disabled", false);
-                $alphanumericRow.slideDown();
+                immediate ? $alphanumericRow.show() : $alphanumericRow.slideDown();
             }
         }
 
@@ -139,7 +139,9 @@
             }
         });
 
-        $form.find(otherThanNumbers).on("change", syncAlphanumericOption);
-        syncAlphanumericOption();
+        $form.find(otherThanNumbers).on("change", function() {
+            syncAlphanumericOption(false);
+        });
+        syncAlphanumericOption(true);
     })();
 </script>
