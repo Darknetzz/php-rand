@@ -237,10 +237,11 @@ function str_rot($s, $n = 13) {
  * Generate a random string from specified character sets
  * 
  * Creates a random string of specified length using selected character sets:
- * lowercase (l), uppercase (u), numbers (n), symbols (s), extended Unicode (e),
- * and custom characters (c). Can combine multiple sets.
+ * alphanumeric (a), lowercase (l), uppercase (u), numbers (n), symbols (s),
+ * extended Unicode (e), and custom characters (c). Can combine multiple sets.
  *
  * @param string $charsets Flags for character sets to include:
+ *                         'a' = alphanumeric 0-9a-zA-Z
  *                         'l' = lowercase a-z
  *                         'u' = uppercase A-Z
  *                         'n' = numbers 0-9
@@ -252,20 +253,14 @@ function str_rot($s, $n = 13) {
  * @return string Random string of specified length, or "[empty]" if no valid character sets
  * 
  * @example
+ * genStr('a', 12);             // 12 chars: alphanumeric
  * genStr('lun', 12);           // 12 chars: lowercase, uppercase, numbers
  * genStr('luns', 20);          // 20 chars: lowercase, uppercase, numbers, symbols
  * genStr('lunc', 15, '!@#');   // 15 chars: lowercase, uppercase, numbers, custom
  */
 function genStr(string $charsets, ?int $length = null, $cchars = null) {
-    $charsets = str_split($charsets);
-    $l        = (in_array('l', $charsets)                    ? range('a', 'z')                                   : []);
-    $u        = (in_array('u', $charsets)                    ? range('A', 'Z')                                   : []);
-    $n        = (in_array('n', $charsets)                    ? range(0, 9)                                       : []);
-    $s        = (in_array('s', $charsets)                    ? str_split("!#¤%&\/() = ?;: -_.,'\"*^<>{}[]@~+´`") : []);
-    $e        = (in_array('e', $charsets)                    ? str_split("ƒ†‡™•")                                : []);
-    $c        = (in_array('c', $charsets) && !empty($cchars) ? str_split($cchars)                                : []);
-    $all      = array_merge($l, $u, $n, $s, $e, $c);
-    $str      = '';
+    $all = stringgen_charset_chars($charsets, $cchars);
+    $str = '';
     if (empty($all)) {
       return "[empty]";
     }
@@ -276,32 +271,59 @@ function genStr(string $charsets, ?int $length = null, $cchars = null) {
 }
 
 /**
+ * Build the unique character pool for string generation.
+ *
+ * @param string $charsets Character set flags (a/l/u/n/s/e/c)
+ * @param string|null $cchars Custom characters when 'c' is in $charsets
+ * @return array<int, string> Unique character pool
+ */
+function stringgen_charset_chars(string $charsets, $cchars = null): array {
+    $flags = str_split($charsets);
+    $pool = [];
+    if (in_array('a', $flags, true)) {
+        $pool = array_merge($pool, range('a', 'z'), range('A', 'Z'), array_map('strval', range(0, 9)));
+    }
+    if (in_array('l', $flags, true)) {
+        $pool = array_merge($pool, range('a', 'z'));
+    }
+    if (in_array('u', $flags, true)) {
+        $pool = array_merge($pool, range('A', 'Z'));
+    }
+    if (in_array('n', $flags, true)) {
+        $pool = array_merge($pool, array_map('strval', range(0, 9)));
+    }
+    if (in_array('s', $flags, true)) {
+        $pool = array_merge($pool, str_split("!#¤%&\/() = ?;: -_.,'\"*^<>{}[]@~+´`"));
+    }
+    if (in_array('e', $flags, true)) {
+        $pool = array_merge($pool, str_split("ƒ†‡™•"));
+    }
+    if (in_array('c', $flags, true) && !empty($cchars)) {
+        $pool = array_merge($pool, str_split((string) $cchars));
+    }
+    return array_values(array_unique(array_map('strval', $pool), SORT_STRING));
+}
+
+/**
  * Generate a random string using cryptographically secure random_bytes()
  * 
  * Uses random_bytes() for cryptographically secure randomness, suitable for
  * security-critical applications like tokens, passwords, and keys.
  *
- * @param string $charsets Character set flags (l=lowercase, u=uppercase, n=numbers, s=symbols, e=extended, c=custom)
+ * @param string $charsets Character set flags (a=alphanumeric, l=lowercase, u=uppercase, n=numbers, s=symbols, e=extended, c=custom)
  * @param int $length Length of the generated string
  * @param string|null $cchars Custom characters if 'c' is in charsets
  * @return string Randomly generated string
  */
 function genStrCrypto(string $charsets, ?int $length = null, $cchars = null) {
-    $charsets = str_split($charsets);
-    $l        = (in_array('l', $charsets)                    ? range('a', 'z')                                   : []);
-    $u        = (in_array('u', $charsets)                    ? range('A', 'Z')                                   : []);
-    $n        = (in_array('n', $charsets)                    ? range(0, 9)                                       : []);
-    $s        = (in_array('s', $charsets)                    ? str_split("!#¤%&\/() = ?;: -_.,'\"*^<>{}[]@~+´`") : []);
-    $e        = (in_array('e', $charsets)                    ? str_split("ƒ†‡™•")                                : []);
-    $c        = (in_array('c', $charsets) && !empty($cchars) ? str_split($cchars)                                : []);
-    $all      = array_merge($l, $u, $n, $s, $e, $c);
-    $str      = '';
+    $all = stringgen_charset_chars($charsets, $cchars);
+    $str = '';
     if (empty($all)) {
       return "[empty]";
     }
-    $max = count($all) - 1;
+    $count = count($all);
     for ($i = 0; $i < $length; $i++) {
-      $randomIndex = ord(random_bytes(1)) % (count($all));
+      $randomIndex = ord(random_bytes(1)) % $count;
       $str .= $all[$randomIndex];
     }
     return $str;

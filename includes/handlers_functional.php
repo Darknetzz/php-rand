@@ -221,7 +221,7 @@ function output_copyable(string $content, string $label = "", ?array $useAsInput
  * Processes requests to generate random strings with specified character sets
  * and options. Returns formatted output with generated strings and statistics.
  *
- * @param array $req Request array containing: 'digits', 'strings', 'l', 'u', 'n', 's', 'e', 'c', 'cchars'
+ * @param array $req Request array containing: 'digits', 'strings', 'a', 'l', 'u', 'n', 's', 'e', 'c', 'cchars'
  * @return string Formatted HTML output with generated strings or error message
  */
 function handle_stringgen(array $req): string {
@@ -240,7 +240,7 @@ function handle_stringgen(array $req): string {
     $strings = $stringsValidation['value'];
     
     $charsets = '';
-    foreach (['l', 'u', 'n', 's', 'e', 'c'] as $opt) {
+    foreach (['a', 'l', 'u', 'n', 's', 'e', 'c'] as $opt) {
         if (req_bool($req, $opt)) {
             $charsets .= $opt;
         }
@@ -252,6 +252,7 @@ function handle_stringgen(array $req): string {
     
     $cchars = req_get($req, 'cchars', '');
     $cryptoSafe = req_bool($req, 'cryptoSafe');
+    $poolSize = count(stringgen_charset_chars($charsets, $cchars));
 
     $results = [];
     $infoTables = [];
@@ -270,8 +271,8 @@ function handle_stringgen(array $req): string {
         $table .= "<tr><td>SHA1</td><td><pre>" . hash('sha1', $string) . "</pre></td></tr>";
         $table .= "<tr><td>SHA256</td><td><pre>" . hash('sha256', $string) . "</pre></td></tr>";
         $table .= "<tr><td>SHA512</td><td><pre>" . hash('sha512', $string) . "</pre></td></tr>";
-        $combinations = number_format(strlen($charsets)**$length);
-        $table .= "<tr><td>Possible combinations</td><td><pre>$combinations (" . strlen($charsets) . "^$length)</pre></td></tr>";
+        $combinations = number_format($poolSize ** $length);
+        $table .= "<tr><td>Possible combinations</td><td><pre>$combinations (" . $poolSize . "^$length)</pre></td></tr>";
         $table .= "</table>";
         $infoTables[] = $table;
     }
