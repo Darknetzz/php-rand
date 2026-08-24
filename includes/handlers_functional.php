@@ -3278,13 +3278,17 @@ function crypto_generate_keypair(string $algorithm, int $rsaBits = 4096, string 
         return ['ok' => false, 'error' => "Unable to generate {$algorithm} keypair."];
     }
 
+    // Pass null (not "") when unencrypted: openssl_pkey_export with "" still emits
+    // BEGIN ENCRYPTED PRIVATE KEY with an empty password, which makes ssh-add prompt.
     $exportOptions = [];
+    $exportPassphrase = null;
     if ($passphrase !== '') {
         $exportOptions = ['cipher' => 'aes-256-cbc'];
+        $exportPassphrase = $passphrase;
     }
 
     $privatePem = '';
-    $privateExported = openssl_pkey_export($privateKey, $privatePem, $passphrase, $exportOptions);
+    $privateExported = openssl_pkey_export($privateKey, $privatePem, $exportPassphrase, $exportOptions);
     if ($privateExported === false || $privatePem === '') {
         return ['ok' => false, 'error' => "Unable to export private key for {$algorithm}."];
     }
