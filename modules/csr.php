@@ -65,12 +65,11 @@
                 </div>
 
                 <p class="text-secondary small fw-semibold text-uppercase mb-3 border-bottom pb-2">Private key protection</p>
-                <div class="row g-4 mb-4">
-                    <div class="col-12">
-                        <label for="csrPassphrase" class="form-label"><strong>Passphrase (optional)</strong></label>
-                        <input type="text" name="passphrase" id="csrPassphrase" class="form-control form-control-lg" placeholder="Leave empty for an unencrypted private key">
-                    </div>
-                </div>
+                <?= crypto_passphrase_field_html([
+                    'id_prefix' => 'csr',
+                    'wrapper_class' => 'mb-4',
+                    'help' => 'When off, the CSR private key is exported unencrypted.',
+                ]) ?>
 
                 <div class="row mb-4">
                     <div class="col-12 pt-2 border-top border-secondary border-opacity-25">

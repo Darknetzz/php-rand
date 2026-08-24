@@ -3267,6 +3267,24 @@ function crypto_make_key_config(string $algorithm, int $rsaBits = 4096, string $
     return null;
 }
 
+/**
+ * Passphrase from generate forms that use the enable toggle (passphrase_enabled=1).
+ * When the toggle is off, always return '' so the private key stays unencrypted.
+ */
+function crypto_req_optional_passphrase(array $req): array {
+    if (!req_bool($req, 'passphrase_enabled')) {
+        return ['ok' => true, 'passphrase' => ''];
+    }
+    $passphrase = trim((string) req_get($req, 'passphrase', ''));
+    if ($passphrase === '') {
+        return ['ok' => false, 'error' => 'Passphrase protection is enabled, but no passphrase was entered.'];
+    }
+    if (strlen($passphrase) > 256) {
+        return ['ok' => false, 'error' => 'Passphrase must be at most 256 characters.'];
+    }
+    return ['ok' => true, 'passphrase' => $passphrase];
+}
+
 function crypto_generate_keypair(string $algorithm, int $rsaBits = 4096, string $curve = 'prime256v1', string $passphrase = ''): array {
     $config = crypto_make_key_config($algorithm, $rsaBits, $curve);
     if ($config === null) {
@@ -4087,10 +4105,11 @@ function handle_keypair_generate(array $req): string {
         return formatOutput("No supported algorithm selected for key generation.", type: "danger");
     }
 
-    $passphrase = trim((string) req_get($req, 'passphrase', ''));
-    if (strlen($passphrase) > 256) {
-        return formatOutput("Passphrase must be at most 256 characters.", type: "danger");
+    $passphraseResult = crypto_req_optional_passphrase($req);
+    if (!($passphraseResult['ok'] ?? false)) {
+        return formatOutput((string) ($passphraseResult['error'] ?? 'Invalid passphrase.'), type: 'danger');
     }
+    $passphrase = (string) $passphraseResult['passphrase'];
 
     $rsaBits = req_int($req, 'rsa_bits', 4096);
     $curve = (string) req_get($req, 'ecdsa_curve', 'prime256v1');
@@ -4230,10 +4249,11 @@ function handle_ssh_keygen(array $req): string {
         return formatOutput("No supported algorithm selected for key generation.", type: "danger");
     }
 
-    $passphrase = trim((string) req_get($req, 'passphrase', ''));
-    if (strlen($passphrase) > 256) {
-        return formatOutput("Passphrase must be at most 256 characters.", type: "danger");
+    $passphraseResult = crypto_req_optional_passphrase($req);
+    if (!($passphraseResult['ok'] ?? false)) {
+        return formatOutput((string) ($passphraseResult['error'] ?? 'Invalid passphrase.'), type: 'danger');
     }
+    $passphrase = (string) $passphraseResult['passphrase'];
 
     $rsaBits = req_int($req, 'rsa_bits', 4096);
     $curve = (string) req_get($req, 'ecdsa_curve', 'prime256v1');
@@ -4309,10 +4329,11 @@ function handle_csr_generate(array $req): string {
     }
     $algorithm = $resolved[0];
 
-    $passphrase = trim((string) req_get($req, 'passphrase', ''));
-    if (strlen($passphrase) > 256) {
-        return formatOutput("Passphrase must be at most 256 characters.", type: "danger");
+    $passphraseResult = crypto_req_optional_passphrase($req);
+    if (!($passphraseResult['ok'] ?? false)) {
+        return formatOutput((string) ($passphraseResult['error'] ?? 'Invalid passphrase.'), type: 'danger');
     }
+    $passphrase = (string) $passphraseResult['passphrase'];
 
     $rsaBits = req_int($req, 'rsa_bits', 4096);
     $curve = (string) req_get($req, 'ecdsa_curve', 'prime256v1');

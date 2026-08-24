@@ -865,9 +865,14 @@ async function maybeHandleClientSideKeygen(form, responseObj) {
         return false;
     }
 
-    const passphrase = (form.find("[name='passphrase']").val() || "").trim();
+    const passphraseEnabled = form.find("[name='passphrase_enabled']").is(":checked");
+    const passphrase = passphraseEnabled ? (form.find("[name='passphrase']").val() || "").trim() : "";
     const isSsh = action === "ssh_keygen";
-    if (passphrase !== "") {
+    if (passphraseEnabled && passphrase === "") {
+        showData(responseObj, "<div class='alert alert-danger'>Passphrase protection is enabled, but no passphrase was entered.</div>");
+        return true;
+    }
+    if (passphraseEnabled && passphrase !== "") {
         if (mode === "auto") return false;
         showData(responseObj, "<div class='alert alert-warning'>Client-side mode does not support private-key passphrase encryption yet. Use server mode.</div>");
         return true;
@@ -931,21 +936,46 @@ async function maybeHandleClientSideKeygen(form, responseObj) {
 }
 
 function updatePassphraseStateForForm($form) {
-    const mode = ($form.find("[name='generation_mode']").val() || "").toLowerCase();
+    const $field = $form.find("[data-crypto-passphrase-field]");
     const $pass = $form.find("input[name='passphrase']");
+    const $toggle = $form.find("input[name='passphrase_enabled']");
+    const $inputWrap = $field.find("[data-crypto-passphrase-input]");
     if (!$pass.length) return;
 
+    const mode = ($form.find("[name='generation_mode']").val() || "").toLowerCase();
     const isClientOnly = mode === "client";
+    const originalPlaceholder = $pass.attr("data-original-placeholder") || "Enter a passphrase to encrypt the private key";
+
     if (isClientOnly) {
-        $pass.val("");
-        $pass.prop("disabled", true);
-        $pass.attr("placeholder", "Disabled in client-side mode; use server/auto for passphrase protection");
-    } else {
-        $pass.prop("disabled", false);
-        if ($pass.attr("data-original-placeholder")) {
-            $pass.attr("placeholder", $pass.attr("data-original-placeholder"));
+        if ($toggle.length) {
+            $toggle.prop("checked", false).prop("disabled", true);
         }
+        $pass.val("").prop("disabled", true);
+        $pass.attr("placeholder", "Disabled in client-side mode; use server/auto for passphrase protection");
+        if ($inputWrap.length) {
+            $inputWrap.addClass("d-none");
+        }
+        return;
     }
+
+    if ($toggle.length) {
+        $toggle.prop("disabled", false);
+        const enabled = $toggle.is(":checked");
+        if ($inputWrap.length) {
+            $inputWrap.toggleClass("d-none", !enabled);
+        }
+        if (enabled) {
+            $pass.prop("disabled", false);
+            $pass.attr("placeholder", originalPlaceholder);
+        } else {
+            $pass.val("").prop("disabled", true);
+            $pass.attr("placeholder", originalPlaceholder);
+        }
+        return;
+    }
+
+    $pass.prop("disabled", false);
+    $pass.attr("placeholder", originalPlaceholder);
 }
 
 /* ===================================================================== */
@@ -2062,14 +2092,14 @@ $(document).ready(function() {
         }
     });
 
-    // Keep passphrase inputs in sync with generation mode for keypair/SSH forms
-    $(document).on("change", "[name='generation_mode']", function() {
+    // Keep passphrase inputs in sync with generation mode / enable toggle
+    $(document).on("change", "[name='generation_mode'], [name='passphrase_enabled']", function() {
         const $form = $(this).closest("form");
         updatePassphraseStateForForm($form);
     });
 
     // Initialize state on any already-rendered forms
-    $("form[data-action='keypair_generate'], form[data-action='ssh_keygen']").each(function() {
+    $("form[data-action='keypair_generate'], form[data-action='ssh_keygen'], form[data-action='csr_generate']").each(function() {
         updatePassphraseStateForForm($(this));
     });
 

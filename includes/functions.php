@@ -417,6 +417,63 @@ function submitBtn(string $value = "", string $name = "action", string $text = "
     </button>';
 }
 
+/**
+ * Shared private-key passphrase UI: off by default, with an explicit enable toggle.
+ *
+ * @param array{
+ *   id_prefix: string,
+ *   help?: string,
+ *   wrapper_class?: string,
+ *   input_placeholder?: string
+ * } $opts
+ */
+function crypto_passphrase_field_html(array $opts): string {
+  $idPrefix = preg_replace('/[^a-zA-Z0-9_-]/', '', (string) ($opts['id_prefix'] ?? 'crypto')) ?: 'crypto';
+  $toggleId = $idPrefix . 'PassphraseEnabled';
+  $inputId = $idPrefix . 'Passphrase';
+  $wrapperClass = trim((string) ($opts['wrapper_class'] ?? 'mb-4'));
+  $help = (string) ($opts['help'] ?? 'When disabled, the private key is exported unencrypted. Passphrase protection is available in server/auto modes; client-only mode disables this option.');
+  $placeholder = (string) ($opts['input_placeholder'] ?? 'Enter a passphrase to encrypt the private key');
+  $safeToggleId = htmlspecialchars($toggleId, ENT_QUOTES, 'UTF-8');
+  $safeInputId = htmlspecialchars($inputId, ENT_QUOTES, 'UTF-8');
+  $safeWrapperClass = htmlspecialchars($wrapperClass, ENT_QUOTES, 'UTF-8');
+  $safeHelp = htmlspecialchars($help, ENT_QUOTES, 'UTF-8');
+  $safePlaceholder = htmlspecialchars($placeholder, ENT_QUOTES, 'UTF-8');
+
+  return <<<HTML
+<div class="{$safeWrapperClass}" data-crypto-passphrase-field>
+    <div class="form-check form-switch mb-2">
+        <input
+            class="form-check-input"
+            type="checkbox"
+            role="switch"
+            name="passphrase_enabled"
+            value="1"
+            id="{$safeToggleId}"
+            autocomplete="off"
+        >
+        <label class="form-check-label" for="{$safeToggleId}">
+            <strong>Protect private key with a passphrase</strong>
+        </label>
+    </div>
+    <div class="d-none" data-crypto-passphrase-input>
+        <label for="{$safeInputId}" class="form-label"><strong>Passphrase</strong></label>
+        <input
+            type="text"
+            name="passphrase"
+            id="{$safeInputId}"
+            class="form-control form-control-lg"
+            placeholder="{$safePlaceholder}"
+            data-original-placeholder="{$safePlaceholder}"
+            disabled
+            autocomplete="off"
+        >
+        <div class="form-text">{$safeHelp}</div>
+    </div>
+</div>
+HTML;
+}
+
 /* ────────────────────────────────────────────────────────────────────────── */
 /*                   FUNCTION:      pageIcon                                  */
 /* ────────────────────────────────────────────────────────────────────────── */
