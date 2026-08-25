@@ -228,14 +228,17 @@ if [[ "$SKIP_GHCR" == "1" ]]; then
 elif [[ -n "${GHCR_IMAGE:-}" && -n "${GITHUB_TOKEN:-}" ]]; then
   echo "=== Pushing to GitHub Container Registry (ghcr.io) ==="
   GHCR_OWNER=$(echo "$GHCR_IMAGE" | cut -d/ -f2)
-  echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GHCR_OWNER" --password-stdin
-  PUSHED=()
-  for t in "${TAGS[@]}"; do
-    docker tag "$IMAGE:$PRIMARY_TAG" "$GHCR_IMAGE:$t"
-    docker push "$GHCR_IMAGE:$t"
-    PUSHED+=("$GHCR_IMAGE:$t")
-  done
-  echo "Pushed ${PUSHED[*]}"
+  if ! echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GHCR_OWNER" --password-stdin; then
+    echo "GHCR login failed; Hub tags (if pushed) are still available. Fix with: gh auth refresh -s write:packages" >&2
+  else
+    PUSHED=()
+    for t in "${TAGS[@]}"; do
+      docker tag "$IMAGE:$PRIMARY_TAG" "$GHCR_IMAGE:$t"
+      docker push "$GHCR_IMAGE:$t"
+      PUSHED+=("$GHCR_IMAGE:$t")
+    done
+    echo "Pushed ${PUSHED[*]}"
+  fi
 else
   echo "Skipping GHCR (set GITHUB_TOKEN in .env/.env.local, or run: gh auth refresh -s write:packages)."
 fi
