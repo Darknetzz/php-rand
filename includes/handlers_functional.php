@@ -3864,7 +3864,8 @@ function crypto_classify_verify_public_key(string $raw, string $mode): array {
             break;
         }
     }
-    if ($first !== '' && preg_match('/^(ssh-rsa|ssh-ed25519|ssh-dss|ecdsa-sha2-[a-z0-9]+)\s+[A-Za-z0-9+/]+=*(\s+.*)?$/', $first)) {
+    // Use # delimiters: / inside [A-Za-z0-9+/] would end a /.../ pattern early (preg "Unknown modifier").
+    if ($first !== '' && preg_match('#^(ssh-rsa|ssh-ed25519|ssh-dss|ecdsa-sha2-[a-z0-9]+)\s+[A-Za-z0-9+/]+=*(\s+.*)?$#', $first)) {
         return ['pem' => '', 'openssh' => $first, 'detected' => 'openssh', 'error' => null];
     }
 

@@ -8,6 +8,7 @@ All notable changes to this project are documented in this file.
 
 ### Major Features
 
+- **SSH key verify** – Auto-detect of OpenSSH one-line public keys no longer fails with `preg_match(): Unknown modifier` when the Base64 blob contains `/` (fixed delimiter in `crypto_classify_verify_public_key()`).
 - **Docker (local publish workflow)** – `./docker-pushimage.sh` is the supported image publisher (GitHub Actions Docker workflows are `workflow_dispatch`-only to avoid CI cost). Modes: **`--dev`** (rolling `:dev` + `:develop`), **`--release [vX.Y.Z]`** (from `docker-image.config`), **`--dry-run`**; env **`SKIP_DOCKERHUB`** / **`SKIP_GHCR`**. GHCR login failure no longer aborts after a successful Hub push. Docs updated in **`README.md`**, **`AGENTS.md`**, **`docker-image.config`**.
 - **Docker (pre-push hook)** – Pushing branch **`dev`** runs **`./docker-pushimage.sh --dev`** via **`.githooks/pre-push`** (install with **`./scripts/install-git-hooks.sh`**). Skip with **`SKIP_DOCKER_PUBLISH=1`**.
 - **SSH / keypair PEM export** – Leaving the passphrase empty now exports a truly unencrypted private key (`BEGIN PRIVATE KEY`). Previously an empty string was passed to `openssl_pkey_export`, which produced `BEGIN ENCRYPTED PRIVATE KEY` with an empty password and caused `ssh-add` to prompt for a passphrase. Generate forms (SSH, keypair, CSR) now use an explicit **Protect private key with a passphrase** switch (off by default) via shared `crypto_passphrase_field_html()` / `crypto_req_optional_passphrase()`.
