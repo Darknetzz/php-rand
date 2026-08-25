@@ -53,11 +53,11 @@ usage() {
   echo ""
   echo "  Environment:"
   echo "    CREATE_GH_RELEASE=1     After push, run: gh release create (skipped if release already exists)."
-  echo "    PUBLISH_DOCKER=1        After push, run ./docker-pushimage.sh (Docker Hub + optional GHCR)."
+  echo "    PUBLISH_DOCKER=1        After push, run ./docker-pushimage.sh (local Hub/GHCR publish)."
   echo "    MERGE_RELEASE_TO_MAIN=1 After gh/docker, sync RELEASE_BRANCH into MAIN_BRANCH (see MERGE_TO_MAIN_VIA_PR)."
   echo "    MERGE_TO_MAIN_VIA_PR=1  Skip direct push; open a PR base=MAIN head=RELEASE (for protected main)."
   echo "    RELEASE_BRANCH / MAIN_BRANCH  Override branch names (defaults: dev, main)."
-  echo "  Pushing a v* tag also triggers .github/workflows (GitHub Release + Docker); gh step is optional."
+  echo "  Docker images: publish locally with ./docker-pushimage.sh (GitHub Actions Docker workflows are unused)."
   exit "${1:-0}"
 }
 
@@ -161,7 +161,7 @@ post_push_docker_prompt() {
     return
   fi
   local yn
-  yn="$(read_tty "Run ./docker-pushimage.sh (Docker Hub + optional GHCR)? [Y/n] ")"
+  yn="$(read_tty "Run ./docker-pushimage.sh (release tags from docker-image.config)? [Y/n] ")"
   if [[ -z "$yn" ]] || [[ "$yn" =~ ^[yY] ]]; then
     maybe_docker_push || true
   fi

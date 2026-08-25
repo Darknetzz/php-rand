@@ -88,6 +88,11 @@ This repository has an opinionated scripted release flow in `scripts/`.
 
 ### Supporting Scripts
 
+- `docker-pushimage.sh` (local Docker publish; **do not** rely on GitHub Actions)
+  - `./docker-pushimage.sh --dev` — rolling `:dev` + `:develop` (demo / tip of branch).
+  - `./docker-pushimage.sh` / `--release [vX.Y.Z]` — `:latest` + version tags from `docker-image.config`.
+  - `./docker-pushimage.sh --dry-run` — print plan only.
+  - Env: `SKIP_DOCKERHUB=1`, `SKIP_GHCR=1`; credentials in `.env.local` / `.env`.
 - `scripts/extract_changelog_section.sh`
   - Extracts one release section from `CHANGELOG.md` by title (example: `[v1.2.9]`).
 - `scripts/update-release-descriptions.php`
@@ -98,5 +103,5 @@ This repository has an opinionated scripted release flow in `scripts/`.
 
 - Before releasing, ensure `[Unreleased]` is accurate and complete.
 - Do not release if changelog entries are missing for shipped changes.
-- After release/tag push, ensure GitHub release notes and Docker publication steps are completed (script prompts or env flags).
+- After release/tag push, ensure GitHub release notes and **local** Docker publication (`./docker-pushimage.sh` or `PUBLISH_DOCKER=1`) are completed (script prompts or env flags). Do not expect GitHub Actions to publish images.
 - Keep default branch aligned with the release branch per repo policy (merge or PR path in `release.sh`).

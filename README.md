@@ -218,15 +218,25 @@ What it does:
 - sets `VERSION=vX.Y.Z` in `docker-image.config` so local Docker builds match the release
 - creates a release commit and annotated tag (`vX.Y.Z`; commit includes `CHANGELOG.md` and `docker-image.config`)
 - optionally pushes branch + tag after an explicit confirmation prompt
-- **GitHub Release + Docker Hub / GHCR images:** pushing the tag runs `.github/workflows/release.yml` and `docker-release.yml`. You normally do **not** need `gh` or `docker-pushimage.sh` unless Actions are off or you want an immediate local registry push.
-- after a successful push, prompts (from `/dev/tty`, not stdin) to run `gh release create` and `./docker-pushimage.sh` — default is **Y** (Enter accepts) so a normal push is not cut short after `git`
+- **GitHub Release + Docker Hub / GHCR images:** publish **locally** (GitHub Actions Docker workflows are disabled to avoid CI cost). After push, prompts (from `/dev/tty`) run `gh release create` and `./docker-pushimage.sh` — default is **Y**.
 - then prompts to **merge `dev` into `main` and push** (default **Y**) so the default branch matches the release line; override branch names with `RELEASE_BRANCH` / `MAIN_BRANCH` if needed
 - if you already pushed the tag but skipped those steps: `./scripts/release.sh 1.2.10 --publish-only` (includes the same `gh`, Docker, and merge prompts when run from `dev`)
 
-**Why GitHub might still show an older “Latest” release:** the badge uses **GitHub Releases**, not tags only. You need either a successful `release.yml` run on tag push or `gh release create`. If that step failed earlier, create the release with `--publish-only` or from the Releases UI.
+### Docker images (local only)
+
+```bash
+./docker-pushimage.sh --dev                 # :dev + :develop (demo / tip of branch)
+./docker-pushimage.sh                       # :latest + :vX.Y.Z from docker-image.config
+./docker-pushimage.sh --release 1.4.1       # VERSION override
+./docker-pushimage.sh --dev --dry-run       # plan only
+```
+
+Credentials: `DOCKERHUB_USERNAME` / `DOCKERHUB_TOKEN` and optional `GITHUB_TOKEN` in `.env.local` (see `.env.example`). `SKIP_DOCKERHUB=1` or `SKIP_GHCR=1` to publish to one registry only.
+
+**Why GitHub might still show an older “Latest” release:** the badge uses **GitHub Releases**, not tags only. Create the release with `gh` via `release.sh` / `--publish-only` or from the Releases UI.
 
 Environment toggles:
-- `CREATE_GH_RELEASE=1` — after push, run `gh release create` with changelog notes (skipped if the release already exists, e.g. CI created it first)
+- `CREATE_GH_RELEASE=1` — after push, run `gh release create` with changelog notes (skipped if the release already exists)
 - `PUBLISH_DOCKER=1` — after push, run `./docker-pushimage.sh` (uses updated `docker-image.config`; still uses your Docker Hub / `.env` credentials)
 - `MERGE_RELEASE_TO_MAIN=1` — after the above, merge `dev` into `main` and push (non-interactive; combine with other toggles as needed)
 
@@ -240,12 +250,6 @@ Other release helpers (run from repo root):
 - **`scripts/extract_changelog_section.sh`** — Prints one `CHANGELOG.md` section by heading title (from `## <title>` through the next `## [` line). Example: `./scripts/extract_changelog_section.sh CHANGELOG.md "[v1.2.10]"`. Use `--dry-run` to verify the heading exists without printing the body. Requires [ripgrep](https://github.com/BurntSushi/ripgrep) (`rg`) for `--dry-run`.
 
 - **`scripts/update-release-descriptions.php`** — For each `## [vX.Y.Z]` block in `CHANGELOG.md`, runs `gh release edit <tag> --notes-file …` so existing GitHub Releases match the changelog (useful after editing old sections). Requires the [GitHub CLI](https://cli.github.com/) authenticated for this repo. Use `php scripts/update-release-descriptions.php --dry-run` to list what would be updated without calling the API.
-
-CI Docker publish requirements:
-- Docker Hub secrets: `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN`
-- GHCR publish uses `GITHUB_TOKEN` automatically
-- **Release images** (`latest`, `vX.Y.Z`): pushed on `v*` tags via `docker-release.yml`
-- **Dev images** (`dev`, `develop`): republished on every push to `dev` via `docker-dev.yml` (rolling tags only)
 
 ## Key Features
 
