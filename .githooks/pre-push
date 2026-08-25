@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+# pre-push: on push of local `dev` → origin, build/push rolling Docker :dev + :develop.
+# Skip: SKIP_DOCKER_PUBLISH=1 git push
+# Install: ./scripts/install-git-hooks.sh
+
+set -euo pipefail
+
+ROOT="$(git rev-parse --show-toplevel 2>/dev/null || true)"
+if [[ -z "$ROOT" ]]; then
+  exit 0
+fi
+
+if [[ "${SKIP_DOCKER_PUBLISH:-}" == "1" ]]; then
+  echo "pre-push: skipping Docker publish (SKIP_DOCKER_PUBLISH=1)."
+  exit 0
+fi
+
+PUBLISH_DEV=0
+while read -r local_ref local_sha remote_ref remote_sha; do
+  [[ -z "${local_ref:-}" ]] && continue
+  # Only when this push updates refs/heads/dev (not tags / other branches).
+  if [[ "$remote_ref" == "refs/heads/dev" || "$local_ref" == "refs/heads/dev" ]]; then
+    if [[ "$local_sha" =~ ^0+$ ]]; then
+      continue
+    fi
+    PUBLISH_DEV=1
+    break
+  fi
+done
+
+if [[ "$PUBLISH_DEV" -ne 1 ]]; then
+  exit 0
+fi
+
+if [[ ! -x "$ROOT/docker-pushimage.sh" ]]; then
+  echo "pre-push: $ROOT/docker-pushimage.sh missing or not executable." >&2
+  exit 1
+fi
+
+echo "pre-push: publishing darknetz/php-rand:dev (and :develop) before push…"
+echo "         Skip with: SKIP_DOCKER_PUBLISH=1 git push"
+(cd "$ROOT" && ./docker-pushimage.sh --dev)

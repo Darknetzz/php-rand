@@ -233,6 +233,8 @@ What it does:
 
 Credentials: `DOCKERHUB_USERNAME` / `DOCKERHUB_TOKEN` and optional `GITHUB_TOKEN` in `.env.local` (see `.env.example`). `SKIP_DOCKERHUB=1` or `SKIP_GHCR=1` to publish to one registry only.
 
+**Auto-publish on push (local hook, no GitHub Actions):** once per clone run `./scripts/install-git-hooks.sh`. After that, `git push` of branch `dev` runs `./docker-pushimage.sh --dev` first (can take several minutes). Skip with `SKIP_DOCKER_PUBLISH=1 git push`.
+
 **Why GitHub might still show an older “Latest” release:** the badge uses **GitHub Releases**, not tags only. Create the release with `gh` via `release.sh` / `--publish-only` or from the Releases UI.
 
 Environment toggles:

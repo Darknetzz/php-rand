@@ -93,6 +93,7 @@ This repository has an opinionated scripted release flow in `scripts/`.
   - `./docker-pushimage.sh` / `--release [vX.Y.Z]` — `:latest` + version tags from `docker-image.config`.
   - `./docker-pushimage.sh --dry-run` — print plan only.
   - Env: `SKIP_DOCKERHUB=1`, `SKIP_GHCR=1`; credentials in `.env.local` / `.env`.
+  - **Auto on `git push` of `dev`:** `.githooks/pre-push` (enable once with `./scripts/install-git-hooks.sh`). Skip: `SKIP_DOCKER_PUBLISH=1 git push`.
 - `scripts/extract_changelog_section.sh`
   - Extracts one release section from `CHANGELOG.md` by title (example: `[v1.2.9]`).
 - `scripts/update-release-descriptions.php`
