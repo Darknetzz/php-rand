@@ -656,3 +656,78 @@ th.tablehead,
 [data-bs-theme="light"] .navbar.border-bottom {
   border-color: rgba(15, 23, 42, 0.1) !important;
 }
+
+/* ========== Module Subnav (pill-style sub-page navigation) ========== */
+.module-subnav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 15px;
+  margin: 0 15px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.module-subnav .subnav-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.65);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.module-subnav .subnav-pill:hover {
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.module-subnav .subnav-pill.active {
+  color: #fff;
+  background: rgba(13, 110, 253, 0.25);
+  border-color: rgba(13, 110, 253, 0.5);
+  box-shadow: 0 0 8px rgba(13, 110, 253, 0.15);
+}
+
+.module-subnav .subnav-pill i {
+  font-size: 1rem;
+}
+
+.subnav-panel {
+  display: none;
+}
+
+.subnav-panel.active {
+  display: block;
+}
+
+/* Light theme */
+[data-bs-theme="light"] .module-subnav {
+  border-bottom-color: rgba(15, 23, 42, 0.1);
+}
+
+[data-bs-theme="light"] .module-subnav .subnav-pill {
+  color: rgba(15, 23, 42, 0.6);
+  background: rgba(15, 23, 42, 0.04);
+  border-color: rgba(15, 23, 42, 0.12);
+}
+
+[data-bs-theme="light"] .module-subnav .subnav-pill:hover {
+  color: rgba(15, 23, 42, 0.85);
+  background: rgba(15, 23, 42, 0.08);
+  border-color: rgba(15, 23, 42, 0.2);
+}
+
+[data-bs-theme="light"] .module-subnav .subnav-pill.active {
+  color: #0d6efd;
+  background: rgba(13, 110, 253, 0.08);
+  border-color: rgba(13, 110, 253, 0.35);
+  box-shadow: 0 0 8px rgba(13, 110, 253, 0.08);
+}

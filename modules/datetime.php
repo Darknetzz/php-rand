@@ -38,47 +38,57 @@ $timeZoneSelector = function($inputName = "timezone") {
 
 <div id="datetime" class="content">
 
+    <!-- Subnav -->
+    <nav class="module-subnav" aria-label="Date & Time navigation">
+        <a class="subnav-pill" data-subtab="converter" href="#datetime/converter"><?= icon("shuffle") ?> Time Converter</a>
+        <a class="subnav-pill" data-subtab="current" href="#datetime/current"><?= icon("clock") ?> Current Time</a>
+    </nav>
+
     <!-- TIME CONVERTER -->
-    <div class="card card-primary">
-        <h1 class="card-header">⏱️ Time Unit Converter</h1>
-        <div class="card-body">
-            <p class="text-muted mb-4">Easily convert time values between seconds, minutes, hours, days, weeks, months, and years.</p>
-            <form class="form" action="gen.php" method="POST" id="datetimeForm" data-action="datetime">
-                <div class="row g-4 mb-4">
-                    <div class="col-12 col-md-6">
-                        <label class="form-label mb-3"><strong>From</strong></label>
-                        <input type="number" name="time" class="form-control form-control-lg" placeholder="Enter a number" style="font-family: monospace; border: 2px solid #495057;" required>
+    <div class="subnav-panel" data-panel="converter">
+        <div class="card card-primary">
+            <h1 class="card-header">⏱️ Time Unit Converter</h1>
+            <div class="card-body">
+                <p class="text-muted mb-4">Easily convert time values between seconds, minutes, hours, days, weeks, months, and years.</p>
+                <form class="form" action="gen.php" method="POST" id="datetimeForm" data-action="datetime">
+                    <div class="row g-4 mb-4">
+                        <div class="col-12 col-md-6">
+                            <label class="form-label mb-3"><strong>From</strong></label>
+                            <input type="number" name="time" class="form-control form-control-lg" placeholder="Enter a number" style="font-family: monospace; border: 2px solid #495057;" required>
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label class="form-label mb-3"><strong>Unit</strong></label>
+                            <?= $unitSelector("timefrom_unit") ?>
+                        </div>
                     </div>
 
-                    <div class="col-12 col-md-6">
-                        <label class="form-label mb-3"><strong>Unit</strong></label>
-                        <?= $unitSelector("timefrom_unit") ?>
+                    <div class="d-flex gap-3 mb-4">
+                        <?= submitBtn("datetime", "action", "⏱️ Convert", "shuffle", "lg") ?>
                     </div>
-                </div>
 
-                <div class="d-flex gap-3 mb-4">
-                    <?= submitBtn("datetime", "action", "⏱️ Convert", "shuffle", "lg") ?>
-                </div>
-
-                <div class="responseDiv"></div>
-            </form>
+                    <div class="responseDiv"></div>
+                </form>
+            </div>
         </div>
     </div>
 
     <!-- TIMEZONE & CURRENT TIME -->
-    <div class="card card-primary">
-        <h1 class="card-header">🌍 Current Time</h1>
-        <div class="card-body">
-            <div class="row g-4">
-                <div class="col-12 col-lg-8">
-                    <label class="form-label mb-3"><strong style="font-size: 1.1rem;">Select Timezone</strong></label>
-                    <?= $timeZoneSelector("timezone") ?>
-                </div>
-                <div class="col-12 col-lg-4 d-flex flex-column">
-                    <label class="form-label mb-3"><strong style="font-size: 1.1rem;">Current Time</strong></label>
-                    <div style="padding: 15px; background: linear-gradient(135deg, rgba(13, 110, 253, 0.1) 0%, rgba(0, 184, 255, 0.08) 100%); border: 2px solid #0dcaf0; border-radius: 0.5rem; font-family: monospace; font-size: 1rem;">
-                        <div class="timezone" style="font-weight: bold; color: #0dcaf0;"></div>
-                        <div class="datetime" style="font-weight: bold; font-size: 1.1rem; margin-top: 8px;"></div>
+    <div class="subnav-panel" data-panel="current">
+        <div class="card card-primary">
+            <h1 class="card-header">🌍 Current Time</h1>
+            <div class="card-body">
+                <div class="row g-4">
+                    <div class="col-12 col-lg-8">
+                        <label class="form-label mb-3"><strong style="font-size: 1.1rem;">Select Timezone</strong></label>
+                        <?= $timeZoneSelector("timezone") ?>
+                    </div>
+                    <div class="col-12 col-lg-4 d-flex flex-column">
+                        <label class="form-label mb-3"><strong style="font-size: 1.1rem;">Current Time</strong></label>
+                        <div style="padding: 15px; background: linear-gradient(135deg, rgba(13, 110, 253, 0.1) 0%, rgba(0, 184, 255, 0.08) 100%); border: 2px solid #0dcaf0; border-radius: 0.5rem; font-family: monospace; font-size: 1rem;">
+                            <div class="timezone" style="font-weight: bold; color: #0dcaf0;"></div>
+                            <div class="datetime" style="font-weight: bold; font-size: 1.1rem; margin-top: 8px;"></div>
+                        </div>
                     </div>
                 </div>
             </div>

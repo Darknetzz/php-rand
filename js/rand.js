@@ -994,8 +994,16 @@ function setFormVal(form, name = "action", value = "") {
 const ACTIVE_MODULE_STORAGE_KEY = "rand.activeModule";
 
 function normalizeModuleHash(value) {
-    const moduleName = (value || "").replace(/^#/, "").trim();
+    const raw = (value || "").replace(/^#/, "").trim();
+    // Strip subtab portion (e.g. "networking/dns" -> "networking")
+    const moduleName = raw.split("/")[0];
     return moduleName ? ("#" + moduleName) : "";
+}
+
+function getSubtabFromHash(value) {
+    const raw = (value || "").replace(/^#/, "").trim();
+    const parts = raw.split("/");
+    return parts.length > 1 ? parts[1] : "";
 }
 
 function persistActiveModule(hashValue) {
@@ -1011,9 +1019,10 @@ function persistActiveModule(hashValue) {
 }
 
 function getPreferredInitialModule() {
-    const hashModule = normalizeModuleHash(window.location.hash);
-    if (hashModule) {
-        return hashModule;
+    // Preserve subtab from URL hash (e.g. #networking/dns)
+    const rawHash = (window.location.hash || "").replace(/^#/, "").trim();
+    if (rawHash) {
+        return "#" + rawHash;
     }
     try {
         const storedModule = normalizeModuleHash(window.localStorage.getItem(ACTIVE_MODULE_STORAGE_KEY));
@@ -1668,20 +1677,92 @@ function initCrontabLiveAnalyzeUi($scope) {
 }
 
 /* ===================================================================== */
+/*                      FUNCTION: initModuleSubnav                       */
+/* ===================================================================== */
+function initModuleSubnav($module, requestedSubtab) {
+    const $subnav = $module.find(".module-subnav");
+    if (!$subnav.length) {
+        return;
+    }
+
+    // Already initialized? Just activate the requested subtab.
+    if ($subnav.data("subnav-initialized")) {
+        if (requestedSubtab) {
+            activateSubtab($module, requestedSubtab);
+        }
+        return;
+    }
+    $subnav.data("subnav-initialized", true);
+
+    // Determine which subtab to show
+    const moduleId = $module.attr("id");
+    const storageKey = "rand.subnav." + moduleId;
+    let activeTab = requestedSubtab || "";
+
+    if (!activeTab) {
+        try { activeTab = window.localStorage.getItem(storageKey) || ""; } catch(e) {}
+    }
+    if (!activeTab) {
+        // Default to first pill
+        const $first = $subnav.find(".subnav-pill").first();
+        activeTab = $first.data("subtab") || "";
+    }
+
+    activateSubtab($module, activeTab);
+
+    // Delegated click handler for pills
+    $subnav.on("click", ".subnav-pill", function(e) {
+        e.preventDefault();
+        const subtab = $(this).data("subtab");
+        activateSubtab($module, subtab);
+        // Update URL hash
+        const newHash = "#" + moduleId + "/" + subtab;
+        history.replaceState(null, "", newHash);
+        // Persist
+        try { window.localStorage.setItem(storageKey, subtab); } catch(e) {}
+    });
+}
+
+function activateSubtab($module, subtab) {
+    const $subnav = $module.find(".module-subnav");
+    const $panels = $module.find(".subnav-panel");
+    const $pills  = $subnav.find(".subnav-pill");
+
+    // If subtab is empty or not found, fall back to first
+    let $targetPill = $pills.filter('[data-subtab="' + subtab + '"]');
+    if (!$targetPill.length) {
+        $targetPill = $pills.first();
+        subtab = $targetPill.data("subtab") || "";
+    }
+
+    // Update pills
+    $pills.removeClass("active");
+    $targetPill.addClass("active");
+
+    // Update panels
+    $panels.removeClass("active");
+    $module.find('.subnav-panel[data-panel="' + subtab + '"]').addClass("active");
+}
+
+/* ===================================================================== */
 /*                           FUNCTION: navigate                          */
 /* ===================================================================== */
 function navigate(to) {
     console.log("[navigate] Navigating to: " + to);
 
-    const moduleName = (to || "").replace(/^#/, "");
+    const raw = (to || "").replace(/^#/, "");
+    const moduleName = raw.split("/")[0];
+    const subtab = raw.split("/")[1] || "";
     if (!moduleName) {
         return;
     }
     const normalizedTo = "#" + moduleName;
 
     persistActiveModule(normalizedTo);
-    if (window.location.hash !== normalizedTo) {
+    if (window.location.hash !== normalizedTo && !subtab) {
         history.replaceState(null, "", normalizedTo);
+    } else if (subtab) {
+        history.replaceState(null, "", "#" + moduleName + "/" + subtab);
     }
 
     // Reset all navbar link states
@@ -1707,6 +1788,7 @@ function navigate(to) {
     const showTarget = function() {
         $(".content").hide();
         $(normalizedTo).fadeIn();
+        initModuleSubnav($(normalizedTo), subtab);
         addRandomDataButtons($(normalizedTo));
         initLogoGeneratorUi($(normalizedTo));
         initCsrFormUi($(normalizedTo));
