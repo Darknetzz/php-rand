@@ -91,7 +91,21 @@
         speed: { base: 'm/s', units: { 'm/s': ['meter/second', 1], 'km/h': ['kilometer/hour', 0.277778], 'mph': ['mile/hour', 0.44704], 'knot': ['knot', 0.514444], 'ft/s': ['foot/second', 0.3048] }},
         time: { base: 's', units: { 's': ['second', 1], 'min': ['minute', 60], 'h': ['hour', 3600], 'd': ['day', 86400], 'w': ['week', 604800], 'mo': ['month (30 d)', 2592000], 'y': ['year (365 d)', 31536000] }},
         power: { base: 'W', units: { 'W': ['watt', 1], 'kW': ['kilowatt', 1000], 'hp_metric': ['horsepower (metric)', 735.499, 'PS'], 'hp_us': ['horsepower (US)', 745.7, 'hp'], 'BTU/h': ['BTU/hour', 0.293071] }},
-        data: { base: 'B', units: { 'b': ['bit', 0.125], 'B': ['byte', 1], 'KB': ['kilobyte', 1000], 'MB': ['megabyte', 1e6], 'GB': ['gigabyte', 1e9], 'TB': ['terabyte', 1e12], 'KiB': ['kibibyte', 1024], 'MiB': ['mebibyte', 1048576], 'GiB': ['gibibyte', 1073741824], 'TiB': ['tebibyte', 1099511627776] }},
+        data: {
+            base: 'B',
+            units: {
+                'b': ['bit', 0.125], 'kb': ['kilobit', 125], 'Mb': ['megabit', 125000], 'Gb': ['gigabit', 125000000], 'Tb': ['terabit', 125000000000],
+                'Kib': ['kibibit', 128], 'Mib': ['mebibit', 131072], 'Gib': ['gibibit', 134217728], 'Tib': ['tebibit', 137438953472],
+                'B': ['byte', 1], 'KB': ['kilobyte', 1000], 'MB': ['megabyte', 1e6], 'GB': ['gigabyte', 1e9], 'TB': ['terabyte', 1e12],
+                'KiB': ['kibibyte', 1024], 'MiB': ['mebibyte', 1048576], 'GiB': ['gibibyte', 1073741824], 'TiB': ['tebibyte', 1099511627776]
+            },
+            groups: [
+                { label: 'Bits (decimal)', keys: ['b', 'kb', 'Mb', 'Gb', 'Tb'] },
+                { label: 'Bits (binary)', keys: ['Kib', 'Mib', 'Gib', 'Tib'] },
+                { label: 'Bytes (decimal)', keys: ['B', 'KB', 'MB', 'GB', 'TB'] },
+                { label: 'Bytes (binary)', keys: ['KiB', 'MiB', 'GiB', 'TiB'] }
+            ]
+        },
         pressure: { base: 'Pa', units: { 'Pa': ['pascal', 1], 'kPa': ['kilopascal', 1000], 'bar': ['bar', 100000], 'psi': ['psi', 6894.76], 'atm': ['atmosphere', 101325], 'mmHg': ['mmHg', 133.322], 'inHg': ['inHg', 3386.39] }},
         angle: { base: 'deg', units: { 'deg': ['degree', 1], 'rad': ['radian', 57.2958], 'grad': ['gradian', 0.9], 'arcmin': ['arcminute', 0.0166667], 'arcsec': ['arcsecond', 0.000277778] }}
     };
@@ -118,12 +132,26 @@
         return shortName && !alreadyShown ? label + ' (' + shortName + ')' : label;
     }
 
+    function optionHtml(unitKey, unit) {
+        return '<option value="' + unitKey + '">' + formatUnitLabel(unitKey, unit) + '</option>';
+    }
+
     function fillSelect(selectEl, category) {
         var data = UNITS[category];
         if (!data || data.special) return;
         var opts = [];
-        for (var k in data.units) {
-            opts.push('<option value="' + k + '">' + formatUnitLabel(k, data.units[k]) + '</option>');
+        if (data.groups && data.groups.length) {
+            data.groups.forEach(function(group) {
+                opts.push('<optgroup label="' + group.label + '">');
+                group.keys.forEach(function(k) {
+                    if (data.units[k]) opts.push(optionHtml(k, data.units[k]));
+                });
+                opts.push('</optgroup>');
+            });
+        } else {
+            for (var k in data.units) {
+                opts.push(optionHtml(k, data.units[k]));
+            }
         }
         selectEl.innerHTML = opts.join('');
     }

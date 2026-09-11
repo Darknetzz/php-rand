@@ -16,6 +16,7 @@ All notable changes to this project are documented in this file.
 - **String Generator** – Added an **Alphanumeric** character-set option (`0-9a-zA-Z`). Default sets remain **Numbers**, **Lowercase**, and **Uppercase**; Alphanumeric is hidden and disabled when any set other than Numbers is selected. Shared `stringgen_charset_chars()` builds the pool for both generators; possible-combinations info now uses the real pool size.
 - **Base Converter** – **Convert From** defaults to **Auto-detect** (still overridable). Shared `detect_convert_any_selector()` picks text / base64 / common numeric bases from the input; result heading shows the detected source. Also fixed “Invalid source/target format” for bases the UI already offered via `is_convert_any_selector()`.
 - **Docker (local publish)** – `docker-pushimage.sh` supports `SKIP_DOCKERHUB=1` for GHCR-only pushes when GitHub Actions are disabled, falls back to `gh auth token` when `GITHUB_TOKEN` is unset, and publishes the stripped version tag (e.g. `1.4.0`) to match CI. GHCR success message now only lists tags that were actually pushed.
+- **Unit Converter (Data)** – Added SI bit units **kilobit (kb)**–**terabit (Tb)** and binary bit units **kibibit (Kib)**–**tebibit (Tib)**; From-unit select groups options as Bits/Bytes × decimal/binary via reusable `groups` + `<optgroup>` support (`modules/units.php`).
 
 _Add entries here during development; rotate into a dated release section when tagging._
 
