@@ -127,8 +127,17 @@ load_env_file .env
 SKIP_DOCKERHUB="${SKIP_DOCKERHUB:-}"
 SKIP_GHCR="${SKIP_GHCR:-}"
 
-if [[ -z "${GITHUB_TOKEN:-}" ]] && command -v gh &>/dev/null; then
-  GITHUB_TOKEN="$(gh auth token 2>/dev/null || true)"
+# Prefer .env token when set; otherwise use gh. Always fetch gh via env -u so a
+# stale exported GITHUB_TOKEN/GH_TOKEN cannot poison `gh auth token`.
+gh_auth_token() {
+  if ! command -v gh &>/dev/null; then
+    return 0
+  fi
+  env -u GITHUB_TOKEN -u GH_TOKEN gh auth token 2>/dev/null || true
+}
+
+if [[ -z "${GITHUB_TOKEN:-}" ]]; then
+  GITHUB_TOKEN="$(gh_auth_token)"
 fi
 
 if [[ -z "${IMAGE:-}" ]]; then
@@ -228,8 +237,27 @@ if [[ "$SKIP_GHCR" == "1" ]]; then
 elif [[ -n "${GHCR_IMAGE:-}" && -n "${GITHUB_TOKEN:-}" ]]; then
   echo "=== Pushing to GitHub Container Registry (ghcr.io) ==="
   GHCR_OWNER=$(echo "$GHCR_IMAGE" | cut -d/ -f2)
-  if ! echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GHCR_OWNER" --password-stdin; then
-    echo "GHCR login failed; Hub tags (if pushed) are still available. Fix with: gh auth refresh -s write:packages" >&2
+  # Prefer live GitHub login name when available (path owner is usually fine too).
+  GHCR_USER="$GHCR_OWNER"
+  if command -v gh &>/dev/null; then
+    GHCR_USER="$(env -u GITHUB_TOKEN -u GH_TOKEN gh api user -q .login 2>/dev/null || echo "$GHCR_OWNER")"
+  fi
+  ghcr_login_ok=0
+  if echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin; then
+    ghcr_login_ok=1
+  else
+    # Stale GITHUB_TOKEN in .env.local is a common failure mode; retry with gh.
+    GH_LIVE="$(gh_auth_token)"
+    if [[ -n "$GH_LIVE" && "$GH_LIVE" != "$GITHUB_TOKEN" ]]; then
+      echo "GHCR login with GITHUB_TOKEN failed; retrying with gh auth token…" >&2
+      if echo "$GH_LIVE" | docker login ghcr.io -u "$GHCR_USER" --password-stdin; then
+        GITHUB_TOKEN="$GH_LIVE"
+        ghcr_login_ok=1
+      fi
+    fi
+  fi
+  if [[ "$ghcr_login_ok" -ne 1 ]]; then
+    echo "GHCR login failed; Hub tags (if pushed) are still available. Fix with: gh auth refresh -s write:packages (or update GITHUB_TOKEN in .env.local)" >&2
   else
     PUSHED=()
     for t in "${TAGS[@]}"; do
