@@ -27,6 +27,7 @@ function getHandlerRegistry(): array {
         'rot' => 'handle_rot',
         'openssl' => 'handle_openssl',
         'datetime' => 'handle_datetime',
+        'relative_time' => 'handle_relative_time',
         'stringtools' => 'handle_stringtools',
         'ip' => 'handle_ip',
         'urlencode' => 'handle_urlencode',
@@ -990,6 +991,183 @@ function handle_datetime(array $req): string {
 
     $output .= '</tbody></table></div>';
     return $output;
+}
+
+/**
+ * Handle relative time calculator requests (absolute↔relative, diffs).
+ *
+ * @param array $req Request with mode + mode-specific fields
+ * @return string Formatted HTML
+ */
+function handle_relative_time(array $req): string {
+    $mode = trim((string) req_get($req, 'relative_mode', 'to_relative'));
+    $validModes = ['to_relative', 'from_relative', 'diff'];
+    if (!in_array($mode, $validModes, true)) {
+        return formatOutput('Invalid relative-time mode.', type: 'danger');
+    }
+
+    $tzResult = relative_time_timezone((string) req_get($req, 'relative_timezone', ''));
+    if (!$tzResult['ok']) {
+        return formatOutput(htmlspecialchars($tzResult['error'], ENT_QUOTES, 'UTF-8'), type: 'danger');
+    }
+    /** @var DateTimeZone $tz */
+    $tz = $tzResult['tz'];
+    $timezone = (string) $tzResult['timezone'];
+
+    $referenceRaw = trim((string) req_get($req, 'relative_reference', ''));
+    if ($referenceRaw === '') {
+        $reference = new DateTimeImmutable('now', $tz);
+    } else {
+        $refParsed = relative_time_parse_instant($referenceRaw, $tz);
+        if (!$refParsed['ok']) {
+            return formatOutput(htmlspecialchars('Reference time: ' . $refParsed['error'], ENT_QUOTES, 'UTF-8'), type: 'danger');
+        }
+        $reference = $refParsed['datetime'];
+    }
+
+    if ($mode === 'to_relative') {
+        $instantRaw = trim((string) req_get($req, 'relative_instant', ''));
+        $parsed = relative_time_parse_instant($instantRaw, $tz);
+        if (!$parsed['ok']) {
+            return formatOutput(htmlspecialchars($parsed['error'], ENT_QUOTES, 'UTF-8'), type: 'danger');
+        }
+        /** @var DateTimeImmutable $target */
+        $target = $parsed['datetime'];
+        $details = relative_time_diff_details($reference, $target);
+        $formats = relative_time_format_instant($target);
+
+        $output = relative_time_result_header($details['human'], $timezone);
+        $output .= output_copyable($details['human'], 'Relative');
+        $output .= output_copyable($details['precise'], 'Exact difference');
+        $output .= relative_time_formats_table($formats);
+        $output .= relative_time_meta_line($reference, $target, $details['signed_seconds']);
+        return $output;
+    }
+
+    if ($mode === 'from_relative') {
+        $inputStyle = trim((string) req_get($req, 'relative_input_style', 'expression'));
+        if ($inputStyle === 'offset') {
+            $amountRaw = trim((string) req_get($req, 'relative_amount', ''));
+            if ($amountRaw === '' || !is_numeric($amountRaw)) {
+                return formatOutput('Offset amount must be a number.', type: 'danger');
+            }
+            $amount = (float) $amountRaw;
+            $unit = trim((string) req_get($req, 'relative_unit', 'days'));
+            $direction = trim((string) req_get($req, 'relative_direction', 'from_now'));
+            $applied = relative_time_apply_offset($reference, $amount, $unit, $direction);
+            if (!$applied['ok']) {
+                return formatOutput(htmlspecialchars($applied['error'], ENT_QUOTES, 'UTF-8'), type: 'danger');
+            }
+            $target = $applied['datetime'];
+            $expressionUsed = (string) ($applied['expression'] ?? '');
+        } else {
+            $expression = trim((string) req_get($req, 'relative_expression', ''));
+            $applied = relative_time_parse_expression($expression, $reference);
+            if (!$applied['ok']) {
+                return formatOutput(htmlspecialchars($applied['error'], ENT_QUOTES, 'UTF-8'), type: 'danger');
+            }
+            $target = $applied['datetime'];
+            $expressionUsed = $expression;
+        }
+
+        $details = relative_time_diff_details($reference, $target);
+        $formats = relative_time_format_instant($target);
+
+        $output = relative_time_result_header($formats['local'], $timezone);
+        if ($expressionUsed !== '') {
+            $output .= output_copyable($expressionUsed, 'Expression evaluated');
+        }
+        $output .= output_copyable($details['human'], 'Relative to reference');
+        $output .= relative_time_formats_table($formats);
+        $output .= relative_time_meta_line($reference, $target, $details['signed_seconds']);
+        return $output;
+    }
+
+    // diff
+    $fromRaw = trim((string) req_get($req, 'relative_from', ''));
+    $toRaw = trim((string) req_get($req, 'relative_to', ''));
+    $fromParsed = relative_time_parse_instant($fromRaw, $tz);
+    if (!$fromParsed['ok']) {
+        return formatOutput(htmlspecialchars('From: ' . $fromParsed['error'], ENT_QUOTES, 'UTF-8'), type: 'danger');
+    }
+    $toParsed = relative_time_parse_instant($toRaw, $tz);
+    if (!$toParsed['ok']) {
+        return formatOutput(htmlspecialchars('To: ' . $toParsed['error'], ENT_QUOTES, 'UTF-8'), type: 'danger');
+    }
+    /** @var DateTimeImmutable $from */
+    $from = $fromParsed['datetime'];
+    /** @var DateTimeImmutable $to */
+    $to = $toParsed['datetime'];
+    $details = relative_time_diff_details($from, $to);
+
+    $directionLabel = $details['signed_seconds'] < 0
+        ? 'To is before From'
+        : ($details['signed_seconds'] > 0 ? 'To is after From' : 'Same instant');
+
+    $output = relative_time_result_header($details['human'], $timezone);
+    $output .= '<div class="mb-3"><span class="badge bg-secondary">' . htmlspecialchars($directionLabel, ENT_QUOTES, 'UTF-8') . '</span></div>';
+    $output .= output_copyable($details['human'], 'Short relative');
+    $output .= output_copyable($details['precise'], 'Exact difference');
+    $output .= output_copyable((string) abs($details['signed_seconds']), 'Absolute seconds');
+    $output .= relative_time_parts_table($details['parts']);
+    $output .= '<div class="mt-3 small text-muted">From: <code>'
+        . htmlspecialchars($from->format('Y-m-d H:i:s T'), ENT_QUOTES, 'UTF-8')
+        . '</code> → To: <code>'
+        . htmlspecialchars($to->format('Y-m-d H:i:s T'), ENT_QUOTES, 'UTF-8')
+        . '</code></div>';
+    return $output;
+}
+
+function relative_time_result_header(string $headline, string $timezone): string {
+    return '<div class="border border-primary border-opacity-25 rounded-3 px-4 py-4 mb-4 text-center bg-primary bg-opacity-10">'
+        . '<p class="mb-2 fs-3 fw-semibold lh-sm">' . htmlspecialchars($headline, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</p>'
+        . '<span class="badge bg-primary text-white">' . icon('globe2') . ' '
+        . htmlspecialchars($timezone, ENT_QUOTES, 'UTF-8') . '</span>'
+        . '</div>';
+}
+
+function relative_time_formats_table(array $formats): string {
+    $labels = [
+        'local' => 'Local (with TZ)',
+        'iso8601' => 'ISO 8601',
+        'rfc2822' => 'RFC 2822',
+        'unix' => 'Unix (seconds)',
+        'unix_ms' => 'Unix (milliseconds)',
+    ];
+    $html = '<div class="table-responsive mt-3"><table class="table table-dark table-striped table-hover align-middle mb-0" style="border: 1px solid #334155;">';
+    $html .= '<caption class="text-start fw-bold" style="caption-side: top; color: var(--bs-body-color);">Absolute formats</caption>';
+    $html .= '<thead><tr><th>Format</th><th>Value</th></tr></thead><tbody>';
+    foreach ($labels as $key => $label) {
+        if (!isset($formats[$key])) {
+            continue;
+        }
+        $html .= '<tr><td>' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</td><td style="max-width: 360px;">'
+            . copyableOutput($formats[$key], '') . '</td></tr>';
+    }
+    $html .= '</tbody></table></div>';
+    return $html;
+}
+
+function relative_time_parts_table(array $parts): string {
+    $html = '<div class="table-responsive mt-3"><table class="table table-dark table-striped table-hover align-middle mb-0" style="border: 1px solid #334155;">';
+    $html .= '<caption class="text-start fw-bold" style="caption-side: top; color: var(--bs-body-color);">Breakdown</caption>';
+    $html .= '<thead><tr><th>Unit</th><th>Value</th></tr></thead><tbody>';
+    foreach ($parts as $name => $val) {
+        $html .= '<tr><td>' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '</td><td>'
+            . copyableOutput((string) $val, '') . '</td></tr>';
+    }
+    $html .= '</tbody></table></div>';
+    return $html;
+}
+
+function relative_time_meta_line(DateTimeImmutable $reference, DateTimeImmutable $target, int $signedSeconds): string {
+    return '<div class="mt-3 small text-muted">Reference: <code>'
+        . htmlspecialchars($reference->format('Y-m-d H:i:s T'), ENT_QUOTES, 'UTF-8')
+        . '</code> · Target: <code>'
+        . htmlspecialchars($target->format('Y-m-d H:i:s T'), ENT_QUOTES, 'UTF-8')
+        . '</code> · Δt = <code>'
+        . htmlspecialchars((string) $signedSeconds, ENT_QUOTES, 'UTF-8')
+        . 's</code></div>';
 }
 
 /**

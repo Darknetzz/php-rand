@@ -1677,6 +1677,51 @@ function initCrontabLiveAnalyzeUi($scope) {
 }
 
 /* ===================================================================== */
+/*                      FUNCTION: initRelativeTimeUi                     */
+/* ===================================================================== */
+function initRelativeTimeUi($root) {
+    const $scope = ($root && $root.length) ? $root : $(document);
+    const $form = $scope.find("#relativeTimeForm").first();
+    if (!$form.length) {
+        return;
+    }
+
+    function syncRelativeTimeUi() {
+        const mode = $form.find("#relativeMode").val() || "to_relative";
+        $form.find(".relative-mode-panel").each(function() {
+            const $panel = $(this);
+            const active = $panel.attr("data-relative-mode") === mode;
+            $panel.toggleClass("d-none", !active);
+            $panel.find("input, select, textarea").prop("disabled", !active);
+        });
+
+        $form.find(".relative-reference-input").prop("disabled", true);
+        if (mode === "to_relative") {
+            $form.find("#relativeReferenceTo").prop("disabled", false);
+        } else if (mode === "from_relative") {
+            const style = $form.find('input[name="relative_input_style"]:checked').val() || "expression";
+            $form.find(".relative-from-style").each(function() {
+                const $panel = $(this);
+                const active = $panel.attr("data-from-style") === style;
+                $panel.toggleClass("d-none", !active);
+                $panel.find("input, select, textarea").prop("disabled", !active);
+            });
+            if (style === "expression") {
+                $form.find("#relativeReferenceFrom").prop("disabled", false);
+            } else {
+                $form.find("#relativeReferenceOffset").prop("disabled", false);
+            }
+        }
+    }
+
+    if (!$form.data("relative-ui-bound")) {
+        $form.data("relative-ui-bound", true);
+        $form.on("change", "#relativeMode, input[name='relative_input_style']", syncRelativeTimeUi);
+    }
+    syncRelativeTimeUi();
+}
+
+/* ===================================================================== */
 /*                      FUNCTION: initModuleSubnav                       */
 /* ===================================================================== */
 function initModuleSubnav($module, requestedSubtab) {
@@ -1794,6 +1839,7 @@ function navigate(to) {
         initCsrFormUi($(normalizedTo));
         initKeypairSignFormUi($(normalizedTo));
         initCrontabLiveAnalyzeUi($(normalizedTo));
+        initRelativeTimeUi($(normalizedTo));
         refreshClientCryptoGeneratorUi($(normalizedTo));
     };
 
@@ -2410,6 +2456,20 @@ const CRONTAB_RANDOM_SCENARIOS = [
     { expression: "0 0 15W * *", timezone: "America/Vancouver" }
 ];
 
+const RELATIVE_TIME_RANDOM_SCENARIOS = [
+    { mode: "to_relative", instant: "2020-01-01 00:00:00", expression: "", from: "", to: "" },
+    { mode: "to_relative", instant: "1735689600", expression: "", from: "", to: "" },
+    { mode: "to_relative", instant: "2030-06-15T14:30", expression: "", from: "", to: "" },
+    { mode: "from_relative", instant: "", expression: "2 days ago", from: "", to: "" },
+    { mode: "from_relative", instant: "", expression: "+3 hours", from: "", to: "" },
+    { mode: "from_relative", instant: "", expression: "next Monday", from: "", to: "" },
+    { mode: "from_relative", instant: "", expression: "first day of next month", from: "", to: "" },
+    { mode: "from_relative", instant: "", expression: "-90 minutes", from: "", to: "" },
+    { mode: "diff", instant: "", expression: "", from: "2024-01-01 00:00:00", to: "2026-09-20 16:00:00" },
+    { mode: "diff", instant: "", expression: "", from: "2000-01-01", to: "2026-01-01" },
+    { mode: "diff", instant: "", expression: "", from: "2026-09-20 09:00:00", to: "2026-09-20 17:30:00" }
+];
+
 const SYNTAX_VALIDATE_KIND_OPTIONS = [
     { kind: "json" },
     { kind: "yaml" },
@@ -2746,6 +2806,16 @@ function randomDataGetCompatibleFormBundle($form) {
             cronExpression: cronSample.expression,
             cronTimezone: cronSample.timezone
         };
+    } else if (formAction === "relative_time" || formId === "relativetimeform") {
+        const rtSample = randomPickAvoidRepeatFromForm($form, RELATIVE_TIME_RANDOM_SCENARIOS, "relativeTimeScenario");
+        bundle = {
+            kind: "relative_time",
+            relativeMode: rtSample.mode,
+            relativeInstant: rtSample.instant,
+            relativeExpression: rtSample.expression,
+            relativeFrom: rtSample.from,
+            relativeTo: rtSample.to
+        };
     } else if (formAction === "shellcheck" || formId === "shellcheckform") {
         const shellcheckSample = randomPickAvoidRepeatFromForm($form, SHELLCHECK_RANDOM_SCENARIOS, "shellcheckScenario");
         bundle = {
@@ -2941,6 +3011,39 @@ function generateRandomData(type, placeholder = '', $input = null) {
                 if (sample) {
                     return inputName === "cron_expression" ? sample.expression : sample.timezone;
                 }
+            }
+        }
+        if (formAction === "relative_time" || formId === "relativetimeform") {
+            const sample = randomPickAvoidRepeatFromForm($form, RELATIVE_TIME_RANDOM_SCENARIOS, "relativeTimeScenario");
+            if (sample) {
+                $form.find("#relativeMode").val(sample.mode);
+                $form.find('input[name="relative_input_style"][value="expression"]').prop("checked", true);
+                initRelativeTimeUi($form);
+                if (sample.instant) {
+                    $form.find("#relativeInstant").val(sample.instant);
+                }
+                if (sample.expression) {
+                    $form.find("#relativeExpression").val(sample.expression);
+                }
+                if (sample.from) {
+                    $form.find("#relativeFrom").val(sample.from);
+                }
+                if (sample.to) {
+                    $form.find("#relativeTo").val(sample.to);
+                }
+                if (inputName === "relative_instant") {
+                    return sample.instant || "";
+                }
+                if (inputName === "relative_expression") {
+                    return sample.expression || "";
+                }
+                if (inputName === "relative_from") {
+                    return sample.from || "";
+                }
+                if (inputName === "relative_to") {
+                    return sample.to || "";
+                }
+                return sample.expression || sample.instant || sample.from || sample.to || "";
             }
         }
         if (formAction === "syntax_validate" || formId === "syntaxvalidateform") {
