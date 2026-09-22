@@ -19,6 +19,7 @@ All notable changes to this project are documented in this file.
 - **Docker (local publish)** – `docker-pushimage.sh` supports `SKIP_DOCKERHUB=1` for GHCR-only pushes when GitHub Actions are disabled, falls back to `gh auth token` when `GITHUB_TOKEN` is unset, and publishes the stripped version tag (e.g. `1.4.0`) to match CI. GHCR success message now only lists tags that were actually pushed.
 - **Docker (GHCR auth)** – Stale `GITHUB_TOKEN` in `.env.local` no longer blocks GHCR: login retries with `gh auth token` (via `env -u GITHUB_TOKEN`) and uses the live GitHub username for `docker login`.
 - **Unit Converter (Data)** – Added SI bit units **kilobit (kb)**–**terabit (Tb)** and binary bit units **kibibit (Kib)**–**tebibit (Tib)**; From-unit select groups options as Bits/Bytes × decimal/binary via reusable `groups` + `<optgroup>` support (`modules/units.php`).
+- **Calculator clipboard** – Keyboard-first copy/paste: **Ctrl/Cmd+C** copies the current result, **Ctrl/Cmd+V** pastes a number or valid expression (`+ - * /`, precedence-aware, no `eval`). Clicking the display also copies; invalid pastes show **Error**.
 
 _Add entries here during development; rotate into a dated release section when tagging._
 

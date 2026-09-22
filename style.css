@@ -479,6 +479,20 @@ th.tablehead,
   word-break: break-all;
   text-align: right;
   width: 100%;
+  user-select: text;
+  cursor: pointer;
+  border-radius: 4px;
+  outline: none;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.calc-display:focus-visible {
+  box-shadow: inset 0 0 0 1px rgba(155, 89, 182, 0.55);
+}
+
+.calc-display.calc-copied {
+  color: #b8f0c8;
+  background: rgba(40, 167, 69, 0.18);
 }
 
 .calc-memory-row {
@@ -638,6 +652,11 @@ th.tablehead,
 
 [data-bs-theme="light"] .calc-display {
   color: #0f172a;
+}
+
+[data-bs-theme="light"] .calc-display.calc-copied {
+  color: #146c43;
+  background: rgba(25, 135, 84, 0.15);
 }
 
 [data-bs-theme="light"] .calc-btn {

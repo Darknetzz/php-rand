@@ -1613,7 +1613,7 @@ function handle_spinwheel(array $req): string {
 
 function handle_calculator(array $req): string {
     return formatOutput(
-        'This calculator runs entirely in your browser. Use the on-screen keypad to compute results.',
+        'This calculator runs entirely in your browser. Use the keypad, keyboard, or paste a number/expression (Ctrl/Cmd+V). Copy the result with Ctrl/Cmd+C or by clicking the display.',
         type: 'info'
     );
 }
