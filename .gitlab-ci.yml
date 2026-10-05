@@ -10,6 +10,8 @@
 #   SKIP_GHCR=1              GHCR only off
 #   GHCR_USER                defaults via docker-pushimage.sh / image path
 #
+# Sync: docker-pushimage.sh builds once and pushes the same tags to every
+# enabled registry. Job fails if Hub or GHCR login/push fails (unless SKIP_*).
 # Runner needs Docker-in-Docker (privileged) for the docker:dind service.
 
 stages:

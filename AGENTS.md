@@ -93,7 +93,7 @@ This repository has an opinionated scripted release flow in `scripts/`.
   - `./docker-pushimage.sh` / `--release [vX.Y.Z]` — `:latest` + version tags from `docker-image.config`.
   - `./docker-pushimage.sh --dry-run` — print plan only.
   - Env: `SKIP_DOCKERHUB=1`, `SKIP_GHCR=1`; credentials in `.env.local` / `.env`.
-  - **Auto publish:** `.gitlab-ci.yml` on push of branch `dev` (`:dev`/`:develop`) and on version tags (`:latest` + `:vX.Y.Z`). GitHub Actions Docker workflows stay unused. Local hook removed; `./scripts/install-git-hooks.sh` only clears an old `core.hooksPath`.
+  - **Auto publish:** `.gitlab-ci.yml` on push of branch `dev` (`:dev`/`:develop`) and on version tags (`:latest` + `:vX.Y.Z`). Hub + GHCR get the same build; job fails if either enabled registry fails. GitHub Actions Docker workflows stay unused. Local hook removed; `./scripts/install-git-hooks.sh` only clears an old `core.hooksPath`.
 - `scripts/extract_changelog_section.sh`
   - Extracts one release section from `CHANGELOG.md` by title (example: `[v1.2.9]`).
 - `scripts/update-release-descriptions.php`

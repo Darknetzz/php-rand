@@ -238,7 +238,7 @@ What it does:
 ./docker-pushimage.sh --dev --dry-run       # plan only
 ```
 
-Credentials: `DOCKERHUB_USERNAME` / `DOCKERHUB_TOKEN` and optional `GITHUB_TOKEN` in `.env.local` (see `.env.example`). `SKIP_DOCKERHUB=1` or `SKIP_GHCR=1` to publish to one registry only.
+Credentials: `DOCKERHUB_USERNAME` / `DOCKERHUB_TOKEN` and optional `GITHUB_TOKEN` in `.env.local` (see `.env.example`). `SKIP_DOCKERHUB=1` or `SKIP_GHCR=1` to publish to one registry only. When a registry is enabled, login/push failure aborts the script so Hub and GHCR stay in sync.
 
 Older clones that installed the retired local pre-push Docker hook can clear it with `./scripts/install-git-hooks.sh`.
 
