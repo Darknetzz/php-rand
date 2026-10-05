@@ -3556,10 +3556,10 @@ function addRandomDataButtons($root = null) {
         if (!isWheelItemInput) {
             if (wrapTargetIsGroup) {
                 if (!$inputGroup.parent().hasClass('input-with-random-btn')) {
-                    $inputGroup.wrap('<div class="input-with-random-btn" style="position: relative; display: flex; gap: 8px; align-items: flex-start;"></div>');
+                    $inputGroup.wrap('<div class="input-with-random-btn"></div>');
                 }
             } else if (!$input.parent().hasClass('input-with-random-btn')) {
-                $input.wrap('<div class="input-with-random-btn" style="position: relative; display: flex; gap: 8px; align-items: flex-start;"></div>');
+                $input.wrap('<div class="input-with-random-btn"></div>');
             }
         }
 

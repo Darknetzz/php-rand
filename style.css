@@ -394,14 +394,26 @@ th.tablehead,
   gap: 8px;
   align-items: center;
   width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
-/* Only stretch direct field children — not inputs nested inside .input-group */
+/*
+ * Stretch only direct field children (not inputs nested in .input-group).
+ * flex-basis 0 + width:auto overrides Bootstrap's width:100% so the shuffle
+ * button stays inside the column and rows share the same right edge.
+ */
 .input-with-random-btn > input,
 .input-with-random-btn > textarea,
 .input-with-random-btn > .input-group {
-  flex: 1 1 auto;
+  flex: 1 1 0;
   min-width: 0;
+  width: auto;
+  max-width: 100%;
+}
+
+.subnet-network-fields {
+  width: 100%;
 }
 
 /* Shared mono input-group styling (matches networking tool field borders) */
