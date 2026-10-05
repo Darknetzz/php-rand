@@ -392,16 +392,15 @@ th.tablehead,
   position: relative;
   display: flex;
   gap: 8px;
-  align-items: flex-start;
+  align-items: center;
+  width: 100%;
 }
 
-.input-with-random-btn input,
-.input-with-random-btn textarea {
-  flex: 1;
-}
-
+/* Only stretch direct field children — not inputs nested inside .input-group */
+.input-with-random-btn > input,
+.input-with-random-btn > textarea,
 .input-with-random-btn > .input-group {
-  flex: 1;
+  flex: 1 1 auto;
   min-width: 0;
 }
 
@@ -415,6 +414,7 @@ th.tablehead,
   margin-left: -2px;
 }
 .rand-input-group-suffix {
+  flex: 0 0 4.75rem;
   max-width: 4.75rem;
 }
 [data-bs-theme="light"] .rand-input-group > .form-control,
