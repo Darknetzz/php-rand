@@ -57,7 +57,7 @@ usage() {
   echo "    MERGE_RELEASE_TO_MAIN=1 After gh/docker, sync RELEASE_BRANCH into MAIN_BRANCH (see MERGE_TO_MAIN_VIA_PR)."
   echo "    MERGE_TO_MAIN_VIA_PR=1  Skip direct push; open a PR base=MAIN head=RELEASE (for protected main)."
   echo "    RELEASE_BRANCH / MAIN_BRANCH  Override branch names (defaults: dev, main)."
-  echo "  Docker images: publish locally with ./docker-pushimage.sh (GitHub Actions Docker workflows are unused)."
+  echo "  Docker images: GitLab CI on gitlab01 (primary); local ./docker-pushimage.sh remains as fallback."
   exit "${1:-0}"
 }
 

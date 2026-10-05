@@ -218,11 +218,16 @@ What it does:
 - sets `VERSION=vX.Y.Z` in `docker-image.config` so local Docker builds match the release
 - creates a release commit and annotated tag (`vX.Y.Z`; commit includes `CHANGELOG.md` and `docker-image.config`)
 - optionally pushes branch + tag after an explicit confirmation prompt
-- **GitHub Release + Docker Hub / GHCR images:** publish **locally** (GitHub Actions Docker workflows are disabled to avoid CI cost). After push, prompts (from `/dev/tty`) run `gh release create` and `./docker-pushimage.sh` — default is **Y**.
+- **GitHub Release:** after push, prompt (from `/dev/tty`) runs `gh release create` — default is **Y**.
+- **Docker Hub / GHCR images:** publish via **GitLab CI** on `gitlab01` when the version tag is pushed there (see `.gitlab-ci.yml`). Optional local fallback prompt runs `./docker-pushimage.sh` — default is **Y** if you still want a local publish.
 - then prompts to **merge `dev` into `main` and push** (default **Y**) so the default branch matches the release line; override branch names with `RELEASE_BRANCH` / `MAIN_BRANCH` if needed
 - if you already pushed the tag but skipped those steps: `./scripts/release.sh 1.2.10 --publish-only` (includes the same `gh`, Docker, and merge prompts when run from `dev`)
 
-### Docker images (local only)
+### Docker images
+
+**Primary (GitLab CI):** remote `ssh://git@gitlab01/kriss/php-rand.git` — push branch `dev` for rolling `:dev`/`:develop`, or a version tag (`vX.Y.Z`) for `:latest` + version tags. Set CI/CD variables `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN`, and `GITHUB_TOKEN` (GHCR) on the GitLab project. Runner must allow Docker-in-Docker (privileged).
+
+**Local fallback** (optional; GitHub Actions Docker workflows stay unused):
 
 ```bash
 ./docker-pushimage.sh --dev                 # :dev + :develop (demo / tip of branch)
@@ -233,13 +238,13 @@ What it does:
 
 Credentials: `DOCKERHUB_USERNAME` / `DOCKERHUB_TOKEN` and optional `GITHUB_TOKEN` in `.env.local` (see `.env.example`). `SKIP_DOCKERHUB=1` or `SKIP_GHCR=1` to publish to one registry only.
 
-**Auto-publish on push (local hook, no GitHub Actions):** once per clone run `./scripts/install-git-hooks.sh`. After that, `git push` of branch `dev` runs `./docker-pushimage.sh --dev` first (can take several minutes). Skip with `SKIP_DOCKER_PUBLISH=1 git push`.
+Older clones that installed the retired local pre-push Docker hook can clear it with `./scripts/install-git-hooks.sh`.
 
 **Why GitHub might still show an older “Latest” release:** the badge uses **GitHub Releases**, not tags only. Create the release with `gh` via `release.sh` / `--publish-only` or from the Releases UI.
 
 Environment toggles:
 - `CREATE_GH_RELEASE=1` — after push, run `gh release create` with changelog notes (skipped if the release already exists)
-- `PUBLISH_DOCKER=1` — after push, run `./docker-pushimage.sh` (uses updated `docker-image.config`; still uses your Docker Hub / `.env` credentials)
+- `PUBLISH_DOCKER=1` — after push, run `./docker-pushimage.sh` locally (optional if GitLab CI already publishes)
 - `MERGE_RELEASE_TO_MAIN=1` — after the above, merge `dev` into `main` and push (non-interactive; combine with other toggles as needed)
 
 Common options:

@@ -1,17 +1,20 @@
 #!/usr/bin/env bash
-# Point this clone at .githooks/ (tracked). Safe to re-run.
+# Legacy helper: Docker publish moved to GitLab CI (.gitlab-ci.yml).
+# Clears a previous core.hooksPath=.githooks from older clones.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-if [[ ! -d .githooks ]]; then
-  echo "Missing .githooks/ in $ROOT" >&2
-  exit 1
+current="$(git config --get core.hooksPath || true)"
+if [[ "$current" == ".githooks" || "$current" == "$ROOT/.githooks" ]]; then
+  git config --unset core.hooksPath
+  echo "Cleared core.hooksPath (.githooks / local Docker pre-push retired)."
+else
+  echo "No .githooks core.hooksPath set (nothing to clear)."
 fi
 
-chmod +x .githooks/* 2>/dev/null || true
-git config core.hooksPath .githooks
-echo "Installed git hooks: core.hooksPath=.githooks"
-echo "  pre-push → ./docker-pushimage.sh --dev when pushing branch 'dev'"
-echo "  Skip:     SKIP_DOCKER_PUBLISH=1 git push"
+echo "Docker images publish via GitLab CI on gitlab01 (see .gitlab-ci.yml)."
+echo "  :dev/:develop  → push branch 'dev'"
+echo "  :latest/:vX.Y.Z → push a version tag (vX.Y.Z)"
+echo "Local fallback: ./docker-pushimage.sh --dev | --release"
