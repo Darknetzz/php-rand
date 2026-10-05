@@ -8,6 +8,7 @@ All notable changes to this project are documented in this file.
 
 ### Major Features
 
+- **Repo social preview** – Added GitHub-sized (`1280×640`) social cards in **`images/social-preview.png`** (dark) and **`images/social-preview-light.png`** (light); dark variant shown at the top of **`README.md`**.
 - **Subnet Mask Calculator** – IP field accepts pasted CIDR (`10.0.0.0/20`); Bootstrap **`input-group`** with appended **`/prefix`** syncs bidirectionally with the subnet mask field. Server also accepts IP+CIDR when the subnet field is empty (`handle_ip_parse_ipv4_optional_cidr()`).
 - **CIDR to Range** – Result table now includes the dotted **Subnet mask** (e.g. `/20` → `255.255.240.0`), derived via existing `handle_ip_normalize_subnet_mask()`.
 - **Module subnav (subpages)** – Multi-card tool pages now show a pill-style subnav bar that splits tools into individual subpages. Affected modules: **Networking** (DNS Lookup, CIDR→Range, Range→CIDR, Subnet Calculator, IP/Hex), **Date & Time** (Time Converter, Relative Time, Current Time), **Private/Public Keys** (Key Generator, Sign/Verify), **SSH Key Generator** (Generate, Verify). Active subtab is persisted in localStorage and deep-linkable via hash (e.g. `#networking/dns`). New CSS classes `.module-subnav`, `.subnav-pill`, `.subnav-panel`; JS helpers `initModuleSubnav()` / `activateSubtab()`; light-theme variant included.

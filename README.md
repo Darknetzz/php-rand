@@ -1,5 +1,7 @@
 # phprand
 
+![php-rand social preview](images/social-preview.png)
+
 A comprehensive collection of useful developer tools built with PHP and modern web technologies.
 
 **Demo:** [https://rand.demo.roste.org/](https://rand.demo.roste.org/)
