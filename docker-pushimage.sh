@@ -222,7 +222,8 @@ if [[ "$SKIP_DOCKERHUB" != "1" ]]; then
   if [[ -n "${DOCKERHUB_USERNAME:-}" && -n "${DOCKERHUB_TOKEN:-}" ]]; then
     echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
   else
-    docker login
+    # Existing creds store; never read a password from inherited stdin (e.g. git hooks).
+    docker login </dev/null
   fi
   echo "=== Pushing to Docker Hub ==="
   for t in "${TAGS[@]}"; do

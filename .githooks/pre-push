@@ -10,23 +10,24 @@ if [[ -z "$ROOT" ]]; then
   exit 0
 fi
 
-if [[ "${SKIP_DOCKER_PUBLISH:-}" == "1" ]]; then
-  echo "pre-push: skipping Docker publish (SKIP_DOCKER_PUBLISH=1)."
-  exit 0
-fi
-
 PUBLISH_DEV=0
+# Always consume every push-ref line from git. Breaking early (or exiting before
+# reading) leaves stdin data that child processes can inherit; after a long
+# Docker publish that can abort the real git push with little/no error output.
 while read -r local_ref local_sha remote_ref remote_sha; do
   [[ -z "${local_ref:-}" ]] && continue
   # Only when this push updates refs/heads/dev (not tags / other branches).
   if [[ "$remote_ref" == "refs/heads/dev" || "$local_ref" == "refs/heads/dev" ]]; then
-    if [[ "$local_sha" =~ ^0+$ ]]; then
-      continue
+    if [[ ! "$local_sha" =~ ^0+$ ]]; then
+      PUBLISH_DEV=1
     fi
-    PUBLISH_DEV=1
-    break
   fi
 done
+
+if [[ "${SKIP_DOCKER_PUBLISH:-}" == "1" ]]; then
+  echo "pre-push: skipping Docker publish (SKIP_DOCKER_PUBLISH=1)."
+  exit 0
+fi
 
 if [[ "$PUBLISH_DEV" -ne 1 ]]; then
   exit 0
@@ -39,4 +40,10 @@ fi
 
 echo "pre-push: publishing darknetz/php-rand:dev (and :develop) before push…"
 echo "         Skip with: SKIP_DOCKER_PUBLISH=1 git push"
-(cd "$ROOT" && ./docker-pushimage.sh --dev)
+# Keep docker/gh/login from reading the (already drained) hook stdin.
+if ! (cd "$ROOT" && ./docker-pushimage.sh --dev </dev/null); then
+  echo "pre-push: docker-pushimage.sh --dev failed; aborting push." >&2
+  exit 1
+fi
+
+exit 0
