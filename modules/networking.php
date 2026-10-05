@@ -113,10 +113,10 @@
                     <div class="row g-4 mb-4">
                         <div class="col-12 col-lg-6">
                             <label for="ipInput" class="form-label mb-3"><strong style="font-size: 1.1rem;">Network Details</strong></label>
-                            <div class="input-group input-group-lg mb-2" style="border: 2px solid #495057; border-radius: 0.5rem; overflow: hidden;">
-                                <input type="text" id="ipInput" name="ip" class="form-control form-control-lg border-0" placeholder="IP: 192.168.1.100 or 10.0.0.0/20" style="font-family: monospace;" autocomplete="off" spellcheck="false">
-                                <span class="input-group-text border-0 border-start" style="font-family: monospace;">/</span>
-                                <input type="text" id="subnetCidrPrefix" class="form-control form-control-lg border-0" inputmode="numeric" maxlength="2" placeholder="24" aria-label="CIDR prefix length" title="CIDR prefix" style="font-family: monospace; max-width: 4.75rem;" autocomplete="off" spellcheck="false">
+                            <div class="input-group input-group-lg mb-2 rand-input-group">
+                                <input type="text" id="ipInput" name="ip" class="form-control" placeholder="IP: 192.168.1.100 or 10.0.0.0/20" autocomplete="off" spellcheck="false">
+                                <span class="input-group-text">/</span>
+                                <input type="text" id="subnetCidrPrefix" class="form-control rand-input-group-suffix" inputmode="numeric" maxlength="2" placeholder="24" aria-label="CIDR prefix length" title="CIDR prefix" autocomplete="off" spellcheck="false">
                             </div>
                             <input type="text" id="subnetInput" name="subnet" class="form-control form-control-lg" placeholder="Subnet: 255.255.255.0 or /24" style="border: 2px solid #495057; font-family: monospace;" autocomplete="off" spellcheck="false">
                         </div>

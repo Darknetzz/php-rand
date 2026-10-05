@@ -405,6 +405,23 @@ th.tablehead,
   min-width: 0;
 }
 
+/* Shared mono input-group styling (matches networking tool field borders) */
+.rand-input-group > .form-control,
+.rand-input-group > .input-group-text {
+  border: 2px solid #495057;
+  font-family: monospace;
+}
+.rand-input-group > :not(:first-child) {
+  margin-left: -2px;
+}
+.rand-input-group-suffix {
+  max-width: 4.75rem;
+}
+[data-bs-theme="light"] .rand-input-group > .form-control,
+[data-bs-theme="light"] .rand-input-group > .input-group-text {
+  border-color: #ced4da;
+}
+
 .random-data-btn {
   flex-shrink: 0;
   min-width: 38px;
