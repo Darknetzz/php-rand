@@ -113,7 +113,7 @@
                     <div class="row g-4 mb-4">
                         <div class="col-12 col-lg-6">
                             <label for="ipInput" class="form-label mb-3"><strong style="font-size: 1.1rem;">Network Details</strong></label>
-                            <div class="subnet-network-fields d-flex flex-column gap-2">
+                            <div class="subnet-network-fields d-flex flex-column gap-2" data-no-random-buttons data-shared-random="#ipInput" data-shared-random-title="Random IP and subnet">
                                 <div class="input-group input-group-lg rand-input-group">
                                     <input type="text" id="ipInput" name="ip" class="form-control" placeholder="IP: 192.168.1.100 or 10.0.0.0/20" autocomplete="off" spellcheck="false">
                                     <span class="input-group-text">/</span>

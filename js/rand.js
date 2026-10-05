@@ -2934,10 +2934,12 @@ function randomDataGetCompatibleFormBundle($form) {
         const a = randomInt(10, 172);
         const b = randomInt(0, 255);
         const c = randomInt(0, 255);
+        const masks = ['255.255.255.0', '255.255.255.128', '255.255.255.192', '255.255.255.224',
+                      '255.255.0.0', '255.255.128.0', '255.255.192.0', '255.0.0.0'];
         bundle = {
             kind: "subnetmask",
             ip: a + "." + b + "." + c + "." + randomInt(2, 253),
-            subnet: "255.255.255.0"
+            subnet: masks[randomInt(0, masks.length - 1)]
         };
     } else if (formAction === "numgen" || formId === "numgen") {
         const from = randomInt(1, 500);
@@ -3492,10 +3494,76 @@ function generateRandomData(type, placeholder = '', $input = null) {
 }
 
 /* ===================================================================== */
+/*                   FUNCTION: createRandomDataButton                    */
+/* ===================================================================== */
+function createRandomDataButton($input, options = {}) {
+    const title = options.title || 'Generate random data';
+    const alignSelf = options.alignSelf || ($input.is('textarea') ? 'flex-start' : 'center');
+    const height = options.height || ($input.is('textarea') ? 'auto' : 'fit-content');
+
+    const $btn = $('<button>', {
+        type: 'button',
+        class: 'btn btn-sm btn-outline-secondary random-data-btn',
+        title: title,
+        html: '<i class="bi bi-shuffle"></i>',
+        css: {
+            'flex-shrink': '0',
+            'height': height,
+            'align-self': alignSelf
+        }
+    });
+
+    $btn.on('click', function() {
+        const $form = $input.closest('form');
+        const formAction = (($form.attr('data-action') || '') + '').toLowerCase();
+        const inputType = $input.is('textarea')
+            ? 'textarea'
+            : ($input.is('select') ? 'select' : $input.attr('type'));
+        const placeholder = $input.attr('placeholder') || '';
+        const randomData = generateRandomData(inputType, placeholder, $input);
+        $input.val(randomData).trigger('change').trigger('input');
+        if (formAction === 'crontab') {
+            const inputName = ($input.attr('name') || '').toLowerCase();
+            if (inputName === 'cron_timezone') {
+                const det = document.getElementById('crontabMoreDetails');
+                if (det) {
+                    det.open = true;
+                }
+            }
+        }
+
+        const originalHtml = $btn.html();
+        $btn.html('<i class="bi bi-check"></i>').addClass('btn-success').removeClass('btn-outline-secondary');
+        setTimeout(() => {
+            $btn.html(originalHtml).removeClass('btn-success').addClass('btn-outline-secondary');
+        }, 1000);
+    });
+
+    return $btn;
+}
+
+/* ===================================================================== */
 /*                   FUNCTION: addRandomDataButtons                      */
 /* ===================================================================== */
 function addRandomDataButtons($root = null) {
     const $scope = ($root && $root.length) ? $root : $(document);
+
+    // Shared shuffle for a multi-field block (e.g. subnet IP + mask)
+    $scope.find('[data-shared-random]').each(function() {
+        const $block = $(this);
+        if ($block.parent().hasClass('input-with-random-btn') || $block.next('.random-data-btn').length) {
+            return;
+        }
+        const targetSel = String($block.attr('data-shared-random') || '').trim();
+        const $input = targetSel ? $block.find(targetSel).first() : $();
+        if (!$input.length) {
+            return;
+        }
+        $block.wrap('<div class="input-with-random-btn"></div>');
+        const title = $block.attr('data-shared-random-title') || 'Generate random data';
+        $block.after(createRandomDataButton($input, { title: title, alignSelf: 'center' }));
+    });
+
     // Find all text inputs, number inputs, and textareas that don't already have a random button
     const selectors = [
         'input[type="text"]:not([readonly]):not([disabled])',
@@ -3515,6 +3583,9 @@ function addRandomDataButtons($root = null) {
             return;
         }
         if (wrapTargetIsGroup && $inputGroup.parent().hasClass('input-with-random-btn')) {
+            return;
+        }
+        if ($input.closest('.input-with-random-btn').length > 0) {
             return;
         }
 
@@ -3541,13 +3612,7 @@ function addRandomDataButtons($root = null) {
             return;
         }
 
-        // Get input details
-        const inputType = $input.is('textarea')
-            ? 'textarea'
-            : ($input.is('select') ? 'select' : $input.attr('type'));
-        const placeholder = $input.attr('placeholder') || '';
         const inputId = $input.attr('id') || 'input_' + Math.random().toString(36).substr(2, 9);
-        
         if (!$input.attr('id')) {
             $input.attr('id', inputId);
         }
@@ -3563,48 +3628,12 @@ function addRandomDataButtons($root = null) {
             }
         }
 
-        const inputIdForTitle = $input.attr('id') || '';
         let randomBtnTitle = 'Generate random data';
-        if (inputIdForTitle === 'syntaxValidateKind') {
+        if (($input.attr('id') || '') === 'syntaxValidateKind') {
             randomBtnTitle = 'Random language';
         }
 
-        // Create the random button
-        const $btn = $('<button>', {
-            type: 'button',
-            class: 'btn btn-sm btn-outline-secondary random-data-btn',
-            title: randomBtnTitle,
-            html: '<i class="bi bi-shuffle"></i>',
-            css: {
-                'flex-shrink': '0',
-                'height': $input.is('textarea') ? 'auto' : 'fit-content',
-                'align-self': $input.is('textarea') ? 'flex-start' : 'center'
-            }
-        });
-
-        // Add click handler
-        $btn.on('click', function() {
-            const $form = $input.closest('form');
-            const formAction = (($form.attr('data-action') || '') + '').toLowerCase();
-            const randomData = generateRandomData(inputType, placeholder, $input);
-            $input.val(randomData).trigger('change').trigger('input');
-            if (formAction === 'crontab') {
-                const inputName = ($input.attr('name') || '').toLowerCase();
-                if (inputName === 'cron_timezone') {
-                    const det = document.getElementById('crontabMoreDetails');
-                    if (det) {
-                        det.open = true;
-                    }
-                }
-            }
-
-            // Visual feedback
-            const originalHtml = $btn.html();
-            $btn.html('<i class="bi bi-check"></i>').addClass('btn-success').removeClass('btn-outline-secondary');
-            setTimeout(() => {
-                $btn.html(originalHtml).removeClass('btn-success').addClass('btn-outline-secondary');
-            }, 1000);
-        });
+        const $btn = createRandomDataButton($input, { title: randomBtnTitle });
 
         // Append button after input or after the input-group
         if (wrapTargetIsGroup) {
