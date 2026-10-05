@@ -1722,6 +1722,166 @@ function initRelativeTimeUi($root) {
 }
 
 /* ===================================================================== */
+/*                      FUNCTION: initSubnetMaskUi                       */
+/* ===================================================================== */
+function initSubnetMaskUi($root) {
+    const $scope = ($root && $root.length) ? $root : $(document);
+    const $form = $scope.find("#subnetmask").first();
+    if (!$form.length || $form.data("subnet-ui-bound")) {
+        return;
+    }
+    $form.data("subnet-ui-bound", true);
+
+    const $ip = $form.find("#ipInput");
+    const $prefix = $form.find("#subnetCidrPrefix");
+    const $subnet = $form.find("#subnetInput");
+    let syncing = false;
+
+    function ipv4PrefixToMask(prefix) {
+        if (!Number.isInteger(prefix) || prefix < 0 || prefix > 32) {
+            return null;
+        }
+        const mask = prefix === 0 ? 0 : (0xFFFFFFFF << (32 - prefix)) >>> 0;
+        return [(mask >>> 24) & 255, (mask >>> 16) & 255, (mask >>> 8) & 255, mask & 255].join(".");
+    }
+
+    function ipv4MaskToPrefix(mask) {
+        const parts = String(mask || "").trim().split(".");
+        if (parts.length !== 4) {
+            return null;
+        }
+        let bits = 0;
+        let seenZero = false;
+        for (let i = 0; i < 4; i++) {
+            const p = Number(parts[i]);
+            if (!Number.isInteger(p) || p < 0 || p > 255) {
+                return null;
+            }
+            for (let b = 7; b >= 0; b--) {
+                const bit = (p >> b) & 1;
+                if (bit === 1) {
+                    if (seenZero) {
+                        return null;
+                    }
+                    bits++;
+                } else {
+                    seenZero = true;
+                }
+            }
+        }
+        return bits;
+    }
+
+    function parsePrefixField(raw) {
+        const m = String(raw || "").trim().match(/^\/?(\d{1,2})$/);
+        if (!m) {
+            return null;
+        }
+        const p = parseInt(m[1], 10);
+        return (p >= 0 && p <= 32) ? p : null;
+    }
+
+    function parseIpv4OptionalCidr(raw) {
+        const value = String(raw || "").trim();
+        const cidr = value.match(/^(\d{1,3}(?:\.\d{1,3}){3})\s*\/\s*(\d{1,2})$/);
+        if (cidr) {
+            const prefix = parseInt(cidr[2], 10);
+            if (prefix < 0 || prefix > 32) {
+                return null;
+            }
+            return { ip: cidr[1], prefix: prefix };
+        }
+        if (/^\d{1,3}(?:\.\d{1,3}){3}$/.test(value)) {
+            return { ip: value, prefix: null };
+        }
+        return null;
+    }
+
+    function setPrefix(prefix) {
+        const next = (prefix === null || prefix === undefined) ? "" : String(prefix);
+        if ($prefix.val() !== next) {
+            $prefix.val(next);
+        }
+    }
+
+    function setSubnetMask(mask) {
+        if (mask && $subnet.val() !== mask) {
+            $subnet.val(mask);
+        }
+    }
+
+    function applyPrefixToSubnet(prefix) {
+        const mask = ipv4PrefixToMask(prefix);
+        if (mask) {
+            setSubnetMask(mask);
+        }
+    }
+
+    function syncFromIpField() {
+        if (syncing) {
+            return;
+        }
+        const parsed = parseIpv4OptionalCidr($ip.val());
+        if (!parsed || parsed.prefix === null) {
+            return;
+        }
+        syncing = true;
+        if ($ip.val() !== parsed.ip) {
+            $ip.val(parsed.ip);
+        }
+        setPrefix(parsed.prefix);
+        applyPrefixToSubnet(parsed.prefix);
+        syncing = false;
+    }
+
+    function syncFromPrefixField() {
+        if (syncing) {
+            return;
+        }
+        const prefix = parsePrefixField($prefix.val());
+        if (prefix === null) {
+            return;
+        }
+        syncing = true;
+        setPrefix(prefix);
+        applyPrefixToSubnet(prefix);
+        syncing = false;
+    }
+
+    function syncFromSubnetField() {
+        if (syncing) {
+            return;
+        }
+        const raw = String($subnet.val() || "").trim();
+        if (!raw) {
+            return;
+        }
+        let prefix = parsePrefixField(raw);
+        if (prefix === null) {
+            prefix = ipv4MaskToPrefix(raw);
+        }
+        if (prefix === null) {
+            return;
+        }
+        syncing = true;
+        setPrefix(prefix);
+        syncing = false;
+    }
+
+    // Split IP/CIDR on paste or when leaving the field (avoid treating "/2" as done while typing "/20")
+    $ip.on("paste.subnetUi", function() {
+        setTimeout(syncFromIpField, 0);
+    });
+    $ip.on("change.subnetUi blur.subnetUi", syncFromIpField);
+    $prefix.on("input.subnetUi change.subnetUi", syncFromPrefixField);
+    $subnet.on("input.subnetUi change.subnetUi", syncFromSubnetField);
+
+    // Initial sync if fields are prefilled
+    syncFromIpField();
+    syncFromSubnetField();
+}
+
+/* ===================================================================== */
 /*                      FUNCTION: initModuleSubnav                       */
 /* ===================================================================== */
 function initModuleSubnav($module, requestedSubtab) {
@@ -1840,6 +2000,7 @@ function navigate(to) {
         initKeypairSignFormUi($(normalizedTo));
         initCrontabLiveAnalyzeUi($(normalizedTo));
         initRelativeTimeUi($(normalizedTo));
+        initSubnetMaskUi($(normalizedTo));
         refreshClientCryptoGeneratorUi($(normalizedTo));
     };
 
@@ -1892,6 +2053,7 @@ function loadModule(moduleName) {
             const $mod = $(selector);
             ensureEnhancersForScope($mod).always(function() {
                 addRandomDataButtons($mod);
+                initSubnetMaskUi($mod);
             });
         }).fail(function() {
             $placeholder.remove();
@@ -2400,6 +2562,7 @@ $(document).ready(function() {
     /*                      Add Random Data Buttons                          */
     /* ===================================================================== */
     addRandomDataButtons($(".content:visible").first());
+    initSubnetMaskUi($(".content:visible").first());
 
 }); // document.ready
 
@@ -3098,7 +3261,10 @@ function generateRandomData(type, placeholder = '', $input = null) {
     }
 
     if (bundle && bundle.kind === "subnetmask") {
-        if (inputName === "ip") return bundle.ip;
+        if (inputName === "ip") {
+            $form.find("#subnetInput").val(bundle.subnet).trigger("input");
+            return bundle.ip;
+        }
         if (inputName === "subnet") return bundle.subnet;
     }
 
@@ -3341,19 +3507,24 @@ function addRandomDataButtons($root = null) {
 
     $scope.find(selectors.join(',')).each(function() {
         const $input = $(this);
-        
+        const $inputGroup = $input.closest('.input-group');
+        const wrapTargetIsGroup = $inputGroup.length > 0;
+
         // Skip if already has a random button
         if ($input.parent().hasClass('input-with-random-btn')) {
             return;
         }
+        if (wrapTargetIsGroup && $inputGroup.parent().hasClass('input-with-random-btn')) {
+            return;
+        }
 
         // Skip certain inputs (checkboxes, hidden, etc.)
-        const skipIds = ['enablebordercheckbox', 'enablefilterscheckbox', 'enabledebugcheckbox'];
+        const skipIds = ['enablebordercheckbox', 'enablefilterscheckbox', 'enabledebugcheckbox', 'subnetCidrPrefix'];
         if (skipIds.includes($input.attr('id'))) {
             return;
         }
 
-        if ($input.closest('[data-no-random-buttons]').length > 0) {
+        if ($input.is('[data-no-random-buttons]') || $input.closest('[data-no-random-buttons]').length > 0) {
             return;
         }
 
@@ -3381,9 +3552,15 @@ function addRandomDataButtons($root = null) {
             $input.attr('id', inputId);
         }
 
-        // Wrap the input if not already wrapped (but not for wheel items - they're already in a flex container)
-        if (!isWheelItemInput && !$input.parent().hasClass('input-with-random-btn')) {
-            $input.wrap('<div class="input-with-random-btn" style="position: relative; display: flex; gap: 8px; align-items: flex-start;"></div>');
+        // Wrap the input (or whole input-group) if not already wrapped
+        if (!isWheelItemInput) {
+            if (wrapTargetIsGroup) {
+                if (!$inputGroup.parent().hasClass('input-with-random-btn')) {
+                    $inputGroup.wrap('<div class="input-with-random-btn" style="position: relative; display: flex; gap: 8px; align-items: flex-start;"></div>');
+                }
+            } else if (!$input.parent().hasClass('input-with-random-btn')) {
+                $input.wrap('<div class="input-with-random-btn" style="position: relative; display: flex; gap: 8px; align-items: flex-start;"></div>');
+            }
         }
 
         const inputIdForTitle = $input.attr('id') || '';
@@ -3429,8 +3606,12 @@ function addRandomDataButtons($root = null) {
             }, 1000);
         });
 
-        // Append button after input
-        $input.after($btn);
+        // Append button after input or after the input-group
+        if (wrapTargetIsGroup) {
+            $inputGroup.after($btn);
+        } else {
+            $input.after($btn);
+        }
     });
 }
 

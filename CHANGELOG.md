@@ -8,6 +8,8 @@ All notable changes to this project are documented in this file.
 
 ### Major Features
 
+- **Subnet Mask Calculator** – IP field accepts pasted CIDR (`10.0.0.0/20`); an appended **`/prefix`** control syncs bidirectionally with the subnet mask field. Server also accepts IP+CIDR when the subnet field is empty (`handle_ip_parse_ipv4_optional_cidr()`).
+- **CIDR to Range** – Result table now includes the dotted **Subnet mask** (e.g. `/20` → `255.255.240.0`), derived via existing `handle_ip_normalize_subnet_mask()`.
 - **Module subnav (subpages)** – Multi-card tool pages now show a pill-style subnav bar that splits tools into individual subpages. Affected modules: **Networking** (DNS Lookup, CIDR→Range, Range→CIDR, Subnet Calculator, IP/Hex), **Date & Time** (Time Converter, Relative Time, Current Time), **Private/Public Keys** (Key Generator, Sign/Verify), **SSH Key Generator** (Generate, Verify). Active subtab is persisted in localStorage and deep-linkable via hash (e.g. `#networking/dns`). New CSS classes `.module-subnav`, `.subnav-pill`, `.subnav-panel`; JS helpers `initModuleSubnav()` / `activateSubtab()`; light-theme variant included.
 - **Relative Time Calculator** – New **Date & Time → Relative Time** subpage (`#datetime/relative`) converts absolute dates/unix timestamps to human phrases (“3 hours ago”), evaluates relative expressions (`2 days ago`, `+3 hours`, `next Monday`) or amount+unit offsets into absolute times, and diffs two moments with a calendar breakdown. Handler **`handle_relative_time`**; helpers in **`includes/tooling_helpers.php`**; shuffle samples in **`js/rand.js`**.
 - **SSH key verify** – Auto-detect of OpenSSH one-line public keys no longer fails with `preg_match(): Unknown modifier` when the Base64 blob contains `/` (fixed delimiter in `crypto_classify_verify_public_key()`).
@@ -20,6 +22,7 @@ All notable changes to this project are documented in this file.
 - **Docker (GHCR auth)** – Stale `GITHUB_TOKEN` in `.env.local` no longer blocks GHCR: login retries with `gh auth token` (via `env -u GITHUB_TOKEN`) and uses the live GitHub username for `docker login`.
 - **Unit Converter (Data)** – Added SI bit units **kilobit (kb)**–**terabit (Tb)** and binary bit units **kibibit (Kib)**–**tebibit (Tib)**; From-unit select groups options as Bits/Bytes × decimal/binary via reusable `groups` + `<optgroup>` support (`modules/units.php`).
 - **Calculator clipboard** – Keyboard-first copy/paste: **Ctrl/Cmd+C** copies the current result, **Ctrl/Cmd+V** pastes a number or valid expression (`+ - * /`, precedence-aware, no `eval`). Clicking the display also copies; invalid pastes show **Error**.
+- **Crypto helpers (PHPStan)** – `crypto_signature_digest_for_key()` PHPDoc now accepts `OpenSSLAsymmetricKey|resource`, matching PHP 8+ OpenSSL key objects and sibling helpers.
 
 _Add entries here during development; rotate into a dated release section when tagging._
 

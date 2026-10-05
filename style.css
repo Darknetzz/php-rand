@@ -400,6 +400,11 @@ th.tablehead,
   flex: 1;
 }
 
+.input-with-random-btn > .input-group {
+  flex: 1;
+  min-width: 0;
+}
+
 .random-data-btn {
   flex-shrink: 0;
   min-width: 38px;

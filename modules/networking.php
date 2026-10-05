@@ -106,15 +106,19 @@
         <div class="card card-primary mb-4">
             <h1 class="card-header">Subnet Mask Calculator</h1>
             <div class="card-body">
-                <p class="text-muted mb-4">Calculate subnet information: network, first IP, last IP, and broadcast address.</p>
+                <p class="text-muted mb-4">Calculate subnet information: network, first IP, last IP, and broadcast address. Paste <code>10.0.0.0/20</code> into the IP field, or edit the CIDR prefix — the subnet mask stays in sync.</p>
                 <form class="form" action="gen.php" method="POST" id="subnetmask" data-action="ip">
                     <input type="hidden" name="action" value="ip">
                     <input type="hidden" name="tool" value="subnetmask">
                     <div class="row g-4 mb-4">
                         <div class="col-12 col-lg-6">
                             <label for="ipInput" class="form-label mb-3"><strong style="font-size: 1.1rem;">Network Details</strong></label>
-                            <input type="text" id="ipInput" name="ip" class="form-control form-control-lg" placeholder="IP: 192.168.1.100" style="border: 2px solid #495057; font-family: monospace; margin-bottom: 10px;">
-                            <input type="text" id="subnetInput" name="subnet" class="form-control form-control-lg" placeholder="Subnet: 255.255.255.0 or /24" style="border: 2px solid #495057; font-family: monospace;">
+                            <div class="input-group input-group-lg mb-2" style="border: 2px solid #495057; border-radius: 0.5rem; overflow: hidden;">
+                                <input type="text" id="ipInput" name="ip" class="form-control form-control-lg border-0" placeholder="IP: 192.168.1.100 or 10.0.0.0/20" style="font-family: monospace;" autocomplete="off" spellcheck="false">
+                                <span class="input-group-text border-0 border-start" style="font-family: monospace;">/</span>
+                                <input type="text" id="subnetCidrPrefix" class="form-control form-control-lg border-0" inputmode="numeric" maxlength="2" placeholder="24" aria-label="CIDR prefix length" title="CIDR prefix" style="font-family: monospace; max-width: 4.75rem;" autocomplete="off" spellcheck="false">
+                            </div>
+                            <input type="text" id="subnetInput" name="subnet" class="form-control form-control-lg" placeholder="Subnet: 255.255.255.0 or /24" style="border: 2px solid #495057; font-family: monospace;" autocomplete="off" spellcheck="false">
                         </div>
                         <div class="col-12 col-lg-6 d-flex flex-column">
                             <label class="form-label mb-3"><strong style="font-size: 1.1rem;">Result</strong></label>

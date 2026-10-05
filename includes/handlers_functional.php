@@ -640,6 +640,61 @@ function handle_ip_normalize_subnet_mask(string $subnet): ?string {
 }
 
 /**
+ * Parse IPv4 alone or IPv4/CIDR (e.g. 10.0.0.0/20).
+ *
+ * @return array{ip: string, prefix: ?int}|null
+ */
+function handle_ip_parse_ipv4_optional_cidr(string $raw): ?array {
+    $raw = trim($raw);
+    if ($raw === '') {
+        return null;
+    }
+    if (preg_match('/^(\d{1,3}(?:\.\d{1,3}){3})\s*\/\s*(\d{1,2})$/', $raw, $m)) {
+        if (filter_var($m[1], FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === false) {
+            return null;
+        }
+        $prefix = (int) $m[2];
+        if ($prefix < 0 || $prefix > 32) {
+            return null;
+        }
+
+        return ['ip' => $m[1], 'prefix' => $prefix];
+    }
+    if (filter_var($raw, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === false) {
+        return null;
+    }
+
+    return ['ip' => $raw, 'prefix' => null];
+}
+
+/**
+ * Convert a contiguous dotted IPv4 mask to a CIDR prefix length.
+ */
+function handle_ip_mask_to_prefix(string $mask): ?int {
+    if (filter_var($mask, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === false) {
+        return null;
+    }
+    $long = ip2long($mask);
+    if ($long === false) {
+        return null;
+    }
+    $unsigned = (int) sprintf('%u', $long);
+    if ($unsigned === 0) {
+        return 0;
+    }
+    if ($unsigned === 0xFFFFFFFF) {
+        return 32;
+    }
+    $host = (~$unsigned) & 0xFFFFFFFF;
+    // Contiguous mask: host bits form 2^n - 1
+    if (($host & ($host + 1)) !== 0) {
+        return null;
+    }
+
+    return 32 - (int) log($host + 1, 2);
+}
+
+/**
  * Render a key/value result table for networking tools.
  *
  * @param array<string, string> $rows
@@ -727,8 +782,12 @@ function handle_ip(array $req): string {
             return formatOutput('Invalid CIDR notation.', type: 'danger');
         }
 
+        $prefix = (int) (explode('/', $range['cidr'], 2)[1] ?? -1);
+        $mask = handle_ip_normalize_subnet_mask('/' . $prefix);
+
         return handle_ip_kv_table([
             'CIDR' => $range['cidr'],
+            'Subnet mask' => $mask ?? '—',
             'Start' => $range['start'],
             'End' => $range['end'],
             'Total addresses' => (string) $range['total'],
@@ -759,13 +818,21 @@ function handle_ip(array $req): string {
     }
 
     // subnetmask
-    $ip = trim(req_get($req, 'ip', ''));
+    $ipRaw = trim(req_get($req, 'ip', ''));
     $subnetRaw = trim(req_get($req, 'subnet', ''));
-    if ($ip === '' || $subnetRaw === '') {
-        return formatOutput('IP and subnet (mask or /prefix) are required.', type: 'danger');
+    if ($ipRaw === '') {
+        return formatOutput('IP address is required (optionally with /prefix, e.g. 10.0.0.0/20).', type: 'danger');
     }
-    if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === false) {
-        return formatOutput('Invalid IPv4 address.', type: 'danger');
+    $parsed = handle_ip_parse_ipv4_optional_cidr($ipRaw);
+    if ($parsed === null) {
+        return formatOutput('Invalid IPv4 address or CIDR (e.g. 192.168.1.100 or 10.0.0.0/20).', type: 'danger');
+    }
+    $ip = $parsed['ip'];
+    if ($subnetRaw === '' && $parsed['prefix'] !== null) {
+        $subnetRaw = '/' . $parsed['prefix'];
+    }
+    if ($subnetRaw === '') {
+        return formatOutput('Subnet (mask or /prefix) is required.', type: 'danger');
     }
     $subnet = handle_ip_normalize_subnet_mask($subnetRaw);
     if ($subnet === null) {
@@ -3721,7 +3788,7 @@ function crypto_openssh_to_pem_with_ssh_keygen(string $opensshLine): array {
     return ['ok' => true, 'pem' => trim($output) . PHP_EOL];
 }
 
-/** @param resource $key */
+/** @param OpenSSLAsymmetricKey|resource $key */
 function crypto_signature_digest_for_key($key): int {
     $d = openssl_pkey_get_details($key);
     if (!is_array($d)) {
