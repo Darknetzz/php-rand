@@ -143,6 +143,11 @@ $navbarItems = [
                 "formalName" => "Markdown",
                 "icon"       => icon('markdown')
             ],
+            "syntax_highlight" => [
+                "name"       => "syntax_highlight",
+                "formalName" => "Syntax Highlighter",
+                "icon"       => icon('highlighter')
+            ],
             "minify" => [
                 "name"       => "minify",
                 "formalName" => "Minify",

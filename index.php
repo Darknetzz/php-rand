@@ -115,6 +115,7 @@ include_once("modules/dashboard.php");
                     <ul class="mb-3">
                         <li><code>dashboard</code> (display only)</li>
                         <li><code>markdown</code> (rendered in browser with JS)</li>
+                        <li><code>syntax_highlight</code> (highlight.js in browser; rich copy for Word/OneNote)</li>
                         <li><code>gen_image</code> (opens external image generator page)</li>
                     </ul>
 
@@ -156,7 +157,7 @@ function canUseClipboardCopy() {
 
 function findCopyButtons(root) {
     return root.querySelectorAll(
-        'button[onclick*="copyToClipboard"], button.copyOutput, button.copyText'
+        'button[onclick*="copyToClipboard"], button[onclick*="copyRichHtmlToClipboard"], button.copyOutput, button.copyText, button.btn-copy-rich'
     );
 }
 

@@ -141,14 +141,409 @@ function loadStyleOnce(href) {
 }
 
 /* ===================================================================== */
+/*                    Highlight.js (shared CDN helpers)                   */
+/* ===================================================================== */
+const HLJS_VERSION = "11.12.0";
+const HLJS_CDN = "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/" + HLJS_VERSION;
+const HLJS_THEME_STORAGE_KEY = "randSyntaxHighlightTheme";
+const HLJS_ALL_LANGUAGE_IDS = [
+    "1c", "abnf", "accesslog", "actionscript", "ada", "angelscript", "apache", "applescript", "arcade", "arduino", "armasm", "asciidoc",
+    "aspectj", "autohotkey", "autoit", "avrasm", "awk", "axapta", "bash", "basic", "bnf", "brainfuck", "c", "cal",
+    "capnproto", "ceylon", "clean", "clojure", "clojure-repl", "cmake", "coffeescript", "coq", "cos", "cpp", "crmsh", "crystal",
+    "csharp", "csp", "css", "d", "dart", "delphi", "diff", "django", "dns", "dockerfile", "dos", "dsconfig",
+    "dts", "dust", "ebnf", "elixir", "elm", "erb", "erlang", "erlang-repl", "excel", "fix", "flix", "fortran",
+    "freedesktop", "fsharp", "gams", "gauss", "gcode", "gherkin", "glsl", "gml", "go", "golo", "gradle", "graphql",
+    "groovy", "haml", "handlebars", "haskell", "haxe", "hsp", "http", "hy", "inform7", "ini", "irpf90", "isbl",
+    "java", "javascript", "jboss-cli", "json", "julia", "julia-repl", "kotlin", "lasso", "latex", "ldif", "leaf", "less",
+    "lisp", "livecodeserver", "livescript", "llvm", "lsl", "lua", "makefile", "markdown", "mathematica", "matlab", "maxima", "mel",
+    "mercury", "mipsasm", "mizar", "mojolicious", "monkey", "moonscript", "n1ql", "nestedtext", "nginx", "nim", "nix", "node-repl",
+    "nsis", "objectivec", "ocaml", "openscad", "oxygene", "parser3", "perl", "pf", "pgsql", "php", "php-template", "plaintext",
+    "pony", "powershell", "processing", "profile", "prolog", "properties", "protobuf", "puppet", "purebasic", "python", "python-repl", "q",
+    "qml", "r", "reasonml", "rib", "roboconf", "routeros", "rsl", "ruby", "ruleslanguage", "rust", "sas", "scala",
+    "scheme", "scilab", "scss", "shell", "smali", "smalltalk", "sml", "sqf", "sql", "stan", "stata", "step21",
+    "stylus", "subunit", "swift", "taggerscript", "tap", "tcl", "thrift", "tp", "twig", "typescript", "vala", "vbnet",
+    "vbscript", "vbscript-html", "verilog", "vhdl", "vim", "wasm", "wren", "x86asm", "xl", "xml", "xquery", "yaml",
+    "zephir"
+];
+
+function hljsThemeHref(theme) {
+    return HLJS_CDN + "/styles/" + (theme === "light" ? "github" : "github-dark") + ".min.css";
+}
+
+function ensureHighlightJsCore() {
+    return loadScriptOnce(HLJS_CDN + "/highlight.min.js");
+}
+
+function ensureHighlightJsTheme(theme) {
+    const normalized = theme === "light" ? "light" : "dark";
+    const activeHref = hljsThemeHref(normalized);
+    const otherHref = hljsThemeHref(normalized === "light" ? "dark" : "light");
+    return $.when(loadStyleOnce(activeHref), loadStyleOnce(otherHref)).then(function() {
+        document.querySelectorAll('link[rel="stylesheet"][href*="highlight.js"][href*="/styles/"]').forEach(function(link) {
+            const href = link.getAttribute("href") || "";
+            if (href === activeHref) {
+                link.disabled = false;
+                link.setAttribute("data-hljs-theme-active", "1");
+            } else if (href === otherHref || /\/styles\/(dark|github|github-dark)\.min\.css/.test(href)) {
+                link.disabled = true;
+                link.removeAttribute("data-hljs-theme-active");
+            }
+        });
+        return normalized;
+    });
+}
+
+function ensureHighlightJsLanguage(langId) {
+    const id = String(langId || "").toLowerCase().trim();
+    if (!id || id === "auto" || id === "plaintext") {
+        return $.Deferred().resolve().promise();
+    }
+    if (typeof hljs !== "undefined" && hljs.getLanguage && hljs.getLanguage(id)) {
+        return $.Deferred().resolve().promise();
+    }
+    return loadScriptOnce(HLJS_CDN + "/languages/" + encodeURIComponent(id) + ".min.js");
+}
+
+function ensureHighlightJsAllLanguages() {
+    if (window._hljsAllLangsPromise) {
+        return window._hljsAllLangsPromise;
+    }
+    const deferred = $.Deferred();
+    window._hljsAllLangsPromise = deferred.promise();
+    ensureHighlightJsCore().then(function() {
+        const missing = HLJS_ALL_LANGUAGE_IDS.filter(function(id) {
+            return !(typeof hljs !== "undefined" && hljs.getLanguage && hljs.getLanguage(id));
+        });
+        let offset = 0;
+        const batchSize = 12;
+        function nextBatch() {
+            if (offset >= missing.length) {
+                deferred.resolve();
+                return;
+            }
+            const batch = missing.slice(offset, offset + batchSize);
+            offset += batchSize;
+            $.when.apply($, batch.map(function(id) {
+                return ensureHighlightJsLanguage(id);
+            })).always(nextBatch);
+        }
+        nextBatch();
+    }).fail(function() {
+        deferred.reject();
+    });
+    return window._hljsAllLangsPromise;
+}
+
+function ensureHighlightJsAssets(theme) {
+    return ensureHighlightJsCore().then(function() {
+        return ensureHighlightJsTheme(theme || "dark");
+    });
+}
+
+/* ===================================================================== */
 /*                    FUNCTION: ensureMarkdownAssets                      */
 /* ===================================================================== */
 function ensureMarkdownAssets() {
     return $.when(
         loadScriptOnce("https://cdn.jsdelivr.net/npm/marked/lib/marked.umd.js"),
-        loadStyleOnce("https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/dark.min.css"),
-        loadScriptOnce("https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js")
+        ensureHighlightJsAssets("dark")
     );
+}
+
+function hljsLanguageLabel(langId) {
+    const id = String(langId || "");
+    if (typeof hljs !== "undefined" && hljs.getLanguage) {
+        const meta = hljs.getLanguage(id);
+        if (meta && meta.name) {
+            return meta.name;
+        }
+    }
+    return id.replace(/-/g, " ").replace(/\b\w/g, function(ch) {
+        return ch.toUpperCase();
+    });
+}
+
+function bakeHighlightedHtmlForPaste(sourceEl) {
+    if (!sourceEl) {
+        return "";
+    }
+    const csRoot = window.getComputedStyle(sourceEl);
+    const pre = document.createElement("pre");
+    pre.style.cssText = [
+        "font-family:" + (csRoot.fontFamily || "Consolas, 'Courier New', monospace"),
+        "font-size:11pt",
+        "line-height:1.45",
+        "white-space:pre",
+        "tab-size:4",
+        "margin:0",
+        "padding:12px",
+        "background:" + (csRoot.backgroundColor || "#0d1117"),
+        "color:" + (csRoot.color || "#e6edf3"),
+        "border-radius:4px"
+    ].join(";");
+
+    function walk(src, dstParent) {
+        src.childNodes.forEach(function(node) {
+            if (node.nodeType === Node.TEXT_NODE) {
+                dstParent.appendChild(document.createTextNode(node.textContent || ""));
+                return;
+            }
+            if (node.nodeType !== Node.ELEMENT_NODE) {
+                return;
+            }
+            const span = document.createElement("span");
+            const s = window.getComputedStyle(node);
+            const parts = [];
+            if (s.color) {
+                parts.push("color:" + s.color);
+            }
+            if (s.fontWeight && s.fontWeight !== "400" && s.fontWeight !== "normal") {
+                parts.push("font-weight:" + s.fontWeight);
+            }
+            if (s.fontStyle === "italic") {
+                parts.push("font-style:italic");
+            }
+            if (s.backgroundColor && s.backgroundColor !== "rgba(0, 0, 0, 0)" && s.backgroundColor !== "transparent") {
+                parts.push("background-color:" + s.backgroundColor);
+            }
+            if (parts.length) {
+                span.style.cssText = parts.join(";");
+            }
+            walk(node, span);
+            dstParent.appendChild(span);
+        });
+    }
+
+    walk(sourceEl, pre);
+    const wrap = document.createElement("div");
+    wrap.appendChild(pre);
+    return wrap.innerHTML;
+}
+
+function setCopyButtonFeedback(btn, ok) {
+    if (!btn) {
+        return;
+    }
+    const originalText = btn.getAttribute("data-original-text") || btn.innerHTML;
+    btn.setAttribute("data-original-text", originalText);
+    if (ok) {
+        btn.innerHTML = '<i class="bi bi-check"></i> Copied!';
+        btn.classList.add("btn-success");
+        btn.classList.remove("btn-outline-light", "btn-outline-info");
+    } else {
+        btn.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Failed';
+        btn.classList.add("btn-danger");
+        btn.classList.remove("btn-outline-light", "btn-outline-info");
+    }
+    setTimeout(function() {
+        btn.innerHTML = originalText;
+        btn.classList.remove("btn-success", "btn-danger");
+        if (btn.classList.contains("btn-copy-rich")) {
+            btn.classList.add("btn-outline-info");
+        } else {
+            btn.classList.add("btn-outline-light");
+        }
+    }, 1600);
+}
+
+function fallbackCopyRichHtml(html, plainText, setFeedback) {
+    const host = document.createElement("div");
+    host.contentEditable = "true";
+    host.innerHTML = html;
+    host.style.position = "fixed";
+    host.style.left = "-9999px";
+    host.style.top = "0";
+    document.body.appendChild(host);
+    const selection = window.getSelection();
+    const range = document.createRange();
+    range.selectNodeContents(host);
+    selection.removeAllRanges();
+    selection.addRange(range);
+    let ok = false;
+    try {
+        ok = document.execCommand("copy");
+    } catch (e) {
+        ok = false;
+    }
+    selection.removeAllRanges();
+    document.body.removeChild(host);
+    if (!ok && plainText && typeof fallbackCopy === "function") {
+        fallbackCopy(plainText, setFeedback);
+        return;
+    }
+    setFeedback(ok);
+}
+
+function copyRichHtmlToClipboard(elementId, btnEl) {
+    if (typeof canUseClipboardCopy === "function" && !canUseClipboardCopy()) {
+        return;
+    }
+    const element = document.getElementById(elementId);
+    if (!element) {
+        return;
+    }
+    const btn = btnEl || null;
+    const setFeedback = function(ok) {
+        setCopyButtonFeedback(btn, ok);
+    };
+    const html = bakeHighlightedHtmlForPaste(element);
+    const plain = (element.textContent || "").replace(/\n$/, "");
+
+    if (navigator.clipboard && window.ClipboardItem) {
+        const item = new ClipboardItem({
+            "text/html": new Blob([html], { type: "text/html" }),
+            "text/plain": new Blob([plain], { type: "text/plain" })
+        });
+        navigator.clipboard.write([item]).then(function() {
+            setFeedback(true);
+        }).catch(function() {
+            fallbackCopyRichHtml(html, plain, setFeedback);
+        });
+        return;
+    }
+
+    fallbackCopyRichHtml(html, plain, setFeedback);
+}
+
+window.copyRichHtmlToClipboard = copyRichHtmlToClipboard;
+window.ensureHighlightJsAssets = ensureHighlightJsAssets;
+window.ensureHighlightJsLanguage = ensureHighlightJsLanguage;
+window.HLJS_ALL_LANGUAGE_IDS = HLJS_ALL_LANGUAGE_IDS;
+
+/* ===================================================================== */
+/*                 FUNCTION: initSyntaxHighlightUi                        */
+/* ===================================================================== */
+function initSyntaxHighlightUi($scope) {
+    const $root = ($scope && $scope.length) ? $scope.find("#syntax_highlight").addBack("#syntax_highlight") : $("#syntax_highlight");
+    if (!$root.length) {
+        return;
+    }
+    if ($root.data("syntaxHighlightInited")) {
+        const theme = $root.find("#syntaxHighlightTheme").val() === "light" ? "light" : "dark";
+        ensureHighlightJsTheme(theme);
+        return;
+    }
+    $root.data("syntaxHighlightInited", true);
+
+    const $input = $root.find("#syntaxHighlightInput");
+    const $lang = $root.find("#syntaxHighlightLang");
+    const $theme = $root.find("#syntaxHighlightTheme");
+    const $code = $root.find("#syntaxHighlightCode");
+    const $detected = $root.find("#syntaxHighlightDetected");
+    let renderTimer = null;
+    let renderSeq = 0;
+
+    function readStoredTheme() {
+        try {
+            const t = window.localStorage.getItem(HLJS_THEME_STORAGE_KEY);
+            return t === "light" ? "light" : "dark";
+        } catch (e) {
+            return "dark";
+        }
+    }
+
+    function storeTheme(theme) {
+        try {
+            window.localStorage.setItem(HLJS_THEME_STORAGE_KEY, theme === "light" ? "light" : "dark");
+        } catch (e) {
+            // ignore
+        }
+    }
+
+    function fillLanguageSelect() {
+        const current = $lang.val() || "auto";
+        const opts = ['<option value="auto">Auto-detect</option>'];
+        HLJS_ALL_LANGUAGE_IDS.forEach(function(id) {
+            opts.push('<option value="' + id + '">' + hljsLanguageLabel(id) + " (" + id + ")</option>");
+        });
+        $lang.html(opts.join(""));
+        $lang.val(current);
+        $lang.data("filled", true);
+    }
+
+    function setPreviewThemeClass(theme) {
+        $code.removeClass("syntax-highlight-theme-dark syntax-highlight-theme-light");
+        $code.addClass(theme === "light" ? "syntax-highlight-theme-light" : "syntax-highlight-theme-dark");
+        $root.attr("data-syntax-theme", theme === "light" ? "light" : "dark");
+    }
+
+    function renderHighlight() {
+        const seq = ++renderSeq;
+        const code = $input.val() || "";
+        const lang = String($lang.val() || "auto").toLowerCase();
+        const theme = $theme.val() === "light" ? "light" : "dark";
+
+        ensureHighlightJsAssets(theme).then(function() {
+            const langPromise = (lang === "auto")
+                ? $.Deferred().resolve().promise()
+                : ensureHighlightJsLanguage(lang);
+            return langPromise;
+        }).then(function() {
+            if (seq !== renderSeq || typeof hljs === "undefined") {
+                return;
+            }
+            setPreviewThemeClass(theme);
+            $code.removeClass(function(i, cls) {
+                return (cls.match(/(^|\s)language-\S+/g) || []).join(" ");
+            });
+
+            if (!code.trim()) {
+                $code.text("// Paste code to highlight…");
+                $detected.text("");
+                return;
+            }
+
+            let result;
+            try {
+                if (lang === "auto") {
+                    result = hljs.highlightAuto(code);
+                    const detectedId = result.language || "unknown";
+                    const label = detectedId === "unknown" ? "unknown" : hljsLanguageLabel(detectedId);
+                    $detected.text("Detected: " + label + (detectedId !== "unknown" ? " (" + detectedId + ")" : ""));
+                } else {
+                    result = hljs.highlight(code, { language: lang, ignoreIllegals: true });
+                    $detected.text("Language: " + hljsLanguageLabel(lang) + " (" + lang + ")");
+                }
+            } catch (err) {
+                $code.text(code);
+                $detected.text("Highlight failed; showing plain text.");
+                return;
+            }
+
+            $code.html(result.value);
+            if (result.language) {
+                $code.addClass("language-" + result.language);
+            } else if (lang !== "auto") {
+                $code.addClass("language-" + lang);
+            }
+        });
+    }
+
+    function scheduleRender() {
+        clearTimeout(renderTimer);
+        renderTimer = setTimeout(renderHighlight, 250);
+    }
+
+    fillLanguageSelect();
+    const initialTheme = readStoredTheme();
+    $theme.val(initialTheme);
+    setPreviewThemeClass(initialTheme);
+
+    $input.on("input", scheduleRender);
+    $lang.on("change", scheduleRender);
+    $theme.on("change", function() {
+        const theme = $theme.val() === "light" ? "light" : "dark";
+        storeTheme(theme);
+        ensureHighlightJsTheme(theme).always(scheduleRender);
+    });
+
+    renderHighlight();
+    ensureHighlightJsAllLanguages().always(function() {
+        fillLanguageSelect();
+        if (String($lang.val() || "auto") === "auto") {
+            scheduleRender();
+        }
+    });
 }
 
 /* ===================================================================== */
@@ -2001,6 +2396,7 @@ function navigate(to) {
         initCrontabLiveAnalyzeUi($(normalizedTo));
         initRelativeTimeUi($(normalizedTo));
         initSubnetMaskUi($(normalizedTo));
+        initSyntaxHighlightUi($(normalizedTo));
         refreshClientCryptoGeneratorUi($(normalizedTo));
     };
 
@@ -2040,7 +2436,9 @@ function loadModule(moduleName) {
 
     const beforeLoad = moduleName === "markdown"
         ? ensureMarkdownAssets()
-        : $.Deferred().resolve().promise();
+        : (moduleName === "syntax_highlight"
+            ? ensureHighlightJsAssets("dark")
+            : $.Deferred().resolve().promise());
 
     return beforeLoad.then(function() {
         return $.ajax({
@@ -2054,6 +2452,7 @@ function loadModule(moduleName) {
             ensureEnhancersForScope($mod).always(function() {
                 addRandomDataButtons($mod);
                 initSubnetMaskUi($mod);
+                initSyntaxHighlightUi($mod);
             });
         }).fail(function() {
             $placeholder.remove();
@@ -2563,6 +2962,7 @@ $(document).ready(function() {
     /* ===================================================================== */
     addRandomDataButtons($(".content:visible").first());
     initSubnetMaskUi($(".content:visible").first());
+    initSyntaxHighlightUi($(".content:visible").first());
 
 }); // document.ready
 
