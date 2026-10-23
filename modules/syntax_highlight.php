@@ -42,17 +42,17 @@ greet("rand");</textarea>
                 </div>
                 <div class="col-12 col-lg-6 d-flex flex-column">
                     <label class="form-label mb-3"><strong style="font-size: 1.1rem;">Highlighted preview</strong></label>
-                    <div class="syntax-highlight-preview flex-grow-1">
-                        <pre class="mb-0"><code id="syntaxHighlightCode" class="hljs syntax-highlight-theme-dark">// Paste code to highlight…</code></pre>
-                    </div>
-                    <div class="copyable-content mt-3" style="padding: 12px 14px;">
-                        <div class="copyable-actions d-flex flex-wrap gap-2 justify-content-end w-100">
+                    <div class="syntax-highlight-preview flex-grow-1 d-flex flex-column">
+                        <div class="syntax-highlight-preview-toolbar">
                             <button type="button" class="btn btn-sm btn-outline-info btn-copy-rich" style="border: 1px solid #0dcaf0;" onclick="copyRichHtmlToClipboard('syntaxHighlightCode', this)" title="Copy HTML with inline colors for Word / OneNote">
                                 <i class="bi bi-clipboard-check"></i> Copy rich (Word/OneNote)
                             </button>
                             <button type="button" class="btn btn-sm btn-outline-light" style="border: 1px solid #e9ecef;" onclick="copyToClipboard('syntaxHighlightCode', this)">
                                 <i class="bi bi-files"></i> Copy plain
                             </button>
+                        </div>
+                        <div class="syntax-highlight-preview-body flex-grow-1">
+                            <pre class="mb-0"><code id="syntaxHighlightCode" class="hljs syntax-highlight-theme-dark">// Paste code to highlight…</code></pre>
                         </div>
                     </div>
                 </div>
