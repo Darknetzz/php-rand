@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="php-rand">
+  <title>php-rand</title>
+  <defs>
+    <linearGradient id="ac" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f472b6"/>
+      <stop offset="1" stop-color="#80b1da"/>
+    </linearGradient>
+    <linearGradient id="gWarm" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#f472b6"/>
+      <stop offset="100%" stop-color="#80b1da"/>
+    </linearGradient>
+    <linearGradient id="canvasGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0a0e14"/>
+      <stop offset="45%" stop-color="#151c28"/>
+      <stop offset="100%" stop-color="#0c1820"/>
+    </linearGradient>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1e1b4b"/>
+      <stop offset="0.55" stop-color="#0f3a4a"/>
+      <stop offset="1" stop-color="#0f766e"/>
+    </linearGradient>
+    <radialGradient id="glowA" cx="18%" cy="22%" r="55%">
+      <stop offset="0%" stop-color="#f472b6" stop-opacity="0.22"/>
+      <stop offset="100%" stop-color="#f472b6" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glowB" cx="88%" cy="78%" r="50%">
+      <stop offset="0%" stop-color="#80b1da" stop-opacity="0.20"/>
+      <stop offset="100%" stop-color="#80b1da" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <g transform="translate(56 56) scale(0.78)">
+  <rect x="96" y="160" width="320" height="200" rx="28" fill="#1a222d" stroke="url(#ac)" stroke-width="12"/>
+  <text x="256" y="290" text-anchor="middle" font-family="Consolas, monospace"
+        font-size="72" font-weight="700" fill="url(#ac)">?#*</text>
+
+  </g>
+
+</svg>
