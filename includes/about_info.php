@@ -98,7 +98,7 @@ function getAboutKeyExtensions(): array
         'json' => 'JSON',
         'yaml' => 'YAML (native)',
         'sodium' => 'Sodium crypto',
-        'opcache' => 'OPcache',
+        'Zend OPcache' => 'OPcache (opcode cache enabled)',
     ];
 }
 
@@ -235,10 +235,16 @@ function getAboutInfo(): array
 
     $keyExtensions = [];
     foreach (getAboutKeyExtensions() as $ext => $label) {
+        $isLoaded = isset($loadedSet[strtolower($ext)]);
+        // PHP 8.5 always loads OPcache, so report whether it is actually caching.
+        if ($ext === 'Zend OPcache' && $isLoaded) {
+            $status = function_exists('opcache_get_status') ? @opcache_get_status(false) : false;
+            $isLoaded = is_array($status) && !empty($status['opcache_enabled']);
+        }
         $keyExtensions[] = [
             'name' => $ext,
             'label' => $label,
-            'loaded' => isset($loadedSet[strtolower($ext)]),
+            'loaded' => $isLoaded,
         ];
     }
 

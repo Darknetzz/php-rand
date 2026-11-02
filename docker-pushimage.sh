@@ -233,13 +233,13 @@ done
 if [[ "$DRY_RUN" -eq 1 ]]; then
   echo
   if docker buildx version &>/dev/null; then
-    echo "[dry-run] docker buildx build --build-arg PHP_RAND_VERSION=$BUILD_VERSION \\"
+    echo "[dry-run] docker buildx build --pull --build-arg PHP_RAND_VERSION=$BUILD_VERSION \\"
     for ref in "${dest_refs[@]}"; do
       echo "[dry-run]   -t $ref \\"
     done
     echo "[dry-run]   --push -f Dockerfile ."
   else
-    echo "[dry-run] docker build --build-arg PHP_RAND_VERSION=$BUILD_VERSION -t $IMAGE:$PRIMARY_TAG -f Dockerfile ."
+    echo "[dry-run] docker build --pull --build-arg PHP_RAND_VERSION=$BUILD_VERSION -t $IMAGE:$PRIMARY_TAG -f Dockerfile ."
     for ref in "${dest_refs[@]}"; do
       [[ "$ref" == "$IMAGE:$PRIMARY_TAG" ]] && continue
       echo "[dry-run] docker tag $IMAGE:$PRIMARY_TAG $ref"
@@ -308,6 +308,7 @@ if [[ "$use_buildx" -eq 1 ]]; then
   fi
   build_args=(
     buildx build
+    --pull
     --build-arg "PHP_RAND_VERSION=$BUILD_VERSION"
     --provenance=false
     --sbom=false
@@ -319,7 +320,7 @@ if [[ "$use_buildx" -eq 1 ]]; then
   docker "${build_args[@]}"
 else
   echo "=== Building $IMAGE:$PRIMARY_TAG (PHP_RAND_VERSION=$BUILD_VERSION) ==="
-  docker build --build-arg PHP_RAND_VERSION="$BUILD_VERSION" -t "$IMAGE:$PRIMARY_TAG" -f Dockerfile .
+  docker build --pull --build-arg PHP_RAND_VERSION="$BUILD_VERSION" -t "$IMAGE:$PRIMARY_TAG" -f Dockerfile .
   for ref in "${dest_refs[@]}"; do
     if [[ "$ref" != "$IMAGE:$PRIMARY_TAG" ]]; then
       docker tag "$IMAGE:$PRIMARY_TAG" "$ref"
