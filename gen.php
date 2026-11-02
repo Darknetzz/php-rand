@@ -28,10 +28,10 @@ if ($debugEnabled && $responseType === 'html') {
     'UTF-8'
   );
   echo "
-    <a class='btn btn-warning' data-bs-toggle='collapse' data-bs-target='#debugCard' aria-expanded='false' aria-controls='debugCard'>".icon('bug-fill')."</a>
+    <a class='btn btn-warning' data-bs-toggle='collapse' data-bs-target='#debugCard' aria-expanded='false' aria-controls='debugCard'>".icon('bug')."</a>
     <div class='collapse' id='debugCard' style='margin:15px;'>
       <div class='card border-warning'>
-        <h4 class='card-header text-bg-warning'>".icon('bug-fill')." Debug</h4>
+        <h4 class='card-header text-bg-warning'>".icon('bug')." Debug</h4>
         <div class='card-body'><pre>$requestDump</pre></div>
       </div>
     </div>

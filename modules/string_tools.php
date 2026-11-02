@@ -31,9 +31,9 @@
 
                         <div class="d-grid gap-2">
                             <button type="button" class="btn btn-outline-secondary undo"
-                                data-target="#strtoolsinput"><?= icon("arrow-counterclockwise") ?> Undo</button>
+                                data-target="#strtoolsinput"><?= icon("undo-2") ?> Undo</button>
                             <button type="button" class="btn btn-outline-secondary redo"
-                                data-target="#strtoolsinput"><?= icon("arrow-clockwise") ?> Redo</button>
+                                data-target="#strtoolsinput"><?= icon("redo-2") ?> Redo</button>
                             <button type="button" class="btn btn-outline-danger clear" data-target="#strtoolsinput"><?= icon("trash") ?>
                                 Clear</button>
                         </div>
@@ -46,7 +46,7 @@
                           placeholder="Processed output will appear here..."></textarea>
                         <div id="strtoolsstatus"></div>
                         <div class="d-flex justify-content-end mb-3">
-                            <button type="button" class="btn btn-sm btn-outline-light copyOutput" data-target="#strtoolsresponse" style="border: 1px solid #e9ecef;"><?= icon("files") ?> Copy Output</button>
+                            <button type="button" class="btn btn-sm btn-outline-light copyOutput" data-target="#strtoolsresponse" style="border: 1px solid #e9ecef;"><?= icon("copy") ?> Copy Output</button>
                         </div>
                     </div>
                 </div>
@@ -92,13 +92,13 @@
           ],
           [
             "name"    => "Slugify",
-            "icon"    => "code-slash",
+            "icon"    => "code",
             "value"   => "slugify",
             "tooltip" => "Convert the string to a URL-friendly slug"
           ],
           [
             "name"    => "Kebabcase",
-            "icon"    => "dash",
+            "icon"    => "minus",
             "value"   => "kebabcase",
             "tooltip" => "Convert the string to kebab case"
           ],
@@ -119,7 +119,7 @@
           ],
           [
             "name"    => "Shuffle",
-            "icon"    => "dice",
+            "icon"    => "dices",
             "value"   => "shuffle",
             "tooltip" => "Shuffle the characters in the string"
           ],
@@ -134,13 +134,13 @@
           ],
           [
             "name"    => "Lowercase",
-            "icon"    => "alphabet",
+            "icon"    => "case-lower",
             "value"   => "lowercase",
             "tooltip" => "Convert the string to lowercase"
           ],
           [
             "name"    => "Uppercase",
-            "icon"    => "alphabet-uppercase",
+            "icon"    => "case-upper",
             "value"   => "uppercase",
             "tooltip" => "Convert the string to uppercase"
           ],
@@ -158,7 +158,7 @@
           ],
           [
             "name"    => "Camelcase",
-            "icon"    => "c-square",
+            "icon"    => "copyright",
             "value"   => "camelcase",
             "tooltip" => "Convert the string to camel case"
           ],
@@ -167,7 +167,7 @@
         "Misc" => [
           [
             "name"    => "L33t5p34k",
-            "icon"    => "123",
+            "icon"    => "binary",
             "value"   => "l33t5p34k",
             "tooltip" => "Convert the string to l33t5p34k"
           ],
@@ -182,19 +182,19 @@
         "Formatting" => [
           [
             "name"    => "CRLF to LF",
-            "icon"    => "text-wrap",
+            "icon"    => "wrap-text",
             "value"   => "crlf2lf",
             "tooltip" => "Convert DOS-like (\\r\\n) line endings to LF (\\n) line endings"
           ],
           [
             "name"    => "LF to CRLF",
-            "icon"    => "text-wrap",
+            "icon"    => "wrap-text",
             "value"   => "lf2crlf",
             "tooltip" => "Convert to LF (\\n) line endings DOS-like (\\r\\n) line endings"
           ],
           [
             "name"    => "Format",
-            "icon"    => "text-wrap",
+            "icon"    => "wrap-text",
             "value"   => "formatlineendings",
             "tooltip" => "Format line endings"
           ],
@@ -203,7 +203,7 @@
         "Remove" => [
           [
             "name"    => "HTML tags",
-            "icon"    => "code-square",
+            "icon"    => "square-code",
             "value"   => "removehtmltags",
             "tooltip" => "Remove HTML tags"
           ],
@@ -215,79 +215,79 @@
           ],
           [
             "name"    => "Newlines",
-            "icon"    => "code-square",
+            "icon"    => "square-code",
             "value"   => "removenewlines",
             "tooltip" => "Remove newlines"
           ],
           [
             "name"    => "Tabs",
-            "icon"    => "code-square",
+            "icon"    => "square-code",
             "value"   => "removetabs",
             "tooltip" => "Remove tabs"
           ],
           [
             "name"    => "Spaces",
-            "icon"    => "code-square",
+            "icon"    => "square-code",
             "value"   => "removespaces",
             "tooltip" => "Remove spaces"
           ],
           [
             "name"    => "Slashes",
-            "icon"    => "code-square",
+            "icon"    => "square-code",
             "value"   => "removeslashes",
             "tooltip" => "Remove slashes"
           ],
           [
             "name"    => "Backslashes",
-            "icon"    => "code-square",
+            "icon"    => "square-code",
             "value"   => "removebackslashes",
             "tooltip" => "Remove backslashes"
           ],
           [
             "name"    => "Non-ASCII",
-            "icon"    => "code-square",
+            "icon"    => "square-code",
             "value"   => "removenonascii",
             "tooltip" => "Remove non-ASCII characters"
           ],
           [
             "name" => "Non-printable",
-            "icon" => "code-square",
+            "icon" => "square-code",
             "value"   => "removenonprintable",
             "tooltip" => "Remove non-printable characters"
           ],
           [
             "name"    => "Whitespace",
-            "icon"    => "code-square",
+            "icon"    => "square-code",
             "value"   => "removewhitespaceext",
             "tooltip" => "Remove whitespace characters"
           ],
           [
             "name"    => "Numbers",
-            "icon"    => "code-square",
+            "icon"    => "square-code",
             "value"   => "removenumbers",
             "tooltip" => "Remove numbers"
           ],
           [
             "name"    => "Letters",
-            "icon"    => "code-square",
+            "icon"    => "square-code",
             "value"   => "removeletters",
             "tooltip" => "Remove letters"
           ],
           [
             "name"    => "Symbols",
-            "icon"    => "code-square",
+            "icon"    => "square-code",
             "value"   => "removesymbols",
             "tooltip" => "Remove symbols"
           ],
           [
             "name"    => "Extended symbols",
-            "icon"    => "code-square",
+            "icon"    => "square-code",
             "value"   => "removeextendedsymbols",
             "tooltip" => "Remove extended symbols"
           ],
           [
             "name"    => "Custom characters",
-            "icon"    => "code-square",
+            "icon"    => "square-code",
             "value"   => "removecustomcharacters",
             "tooltip" => "Remove custom characters"
           ],

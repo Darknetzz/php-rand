@@ -327,11 +327,11 @@ function setCopyButtonFeedback(btn, ok) {
     const originalText = btn.getAttribute("data-original-text") || btn.innerHTML;
     btn.setAttribute("data-original-text", originalText);
     if (ok) {
-        btn.innerHTML = '<i class="bi bi-check"></i> Copied!';
+        btn.innerHTML = '<i class="icon-check"></i> Copied!';
         btn.classList.add("btn-success");
         btn.classList.remove("btn-outline-light", "btn-outline-info");
     } else {
-        btn.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Failed';
+        btn.innerHTML = '<i class="icon-triangle-alert"></i> Failed';
         btn.classList.add("btn-danger");
         btn.classList.remove("btn-outline-light", "btn-outline-info");
     }
@@ -946,7 +946,7 @@ function buildClientCryptoWarningBannerHtml(marginClass) {
         detail = "<code>window.crypto.subtle</code> is not available in this browser.";
     }
     return "<div class=\"alert alert-warning " + marginClass + " d-flex align-items-start gap-2\" role=\"alert\">" +
-        "<i class=\"bi bi-exclamation-triangle-fill flex-shrink-0 mt-1\" aria-hidden=\"true\"></i>" +
+        "<i class=\"icon-triangle-alert flex-shrink-0 mt-1\" aria-hidden=\"true\"></i>" +
         "<div><strong>Client-side generation unavailable.</strong> " + detail +
         " <strong>Generation mode is set to server-side only.</strong> Auto and client-only are disabled until this environment supports WebCrypto.</div>" +
         "</div>";
@@ -1077,7 +1077,7 @@ function renderBrowserInfoHtml(info) {
     html += "<div class='copyable-content'>";
     html += "<pre class='copyable-body' id='browserInfoJson' style='margin: 0; font-family: inherit; font-size: inherit;'>" + htmlEscape(rawJson) + "</pre>";
     html += "<div class='copyable-actions'>";
-    html += "<button type='button' class='btn btn-sm btn-outline-light' onclick='copyToClipboard(\"browserInfoJson\", this)' style='white-space: nowrap; border: 1px solid #e9ecef;'><i class='bi bi-clipboard'></i> Copy JSON</button>";
+    html += "<button type='button' class='btn btn-sm btn-outline-light' onclick='copyToClipboard(\"browserInfoJson\", this)' style='white-space: nowrap; border: 1px solid #e9ecef;'><i class='icon-clipboard'></i> Copy JSON</button>";
     html += "</div></div>";
     html += "</div></div>";
     return html;
@@ -1124,10 +1124,10 @@ function buildClientKeyOutput(items, title) {
         html += "<div class='copyable-body' id='" + htmlEscape(copyId) + "'>" + htmlEscape(item.content) + "</div>";
         html += "<div class='copyable-actions'>";
         html += "<button type='button' class='btn btn-sm btn-outline-light' onclick=\"copyToClipboard('" + htmlEscape(copyId) + "', this)\" style='white-space: nowrap; border: 1px solid #e9ecef;\">";
-        html += "<i class='bi bi-files'></i> Copy";
+        html += "<i class='icon-copy'></i> Copy";
         html += "</button>";
         html += "<a class='btn btn-outline-light btn-sm' download='" + htmlEscape(item.filename) + "' href='" + encoded + "' style='white-space: nowrap; border: 1px solid #e9ecef;'>";
-        html += "<i class='bi bi-download'></i> Download " + htmlEscape(item.label);
+        html += "<i class='icon-download'></i> Download " + htmlEscape(item.label);
         html += "</a></div></div></div>";
     });
     html += "</div></div>";
@@ -1185,9 +1185,9 @@ function buildClientSshKeyOutput(slotItems, title) {
         panelsHtml += "<div class='copyable-body' id='" + htmlEscape(copyId) + "'>" + htmlEscape(item.content) + "</div>";
         panelsHtml += "<div class='copyable-actions'>";
         panelsHtml += "<button type='button' class='btn btn-sm btn-outline-light' onclick=\"copyToClipboard('" + htmlEscape(copyId) + "', this)\" style='white-space: nowrap; border: 1px solid #e9ecef;\">";
-        panelsHtml += "<i class='bi bi-files'></i> Copy</button>";
+        panelsHtml += "<i class='icon-copy'></i> Copy</button>";
         panelsHtml += "<a class='btn btn-outline-light btn-sm' download='" + htmlEscape(item.filename) + "' href='" + encoded + "' style='white-space: nowrap; border: 1px solid #e9ecef;'>";
-        panelsHtml += "<i class='bi bi-download'></i> Download " + htmlEscape(item.label);
+        panelsHtml += "<i class='icon-download'></i> Download " + htmlEscape(item.label);
         panelsHtml += "</a></div></div></div></div>";
     });
 
@@ -1203,9 +1203,9 @@ function buildClientSshKeyOutput(slotItems, title) {
         privateHtml += "<div class='copyable-body' id='" + htmlEscape(copyId) + "'>" + htmlEscape(priv.content) + "</div>";
         privateHtml += "<div class='copyable-actions'>";
         privateHtml += "<button type='button' class='btn btn-sm btn-outline-light' onclick=\"copyToClipboard('" + htmlEscape(copyId) + "', this)\" style='white-space: nowrap; border: 1px solid #e9ecef;\">";
-        privateHtml += "<i class='bi bi-files'></i> Copy</button>";
+        privateHtml += "<i class='icon-copy'></i> Copy</button>";
         privateHtml += "<a class='btn btn-outline-light btn-sm' download='" + htmlEscape(priv.filename) + "' href='" + encoded + "' style='white-space: nowrap; border: 1px solid #e9ecef;'>";
-        privateHtml += "<i class='bi bi-download'></i> Download " + htmlEscape(priv.label);
+        privateHtml += "<i class='icon-download'></i> Download " + htmlEscape(priv.label);
         privateHtml += "</a></div></div></div></div>";
     }
 
@@ -2496,7 +2496,7 @@ function axiosNavigate(to, responseSelector = ".responseDiv") {
 function randomizeDice() {
     var dice = [1, 2, 3, 4, 5, 6];
     var diceIcon = dice[Math.floor(Math.random() * dice.length)];
-    $(".dice").html('<i class="bi bi-dice-' + diceIcon + '"></i>');
+    $(".dice").html('<i class="icon-dice-' + diceIcon + '"></i>');
 }
 
 
@@ -2832,7 +2832,7 @@ $(document).ready(function() {
         var html = "";
         if (data.demo_url) {
             html += '<p class="mb-3"><a class="btn btn-outline-primary btn-sm" href="' + escapeHtml(data.demo_url) + '" target="_blank" rel="noopener noreferrer">';
-            html += '<i class="bi bi-box-arrow-up-right me-1" aria-hidden="true"></i>Live demo</a></p>';
+            html += '<i class="icon-external-link me-1" aria-hidden="true"></i>Live demo</a></p>';
         }
         html += '<div class="about-info-summary mb-4">';
         html += '<dl class="row about-info-dl mb-0">';
@@ -2851,9 +2851,9 @@ $(document).ready(function() {
         html += '<div class="about-key-extensions mb-4">';
         (data.key_extensions || []).forEach(function(ext) {
             var badgeClass = ext.loaded ? "bg-green-lt text-green" : "bg-red-lt text-red";
-            var iconClass = ext.loaded ? "bi-check-circle-fill" : "bi-x-circle-fill";
+            var iconClass = ext.loaded ? "icon-circle-check" : "icon-circle-x";
             html += '<span class="badge ' + badgeClass + ' about-ext-badge me-1 mb-1" title="' + escapeHtml(ext.label) + '">';
-            html += '<i class="bi ' + iconClass + ' me-1" aria-hidden="true"></i>';
+            html += '<i class="' + iconClass + ' me-1" aria-hidden="true"></i>';
             html += escapeHtml(ext.name);
             html += "</span>";
         });
@@ -3905,7 +3905,7 @@ function createRandomDataButton($input, options = {}) {
         type: 'button',
         class: 'btn btn-sm btn-outline-secondary random-data-btn',
         title: title,
-        html: '<i class="bi bi-shuffle"></i>',
+        html: '<i class="icon-shuffle"></i>',
         css: {
             'flex-shrink': '0',
             'height': height,
@@ -3933,7 +3933,7 @@ function createRandomDataButton($input, options = {}) {
         }
 
         const originalHtml = $btn.html();
-        $btn.html('<i class="bi bi-check"></i>').addClass('btn-success').removeClass('btn-outline-secondary');
+        $btn.html('<i class="icon-check"></i>').addClass('btn-success').removeClass('btn-outline-secondary');
         setTimeout(() => {
             $btn.html(originalHtml).removeClass('btn-success').addClass('btn-outline-secondary');
         }, 1000);

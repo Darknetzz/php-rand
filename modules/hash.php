@@ -60,7 +60,7 @@
                         <div class="form-text">Apply the selected hash repeatedly</div>
                     </div>
                     <div class="col-12 col-md-3 d-flex align-items-end">
-                        <?= submitBtn("hasher", "action", "🔑 Generate Hash", "key-fill", "lg") ?>
+                        <?= submitBtn("hasher", "action", "🔑 Generate Hash", "key-round", "lg") ?>
                     </div>
                 </div>
             </form>

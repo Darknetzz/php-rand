@@ -7,7 +7,7 @@
 ?>
 <div id="units" class="content">
     <div class="card card-primary">
-        <h1 class="card-header"><?= icon('rulers') ?> Unit Converter</h1>
+        <h1 class="card-header"><?= icon('ruler') ?> Unit Converter</h1>
         <div class="card-body">
             <p class="text-muted mb-4">Choose a category, enter a value and source unit, then convert.</p>
             <ul class="nav nav-tabs mb-4" id="unitsTab" role="tablist">
@@ -15,34 +15,34 @@
                     <button class="nav-link active" id="tab-volume" data-bs-toggle="tab" data-bs-target="#pane-volume" type="button" role="tab"><?= icon('box') ?> Volume</button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="tab-length" data-bs-toggle="tab" data-bs-target="#pane-length" type="button" role="tab"><?= icon('rulers') ?> Length</button>
+                    <button class="nav-link" id="tab-length" data-bs-toggle="tab" data-bs-target="#pane-length" type="button" role="tab"><?= icon('ruler') ?> Length</button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="tab-weight" data-bs-toggle="tab" data-bs-target="#pane-weight" type="button" role="tab"><?= icon('speedometer2') ?> Weight & mass</button>
+                    <button class="nav-link" id="tab-weight" data-bs-toggle="tab" data-bs-target="#pane-weight" type="button" role="tab"><?= icon('gauge') ?> Weight & mass</button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="tab-temperature" data-bs-toggle="tab" data-bs-target="#pane-temperature" type="button" role="tab"><?= icon('thermometer-half') ?> Temperature</button>
+                    <button class="nav-link" id="tab-temperature" data-bs-toggle="tab" data-bs-target="#pane-temperature" type="button" role="tab"><?= icon('thermometer') ?> Temperature</button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="tab-energy" data-bs-toggle="tab" data-bs-target="#pane-energy" type="button" role="tab"><?= icon('fire') ?> Energy</button>
+                    <button class="nav-link" id="tab-energy" data-bs-toggle="tab" data-bs-target="#pane-energy" type="button" role="tab"><?= icon('flame') ?> Energy</button>
                 </li>
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="tab-area" data-bs-toggle="tab" data-bs-target="#pane-area" type="button" role="tab"><?= icon('grid-3x3') ?> Area</button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="tab-speed" data-bs-toggle="tab" data-bs-target="#pane-speed" type="button" role="tab"><?= icon('speedometer2') ?> Speed</button>
+                    <button class="nav-link" id="tab-speed" data-bs-toggle="tab" data-bs-target="#pane-speed" type="button" role="tab"><?= icon('gauge') ?> Speed</button>
                 </li>
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="tab-time" data-bs-toggle="tab" data-bs-target="#pane-time" type="button" role="tab"><?= icon('clock') ?> Time</button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="tab-power" data-bs-toggle="tab" data-bs-target="#pane-power" type="button" role="tab"><?= icon('lightning') ?> Power</button>
+                    <button class="nav-link" id="tab-power" data-bs-toggle="tab" data-bs-target="#pane-power" type="button" role="tab"><?= icon('zap') ?> Power</button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="tab-data" data-bs-toggle="tab" data-bs-target="#pane-data" type="button" role="tab"><?= icon('hdd') ?> Data</button>
+                    <button class="nav-link" id="tab-data" data-bs-toggle="tab" data-bs-target="#pane-data" type="button" role="tab"><?= icon('hard-drive') ?> Data</button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="tab-pressure" data-bs-toggle="tab" data-bs-target="#pane-pressure" type="button" role="tab"><?= icon('speedometer2') ?> Pressure</button>
+                    <button class="nav-link" id="tab-pressure" data-bs-toggle="tab" data-bs-target="#pane-pressure" type="button" role="tab"><?= icon('gauge') ?> Pressure</button>
                 </li>
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="tab-angle" data-bs-toggle="tab" data-bs-target="#pane-angle" type="button" role="tab"><?= icon('pentagon') ?> Angle</button>
@@ -68,7 +68,7 @@
                                 <select name="units_from" class="form-select form-select-lg units-from-select" style="font-family: monospace;"></select>
                             </div>
                         </div>
-                        <button type="submit" class="genBtn btn btn-success btn-lg my-3"><?= icon('arrow-repeat') ?> Convert</button>
+                        <button type="submit" class="genBtn btn btn-success btn-lg my-3"><?= icon('refresh-cw') ?> Convert</button>
                         <div class="responseDiv units-response"></div>
                     </form>
                 </div>
@@ -169,7 +169,7 @@
         var v = typeof val === 'number' ? (Number.isInteger(val) ? val : Number(val.toPrecision(10))) : val;
         return '<div class="copyable-content" style="padding:8px;gap:6px;min-width:0;">' +
             '<div class="copyable-body" id="' + id + '" style="max-height:none;overflow:visible;">' + v + '</div>' +
-            '<div class="copyable-actions"><button type="button" class="btn btn-sm btn-outline-light" onclick="copyToClipboard(\'' + id + '\', this)"><i class="bi bi-files"></i> Copy</button></div></div>';
+            '<div class="copyable-actions"><button type="button" class="btn btn-sm btn-outline-light" onclick="copyToClipboard(\'' + id + '\', this)"><i class="icon-copy"></i> Copy</button></div></div>';
     }
 
     function copyableRowWithUnit(val, unitLabel, id) {
@@ -178,7 +178,7 @@
         var displayText = v + ' <span style="color: #a0aec0; font-weight: 600;">' + unitLabel + '</span>';
         return '<div class="copyable-content" style="padding:8px;gap:6px;min-width:0;">' +
             '<div class="copyable-body" id="' + id + '" style="max-height:none;overflow:visible;">' + displayText + '</div>' +
-            '<div class="copyable-actions"><button type="button" class="btn btn-sm btn-outline-light" onclick="copyToClipboard(\'' + id + '\', this)"><i class="bi bi-files"></i> Copy</button></div></div>';
+            '<div class="copyable-actions"><button type="button" class="btn btn-sm btn-outline-light" onclick="copyToClipboard(\'' + id + '\', this)"><i class="icon-copy"></i> Copy</button></div></div>';
     }
 
     function renderTable(caption, rows) {

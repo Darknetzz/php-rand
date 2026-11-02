@@ -9,15 +9,15 @@
 
     <!-- Subnav -->
     <nav class="module-subnav" aria-label="SSH Key tools navigation">
-        <a class="subnav-pill" data-subtab="generate" href="#ssh_keygen/generate"><?= icon("key-fill") ?> Generate SSH Keys</a>
-        <a class="subnav-pill" data-subtab="verify" href="#ssh_keygen/verify"><?= icon("check2-circle") ?> Verify Keys</a>
+        <a class="subnav-pill" data-subtab="generate" href="#ssh_keygen/generate"><?= icon("key-round") ?> Generate SSH Keys</a>
+        <a class="subnav-pill" data-subtab="verify" href="#ssh_keygen/verify"><?= icon("circle-check") ?> Verify Keys</a>
     </nav>
 
     <!-- SSH Key Generator -->
     <div class="subnav-panel" data-panel="generate">
         <div class="alert alert-primary border border-primary mb-3" role="note">
             <div class="d-flex align-items-start gap-2 gap-md-3">
-                <span class="fs-3 lh-1 text-primary"><?= icon('journal-text') ?></span>
+                <span class="fs-3 lh-1 text-primary"><?= icon('notebook-text') ?></span>
                 <div>
                     <strong class="d-block mb-1">Public vs private in the results</strong>
                     <p class="mb-0">
@@ -38,7 +38,7 @@
                     </span>
                 <?php else: ?>
                     <span class="badge bg-warning text-dark">
-                        <?= icon('shield-exclamation') ?> ssh-keygen not detected
+                        <?= icon('shield-alert') ?> ssh-keygen not detected
                     </span>
                 <?php endif; ?>
             </h1>
@@ -91,7 +91,7 @@
                     ]) ?>
 
                     <div class="d-flex gap-3 flex-wrap mb-4">
-                        <?= submitBtn("ssh_keygen", "action", "Generate SSH Keys", "key-fill", "lg") ?>
+                        <?= submitBtn("ssh_keygen", "action", "Generate SSH Keys", "key-round", "lg") ?>
                     </div>
 
                     <label class="form-label mb-2"><strong>Output</strong></label>
@@ -142,7 +142,7 @@
                         <input type="text" class="form-control form-control-lg" id="verifyPrivatePassphrase" name="verify_private_passphrase" placeholder="If the private key is encrypted" autocomplete="off">
                     </div>
                     <div class="d-flex gap-3 flex-wrap mb-4">
-                        <?= submitBtn("ssh_key_verify", "action", "Verify keys", "check2-circle", "lg") ?>
+                        <?= submitBtn("ssh_key_verify", "action", "Verify keys", "circle-check", "lg") ?>
                     </div>
                     <label class="form-label mb-2"><strong>Verification output</strong></label>
                     <div class="responseDiv" id="sshVerifyFormresponse" style="border: 2px solid #495057; padding: 20px; min-height: 120px; border-radius: 0.5rem;">

@@ -74,7 +74,7 @@
                 <div class="row mb-4">
                     <div class="col-12 pt-2 border-top border-secondary border-opacity-25">
                         <div class="d-grid d-sm-flex justify-content-sm-end">
-                            <?= submitBtn("csr_generate", "action", "Generate CSR", "file-earmark-lock", "lg") ?>
+                            <?= submitBtn("csr_generate", "action", "Generate CSR", "file-lock", "lg") ?>
                         </div>
                     </div>
                 </div>

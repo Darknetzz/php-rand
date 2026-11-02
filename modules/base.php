@@ -109,7 +109,7 @@ foreach ($base_options as $value => $data) {
                     </div>
                 </div>
 
-                <?= submitBtn("base", "action", "Convert", "arrow-repeat") ?>
+                <?= submitBtn("base", "action", "Convert", "refresh-cw") ?>
             </form>
         </div>
     </div>

@@ -2,8 +2,8 @@
 
     <!-- Subnav -->
     <nav class="module-subnav" aria-label="Keypair tools navigation">
-        <a class="subnav-pill" data-subtab="generate" href="#keypair/generate"><?= icon("key-fill") ?> Key Generator</a>
-        <a class="subnav-pill" data-subtab="sign" href="#keypair/sign"><?= icon("pencil-square") ?> Sign / Verify</a>
+        <a class="subnav-pill" data-subtab="generate" href="#keypair/generate"><?= icon("key-round") ?> Key Generator</a>
+        <a class="subnav-pill" data-subtab="sign" href="#keypair/sign"><?= icon("square-pen") ?> Sign / Verify</a>
     </nav>
 
     <!-- Key Generator -->
@@ -56,7 +56,7 @@
                     ]) ?>
 
                     <div class="d-flex gap-3 flex-wrap mb-4">
-                        <?= submitBtn("keypair_generate", "action", "Generate Keypair", "key-fill", "lg") ?>
+                        <?= submitBtn("keypair_generate", "action", "Generate Keypair", "key-round", "lg") ?>
                     </div>
 
                     <label class="form-label mb-2"><strong>Output</strong></label>
@@ -109,7 +109,7 @@
                         <textarea class="form-control font-monospace" id="keypairSignatureB64" name="keypair_signature_b64" rows="4" placeholder="Paste the base64 signature"></textarea>
                     </div>
                     <div class="d-flex gap-3 flex-wrap mb-4">
-                        <?= submitBtn("keypair_sign_verify", "action", "Run", "pencil-square", "lg") ?>
+                        <?= submitBtn("keypair_sign_verify", "action", "Run", "square-pen", "lg") ?>
                     </div>
                     <label class="form-label mb-2"><strong>Sign / verify output</strong></label>
                     <div class="responseDiv" id="keypairSignFormresponse" style="border: 2px solid #495057; padding: 20px; min-height: 120px; border-radius: 0.5rem;">

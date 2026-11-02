@@ -288,10 +288,10 @@ function handle_stringgen(array $req): string {
 
     $infoContent = implode('', $infoTables);
     $output .= "
-    <button class='btn btn-info' type='button' data-bs-toggle='collapse' data-bs-target='#additionalInfo' aria-expanded='false' aria-controls='additionalInfo'>" . icon('info-circle') . "</button>
+    <button class='btn btn-info' type='button' data-bs-toggle='collapse' data-bs-target='#additionalInfo' aria-expanded='false' aria-controls='additionalInfo'>" . icon('info') . "</button>
     <div id='additionalInfo' class='collapse' style='margin:15px;'>
       <div class='card border-info'>
-        <h4 class='card-header text-bg-info'>" . icon('info-circle') . " Info</h4>
+        <h4 class='card-header text-bg-info'>" . icon('info') . " Info</h4>
         <div class='card-body'>$infoContent</div>
       </div>
     </div>";
@@ -1188,7 +1188,7 @@ function handle_relative_time(array $req): string {
 function relative_time_result_header(string $headline, string $timezone): string {
     return '<div class="border border-primary border-opacity-25 rounded-3 px-4 py-4 mb-4 text-center bg-primary bg-opacity-10">'
         . '<p class="mb-2 fs-3 fw-semibold lh-sm">' . htmlspecialchars($headline, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</p>'
-        . '<span class="badge bg-primary text-white">' . icon('globe2') . ' '
+        . '<span class="badge bg-primary text-white">' . icon('earth') . ' '
         . htmlspecialchars($timezone, ENT_QUOTES, 'UTF-8') . '</span>'
         . '</div>';
 }
@@ -2663,7 +2663,7 @@ function handle_regex(array $req): string {
         
         // Display results
         $output .= "<div style='margin-bottom: 20px; padding: 15px; background: rgba(32, 201, 151, 0.1); border-radius: 0.5rem; border-left: 4px solid #20c997;'>";
-        $output .= "<strong>" . icon('check-circle', 1, '#20c997') . " Pattern Valid</strong><br>";
+        $output .= "<strong>" . icon('circle-check', 1, '#20c997') . " Pattern Valid</strong><br>";
         $output .= "<code style='word-break: break-all;'>" . htmlspecialchars($fullPattern) . "</code><br>";
         $output .= "<strong>Matches Found:</strong> " . ($matchCount > 0 ? "<span style='color: #20c997; font-weight: bold;'>{$matchCount}</span>" : "<span style='color: #dc3545;'>0</span>");
         $output .= "</div>";
@@ -2730,7 +2730,7 @@ function handle_regex(array $req): string {
             }
         } else {
             $output .= "<div style='padding: 15px; background: rgba(220, 53, 69, 0.1); border-radius: 0.5rem; border-left: 4px solid #dc3545;'>";
-            $output .= "<strong>" . icon('x-circle', 1, '#dc3545') . " No matches found</strong><br>";
+            $output .= "<strong>" . icon('circle-x', 1, '#dc3545') . " No matches found</strong><br>";
             $output .= "The pattern does not match the test string.";
             $output .= "</div>";
         }
@@ -2781,8 +2781,8 @@ function handle_crontab(array $req): string {
         $output .= "<div class='card border-info mb-3 mb-xl-0'><h5 class='card-header'>Schedule Summary</h5><div class='card-body'>";
         $output .= crontab_human_summary_block($summary);
         $output .= "<div class='d-flex flex-wrap gap-2 mb-3'>";
-        $output .= "<span class='badge bg-info text-white'>" . icon('arrow-repeat') . " One-shot at cron startup</span>";
-        $output .= "<span class='badge bg-primary text-white'>" . icon('globe2') . ' ' . htmlspecialchars($timezone, ENT_QUOTES, 'UTF-8') . "</span>";
+        $output .= "<span class='badge bg-info text-white'>" . icon('refresh-cw') . " One-shot at cron startup</span>";
+        $output .= "<span class='badge bg-primary text-white'>" . icon('earth') . ' ' . htmlspecialchars($timezone, ENT_QUOTES, 'UTF-8') . "</span>";
         $output .= "</div>";
         $output .= "<div class='alert alert-info mb-3'><strong>@reboot</strong> is a Vixie-style crontab extension: the job runs once when the cron daemon starts (often after a system reboot), not on a repeating calendar schedule.</div>";
         $output .= "<div class='mb-3'><strong>Reference time:</strong> <code>" . htmlspecialchars($referenceTime->format('Y-m-d H:i:s T'), ENT_QUOTES, 'UTF-8') . "</code></div>";
@@ -2846,7 +2846,7 @@ function handle_crontab(array $req): string {
     }
 
     $dueBadge = $isDue
-        ? "<span class='badge bg-success text-white'>" . icon('check-circle') . " Due at reference time</span>"
+        ? "<span class='badge bg-success text-white'>" . icon('circle-check') . " Due at reference time</span>"
         : "<span class='badge bg-secondary text-white'>" . icon('clock') . " Not due at reference time</span>";
 
     $macroNotice = '';
@@ -2869,8 +2869,8 @@ function handle_crontab(array $req): string {
     $output .= "<div class='card border-info mb-3 mb-xl-0'><h5 class='card-header'>Schedule Summary</h5><div class='card-body'>";
     $output .= crontab_human_summary_block($summary);
     $output .= "<div class='d-flex flex-wrap gap-2 mb-3'>{$dueBadge}";
-    $output .= "<span class='badge bg-primary text-white'>" . icon('globe2') . ' ' . htmlspecialchars($timezone, ENT_QUOTES, 'UTF-8') . "</span>";
-    $output .= "<span class='badge bg-dark text-white'>" . icon('list-ol') . ' ' . intval($runCount) . " future runs</span>";
+    $output .= "<span class='badge bg-primary text-white'>" . icon('earth') . ' ' . htmlspecialchars($timezone, ENT_QUOTES, 'UTF-8') . "</span>";
+    $output .= "<span class='badge bg-dark text-white'>" . icon('list-ordered') . ' ' . intval($runCount) . " future runs</span>";
     $output .= "</div>";
     $output .= $macroNotice;
     $output .= "<div class='mb-3'><strong>Reference time:</strong> <code>" . htmlspecialchars($referenceTime->format('Y-m-d H:i:s T'), ENT_QUOTES, 'UTF-8') . "</code></div>";
@@ -3038,9 +3038,9 @@ function handle_shellcheck(array $req): string {
     $output .= "<div class='card border-info mb-3'><h5 class='card-header'>ShellCheck Summary</h5><div class='card-body'>";
     $output .= "<div class='d-flex flex-wrap gap-2 mb-3'>";
     $output .= "<span class='badge bg-primary text-white'>" . icon('terminal') . ' ' . htmlspecialchars($displayFilename, ENT_QUOTES, 'UTF-8') . "</span>";
-    $output .= "<span class='badge bg-dark text-white'>" . icon('filter') . ' min severity: ' . htmlspecialchars($severity, ENT_QUOTES, 'UTF-8') . "</span>";
+    $output .= "<span class='badge bg-dark text-white'>" . icon('funnel') . ' min severity: ' . htmlspecialchars($severity, ENT_QUOTES, 'UTF-8') . "</span>";
     $output .= "<span class='badge bg-secondary text-white'>" . icon('cpu') . ' shell: ' . htmlspecialchars($shell === 'auto' ? 'auto' : $shell, ENT_QUOTES, 'UTF-8') . "</span>";
-    $output .= "<span class='badge bg-success text-white'>" . icon('check-circle') . ' binary: ' . htmlspecialchars($shellcheckPath, ENT_QUOTES, 'UTF-8') . "</span>";
+    $output .= "<span class='badge bg-success text-white'>" . icon('circle-check') . ' binary: ' . htmlspecialchars($shellcheckPath, ENT_QUOTES, 'UTF-8') . "</span>";
     $output .= "</div>";
     $output .= "<div class='d-flex flex-wrap gap-2'>";
     foreach (['error', 'warning', 'info', 'style'] as $level) {
@@ -3055,7 +3055,7 @@ function handle_shellcheck(array $req): string {
     $output .= "</div></div></div>";
 
     if ($fixedScript !== null && $fixedScript !== '' && $fixedScript !== $script) {
-        $output .= "<div class='card border-success mb-3'><h5 class='card-header'>" . icon('magic') . " Auto-fixed script</h5><div class='card-body'>";
+        $output .= "<div class='card border-success mb-3'><h5 class='card-header'>" . icon('wand-sparkles') . " Auto-fixed script</h5><div class='card-body'>";
         $output .= "<p class='small text-muted mb-2'>ShellCheck suggested edits (for the same severity and shell options) were applied with GNU <code>patch</code>. Review the result before running it.</p>";
         $output .= copyableOutput($fixedScript, '', ['inputName' => 'shellcheck_script']);
         $output .= "</div></div>";
@@ -3092,7 +3092,7 @@ function handle_shellcheck(array $req): string {
         $output .= "</div>";
         $output .= shellcheck_excerpt_html($lines, $comment);
         $output .= "<div class='mt-3'><a href='" . htmlspecialchars($wikiUrl, ENT_QUOTES, 'UTF-8') . "' target='_blank' rel='noopener noreferrer' class='btn btn-sm btn-outline-light'>"
-            . icon('box-arrow-up-right') . " Open SC" . str_pad((string) $code, 4, '0', STR_PAD_LEFT) . " docs</a></div>";
+            . icon('external-link') . " Open SC" . str_pad((string) $code, 4, '0', STR_PAD_LEFT) . " docs</a></div>";
         $output .= "</div></div>";
     }
 
@@ -4442,9 +4442,9 @@ function handle_pem_openssh_convert(array $req): string {
 function handle_crypto_diagnostics(array $req): string {
     $algorithms = crypto_available_key_algorithms();
     $rows = [];
-    $okBadge = "<span class='badge bg-success text-white'>" . icon('check-circle') . " OK</span>";
-    $warnBadge = "<span class='badge bg-warning text-dark'>" . icon('exclamation-triangle') . " Warning</span>";
-    $errBadge = "<span class='badge bg-danger text-white'>" . icon('x-circle') . " Error</span>";
+    $okBadge = "<span class='badge bg-success text-white'>" . icon('circle-check') . " OK</span>";
+    $warnBadge = "<span class='badge bg-warning text-dark'>" . icon('triangle-alert') . " Warning</span>";
+    $errBadge = "<span class='badge bg-danger text-white'>" . icon('circle-x') . " Error</span>";
 
     foreach (['rsa', 'ecdsa', 'ed25519'] as $algo) {
         if (!in_array($algo, $algorithms, true)) {
@@ -4465,8 +4465,8 @@ function handle_crypto_diagnostics(array $req): string {
         ? trim((string) @shell_exec('command -v ssh-keygen 2>/dev/null'))
         : '';
     $sshKeygenStatus = $sshKeygenPath !== ''
-        ? "<span class='badge bg-success text-white me-2'>" . icon('check-circle') . " OK</span><code>" . htmlspecialchars($sshKeygenPath, ENT_QUOTES, 'UTF-8') . "</code>"
-        : "<span class='badge bg-warning text-dark'>" . icon('exclamation-triangle') . " Not found</span>";
+        ? "<span class='badge bg-success text-white me-2'>" . icon('circle-check') . " OK</span><code>" . htmlspecialchars($sshKeygenPath, ENT_QUOTES, 'UTF-8') . "</code>"
+        : "<span class='badge bg-warning text-dark'>" . icon('triangle-alert') . " Not found</span>";
 
     $output = "<div class='card border-info mb-3'><h5 class='card-header'>Crypto Runtime Diagnostics (Server)</h5><div class='card-body'>";
     $output .= "<div class='mb-3'><strong>Available key algorithms:</strong> " . htmlspecialchars(implode(', ', $algorithms), ENT_QUOTES, 'UTF-8') . "</div>";

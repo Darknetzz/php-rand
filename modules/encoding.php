@@ -21,7 +21,7 @@
     }
     ?>
                 </select>
-                <?= submitBtn("base", "action", "Convert", "arrow-repeat") ?>
+                <?= submitBtn("base", "action", "Convert", "refresh-cw") ?>
                 <div class="responseDiv" id="baseresponse" style="margin-top: 15px; border: 1px solid #dee2e6; padding: 15px; min-height: 100px; max-height: 400px; overflow-y: auto; background-color: rgba(0,0,0,0.1); border-radius: 0.25rem; font-family: monospace; white-space: pre-wrap; word-break: break-word;"></div>
             </form>
         </div>

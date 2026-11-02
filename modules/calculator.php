@@ -21,7 +21,7 @@
                     <button type="button" class="calc-btn" data-action="%">%</button>
                     <button type="button" class="calc-btn" data-action="CE">CE</button>
                     <button type="button" class="calc-btn" data-action="C">C</button>
-                    <button type="button" class="calc-btn" data-action="backspace" title="Backspace"><i class="bi bi-backspace"></i></button>
+                    <button type="button" class="calc-btn" data-action="backspace" title="Backspace"><i class="icon-delete"></i></button>
                     <button type="button" class="calc-btn" data-action="1/x">1/x</button>
                     <button type="button" class="calc-btn" data-action="x²">x²</button>
                     <button type="button" class="calc-btn" data-action="√">²√x</button>

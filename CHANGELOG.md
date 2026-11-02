@@ -8,6 +8,7 @@ All notable changes to this project are documented in this file.
 
 ### Major Features
 
+- **Lucide icons** – Replaced Bootstrap Icons with the **Lucide** icon font (`lucide-static@1.57.0` CDN CSS) in `index.php` and `test_random_buttons.html`. Shared **`icon()`** helper now emits `icon-<name>` (with `aria-hidden`); every call site in `modules/`, `includes/`, `gen.php` and `js/rand.js` was renamed to its Lucide equivalent (e.g. `files`→`copy`, `arrow-repeat`→`refresh-cw`, `speedometer2`→`gauge`). Lucide has no brand marks, so GitHub uses `git-fork` and the browser inspector uses `app-window`. Base alignment rule for `[class^="icon-"]` added to `style.css`.
 - **String Tools output** – Output is now a **read-only textarea** matching the input box instead of a green result card (`modules/string_tools.php`). `handle_stringtools` returns plain text (exact whitespace, HTML shown literally instead of rendered) and answers validation errors with HTTP 422, shown in a status area under the output. Shared **`copyToClipboard()`** (`index.php`) now copies the live `.value` of textarea/input targets.
 - **Tabler 1.7.3** – Bumped `@tabler/core` CDN CSS/JS from `1.4.0` to `1.7.3` in `index.php` (and the `test_*.html` harness pages).
 - **Shuffle-button fields** – Inputs/textareas wrapped in `.input-with-random-btn` no longer shrink to 500px while focused (global `.form-control:focus` cap out-ranked the wrapper's stretch rule in `style.css`). String Tools output textarea uses `rand-code-textarea` to span its column.

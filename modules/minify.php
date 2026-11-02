@@ -39,7 +39,7 @@
                 </div>
 
                 <div class="d-flex gap-3">
-                    <?= submitBtn("minify", "tool", "⚡ Minify Code", "file-text-fill", "lg") ?>
+                    <?= submitBtn("minify", "tool", "⚡ Minify Code", "file-text", "lg") ?>
                 </div>
             </form>
         </div>

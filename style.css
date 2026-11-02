@@ -12,6 +12,13 @@ body {
   min-height: 100vh;
 }
 
+/* Lucide icon font: align glyphs with adjacent text (lucide-static sets no box metrics). */
+[class^="icon-"], [class*=" icon-"] {
+  display: inline-block;
+  line-height: 1;
+  vertical-align: -0.125em;
+}
+
 /* Global spacing scaler (driven by Settings -> Item spacing). */
 .container .m-1 { margin: calc(0.25rem * var(--rand-space-scale)) !important; }
 .container .m-2 { margin: calc(0.5rem * var(--rand-space-scale)) !important; }

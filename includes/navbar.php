@@ -5,22 +5,22 @@ $navbarItems = [
     "dashboard" => [
         "name"       => "dashboard",
         "formalName" => "Dashboard",
-        "icon"       => icon('speedometer2')
+        "icon"       => icon('gauge')
     ],
     "generators" => [
         "name"       => "generators",
         "formalName" => "Generators",
-        "icon"       => icon('braces-asterisk'),
+        "icon"       => icon('braces'),
         "subitems" => [
             "gen_number" => [
                 "name"       => "gen_number",
                 "formalName" => "Number Generator",
-                "icon"       => icon('123')
+                "icon"       => icon('binary')
             ],
             "gen_string" => [
                 "name"       => "gen_string",
                 "formalName" => "String Generator",
-                "icon"       => icon('alphabet')
+                "icon"       => icon('case-lower')
             ],
             "gen_image" => [
                 "name"       => "gen_image",
@@ -40,7 +40,7 @@ $navbarItems = [
             "spin_the_wheel" => [
                 "name"       => "spin_the_wheel",
                 "formalName" => "Spin Wheel",
-                "icon"       => icon('slash-circle')
+                "icon"       => icon('ban')
             ],
         ],
     ],
@@ -62,7 +62,7 @@ $navbarItems = [
             "rot" => [
                 "name"       => "rot",
                 "formalName" => "ROT Cipher",
-                "icon"       => icon('arrow-repeat')
+                "icon"       => icon('refresh-cw')
             ],
             "jwt" => [
                 "name"       => "jwt",
@@ -72,17 +72,17 @@ $navbarItems = [
             "keypair" => [
                 "name"       => "keypair",
                 "formalName" => "Private/Public Keys",
-                "icon"       => icon('key-fill')
+                "icon"       => icon('key-round')
             ],
             "ssh_keygen" => [
                 "name"       => "ssh_keygen",
                 "formalName" => "SSH Key Generator",
-                "icon"       => icon('terminal-fill')
+                "icon"       => icon('square-terminal')
             ],
             "csr" => [
                 "name"       => "csr",
                 "formalName" => "CSR Generator",
-                "icon"       => icon('file-earmark-lock')
+                "icon"       => icon('file-lock')
             ],
             "pem_openssh" => [
                 "name"       => "pem_openssh",
@@ -99,17 +99,17 @@ $navbarItems = [
     "encoding" => [
         "name"       => "encoding",
         "formalName" => "Encoding",
-        "icon"       => icon('file-binary'),
+        "icon"       => icon('file-digit'),
         "subitems" => [
             "base" => [
                 "name"       => "base",
                 "formalName" => "Base",
-                "icon"       => icon('file-earmark-binary')
+                "icon"       => icon('binary')
             ],
             "binhex" => [
                 "name"       => "binhex",
                 "formalName" => "Binary/Hexadecimal",
-                "icon"       => icon('file-binary')
+                "icon"       => icon('file-digit')
             ],
             "urlencoding" => [
                 "name"       => "urlencoding",
@@ -119,7 +119,7 @@ $navbarItems = [
             "htmlentities" => [
                 "name"       => "htmlentities",
                 "formalName" => "HTML Entities",
-                "icon"       => icon('code-slash')
+                "icon"       => icon('code')
             ],
         ],
     ],
@@ -136,12 +136,12 @@ $navbarItems = [
             "serialization" => [
                 "name"       => "serialization",
                 "formalName" => "Serialization Tools",
-                "icon"       => icon('box-arrow-in-right')
+                "icon"       => icon('log-in')
             ],
             "markdown" => [
                 "name"       => "markdown",
                 "formalName" => "Markdown",
-                "icon"       => icon('markdown')
+                "icon"       => icon('square-m')
             ],
             "syntax_highlight" => [
                 "name"       => "syntax_highlight",
@@ -151,17 +151,17 @@ $navbarItems = [
             "minify" => [
                 "name"       => "minify",
                 "formalName" => "Minify",
-                "icon"       => icon('file-earmark-code')
+                "icon"       => icon('file-code')
             ],
             "metaphone" => [
                 "name"       => "metaphone",
                 "formalName" => "Metaphone",
-                "icon"       => icon("soundwave")
+                "icon"       => icon("audio-lines")
             ],
             "brainfuck" => [
                 "name"       => "brainfuck",
                 "formalName" => "Brainfuck Converter",
-                "icon"       => icon('code-slash')
+                "icon"       => icon('code')
             ],
         ],
     ],
@@ -178,12 +178,12 @@ $navbarItems = [
             "currency" => [
                 "name"       => "currency",
                 "formalName" => "Currency Converter",
-                "icon"       => icon('currency-exchange')
+                "icon"       => icon('coins')
             ],
             "units" => [
                 "name"       => "units",
                 "formalName" => "Units",
-                "icon"       => icon('rulers')
+                "icon"       => icon('ruler')
             ],
             "datetime" => [
                 "name"       => "datetime",
@@ -205,12 +205,12 @@ $navbarItems = [
             "levenshtein" => [
                 "name"       => "levenshtein",
                 "formalName" => "Levenshtein",
-                "icon"       => icon("intersect")
+                "icon"       => icon("blend")
             ],
             "diff" => [
                 "name"       => "diff",
                 "formalName" => "Diff",
-                "icon"       => icon("file-earmark-diff"),
+                "icon"       => icon("file-diff"),
             ],
             "regex" => [
                 "name"       => "regex",
@@ -220,12 +220,12 @@ $navbarItems = [
             "browser" => [
                 "name"       => "browser",
                 "formalName" => "Browser",
-                "icon"       => icon("browser-chrome"),
+                "icon"       => icon("app-window"),
             ],
             "crontab" => [
                 "name"       => "crontab",
                 "formalName" => "Crontab",
-                "icon"       => icon("calendar-event"),
+                "icon"       => icon("calendar-days"),
             ],
             "shellcheck" => [
                 "name"       => "shellcheck",
@@ -235,7 +235,7 @@ $navbarItems = [
             "validators" => [
                 "name"       => "validators",
                 "formalName" => "Validators",
-                "icon"       => icon('patch-check'),
+                "icon"       => icon('badge-check'),
             ],
         ],
     ],
@@ -258,7 +258,7 @@ foreach ($navbarItems as $moduleName => $module) {
 
     $name       = $module["name"] ?? $moduleName;
     $formalname = $module["formalName"] ?? ucfirst($name);
-    $icon       = $module["icon"] ?? icon('gear');
+    $icon       = $module["icon"] ?? icon('settings');
 
     # Module has subitems
     if (!empty($module["subitems"])) {
@@ -269,7 +269,7 @@ foreach ($navbarItems as $moduleName => $module) {
         foreach ($module["subitems"] as $subitemName => $subitem) {
             $subName       = $subitem["name"] ?? $subitemName;
             $subFormalName = $subitem["formalName"] ?? ucfirst($subName);
-            $subIcon       = $subitem["icon"] ?? icon('gear');
+            $subIcon       = $subitem["icon"] ?? icon('settings');
             $navHTML .= '
                 <li>
                     <a class="dropdown-item link" href="#' . $subName . '" id="nav' . $subName . '" data-show="' . $subName . '">' . $subIcon . $subFormalName . '</a>
@@ -327,10 +327,10 @@ $navHTML .= '
           </div>
         </li>
         <li class="nav-item">
-          <a class="nav-link" target="_blank" rel="noopener noreferrer" href="https://github.com/Darknetzz/phprand">'.icon('github').' GitHub</a>
+          <a class="nav-link" target="_blank" rel="noopener noreferrer" href="https://github.com/Darknetzz/phprand">'.icon('git-fork').' GitHub</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#aboutModal" id="navAbout">'.icon('info-circle').' About</a>
+          <a class="nav-link" href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#aboutModal" id="navAbout">'.icon('info').' About</a>
         </li>
       </ul>
     </div>

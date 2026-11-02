@@ -45,10 +45,10 @@ greet("rand");</textarea>
                     <div class="syntax-highlight-preview flex-grow-1 d-flex flex-column">
                         <div class="syntax-highlight-preview-toolbar">
                             <button type="button" class="btn btn-sm btn-outline-info btn-copy-rich" style="border: 1px solid #0dcaf0;" onclick="copyRichHtmlToClipboard('syntaxHighlightCode', this)" title="Copy HTML with inline colors for Word / OneNote">
-                                <i class="bi bi-clipboard-check"></i> Copy rich (Word/OneNote)
+                                <i class="icon-clipboard-check"></i> Copy rich (Word/OneNote)
                             </button>
                             <button type="button" class="btn btn-sm btn-outline-light" style="border: 1px solid #e9ecef;" onclick="copyToClipboard('syntaxHighlightCode', this)">
-                                <i class="bi bi-files"></i> Copy plain
+                                <i class="icon-copy"></i> Copy plain
                             </button>
                         </div>
                         <div class="syntax-highlight-preview-body flex-grow-1">

@@ -45,7 +45,7 @@ $defaultReferenceLocal = (new DateTimeImmutable('now'))->format('Y-m-d\TH:i');
     <!-- Subnav -->
     <nav class="module-subnav" aria-label="Date & Time navigation">
         <a class="subnav-pill" data-subtab="converter" href="#datetime/converter"><?= icon("shuffle") ?> Time Converter</a>
-        <a class="subnav-pill" data-subtab="relative" href="#datetime/relative"><?= icon("hourglass-split") ?> Relative Time</a>
+        <a class="subnav-pill" data-subtab="relative" href="#datetime/relative"><?= icon("hourglass") ?> Relative Time</a>
         <a class="subnav-pill" data-subtab="current" href="#datetime/current"><?= icon("clock") ?> Current Time</a>
     </nav>
 
@@ -81,7 +81,7 @@ $defaultReferenceLocal = (new DateTimeImmutable('now'))->format('Y-m-d\TH:i');
     <!-- RELATIVE TIME -->
     <div class="subnav-panel" data-panel="relative">
         <div class="card card-primary">
-            <h1 class="card-header"><?= icon("hourglass-split") ?> Relative Time Calculator</h1>
+            <h1 class="card-header"><?= icon("hourglass") ?> Relative Time Calculator</h1>
             <div class="card-body">
                 <p class="text-muted mb-4">Turn absolute dates into “3 hours ago”, evaluate relative expressions like <code>+2 days</code>, or compute the difference between two moments.</p>
                 <form class="form" action="gen.php" method="POST" id="relativeTimeForm" data-action="relative_time">
@@ -186,7 +186,7 @@ $defaultReferenceLocal = (new DateTimeImmutable('now'))->format('Y-m-d\TH:i');
                     </div>
 
                     <div class="d-flex gap-3 mb-4 flex-wrap">
-                        <?= submitBtn("relative_time", "action", "Calculate", "hourglass-split", "lg") ?>
+                        <?= submitBtn("relative_time", "action", "Calculate", "hourglass", "lg") ?>
                     </div>
 
                     <div class="responseDiv"></div>

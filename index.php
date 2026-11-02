@@ -6,7 +6,7 @@
 <!-- <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous"> -->
 <link rel="stylesheet"
   href="https://cdn.jsdelivr.net/npm/@tabler/core@1.7.3/dist/css/tabler.min.css" />
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lucide-static@1.57.0/font/lucide.css">
 
 <script defer src="https://code.jquery.com/jquery-4.0.0.min.js"
     integrity="sha256-OaVG6prZf4v69dPg6PhVattBXkcOWQB62pdZ3ORyrao=" crossorigin="anonymous"></script>
@@ -52,7 +52,7 @@ include_once("modules/dashboard.php");
         <div class="modal-dialog modal-xl modal-dialog-scrollable" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h2 class="modal-title h4 mb-0" id="aboutModalLabel"><?= icon("info-circle") ?> About php-rand</h2>
+                    <h2 class="modal-title h4 mb-0" id="aboutModalLabel"><?= icon("info") ?> About php-rand</h2>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-0">
@@ -222,11 +222,11 @@ function copyToClipboard(elementId, btnEl) {
         const originalText = btn.getAttribute('data-original-text') || btn.innerHTML;
         btn.setAttribute('data-original-text', originalText);
         if (ok) {
-            btn.innerHTML = '<i class="bi bi-check"></i> Copied!';
+            btn.innerHTML = '<i class="icon-check"></i> Copied!';
             btn.classList.add('btn-success');
             btn.classList.remove('btn-outline-light');
         } else {
-            btn.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Failed';
+            btn.innerHTML = '<i class="icon-triangle-alert"></i> Failed';
             btn.classList.add('btn-danger');
             btn.classList.remove('btn-outline-light');
         }

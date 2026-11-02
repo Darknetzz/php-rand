@@ -1,21 +1,21 @@
 <?php
 
 /**
- * Generate a Bootstrap Icon HTML element
+ * Generate a Lucide icon HTML element
  * 
- * Creates a styled icon element using Bootstrap Icons CSS classes with optional
+ * Creates a styled icon element using the Lucide icon font (lucide-static) with optional
  * color, size, and margin customization.
  *
- * @param string $icon The Bootstrap icon name (without 'bi-' prefix). Default: "question-circle"
+ * @param string $icon The Lucide icon name (without 'icon-' prefix), see https://lucide.dev/icons. Default: "circle-question-mark"
  * @param float $rem Font size in rem units. Default: 1
  * @param string|null $color CSS color value to apply to the icon. Default: null
  * @param int $margin Bootstrap margin class value (1-5). Default: 1
  * @return string HTML string containing the styled icon element
  * 
  * @example
- * echo icon('check-circle', 1.5, '#51cf66', 2); // Green check icon, 1.5rem, margin-2
+ * echo icon('circle-check', 1.5, '#51cf66', 2); // Green check icon, 1.5rem, margin-2
  */
-function icon($icon = "question-circle", $rem = 1, $color = null, $margin = 1) {
+function icon($icon = "circle-question-mark", $rem = 1, $color = null, $margin = 1) {
   $style = "";
   if ($color !== null) {
     $style .= "color: {$color};";
@@ -23,7 +23,7 @@ function icon($icon = "question-circle", $rem = 1, $color = null, $margin = 1) {
   if ($rem !== 1) {
     $style .= "font-size: {$rem}rem;";
   }
-  return "<i class='bi bi-{$icon} m-{$margin}' style='{$style}'></i>";
+  return "<i class='icon-{$icon} m-{$margin}' style='{$style}' aria-hidden='true'></i>";
 }
 
 /**
@@ -43,16 +43,16 @@ function icon($icon = "question-circle", $rem = 1, $color = null, $margin = 1) {
 function alert($message, $type = 'success') {
   $icon = "";
   if ($type == "danger") {
-    $icon = icon("exclamation-triangle");
+    $icon = icon("triangle-alert");
   }
   if ($type == "warning") {
-    $icon = icon("exclamation-circle");
+    $icon = icon("circle-alert");
   }
   if ($type == "success") {
-    $icon = icon("check-circle");
+    $icon = icon("circle-check");
   }
   if ($type == "info") {
-    $icon = icon("info-circle");
+    $icon = icon("info");
   }
   return "
   <div class='alert alert-{$type} alert-dismissible fade show' style='margin:15px;' role='alert'>
@@ -401,12 +401,12 @@ function spinWheel(?array $wheelItems = [], int $spins = 1, bool $unique = false
  * @param string $value The value attribute sent with form submission. Default: ""
  * @param string $name The name attribute of the button. Default: "action"
  * @param string $text The button text/label to display. Default: "Generate"
- * @param string $icon Bootstrap icon name (without 'bi-' prefix), or 'dice' for special styling. Default: "dice"
+ * @param string $icon Lucide icon name (without 'icon-' prefix), or 'dice' for special styling. Default: "dice"
  * @param string $size Bootstrap button size class: 'sm', 'lg'. Default: "lg"
  * @return string HTML submit button element
  * 
  * @example
- * echo submitBtn('hash', 'action', 'Generate Hash', 'key-fill');
+ * echo submitBtn('hash', 'action', 'Generate Hash', 'key-round');
  * echo submitBtn('spin', 'action', 'Spin', 'dice', 'lg');
  */
 function submitBtn(string $value = "", string $name = "action", string $text = "Generate", string $icon = "dice", string $size = "lg") {
@@ -2086,7 +2086,7 @@ function copyableOutput($content, $label = "", $useAsInput = null, ?string $extr
   $html .= "  </div>";
   $html .= "  <div class='copyable-actions'>";
   $html .= "  <button type='button' class='btn btn-sm btn-outline-light' onclick=\"copyToClipboard('$uniqueId', this)\" style='white-space: nowrap; border: 1px solid #e9ecef;'>";
-  $html .= "    <i class='bi bi-files'></i> Copy";
+  $html .= "    <i class='icon-copy'></i> Copy";
   $html .= "  </button>";
   if ($extraActionsHtml !== null && $extraActionsHtml !== '') {
     $html .= $extraActionsHtml;
@@ -2104,7 +2104,7 @@ function copyableOutput($content, $label = "", $useAsInput = null, ?string $extr
       }
     }
     $html .= "  <button type='button'" . $attrs . " style='white-space: nowrap; border: 1px solid #0dcaf0;' title='Replace input with this output (click again to undo)'>";
-    $html .= "    <i class='bi bi-arrow-left-right'></i> Use as input";
+    $html .= "    <i class='icon-arrow-left-right'></i> Use as input";
     $html .= "  </button>";
   }
   $html .= "  </div>";

@@ -80,14 +80,14 @@
                         <label class="form-label mb-3"><strong style="font-size: 1.1rem;">Result</strong></label>
                         <div class="responseDiv flex-grow-1" style="border: 2px solid #495057; padding: 20px; min-height: 420px; max-height: 760px; overflow-y: auto; background: linear-gradient(135deg, rgba(25, 135, 84, 0.08) 0%, rgba(13, 110, 253, 0.08) 100%); border-radius: 0.5rem;">
                             <div style="opacity: 0.55; text-align: center; padding-top: 150px;">
-                                <div style="font-size: 3rem; margin-bottom: 10px;"><?= icon('patch-check', 2) ?></div>
+                                <div style="font-size: 3rem; margin-bottom: 10px;"><?= icon('badge-check', 2) ?></div>
                                 <div>Validation result will appear here...</div>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="d-flex gap-3 flex-wrap">
-                    <?= submitBtn('syntax_validate', 'action', 'Validate', 'check2', 'lg') ?>
+                    <?= submitBtn('syntax_validate', 'action', 'Validate', 'check', 'lg') ?>
                 </div>
             </form>
         </div>

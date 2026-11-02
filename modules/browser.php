@@ -1,6 +1,6 @@
 <div id="browser" class="content">
     <div class="card card-primary mb-4">
-        <h1 class="card-header"><?= icon("browser-chrome") ?> Browser Client Inspector</h1>
+        <h1 class="card-header"><?= icon("app-window") ?> Browser Client Inspector</h1>
         <div class="card-body">
             <p class="text-muted mb-4">Detects browser/client capabilities and environment details. Advanced probes are optional and may expose additional network/privacy metadata.</p>
             <form class="form" action="gen.php" method="POST" id="browserInspectorForm" data-action="browser_inspect">
@@ -39,7 +39,7 @@
 
                 <div class="responseDiv mt-4" style="min-height: 150px; border: 2px solid #495057; border-radius: 0.5rem; padding: 20px; background: linear-gradient(135deg, rgba(13, 110, 253, 0.1) 0%, rgba(214, 51, 132, 0.08) 100%);">
                     <div style="opacity: 0.6; text-align: center; padding-top: 24px;">
-                        <div style="font-size: 2.5rem;"><?= icon("browser-chrome") ?></div>
+                        <div style="font-size: 2.5rem;"><?= icon("app-window") ?></div>
                         <div>Click <strong>Detect Browser Details</strong> to inspect this client.</div>
                     </div>
                 </div>

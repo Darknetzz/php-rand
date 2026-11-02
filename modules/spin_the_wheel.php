@@ -126,7 +126,7 @@
                         </div>
                         <!-- Action Buttons -->
                         <div class="d-grid gap-2">
-                            <button type="button" class="btn btn-success btn-lg" id="addtowheel"><?= icon("plus-circle") ?> Add Item</button>
+                            <button type="button" class="btn btn-success btn-lg" id="addtowheel"><?= icon("circle-plus") ?> Add Item</button>
                             <button type="button" class="btn btn-danger btn-lg clear"><?= icon("trash") ?> Clear All</button>
                         </div>
                     </div>
