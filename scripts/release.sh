@@ -27,6 +27,7 @@ MERGE_RELEASE_TO_MAIN="${MERGE_RELEASE_TO_MAIN:-}"
 MERGE_TO_MAIN_VIA_PR="${MERGE_TO_MAIN_VIA_PR:-}"
 RELEASE_BRANCH="${RELEASE_BRANCH:-dev}"
 MAIN_BRANCH="${MAIN_BRANCH:-main}"
+GITLAB_REMOTE="${GITLAB_REMOTE:-gitlab}"
 
 # Read prompts from the controlling terminal so stdin is never drained by git/ssh (set -e would exit on failed read).
 read_tty() {
@@ -48,7 +49,7 @@ usage() {
   echo "  of the first ## [vM.m.p] heading in CHANGELOG.md (newest section after [Unreleased])."
   echo "  Press Enter at the prompt to accept the suggested default."
   echo "  --dry-run        Write merged changelog to stdout only (no file writes, no git/docker)."
-  echo "  --publish-only   Skip changelog/git; run GitHub release (gh) + docker-pushimage.sh for X.Y.Z"
+  echo "  --publish-only   Skip changelog; push tag to GITLAB_REMOTE, run GitHub release (gh) + docker-pushimage.sh for X.Y.Z"
   echo "                   (use after you already pushed the tag)."
   echo ""
   echo "  Environment:"
@@ -57,6 +58,8 @@ usage() {
   echo "    MERGE_RELEASE_TO_MAIN=1 After gh/docker, sync RELEASE_BRANCH into MAIN_BRANCH (see MERGE_TO_MAIN_VIA_PR)."
   echo "    MERGE_TO_MAIN_VIA_PR=1  Skip direct push; open a PR base=MAIN head=RELEASE (for protected main)."
   echo "    RELEASE_BRANCH / MAIN_BRANCH  Override branch names (defaults: dev, main)."
+  echo "    GITLAB_REMOTE           Remote that also gets branch + tag (default: gitlab; skipped if missing)."
+  echo "                            GitLab CI there creates the GitLab Release and publishes Docker images."
   echo "  Docker images: GitLab CI on gitlab01 (primary); local ./docker-pushimage.sh remains as fallback."
   exit "${1:-0}"
 }
@@ -133,6 +136,24 @@ maybe_gh_release() {
   fi
   rm -f "$tmp_path"
   echo "Created GitHub release v${VERSION} via gh."
+}
+
+# Push branch (optional) + tag to GITLAB_REMOTE so GitLab CI creates the GitLab Release.
+push_to_gitlab() {
+  local br=${1:-}
+  if ! git -C "$ROOT" remote get-url "$GITLAB_REMOTE" &>/dev/null; then
+    echo "No git remote '$GITLAB_REMOTE'; skipping GitLab tag/release push." >&2
+    return 0
+  fi
+  if [[ -n "$br" ]] && ! git -C "$ROOT" push "$GITLAB_REMOTE" "$br"; then
+    echo "WARN: push of $br to $GITLAB_REMOTE failed." >&2
+    return 1
+  fi
+  if ! git -C "$ROOT" push "$GITLAB_REMOTE" "v${VERSION}"; then
+    echo "WARN: push of tag v${VERSION} to $GITLAB_REMOTE failed (GitLab Release will not be created)." >&2
+    return 1
+  fi
+  echo "Pushed v${VERSION} to $GITLAB_REMOTE (GitLab CI creates the GitLab Release)."
 }
 
 maybe_docker_push() {
@@ -310,8 +331,9 @@ if [[ "$PUBLISH_ONLY" -eq 1 ]]; then
     echo "Updated $DOCKER_CONFIG: VERSION=v${VERSION}"
   fi
   echo ""
-  echo "Post-release: GitHub (gh) + Docker. Tag v${VERSION} should already exist on the remote."
+  echo "Post-release: GitLab tag + GitHub (gh) + Docker. Tag v${VERSION} should already exist on the remote."
   pub_br="$(git -C "$ROOT" rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")"
+  push_to_gitlab || true
   if [[ -r /dev/tty ]]; then
     post_push_gh_prompt
     post_push_docker_prompt
@@ -412,7 +434,8 @@ echo "Next steps:"
 echo "  git add CHANGELOG.md docker-image.config && git commit -m \"Release v${VERSION}\""
 echo "  git tag -a \"v${VERSION}\" -m \"v${VERSION}\""
 echo "  git push && git push origin \"v${VERSION}\""
-echo "  (CI: .github/workflows creates the GitHub Release and publishes Docker images on tag push.)"
+echo "  git push ${GITLAB_REMOTE} && git push ${GITLAB_REMOTE} \"v${VERSION}\""
+echo "  (CI: GitHub Actions creates the GitHub Release; GitLab CI creates the GitLab Release and publishes Docker images.)"
 echo "  Then merge ${RELEASE_BRANCH:-dev} into ${MAIN_BRANCH:-main} so the default branch matches the release."
 echo ""
 
@@ -426,12 +449,13 @@ if [[ -r /dev/tty ]]; then
       git -C "$ROOT" tag -a "v${VERSION}" -m "v${VERSION}"
       echo "Created commit and tag v${VERSION}."
       PUSHED=0
-      ans2="$(read_tty "Push branch and tag to origin? [y/N] ")"
+      ans2="$(read_tty "Push branch and tag to origin and ${GITLAB_REMOTE}? [y/N] ")"
       case "${ans2}" in
         y|Y|yes|YES)
           br="$(git -C "$ROOT" rev-parse --abbrev-ref HEAD)"
           git -C "$ROOT" push origin "$br" && git -C "$ROOT" push origin "v${VERSION}"
           PUSHED=1
+          push_to_gitlab "$br" || true
           ;;
         *) echo "Skipped push." ;;
       esac

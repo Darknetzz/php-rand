@@ -7,8 +7,8 @@ This file is guidance for coding agents (and contributors) working in this repos
 1. Confirm all shipped changes are documented in `CHANGELOG.md` under `## [Unreleased]`.
 2. Run `./scripts/release.sh --dry-run` and verify the changelog rotation output looks correct.
 3. Run `./scripts/release.sh <X.Y.Z>` to rotate changelog and bump `docker-image.config`.
-4. Create/push release commit + annotated tag `vX.Y.Z` (or follow script prompts).
-5. Ensure GitHub release and Docker publish steps are completed (prompts or env toggles).
+4. Create/push release commit + annotated tag `vX.Y.Z` to `origin` (GitHub) and `gitlab` (or follow script prompts).
+5. Ensure GitHub release, GitLab release (GitLab CI `gitlab-release` job) and Docker publish steps are completed (prompts or env toggles).
 6. Sync `RELEASE_BRANCH` to `MAIN_BRANCH` (direct merge or PR mode per repo policy).
 
 ## Project Core Concepts
@@ -85,6 +85,7 @@ This repository has an opinionated scripted release flow in `scripts/`.
   - `MERGE_TO_MAIN_VIA_PR=1`
   - `RELEASE_BRANCH` (default `dev`)
   - `MAIN_BRANCH` (default `main`)
+  - `GITLAB_REMOTE` (default `gitlab`; branch + tag are pushed there too, skipped if the remote is missing)
 
 ### Supporting Scripts
 
@@ -104,5 +105,5 @@ This repository has an opinionated scripted release flow in `scripts/`.
 
 - Before releasing, ensure `[Unreleased]` is accurate and complete.
 - Do not release if changelog entries are missing for shipped changes.
-- After release/tag push, ensure GitHub release notes are completed (`gh` / `CREATE_GH_RELEASE=1`). Docker images publish via **GitLab CI** when the tag reaches `gitlab01` (or locally with `./docker-pushimage.sh` / `PUBLISH_DOCKER=1`). Do not expect GitHub Actions to publish images.
+- After release/tag push, ensure GitHub release notes are completed (`gh` / `CREATE_GH_RELEASE=1`). The GitLab Release is created by the `gitlab-release` job in `.gitlab-ci.yml` when the tag reaches `gitlab01`, with notes from the matching `CHANGELOG.md` section. Docker images publish via **GitLab CI** when the tag reaches `gitlab01` (or locally with `./docker-pushimage.sh` / `PUBLISH_DOCKER=1`). Do not expect GitHub Actions to publish images.
 - Keep default branch aligned with the release branch per repo policy (merge or PR path in `release.sh`).
