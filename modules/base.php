@@ -94,7 +94,7 @@ foreach ($base_options as $value => $data) {
                                 </select>
                             </div>
                             <div class="col-12 col-md-2 d-flex justify-content-center pb-1">
-                                <button type="button" id="baseSwapBtn" class="btn btn-outline-primary btn-lg" title="Swap From and To" aria-label="Swap Convert From and Convert To">
+                                <button type="button" id="baseSwapBtn" class="btn <?= btnClass('primary') ?> btn-lg" title="Swap From and To" aria-label="Swap Convert From and Convert To">
                                     <?= icon("arrow-left-right") ?>
                                 </button>
                             </div>

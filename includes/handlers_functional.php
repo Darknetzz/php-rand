@@ -3091,7 +3091,7 @@ function handle_shellcheck(array $req): string {
         }
         $output .= "</div>";
         $output .= shellcheck_excerpt_html($lines, $comment);
-        $output .= "<div class='mt-3'><a href='" . htmlspecialchars($wikiUrl, ENT_QUOTES, 'UTF-8') . "' target='_blank' rel='noopener noreferrer' class='btn btn-sm btn-outline-light'>"
+        $output .= "<div class='mt-3'><a href='" . htmlspecialchars($wikiUrl, ENT_QUOTES, 'UTF-8') . "' target='_blank' rel='noopener noreferrer' class='btn btn-sm " . btnClass('light') . "'>"
             . icon('external-link') . " Open SC" . str_pad((string) $code, 4, '0', STR_PAD_LEFT) . " docs</a></div>";
         $output .= "</div></div>";
     }
@@ -3574,7 +3574,7 @@ function crypto_data_download_link(string $filename, string $content, string $la
     $safeHref = htmlspecialchars($href, ENT_QUOTES, 'UTF-8');
     $safeFilename = htmlspecialchars($filename, ENT_QUOTES, 'UTF-8');
     $safeLabel = htmlspecialchars($label, ENT_QUOTES, 'UTF-8');
-    return "<a class='btn btn-outline-light btn-sm' href='{$safeHref}' download='{$safeFilename}' style='white-space: nowrap; border: 1px solid #e9ecef;'>" . icon('download') . " {$safeLabel}</a>";
+    return "<a class='btn " . btnClass('light') . " btn-sm' href='{$safeHref}' download='{$safeFilename}' style='white-space: nowrap; border: 1px solid #e9ecef;'>" . icon('download') . " {$safeLabel}</a>";
 }
 
 function crypto_render_key_output(array $items, string $title): string {

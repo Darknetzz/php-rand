@@ -30,11 +30,11 @@
                         </div>
 
                         <div class="d-grid gap-2">
-                            <button type="button" class="btn btn-outline-secondary undo"
+                            <button type="button" class="btn <?= btnClass('secondary') ?> undo"
                                 data-target="#strtoolsinput"><?= icon("undo-2") ?> Undo</button>
-                            <button type="button" class="btn btn-outline-secondary redo"
+                            <button type="button" class="btn <?= btnClass('secondary') ?> redo"
                                 data-target="#strtoolsinput"><?= icon("redo-2") ?> Redo</button>
-                            <button type="button" class="btn btn-outline-danger clear" data-target="#strtoolsinput"><?= icon("trash") ?>
+                            <button type="button" class="btn <?= btnClass('danger') ?> clear" data-target="#strtoolsinput"><?= icon("trash") ?>
                                 Clear</button>
                         </div>
                     </div>
@@ -46,7 +46,7 @@
                           placeholder="Processed output will appear here..."></textarea>
                         <div id="strtoolsstatus"></div>
                         <div class="d-flex justify-content-end mb-3">
-                            <button type="button" class="btn btn-sm btn-outline-light copyOutput" data-target="#strtoolsresponse" style="border: 1px solid #e9ecef;"><?= icon("copy") ?> Copy Output</button>
+                            <button type="button" class="btn btn-sm <?= btnClass('light') ?> copyOutput" data-target="#strtoolsresponse" style="border: 1px solid #e9ecef;"><?= icon("copy") ?> Copy Output</button>
                         </div>
                     </div>
                 </div>
@@ -305,7 +305,7 @@
           $icon    = $t["icon"];
           $tooltip = $t["tooltip"];
           echo "
-          <button type='button' class='btn btn-sm btn-outline-primary stringtoolbtn' data-tool='$postvar' title='$tooltip'>
+          <button type='button' class='btn btn-sm " . btnClass('primary') . " stringtoolbtn' data-tool='$postvar' title='$tooltip'>
             ".icon($icon)." $name
           </button>
           ";

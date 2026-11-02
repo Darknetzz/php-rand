@@ -178,8 +178,8 @@
                         </div>
                     </div>
                     <div class="d-grid gap-2 gap-sm-0 d-sm-flex">
-                        <button type="submit" class="btn btn-outline-primary flex-sm-grow-1" onclick="document.getElementById('iphexTool').value='ip2hex'" style="border: 2px solid #0d6efd;"><?= icon("arrow-right") ?> IP → Hex</button>
-                        <button type="submit" class="btn btn-outline-primary flex-sm-grow-1" onclick="document.getElementById('iphexTool').value='hex2ip'" style="border: 2px solid #0d6efd;"><?= icon("arrow-left") ?> Hex → IP</button>
+                        <button type="submit" class="btn <?= btnClass('primary') ?> flex-sm-grow-1" onclick="document.getElementById('iphexTool').value='ip2hex'" style="border: 2px solid #0d6efd;"><?= icon("arrow-right") ?> IP → Hex</button>
+                        <button type="submit" class="btn <?= btnClass('primary') ?> flex-sm-grow-1" onclick="document.getElementById('iphexTool').value='hex2ip'" style="border: 2px solid #0d6efd;"><?= icon("arrow-left") ?> Hex → IP</button>
                     </div>
                 </form>
             </div>

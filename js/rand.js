@@ -320,29 +320,29 @@ function bakeHighlightedHtmlForPaste(sourceEl) {
     return wrap.innerHTML;
 }
 
+/**
+ * Bootstrap button color class honoring BTN_OUTLINE (includes/config.php, exposed as window.RAND_BTN_OUTLINE).
+ * @param {string} color e.g. "primary", "light"
+ * @returns {string} "btn-primary" or "btn-outline-primary"
+ */
+function btnClass(color) {
+    return (window.RAND_BTN_OUTLINE ? "btn-outline-" : "btn-") + color;
+}
+
 function setCopyButtonFeedback(btn, ok) {
     if (!btn) {
         return;
     }
     const originalText = btn.getAttribute("data-original-text") || btn.innerHTML;
+    const originalClass = btn.getAttribute("data-original-class") || btn.className;
     btn.setAttribute("data-original-text", originalText);
-    if (ok) {
-        btn.innerHTML = '<i class="icon-check"></i> Copied!';
-        btn.classList.add("btn-success");
-        btn.classList.remove("btn-outline-light", "btn-outline-info");
-    } else {
-        btn.innerHTML = '<i class="icon-triangle-alert"></i> Failed';
-        btn.classList.add("btn-danger");
-        btn.classList.remove("btn-outline-light", "btn-outline-info");
-    }
+    btn.setAttribute("data-original-class", originalClass);
+    btn.className = originalClass.replace(/\bbtn-(?:outline-)?(?:primary|secondary|success|danger|warning|info|light|dark)\b/g, "")
+        + (ok ? " btn-success" : " btn-danger");
+    btn.innerHTML = ok ? '<i class="icon-check"></i> Copied!' : '<i class="icon-triangle-alert"></i> Failed';
     setTimeout(function() {
         btn.innerHTML = originalText;
-        btn.classList.remove("btn-success", "btn-danger");
-        if (btn.classList.contains("btn-copy-rich")) {
-            btn.classList.add("btn-outline-info");
-        } else {
-            btn.classList.add("btn-outline-light");
-        }
+        btn.className = originalClass;
     }, 1600);
 }
 
@@ -1077,7 +1077,7 @@ function renderBrowserInfoHtml(info) {
     html += "<div class='copyable-content'>";
     html += "<pre class='copyable-body' id='browserInfoJson' style='margin: 0; font-family: inherit; font-size: inherit;'>" + htmlEscape(rawJson) + "</pre>";
     html += "<div class='copyable-actions'>";
-    html += "<button type='button' class='btn btn-sm btn-outline-light' onclick='copyToClipboard(\"browserInfoJson\", this)' style='white-space: nowrap; border: 1px solid #e9ecef;'><i class='icon-clipboard'></i> Copy JSON</button>";
+    html += "<button type='button' class='btn btn-sm " + btnClass("light") + "' onclick='copyToClipboard(\"browserInfoJson\", this)' style='white-space: nowrap; border: 1px solid #e9ecef;'><i class='icon-clipboard'></i> Copy JSON</button>";
     html += "</div></div>";
     html += "</div></div>";
     return html;
@@ -1123,10 +1123,10 @@ function buildClientKeyOutput(items, title) {
         html += "<div class='copyable-content'>";
         html += "<div class='copyable-body' id='" + htmlEscape(copyId) + "'>" + htmlEscape(item.content) + "</div>";
         html += "<div class='copyable-actions'>";
-        html += "<button type='button' class='btn btn-sm btn-outline-light' onclick=\"copyToClipboard('" + htmlEscape(copyId) + "', this)\" style='white-space: nowrap; border: 1px solid #e9ecef;\">";
+        html += "<button type='button' class='btn btn-sm " + btnClass("light") + "' onclick=\"copyToClipboard('" + htmlEscape(copyId) + "', this)\" style='white-space: nowrap; border: 1px solid #e9ecef;\">";
         html += "<i class='icon-copy'></i> Copy";
         html += "</button>";
-        html += "<a class='btn btn-outline-light btn-sm' download='" + htmlEscape(item.filename) + "' href='" + encoded + "' style='white-space: nowrap; border: 1px solid #e9ecef;'>";
+        html += "<a class='btn " + btnClass("light") + " btn-sm' download='" + htmlEscape(item.filename) + "' href='" + encoded + "' style='white-space: nowrap; border: 1px solid #e9ecef;'>";
         html += "<i class='icon-download'></i> Download " + htmlEscape(item.label);
         html += "</a></div></div></div>";
     });
@@ -1184,9 +1184,9 @@ function buildClientSshKeyOutput(slotItems, title) {
         panelsHtml += "<div class='copyable-content'>";
         panelsHtml += "<div class='copyable-body' id='" + htmlEscape(copyId) + "'>" + htmlEscape(item.content) + "</div>";
         panelsHtml += "<div class='copyable-actions'>";
-        panelsHtml += "<button type='button' class='btn btn-sm btn-outline-light' onclick=\"copyToClipboard('" + htmlEscape(copyId) + "', this)\" style='white-space: nowrap; border: 1px solid #e9ecef;\">";
+        panelsHtml += "<button type='button' class='btn btn-sm " + btnClass("light") + "' onclick=\"copyToClipboard('" + htmlEscape(copyId) + "', this)\" style='white-space: nowrap; border: 1px solid #e9ecef;\">";
         panelsHtml += "<i class='icon-copy'></i> Copy</button>";
-        panelsHtml += "<a class='btn btn-outline-light btn-sm' download='" + htmlEscape(item.filename) + "' href='" + encoded + "' style='white-space: nowrap; border: 1px solid #e9ecef;'>";
+        panelsHtml += "<a class='btn " + btnClass("light") + " btn-sm' download='" + htmlEscape(item.filename) + "' href='" + encoded + "' style='white-space: nowrap; border: 1px solid #e9ecef;'>";
         panelsHtml += "<i class='icon-download'></i> Download " + htmlEscape(item.label);
         panelsHtml += "</a></div></div></div></div>";
     });
@@ -1202,9 +1202,9 @@ function buildClientSshKeyOutput(slotItems, title) {
         privateHtml += "<div class='copyable-content'>";
         privateHtml += "<div class='copyable-body' id='" + htmlEscape(copyId) + "'>" + htmlEscape(priv.content) + "</div>";
         privateHtml += "<div class='copyable-actions'>";
-        privateHtml += "<button type='button' class='btn btn-sm btn-outline-light' onclick=\"copyToClipboard('" + htmlEscape(copyId) + "', this)\" style='white-space: nowrap; border: 1px solid #e9ecef;\">";
+        privateHtml += "<button type='button' class='btn btn-sm " + btnClass("light") + "' onclick=\"copyToClipboard('" + htmlEscape(copyId) + "', this)\" style='white-space: nowrap; border: 1px solid #e9ecef;\">";
         privateHtml += "<i class='icon-copy'></i> Copy</button>";
-        privateHtml += "<a class='btn btn-outline-light btn-sm' download='" + htmlEscape(priv.filename) + "' href='" + encoded + "' style='white-space: nowrap; border: 1px solid #e9ecef;'>";
+        privateHtml += "<a class='btn " + btnClass("light") + " btn-sm' download='" + htmlEscape(priv.filename) + "' href='" + encoded + "' style='white-space: nowrap; border: 1px solid #e9ecef;'>";
         privateHtml += "<i class='icon-download'></i> Download " + htmlEscape(priv.label);
         privateHtml += "</a></div></div></div></div>";
     }
@@ -2831,7 +2831,7 @@ $(document).ready(function() {
 
         var html = "";
         if (data.demo_url) {
-            html += '<p class="mb-3"><a class="btn btn-outline-primary btn-sm" href="' + escapeHtml(data.demo_url) + '" target="_blank" rel="noopener noreferrer">';
+            html += '<p class="mb-3"><a class="btn ' + btnClass('primary') + ' btn-sm" href="' + escapeHtml(data.demo_url) + '" target="_blank" rel="noopener noreferrer">';
             html += '<i class="icon-external-link me-1" aria-hidden="true"></i>Live demo</a></p>';
         }
         html += '<div class="about-info-summary mb-4">';
@@ -3920,7 +3920,7 @@ function createRandomDataButton($input, options = {}) {
 
     const $btn = $('<button>', {
         type: 'button',
-        class: 'btn btn-sm btn-outline-secondary random-data-btn',
+        class: 'btn btn-sm ' + btnClass('secondary') + ' random-data-btn',
         title: title,
         html: '<i class="icon-shuffle"></i>',
         css: {
@@ -3950,9 +3950,10 @@ function createRandomDataButton($input, options = {}) {
         }
 
         const originalHtml = $btn.html();
-        $btn.html('<i class="icon-check"></i>').addClass('btn-success').removeClass('btn-outline-secondary');
+        const colorClass = btnClass('secondary');
+        $btn.html('<i class="icon-check"></i>').addClass('btn-success').removeClass(colorClass);
         setTimeout(() => {
-            $btn.html(originalHtml).removeClass('btn-success').addClass('btn-outline-secondary');
+            $btn.html(originalHtml).removeClass('btn-success').addClass(colorClass);
         }, 1000);
     });
 

@@ -11,6 +11,11 @@ define("SITE_TITLE", "RAND");
 define("SITE_BASE_URL", $_SERVER["REQUEST_SCHEME"] . "://" . $_SERVER["HTTP_HOST"]);
 define("DEMO_URL", "https://rand.demo.roste.org/");
 
+# UI
+// Action button style: false = filled (btn-primary), true = outline (btn-outline-primary).
+// Applied via btnClass() in PHP and JS. Radio/checkbox toggle groups (btn-check) always stay outline.
+define("BTN_OUTLINE", false);
+
 # Encoding
 ini_set('default_charset', 'UTF-8');
 mb_internal_encoding('UTF-8');

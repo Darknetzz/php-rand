@@ -27,6 +27,19 @@ function icon($icon = "circle-question-mark", $rem = 1, $color = null, $margin =
 }
 
 /**
+ * Bootstrap button color class honoring the global BTN_OUTLINE setting.
+ *
+ * @param string $color Bootstrap color name, e.g. "primary", "light", "danger"
+ * @return string "btn-{$color}" or "btn-outline-{$color}"
+ *
+ * @example
+ * echo "<button class='btn btn-sm " . btnClass('light') . "'>Copy</button>";
+ */
+function btnClass(string $color): string {
+  return (BTN_OUTLINE ? 'btn-outline-' : 'btn-') . $color;
+}
+
+/**
  * Generate a Bootstrap Alert component
  * 
  * Creates a dismissible Bootstrap alert box with contextual styling and icons.
@@ -2085,7 +2098,7 @@ function copyableOutput($content, $label = "", $useAsInput = null, ?string $extr
   $html .= htmlspecialchars($content ?? '');
   $html .= "  </div>";
   $html .= "  <div class='copyable-actions'>";
-  $html .= "  <button type='button' class='btn btn-sm btn-outline-light' onclick=\"copyToClipboard('$uniqueId', this)\" style='white-space: nowrap; border: 1px solid #e9ecef;'>";
+  $html .= "  <button type='button' class='btn btn-sm " . btnClass('light') . "' onclick=\"copyToClipboard('$uniqueId', this)\" style='white-space: nowrap; border: 1px solid #e9ecef;'>";
   $html .= "    <i class='icon-copy'></i> Copy";
   $html .= "  </button>";
   if ($extraActionsHtml !== null && $extraActionsHtml !== '') {
@@ -2093,7 +2106,7 @@ function copyableOutput($content, $label = "", $useAsInput = null, ?string $extr
   }
   if (is_array($useAsInput) && !empty($useAsInput['inputName'])) {
     $inputName = $useAsInput['inputName'];
-    $attrs = ' class="btn btn-sm btn-outline-info btn-use-as-input" data-copyable-id="' . htmlspecialchars($uniqueId) . '" data-input-name="' . htmlspecialchars($inputName) . '"';
+    $attrs = ' class="btn btn-sm ' . btnClass('info') . ' btn-use-as-input" data-copyable-id="' . htmlspecialchars($uniqueId) . '" data-input-name="' . htmlspecialchars($inputName) . '"';
     if (!empty($useAsInput['swapNames']) && is_array($useAsInput['swapNames']) && count($useAsInput['swapNames']) === 2) {
       $attrs .= ' data-swap-names="' . htmlspecialchars(json_encode($useAsInput['swapNames'])) . '"';
     }

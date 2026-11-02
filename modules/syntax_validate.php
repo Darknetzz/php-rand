@@ -56,7 +56,7 @@
                         </select>
                         <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
                             <label for="syntaxValidateInput" class="form-label mb-0"><strong style="font-size: 1.1rem;">Input</strong></label>
-                            <button type="button" class="btn btn-sm btn-outline-secondary syntax-validate-random-sample" title="Insert random sample for the selected language"><?= icon('shuffle', 0.9) ?> Random sample</button>
+                            <button type="button" class="btn btn-sm <?= btnClass('secondary') ?> syntax-validate-random-sample" title="Insert random sample for the selected language"><?= icon('shuffle', 0.9) ?> Random sample</button>
                         </div>
                         <div data-no-random-buttons>
                             <textarea

@@ -32,6 +32,7 @@
         require_once("includes/_includes.php");
         require_once("includes/navbar.php");
     ?>
+    <script>window.RAND_BTN_OUTLINE = <?= BTN_OUTLINE ? 'true' : 'false' ?>;</script>
     <br>
     <div class="container pt-5">
 
@@ -217,25 +218,7 @@ function copyToClipboard(elementId, btnEl) {
         : (element.textContent || "").trim();
     const btn = btnEl || (document.activeElement?.closest && document.activeElement.closest('button')) || null;
 
-    const setFeedback = (ok) => {
-        if (!btn) return;
-        const originalText = btn.getAttribute('data-original-text') || btn.innerHTML;
-        btn.setAttribute('data-original-text', originalText);
-        if (ok) {
-            btn.innerHTML = '<i class="icon-check"></i> Copied!';
-            btn.classList.add('btn-success');
-            btn.classList.remove('btn-outline-light');
-        } else {
-            btn.innerHTML = '<i class="icon-triangle-alert"></i> Failed';
-            btn.classList.add('btn-danger');
-            btn.classList.remove('btn-outline-light');
-        }
-        setTimeout(() => {
-            btn.innerHTML = originalText;
-            btn.classList.remove('btn-success', 'btn-danger');
-            btn.classList.add('btn-outline-light');
-        }, 1600);
-    };
+    const setFeedback = (ok) => setCopyButtonFeedback(btn, ok);
 
     // Modern API path
     if (navigator.clipboard && navigator.clipboard.writeText) {

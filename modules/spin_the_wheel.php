@@ -115,13 +115,13 @@
                                 <span class="badge bg-primary" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;"><strong>1</strong></span>
                                 <input type="text" name="wheelitem[0]" class="form-control wheelitem-input" placeholder="Item #1" value="" style="flex: 1;">
                                 <input type="number" name="wheelweight[0]" class="form-control wheelitem-weight" min="1" step="1" value="1" title="Weight" aria-label="Weight">
-                                <button type="button" class="btn btn-sm btn-outline-danger remove-item" title="Remove item"><?= icon("trash") ?></button>
+                                <button type="button" class="btn btn-sm <?= btnClass('danger') ?> remove-item" title="Remove item"><?= icon("trash") ?></button>
                             </div>
                             <div class="input-group mb-3 wheelitem" style="gap: 8px;">
                                 <span class="badge bg-primary" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;"><strong>2</strong></span>
                                 <input type="text" name="wheelitem[1]" class="form-control wheelitem-input" placeholder="Item #2" value="" style="flex: 1;">
                                 <input type="number" name="wheelweight[1]" class="form-control wheelitem-weight" min="1" step="1" value="1" title="Weight" aria-label="Weight">
-                                <button type="button" class="btn btn-sm btn-outline-danger remove-item" title="Remove item"><?= icon("trash") ?></button>
+                                <button type="button" class="btn btn-sm <?= btnClass('danger') ?> remove-item" title="Remove item"><?= icon("trash") ?></button>
                             </div>
                         </div>
                         <!-- Action Buttons -->
@@ -276,7 +276,7 @@ function wheelItemRowHtml(index, placeholder) {
             <span class="badge bg-primary" style="width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem;"><strong>${index}</strong></span>
             <input type="text" name="wheelitem[]" class="form-control wheelitem-input" placeholder="${placeholder}" value="" style="flex: 1;">
             <input type="number" name="wheelweight[]" class="form-control wheelitem-weight" min="1" step="1" value="1" title="Weight" aria-label="Weight">
-            <button type="button" class="btn btn-sm btn-outline-danger remove-item" title="Remove item"><?= icon("trash") ?></button>
+            <button type="button" class="btn btn-sm <?= btnClass('danger') ?> remove-item" title="Remove item"><?= icon("trash") ?></button>
         </div>
     `;
 }

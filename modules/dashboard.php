@@ -13,13 +13,13 @@
                 <a href="#gen_string" class="link btn btn-primary btn-lg">
                     <?= icon("braces") ?> Start Generating
                 </a>
-                <a href="#hash" class="link btn btn-outline-primary btn-lg">
+                <a href="#hash" class="link btn <?= btnClass('primary') ?> btn-lg">
                     <?= icon("shield-lock") ?> Explore Crypto
                 </a>
-                <a href="<?= htmlspecialchars(DEMO_URL, ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener noreferrer" class="btn btn-outline-primary btn-lg">
+                <a href="<?= htmlspecialchars(DEMO_URL, ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener noreferrer" class="btn <?= btnClass('primary') ?> btn-lg">
                     <?= icon("external-link") ?> Live Demo
                 </a>
-                <a href="https://github.com/Darknetzz/phprand" target="_blank" rel="noopener noreferrer" class="btn btn-outline-secondary btn-lg">
+                <a href="https://github.com/Darknetzz/phprand" target="_blank" rel="noopener noreferrer" class="btn <?= btnClass('secondary') ?> btn-lg">
                     <?= icon("git-fork") ?> View on GitHub
                 </a>
             </div>

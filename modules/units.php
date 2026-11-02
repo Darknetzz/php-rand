@@ -169,7 +169,7 @@
         var v = typeof val === 'number' ? (Number.isInteger(val) ? val : Number(val.toPrecision(10))) : val;
         return '<div class="copyable-content" style="padding:8px;gap:6px;min-width:0;">' +
             '<div class="copyable-body" id="' + id + '" style="max-height:none;overflow:visible;">' + v + '</div>' +
-            '<div class="copyable-actions"><button type="button" class="btn btn-sm btn-outline-light" onclick="copyToClipboard(\'' + id + '\', this)"><i class="icon-copy"></i> Copy</button></div></div>';
+            '<div class="copyable-actions"><button type="button" class="btn btn-sm <?= btnClass('light') ?>" onclick="copyToClipboard(\'' + id + '\', this)"><i class="icon-copy"></i> Copy</button></div></div>';
     }
 
     function copyableRowWithUnit(val, unitLabel, id) {
@@ -178,7 +178,7 @@
         var displayText = v + ' <span style="color: #a0aec0; font-weight: 600;">' + unitLabel + '</span>';
         return '<div class="copyable-content" style="padding:8px;gap:6px;min-width:0;">' +
             '<div class="copyable-body" id="' + id + '" style="max-height:none;overflow:visible;">' + displayText + '</div>' +
-            '<div class="copyable-actions"><button type="button" class="btn btn-sm btn-outline-light" onclick="copyToClipboard(\'' + id + '\', this)"><i class="icon-copy"></i> Copy</button></div></div>';
+            '<div class="copyable-actions"><button type="button" class="btn btn-sm <?= btnClass('light') ?>" onclick="copyToClipboard(\'' + id + '\', this)"><i class="icon-copy"></i> Copy</button></div></div>';
     }
 
     function renderTable(caption, rows) {
