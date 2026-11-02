@@ -41,7 +41,7 @@
 
                     <div class="col-lg-6 d-flex flex-column">
                         <label class="form-label mb-3"><strong style="font-size: 1.1rem;">Output</strong></label>
-                        <textarea id="strtoolsresponse" class="form-control mb-2 flex-grow-1" readonly
+                        <textarea id="strtoolsresponse" class="form-control rand-code-textarea mb-2 flex-grow-1" readonly
                           style="min-height:320px; font-family: monospace; resize: vertical; font-size: 0.95rem; border: 2px solid #495057; background-color: var(--bs-secondary-bg); cursor: default;"
                           placeholder="Processed output will appear here..."></textarea>
                         <div id="strtoolsstatus"></div>
