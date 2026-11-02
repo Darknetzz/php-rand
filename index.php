@@ -5,14 +5,14 @@
 
 <!-- <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous"> -->
 <link rel="stylesheet"
-  href="https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/css/tabler.min.css" />
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+  href="https://cdn.jsdelivr.net/npm/@tabler/core@1.7.3/dist/css/tabler.min.css" />
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lucide-static@1.66.0/font/lucide.css">
 
 <script defer src="https://code.jquery.com/jquery-4.0.0.min.js"
     integrity="sha256-OaVG6prZf4v69dPg6PhVattBXkcOWQB62pdZ3ORyrao=" crossorigin="anonymous"></script>
 <!-- <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script> -->
 <script defer
-  src="https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/js/tabler.min.js">
+  src="https://cdn.jsdelivr.net/npm/@tabler/core@1.7.3/dist/js/tabler.min.js">
 </script>
 
 <!-- Marked / Highlight.js (e.g. markdown) are loaded on demand in js/rand.js -->
@@ -32,6 +32,7 @@
         require_once("includes/_includes.php");
         require_once("includes/navbar.php");
     ?>
+    <script>window.RAND_BTN_OUTLINE = <?= BTN_OUTLINE ? 'true' : 'false' ?>;</script>
     <br>
     <div class="container pt-5">
 
@@ -52,7 +53,7 @@ include_once("modules/dashboard.php");
         <div class="modal-dialog modal-xl modal-dialog-scrollable" role="document">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h2 class="modal-title h4 mb-0" id="aboutModalLabel"><?= icon("info-circle") ?> About php-rand</h2>
+                    <h2 class="modal-title h4 mb-0" id="aboutModalLabel"><?= icon("info") ?> About php-rand</h2>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-0">
@@ -115,6 +116,7 @@ include_once("modules/dashboard.php");
                     <ul class="mb-3">
                         <li><code>dashboard</code> (display only)</li>
                         <li><code>markdown</code> (rendered in browser with JS)</li>
+                        <li><code>syntax_highlight</code> (highlight.js in browser; rich copy for Word/OneNote)</li>
                         <li><code>gen_image</code> (opens external image generator page)</li>
                     </ul>
 
@@ -156,7 +158,7 @@ function canUseClipboardCopy() {
 
 function findCopyButtons(root) {
     return root.querySelectorAll(
-        'button[onclick*="copyToClipboard"], button.copyOutput, button.copyText'
+        'button[onclick*="copyToClipboard"], button[onclick*="copyRichHtmlToClipboard"], button.copyOutput, button.copyText, button.btn-copy-rich'
     );
 }
 
@@ -210,28 +212,13 @@ function copyToClipboard(elementId, btnEl) {
     }
     const element = document.getElementById(elementId);
     if (!element) return;
-    const text = (element.textContent || "").trim();
+    // Form fields hold their live value in .value; copy it verbatim
+    const text = (element.tagName === "TEXTAREA" || element.tagName === "INPUT")
+        ? element.value
+        : (element.textContent || "").trim();
     const btn = btnEl || (document.activeElement?.closest && document.activeElement.closest('button')) || null;
 
-    const setFeedback = (ok) => {
-        if (!btn) return;
-        const originalText = btn.getAttribute('data-original-text') || btn.innerHTML;
-        btn.setAttribute('data-original-text', originalText);
-        if (ok) {
-            btn.innerHTML = '<i class="bi bi-check"></i> Copied!';
-            btn.classList.add('btn-success');
-            btn.classList.remove('btn-outline-light');
-        } else {
-            btn.innerHTML = '<i class="bi bi-exclamation-triangle"></i> Failed';
-            btn.classList.add('btn-danger');
-            btn.classList.remove('btn-outline-light');
-        }
-        setTimeout(() => {
-            btn.innerHTML = originalText;
-            btn.classList.remove('btn-success', 'btn-danger');
-            btn.classList.add('btn-outline-light');
-        }, 1600);
-    };
+    const setFeedback = (ok) => setCopyButtonFeedback(btn, ok);
 
     // Modern API path
     if (navigator.clipboard && navigator.clipboard.writeText) {

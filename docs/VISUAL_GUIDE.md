@@ -241,7 +241,7 @@ Time: 1000ms
 
 ### Screen Readers
 - Button has `title` attribute: "Generate random data"
-- Icon uses Bootstrap Icons (recognized by screen readers)
+- Icon uses the Lucide icon font (decorative, `aria-hidden`)
 - Button type: "button" (prevents form submission)
 
 ### ARIA Labels
@@ -251,7 +251,7 @@ Time: 1000ms
   class="btn btn-sm btn-outline-secondary random-data-btn"
   title="Generate random data"
   aria-label="Generate random data for this field">
-  <i class="bi bi-shuffle" aria-hidden="true"></i>
+  <i class="icon-shuffle" aria-hidden="true"></i>
 </button>
 ```
 
@@ -263,7 +263,7 @@ Time: 1000ms
 | Arrow Functions | ✅ | ✅ | ✅ | ✅ |
 | const/let | ✅ | ✅ | ✅ | ✅ |
 | Template Literals | ✅ | ✅ | ✅ | ✅ |
-| Bootstrap Icons | ✅ | ✅ | ✅ | ✅ |
+| Lucide icon font | ✅ | ✅ | ✅ | ✅ |
 | jQuery 4.0+ | ✅ | ✅ | ✅ | ✅ |
 | CSS Transitions | ✅ | ✅ | ✅ | ✅ |
 

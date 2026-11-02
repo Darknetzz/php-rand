@@ -71,7 +71,7 @@
                 </div>
 
                 <br>
-                <?= submitBtn("currency", "action", "Convert", "arrow-repeat") ?>
+                <?= submitBtn("currency", "action", "Convert", "refresh-cw") ?>
                 <div class="responseDiv" id="currencyresponse"></div>
             </form>
         </div>

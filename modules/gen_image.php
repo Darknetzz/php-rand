@@ -88,14 +88,14 @@
                 <div class="mb-4">
                     <label class="form-label mb-2"><strong>1 · Quick presets</strong></label>
                     <div class="d-flex gap-2 flex-wrap align-items-center">
-                        <button type="button" class="btn btn-outline-primary btn-sm logo-preset-btn" data-preset="app-icon"
+                        <button type="button" class="btn <?= btnClass('primary') ?> btn-sm logo-preset-btn" data-preset="app-icon"
                             title="512×512, rounded square, initials, gradient">App icon</button>
-                        <button type="button" class="btn btn-outline-primary btn-sm logo-preset-btn" data-preset="banner"
+                        <button type="button" class="btn <?= btnClass('primary') ?> btn-sm logo-preset-btn" data-preset="banner"
                             title="1200×400, wide rectangle, full text">Banner</button>
-                        <button type="button" class="btn btn-outline-primary btn-sm logo-preset-btn" data-preset="initials-badge"
+                        <button type="button" class="btn <?= btnClass('primary') ?> btn-sm logo-preset-btn" data-preset="initials-badge"
                             title="384×384 circle, solid fill, border">Initials badge</button>
                         <span class="text-muted small mx-1 d-none d-sm-inline">·</span>
-                        <button type="button" class="btn btn-outline-warning btn-sm" id="logoRandomizeBtn"
+                        <button type="button" class="btn <?= btnClass('warning') ?> btn-sm" id="logoRandomizeBtn"
                             title="Random background, accent, text, and border colors">Shuffle colors</button>
                     </div>
                     <small class="form-text text-muted d-block mt-1">Presets set size, shape, style, and text options together. Shuffle only changes colors.</small>
@@ -189,7 +189,7 @@
                                                     <label class="small text-muted text-nowrap mb-0" for="logo_text_offset_y">Y (px)</label>
                                                     <input type="number" class="form-control form-control-sm" id="logo_text_offset_y" name="logo_text_offset_y" value="0" min="-400" max="400" style="width:5.25rem;" title="Vertical shift; positive = down">
                                                 </div>
-                                                <button type="button" class="btn btn-outline-secondary btn-sm" id="logoOffsetReset">Reset nudge</button>
+                                                <button type="button" class="btn <?= btnClass('secondary') ?> btn-sm" id="logoOffsetReset">Reset nudge</button>
                                             </div>
                                         </td>
                                     </tr>
@@ -237,7 +237,7 @@
                                                 <label class="form-label small mb-1" for="logo_border_color">Color</label>
                                                 <div class="d-flex gap-1 align-items-stretch" style="max-width: 16rem;">
                                                     <input type="color" class="form-control form-control-color flex-grow-1" id="logo_border_color" name="logo_border_color" value="#ffffff" title="Border color" disabled>
-                                                    <button type="button" class="btn btn-outline-secondary btn-sm logo-color-random px-2" data-target="logo_border_color" title="Random color" disabled><?= icon('shuffle', 0.9) ?></button>
+                                                    <button type="button" class="btn <?= btnClass('secondary') ?> btn-sm logo-color-random px-2" data-target="logo_border_color" title="Random color" disabled><?= icon('shuffle', 0.9) ?></button>
                                                 </div>
                                             </div>
                                             <small id="logoBorderHint" class="text-muted d-block mt-1 mb-0">0–24 px when enabled. <strong>Color</strong> appears when the border is enabled.</small>
@@ -258,14 +258,14 @@
                                                     <label class="form-label small mb-1" for="logo_bg_color">Background</label>
                                                     <div class="d-flex gap-1 align-items-stretch">
                                                         <input type="color" class="form-control form-control-color flex-grow-1" id="logo_bg_color" name="logo_bg_color" value="#000000" title="Background">
-                                                        <button type="button" class="btn btn-outline-secondary btn-sm logo-color-random px-2" data-target="logo_bg_color" title="Random color"><?= icon('shuffle', 0.9) ?></button>
+                                                        <button type="button" class="btn <?= btnClass('secondary') ?> btn-sm logo-color-random px-2" data-target="logo_bg_color" title="Random color"><?= icon('shuffle', 0.9) ?></button>
                                                     </div>
                                                 </div>
                                                 <div class="col" id="logoBgAccentWrap">
                                                     <label class="form-label small mb-1" for="logo_accent_color">Accent</label>
                                                     <div class="d-flex gap-1 align-items-stretch">
                                                         <input type="color" class="form-control form-control-color flex-grow-1" id="logo_accent_color" name="logo_accent_color" value="#1d4ed8" title="Gradient accent">
-                                                        <button type="button" class="btn btn-outline-secondary btn-sm logo-color-random px-2" data-target="logo_accent_color" title="Random color"><?= icon('shuffle', 0.9) ?></button>
+                                                        <button type="button" class="btn <?= btnClass('secondary') ?> btn-sm logo-color-random px-2" data-target="logo_accent_color" title="Random color"><?= icon('shuffle', 0.9) ?></button>
                                                     </div>
                                                 </div>
                                             </div>
@@ -296,14 +296,14 @@
                                                     <label class="form-label small mb-1" for="logo_text_color">Text</label>
                                                     <div class="d-flex gap-1 align-items-stretch">
                                                         <input type="color" class="form-control form-control-color flex-grow-1" id="logo_text_color" name="logo_text_color" value="#ffffff" title="Text color (gradient start when text fill is gradient)">
-                                                        <button type="button" class="btn btn-outline-secondary btn-sm logo-color-random px-2" data-target="logo_text_color" title="Random color"><?= icon('shuffle', 0.9) ?></button>
+                                                        <button type="button" class="btn <?= btnClass('secondary') ?> btn-sm logo-color-random px-2" data-target="logo_text_color" title="Random color"><?= icon('shuffle', 0.9) ?></button>
                                                     </div>
                                                 </div>
                                                 <div class="col d-none" id="logoTextAccentWrap">
                                                     <label class="form-label small mb-1" for="logo_text_accent_color">Text accent</label>
                                                     <div class="d-flex gap-1 align-items-stretch">
                                                         <input type="color" class="form-control form-control-color flex-grow-1" id="logo_text_accent_color" name="logo_text_accent_color" value="#94a3b8" title="Text gradient end" disabled>
-                                                        <button type="button" class="btn btn-outline-secondary btn-sm logo-color-random px-2" data-target="logo_text_accent_color" title="Random color" disabled><?= icon('shuffle', 0.9) ?></button>
+                                                        <button type="button" class="btn <?= btnClass('secondary') ?> btn-sm logo-color-random px-2" data-target="logo_text_accent_color" title="Random color" disabled><?= icon('shuffle', 0.9) ?></button>
                                                     </div>
                                                 </div>
                                             </div>

@@ -46,7 +46,7 @@
 
                 <!-- Action Button -->
                 <div class="d-flex gap-3 mb-4">
-                    <?= submitBtn("brainfuck", "action", "🧠 Convert", "arrow-repeat", "lg") ?>
+                    <?= submitBtn("brainfuck", "action", "🧠 Convert", "refresh-cw", "lg") ?>
                 </div>
 
                 <!-- Output Section -->

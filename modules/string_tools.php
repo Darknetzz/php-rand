@@ -30,27 +30,23 @@
                         </div>
 
                         <div class="d-grid gap-2">
-                            <button type="button" class="btn btn-outline-secondary undo"
-                                data-target="#strtoolsinput"><?= icon("arrow-counterclockwise") ?> Undo</button>
-                            <button type="button" class="btn btn-outline-secondary redo"
-                                data-target="#strtoolsinput"><?= icon("arrow-clockwise") ?> Redo</button>
-                            <button type="button" class="btn btn-outline-danger clear" data-target="#strtoolsinput"><?= icon("trash") ?>
+                            <button type="button" class="btn <?= btnClass('secondary') ?> undo"
+                                data-target="#strtoolsinput"><?= icon("undo-2") ?> Undo</button>
+                            <button type="button" class="btn <?= btnClass('secondary') ?> redo"
+                                data-target="#strtoolsinput"><?= icon("redo-2") ?> Redo</button>
+                            <button type="button" class="btn <?= btnClass('danger') ?> clear" data-target="#strtoolsinput"><?= icon("trash") ?>
                                 Clear</button>
                         </div>
                     </div>
 
                     <div class="col-lg-6 d-flex flex-column">
                         <label class="form-label mb-3"><strong style="font-size: 1.1rem;">Output</strong></label>
-                        <div class="copyable-content flex-grow-1 d-flex flex-column" style="min-height: 320px; padding: 0; background: linear-gradient(135deg, rgba(108, 92, 231, 0.12) 0%, rgba(13, 110, 253, 0.08) 100%); border: 2px solid #495057; border-radius: 0.5rem; box-shadow: 0 6px 16px rgba(0,0,0,0.25);">
-                        <div class="responseDiv copyable-body flex-grow-1" id="strtoolsresponse" style="margin:0; padding:20px; min-height: 200px; max-height: 480px; overflow-y: auto; background: transparent; border: none; border-radius: 0; box-shadow: none; font-family: monospace; white-space: pre-wrap; word-break: break-word; user-select: all;">
-                          <div style="opacity: 0.55; text-align: center; padding-top: 110px;">
-                            <div style="font-size: 3rem; margin-bottom: 10px;">🧵</div>
-                            <div>Processed output will appear here...</div>
-                          </div>
-                        </div>
-                        <div class="copyable-actions" style="padding: 8px 14px; border-top: 1px solid rgba(255,255,255,0.12);">
-                        <button type="button" class="btn btn-sm btn-outline-light copyOutput" data-target="#strtoolsresponse" style="border: 1px solid #e9ecef;"><?= icon("files") ?> Copy Output</button>
-                        </div>
+                        <textarea id="strtoolsresponse" class="form-control rand-code-textarea mb-2 flex-grow-1" readonly
+                          style="min-height:320px; font-family: monospace; resize: vertical; font-size: 0.95rem; border: 2px solid #495057; background-color: var(--bs-secondary-bg); cursor: default;"
+                          placeholder="Processed output will appear here..."></textarea>
+                        <div id="strtoolsstatus"></div>
+                        <div class="d-flex justify-content-end mb-3">
+                            <button type="button" class="btn btn-sm <?= btnClass('light') ?> copyOutput" data-target="#strtoolsresponse" style="border: 1px solid #e9ecef;"><?= icon("copy") ?> Copy Output</button>
                         </div>
                     </div>
                 </div>
@@ -96,13 +92,13 @@
           ],
           [
             "name"    => "Slugify",
-            "icon"    => "code-slash",
+            "icon"    => "code",
             "value"   => "slugify",
             "tooltip" => "Convert the string to a URL-friendly slug"
           ],
           [
             "name"    => "Kebabcase",
-            "icon"    => "dash",
+            "icon"    => "minus",
             "value"   => "kebabcase",
             "tooltip" => "Convert the string to kebab case"
           ],
@@ -123,7 +119,7 @@
           ],
           [
             "name"    => "Shuffle",
-            "icon"    => "dice",
+            "icon"    => "dices",
             "value"   => "shuffle",
             "tooltip" => "Shuffle the characters in the string"
           ],
@@ -138,13 +134,13 @@
           ],
           [
             "name"    => "Lowercase",
-            "icon"    => "alphabet",
+            "icon"    => "case-lower",
             "value"   => "lowercase",
             "tooltip" => "Convert the string to lowercase"
           ],
           [
             "name"    => "Uppercase",
-            "icon"    => "alphabet-uppercase",
+            "icon"    => "case-upper",
             "value"   => "uppercase",
             "tooltip" => "Convert the string to uppercase"
           ],
@@ -162,7 +158,7 @@
           ],
           [
             "name"    => "Camelcase",
-            "icon"    => "c-square",
+            "icon"    => "copyright",
             "value"   => "camelcase",
             "tooltip" => "Convert the string to camel case"
           ],
@@ -171,7 +167,7 @@
         "Misc" => [
           [
             "name"    => "L33t5p34k",
-            "icon"    => "123",
+            "icon"    => "binary",
             "value"   => "l33t5p34k",
             "tooltip" => "Convert the string to l33t5p34k"
           ],
@@ -186,19 +182,19 @@
         "Formatting" => [
           [
             "name"    => "CRLF to LF",
-            "icon"    => "text-wrap",
+            "icon"    => "wrap-text",
             "value"   => "crlf2lf",
             "tooltip" => "Convert DOS-like (\\r\\n) line endings to LF (\\n) line endings"
           ],
           [
             "name"    => "LF to CRLF",
-            "icon"    => "text-wrap",
+            "icon"    => "wrap-text",
             "value"   => "lf2crlf",
             "tooltip" => "Convert to LF (\\n) line endings DOS-like (\\r\\n) line endings"
           ],
           [
             "name"    => "Format",
-            "icon"    => "text-wrap",
+            "icon"    => "wrap-text",
             "value"   => "formatlineendings",
             "tooltip" => "Format line endings"
           ],
@@ -207,7 +203,7 @@
         "Remove" => [
           [
             "name"    => "HTML tags",
-            "icon"    => "code-square",
+            "icon"    => "square-code",
             "value"   => "removehtmltags",
             "tooltip" => "Remove HTML tags"
           ],
@@ -219,79 +215,79 @@
           ],
           [
             "name"    => "Newlines",
-            "icon"    => "code-square",
+            "icon"    => "square-code",
             "value"   => "removenewlines",
             "tooltip" => "Remove newlines"
           ],
           [
             "name"    => "Tabs",
-            "icon"    => "code-square",
+            "icon"    => "square-code",
             "value"   => "removetabs",
             "tooltip" => "Remove tabs"
           ],
           [
             "name"    => "Spaces",
-            "icon"    => "code-square",
+            "icon"    => "square-code",
             "value"   => "removespaces",
             "tooltip" => "Remove spaces"
           ],
           [
             "name"    => "Slashes",
-            "icon"    => "code-square",
+            "icon"    => "square-code",
             "value"   => "removeslashes",
             "tooltip" => "Remove slashes"
           ],
           [
             "name"    => "Backslashes",
-            "icon"    => "code-square",
+            "icon"    => "square-code",
             "value"   => "removebackslashes",
             "tooltip" => "Remove backslashes"
           ],
           [
             "name"    => "Non-ASCII",
-            "icon"    => "code-square",
+            "icon"    => "square-code",
             "value"   => "removenonascii",
             "tooltip" => "Remove non-ASCII characters"
           ],
           [
             "name" => "Non-printable",
-            "icon" => "code-square",
+            "icon" => "square-code",
             "value"   => "removenonprintable",
             "tooltip" => "Remove non-printable characters"
           ],
           [
             "name"    => "Whitespace",
-            "icon"    => "code-square",
+            "icon"    => "square-code",
             "value"   => "removewhitespaceext",
             "tooltip" => "Remove whitespace characters"
           ],
           [
             "name"    => "Numbers",
-            "icon"    => "code-square",
+            "icon"    => "square-code",
             "value"   => "removenumbers",
             "tooltip" => "Remove numbers"
           ],
           [
             "name"    => "Letters",
-            "icon"    => "code-square",
+            "icon"    => "square-code",
             "value"   => "removeletters",
             "tooltip" => "Remove letters"
           ],
           [
             "name"    => "Symbols",
-            "icon"    => "code-square",
+            "icon"    => "square-code",
             "value"   => "removesymbols",
             "tooltip" => "Remove symbols"
           ],
           [
             "name"    => "Extended symbols",
-            "icon"    => "code-square",
+            "icon"    => "square-code",
             "value"   => "removeextendedsymbols",
             "tooltip" => "Remove extended symbols"
           ],
           [
             "name"    => "Custom characters",
-            "icon"    => "code-square",
+            "icon"    => "square-code",
             "value"   => "removecustomcharacters",
             "tooltip" => "Remove custom characters"
           ],
@@ -309,7 +305,7 @@
           $icon    = $t["icon"];
           $tooltip = $t["tooltip"];
           echo "
-          <button type='button' class='btn btn-sm btn-outline-primary stringtoolbtn' data-tool='$postvar' title='$tooltip'>
+          <button type='button' class='btn btn-sm " . btnClass('primary') . " stringtoolbtn' data-tool='$postvar' title='$tooltip'>
             ".icon($icon)." $name
           </button>
           ";
@@ -380,32 +376,36 @@ $(document).ready(function() {
             return;
         }
 
+        var responseDiv = $("#strtoolsresponse");
+        var statusDiv = $("#strtoolsstatus");
+        statusDiv.empty();
+
         if (!input) {
-            $("#strtoolsresponse").html('<div class="alert alert-warning mb-0">Please enter some text first.</div>');
+            statusDiv.html('<div class="alert alert-warning mb-2">Please enter some text first.</div>');
             return;
         }
 
-        var responseDiv = $("#strtoolsresponse");
-        var formData = form.serialize() + "&tool=" + tool;
+        var formData = form.serialize() + "&tool=" + tool + "&responsetype=text";
         submitToolForm(form, {
             data: formData,
             action: "stringtools",
             responseObj: responseDiv,
+            responseType: "text",
             loadingMessage: "Processing text...",
             onSuccess: function(data) {
-                responseDiv.html(data);
+                responseDiv.val(data);
 
                 // If auto-apply is checked, update input
                 if ($("#outputToTextbox").is(":checked")) {
-                    var outputText = data.replace(/<[^>]*>/g, '').trim();
                     history.push(input);
                     historyIndex++;
-                    $("#strtoolsinput").val(outputText);
+                    $("#strtoolsinput").val(data);
                     updateCharCount();
                 }
             },
-            onError: function() {
-                responseDiv.html('<div class="alert alert-danger mb-0">Error processing request</div>');
+            onError: function(xhr) {
+                responseDiv.val("");
+                statusDiv.html(xhr.responseText || '<div class="alert alert-danger mb-2">Error processing request</div>');
             }
         });
     });
@@ -418,7 +418,8 @@ $(document).ready(function() {
         history = [];
         historyIndex = -1;
         updateCharCount();
-        $("#strtoolsresponse").html("Output will appear here...");
+        $("#strtoolsresponse").val("");
+        $("#strtoolsstatus").empty();
     }
 
     /* ───────────────────────────────────────────────────────────────────── */

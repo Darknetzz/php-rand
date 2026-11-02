@@ -24,7 +24,7 @@
                 </div>
 
                 <div class="d-flex gap-3">
-                    <?= submitBtn("urlencode", "action", "🔁 Convert", "arrow-repeat", "lg") ?>
+                    <?= submitBtn("urlencode", "action", "🔁 Convert", "refresh-cw", "lg") ?>
                 </div>
             </form>
         </div>

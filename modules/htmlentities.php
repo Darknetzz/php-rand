@@ -34,7 +34,7 @@
                 </div>
 
                 <div class="d-flex gap-3">
-                    <?= submitBtn("htmlentities", "action", "🔁 Convert", "arrow-repeat", "lg") ?>
+                    <?= submitBtn("htmlentities", "action", "🔁 Convert", "refresh-cw", "lg") ?>
                 </div>
             </form>
         </div>

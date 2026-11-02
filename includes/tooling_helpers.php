@@ -478,3 +478,233 @@ function cron_evaluate_schedule(
         'next_runs' => $nextRuns,
     ];
 }
+
+/**
+ * Relative time helpers – parse instants, humanize durations, evaluate offsets.
+ */
+
+function relative_time_timezone(string $timezone): array {
+    $timezone = trim($timezone);
+    if ($timezone === '') {
+        $timezone = date_default_timezone_get() ?: 'UTC';
+    }
+    if (!in_array($timezone, DateTimeZone::listIdentifiers(), true)) {
+        return ['ok' => false, 'error' => 'Invalid timezone selected.'];
+    }
+    return ['ok' => true, 'timezone' => $timezone, 'tz' => new DateTimeZone($timezone)];
+}
+
+/**
+ * Parse an absolute instant from unix seconds/ms or a date/time string.
+ *
+ * @return array{ok:bool, datetime?:DateTimeImmutable, error?:string, source?:string}
+ */
+function relative_time_parse_instant(string $raw, DateTimeZone $tz): array {
+    $raw = trim($raw);
+    if ($raw === '') {
+        return ['ok' => false, 'error' => 'Date/time value is required.'];
+    }
+
+    if (preg_match('/^-?\d+$/', $raw)) {
+        $num = (int) $raw;
+        // Heuristic: 13+ digit values are milliseconds.
+        if (abs($num) >= 1_000_000_000_000) {
+            $seconds = intdiv($num, 1000);
+            $source = 'unix_ms';
+        } else {
+            $seconds = $num;
+            $source = 'unix_s';
+        }
+        try {
+            $dt = (new DateTimeImmutable('@' . $seconds))->setTimezone($tz);
+        } catch (Throwable $e) {
+            return ['ok' => false, 'error' => 'Invalid unix timestamp: ' . $e->getMessage()];
+        }
+        return ['ok' => true, 'datetime' => $dt, 'source' => $source];
+    }
+
+    // Normalize "datetime-local" style (YYYY-MM-DDTHH:MM[:SS]) for DateTime.
+    $normalized = str_replace('T', ' ', $raw);
+    try {
+        $dt = new DateTimeImmutable($normalized, $tz);
+    } catch (Throwable $e) {
+        return ['ok' => false, 'error' => 'Could not parse date/time: ' . $e->getMessage()];
+    }
+    return ['ok' => true, 'datetime' => $dt, 'source' => 'datetime'];
+}
+
+/**
+ * Parse a relative expression (strtotime-style) relative to a reference instant.
+ *
+ * @return array{ok:bool, datetime?:DateTimeImmutable, error?:string}
+ */
+function relative_time_parse_expression(string $expression, DateTimeImmutable $reference): array {
+    $expression = trim($expression);
+    if ($expression === '') {
+        return ['ok' => false, 'error' => 'Relative expression is required.'];
+    }
+
+    // Reject pure numbers here – those belong in absolute parse.
+    if (preg_match('/^-?\d+(\.\d+)?$/', $expression)) {
+        return ['ok' => false, 'error' => 'That looks like a number. Use Absolute → Relative for unix timestamps, or add a unit (e.g. "+3 hours").'];
+    }
+
+    try {
+        $dt = $reference->modify($expression);
+    } catch (Throwable $e) {
+        return ['ok' => false, 'error' => 'Invalid relative expression: ' . $e->getMessage()];
+    }
+    if ($dt === false) {
+        return ['ok' => false, 'error' => 'Could not evaluate relative expression. Try forms like "2 days ago", "+3 hours", or "next Monday".'];
+    }
+    return ['ok' => true, 'datetime' => $dt];
+}
+
+/**
+ * Build a relative DateTime from amount + unit + direction.
+ *
+ * @return array{ok:bool, datetime?:DateTimeImmutable, expression?:string, error?:string}
+ */
+function relative_time_apply_offset(
+    DateTimeImmutable $reference,
+    float $amount,
+    string $unit,
+    string $direction
+): array {
+    $units = [
+        'seconds' => 'seconds',
+        'minutes' => 'minutes',
+        'hours' => 'hours',
+        'days' => 'days',
+        'weeks' => 'weeks',
+        'months' => 'months',
+        'years' => 'years',
+    ];
+    if (!isset($units[$unit])) {
+        return ['ok' => false, 'error' => 'Invalid offset unit.'];
+    }
+    if (!is_finite($amount)) {
+        return ['ok' => false, 'error' => 'Offset amount must be a finite number.'];
+    }
+
+    $abs = abs($amount);
+    // Prefer integer wording when possible for modify() friendliness.
+    $amountStr = (floor($abs) == $abs) ? (string) (int) $abs : rtrim(rtrim(sprintf('%.6F', $abs), '0'), '.');
+
+    // For "ago", use "X unit ago" which strtotime handles; for future use "+X unit".
+    if ($direction === 'ago' || $direction === 'before') {
+        $expression = $amountStr . ' ' . $units[$unit] . ' ago';
+    } else {
+        $expression = '+' . $amountStr . ' ' . $units[$unit];
+    }
+
+    $parsed = relative_time_parse_expression($expression, $reference);
+    if (!$parsed['ok']) {
+        return $parsed;
+    }
+    return ['ok' => true, 'datetime' => $parsed['datetime'], 'expression' => $expression];
+}
+
+/**
+ * Short human relative phrase between reference and target.
+ */
+function relative_time_humanize(DateTimeInterface $target, DateTimeInterface $reference): string {
+    $diffSeconds = $target->getTimestamp() - $reference->getTimestamp();
+    $abs = abs($diffSeconds);
+
+    if ($abs < 5) {
+        return 'just now';
+    }
+
+    $units = [
+        ['year', 31536000],
+        ['month', 2628000],
+        ['week', 604800],
+        ['day', 86400],
+        ['hour', 3600],
+        ['minute', 60],
+        ['second', 1],
+    ];
+
+    $value = 0;
+    $label = 'second';
+    foreach ($units as [$name, $factor]) {
+        if ($abs >= $factor) {
+            $value = (int) floor($abs / $factor);
+            $label = $name;
+            break;
+        }
+    }
+    if ($value !== 1) {
+        $label .= 's';
+    }
+
+    if ($diffSeconds < 0) {
+        return $value . ' ' . $label . ' ago';
+    }
+    return 'in ' . $value . ' ' . $label;
+}
+
+/**
+ * Calendar-style interval breakdown (years…seconds) via DateTime::diff.
+ *
+ * @return array{interval:DateInterval, parts:array<string,int>, signed_seconds:int, human:string, precise:string}
+ */
+function relative_time_diff_details(DateTimeInterface $from, DateTimeInterface $to): array {
+    $fromImm = $from instanceof DateTimeImmutable ? $from : DateTimeImmutable::createFromInterface($from);
+    $toImm = $to instanceof DateTimeImmutable ? $to : DateTimeImmutable::createFromInterface($to);
+    $interval = $fromImm->diff($toImm);
+    $signedSeconds = $toImm->getTimestamp() - $fromImm->getTimestamp();
+
+    $parts = [
+        'years' => (int) $interval->y,
+        'months' => (int) $interval->m,
+        'days' => (int) $interval->d,
+        'hours' => (int) $interval->h,
+        'minutes' => (int) $interval->i,
+        'seconds' => (int) $interval->s,
+    ];
+
+    $chunks = [];
+    foreach ($parts as $name => $val) {
+        if ($val === 0) {
+            continue;
+        }
+        $label = $val === 1 ? rtrim($name, 's') : $name;
+        if ($name === 'months' && $val === 1) {
+            $label = 'month';
+        }
+        $chunks[] = $val . ' ' . $label;
+    }
+    if ($chunks === []) {
+        $precise = '0 seconds';
+    } else {
+        $precise = implode(', ', $chunks);
+    }
+
+    $human = relative_time_humanize($toImm, $fromImm);
+
+    return [
+        'interval' => $interval,
+        'parts' => $parts,
+        'signed_seconds' => $signedSeconds,
+        'human' => $human,
+        'precise' => $precise,
+        'inverted' => (bool) $interval->invert,
+    ];
+}
+
+/**
+ * Format an instant for display / copy in several common formats.
+ *
+ * @return array<string,string>
+ */
+function relative_time_format_instant(DateTimeImmutable $dt): array {
+    return [
+        'iso8601' => $dt->format('c'),
+        'rfc2822' => $dt->format('r'),
+        'local' => $dt->format('Y-m-d H:i:s T'),
+        'unix' => (string) $dt->getTimestamp(),
+        'unix_ms' => (string) ($dt->getTimestamp() * 1000),
+    ];
+}

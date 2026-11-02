@@ -23,7 +23,7 @@
                 </div>
 
                 <div class="d-flex gap-3">
-                    <?= submitBtn("metaphone", "action", "🔊 Generate Key", "arrow-repeat", "lg") ?>
+                    <?= submitBtn("metaphone", "action", "🔊 Generate Key", "refresh-cw", "lg") ?>
                 </div>
             </form>
 

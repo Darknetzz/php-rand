@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- php-rand square logo (1:1). Same palette as images/social-preview.png.
+     Wordmark uses Ubuntu Bold; images/logo.png is the rendered, font-independent version. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024" role="img" aria-label="RAND – php-rand">
+  <title>RAND – php-rand</title>
+  <defs>
+    <radialGradient id="glow" cx="50%" cy="46%" r="62%">
+      <stop offset="0%" stop-color="#14301f"/>
+      <stop offset="55%" stop-color="#121c16"/>
+      <stop offset="100%" stop-color="#111111"/>
+    </radialGradient>
+    <pattern id="grid" width="64" height="64" patternUnits="userSpaceOnUse">
+      <path d="M64 0H0V64" fill="none" stroke="#22c55e" stroke-opacity="0.07" stroke-width="2"/>
+    </pattern>
+    <radialGradient id="gridFade" cx="50%" cy="46%" r="58%">
+      <stop offset="0%" stop-color="#fff" stop-opacity="1"/>
+      <stop offset="100%" stop-color="#fff" stop-opacity="0"/>
+    </radialGradient>
+    <mask id="gridMask">
+      <rect width="1024" height="1024" fill="url(#gridFade)"/>
+    </mask>
+  </defs>
+
+  <rect width="1024" height="1024" fill="url(#glow)"/>
+  <rect width="1024" height="1024" fill="url(#grid)" mask="url(#gridMask)"/>
+
+  <!-- Dice mark -->
+  <g transform="translate(332 150)">
+    <rect x="14" y="14" width="332" height="332" rx="56" fill="#22c55e" fill-opacity="0.06" stroke="#22c55e" stroke-width="28"/>
+    <g fill="#22c55e">
+      <circle cx="104" cy="104" r="38"/>
+      <circle cx="256" cy="104" r="38"/>
+      <circle cx="180" cy="180" r="38"/>
+      <circle cx="104" cy="256" r="38"/>
+      <circle cx="256" cy="256" r="38"/>
+    </g>
+  </g>
+
+  <!-- Wordmark -->
+  <text x="512" y="742" text-anchor="middle" font-family="Ubuntu, 'DejaVu Sans', Arial, sans-serif"
+        font-size="210" font-weight="700" letter-spacing="4" fill="#f8fafc">RAND</text>
+  <rect x="402" y="768" width="220" height="16" rx="8" fill="#22c55e"/>
+  <text x="512" y="868" text-anchor="middle" font-family="Ubuntu, 'DejaVu Sans', Arial, sans-serif"
+        font-size="72" font-weight="700" fill="#22c55e">php-rand</text>
+</svg>

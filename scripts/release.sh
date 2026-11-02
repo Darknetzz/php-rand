@@ -27,12 +27,19 @@ MERGE_RELEASE_TO_MAIN="${MERGE_RELEASE_TO_MAIN:-}"
 MERGE_TO_MAIN_VIA_PR="${MERGE_TO_MAIN_VIA_PR:-}"
 RELEASE_BRANCH="${RELEASE_BRANCH:-dev}"
 MAIN_BRANCH="${MAIN_BRANCH:-main}"
+GITLAB_REMOTE="${GITLAB_REMOTE:-gitlab}"
 
 # Read prompts from the controlling terminal so stdin is never drained by git/ssh (set -e would exit on failed read).
+# True only when a controlling terminal can actually be opened; `[[ -r /dev/tty ]]` checks
+# permissions and is true even without one (e.g. CI, agents), so the read then fails.
+has_tty() {
+  { : </dev/tty; } 2>/dev/null
+}
+
 read_tty() {
   local prompt=$1
-  local __v
-  if [[ -r /dev/tty ]]; then
+  local __v=""
+  if has_tty; then
     IFS= read -r -p "$prompt" __v < /dev/tty || true
   else
     IFS= read -r -p "$prompt" __v || true
@@ -48,16 +55,18 @@ usage() {
   echo "  of the first ## [vM.m.p] heading in CHANGELOG.md (newest section after [Unreleased])."
   echo "  Press Enter at the prompt to accept the suggested default."
   echo "  --dry-run        Write merged changelog to stdout only (no file writes, no git/docker)."
-  echo "  --publish-only   Skip changelog/git; run GitHub release (gh) + docker-pushimage.sh for X.Y.Z"
+  echo "  --publish-only   Skip changelog; push tag to GITLAB_REMOTE, run GitHub release (gh) + docker-pushimage.sh for X.Y.Z"
   echo "                   (use after you already pushed the tag)."
   echo ""
   echo "  Environment:"
   echo "    CREATE_GH_RELEASE=1     After push, run: gh release create (skipped if release already exists)."
-  echo "    PUBLISH_DOCKER=1        After push, run ./docker-pushimage.sh (Docker Hub + optional GHCR)."
+  echo "    PUBLISH_DOCKER=1        After push, run ./docker-pushimage.sh (local Hub/GHCR publish)."
   echo "    MERGE_RELEASE_TO_MAIN=1 After gh/docker, sync RELEASE_BRANCH into MAIN_BRANCH (see MERGE_TO_MAIN_VIA_PR)."
   echo "    MERGE_TO_MAIN_VIA_PR=1  Skip direct push; open a PR base=MAIN head=RELEASE (for protected main)."
   echo "    RELEASE_BRANCH / MAIN_BRANCH  Override branch names (defaults: dev, main)."
-  echo "  Pushing a v* tag also triggers .github/workflows (GitHub Release + Docker); gh step is optional."
+  echo "    GITLAB_REMOTE           Remote that also gets branch + tag (default: gitlab; skipped if missing)."
+  echo "                            GitLab CI there creates the GitLab Release and publishes Docker images."
+  echo "  Docker images: GitLab CI on gitlab01 (primary); local ./docker-pushimage.sh remains as fallback."
   exit "${1:-0}"
 }
 
@@ -135,6 +144,24 @@ maybe_gh_release() {
   echo "Created GitHub release v${VERSION} via gh."
 }
 
+# Push branch (optional) + tag to GITLAB_REMOTE so GitLab CI creates the GitLab Release.
+push_to_gitlab() {
+  local br=${1:-}
+  if ! git -C "$ROOT" remote get-url "$GITLAB_REMOTE" &>/dev/null; then
+    echo "No git remote '$GITLAB_REMOTE'; skipping GitLab tag/release push." >&2
+    return 0
+  fi
+  if [[ -n "$br" ]] && ! git -C "$ROOT" push "$GITLAB_REMOTE" "$br"; then
+    echo "WARN: push of $br to $GITLAB_REMOTE failed." >&2
+    return 1
+  fi
+  if ! git -C "$ROOT" push "$GITLAB_REMOTE" "v${VERSION}"; then
+    echo "WARN: push of tag v${VERSION} to $GITLAB_REMOTE failed (GitLab Release will not be created)." >&2
+    return 1
+  fi
+  echo "Pushed v${VERSION} to $GITLAB_REMOTE (GitLab CI creates the GitLab Release)."
+}
+
 maybe_docker_push() {
   if [[ ! -f "$ROOT/docker-pushimage.sh" ]]; then
     echo "docker-pushimage.sh not found." >&2
@@ -161,7 +188,7 @@ post_push_docker_prompt() {
     return
   fi
   local yn
-  yn="$(read_tty "Run ./docker-pushimage.sh (Docker Hub + optional GHCR)? [Y/n] ")"
+  yn="$(read_tty "Run ./docker-pushimage.sh (release tags from docker-image.config)? [Y/n] ")"
   if [[ -z "$yn" ]] || [[ "$yn" =~ ^[yY] ]]; then
     maybe_docker_push || true
   fi
@@ -283,7 +310,7 @@ if [[ -z "$VERSION_RAW" ]] && [[ "$PUBLISH_ONLY" -eq 0 ]]; then
     echo "ERROR: Could not infer next version: no ## [vM.m.p] heading found in $CHANGELOG" >&2
     exit 1
   fi
-  if [[ -r /dev/tty ]]; then
+  if has_tty; then
     VERSION_RAW="$(read_tty "Next version [${SUGGEST}]: ")"
     VERSION_RAW="${VERSION_RAW:-$SUGGEST}"
   else
@@ -310,9 +337,10 @@ if [[ "$PUBLISH_ONLY" -eq 1 ]]; then
     echo "Updated $DOCKER_CONFIG: VERSION=v${VERSION}"
   fi
   echo ""
-  echo "Post-release: GitHub (gh) + Docker. Tag v${VERSION} should already exist on the remote."
+  echo "Post-release: GitLab tag + GitHub (gh) + Docker. Tag v${VERSION} should already exist on the remote."
   pub_br="$(git -C "$ROOT" rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")"
-  if [[ -r /dev/tty ]]; then
+  push_to_gitlab || true
+  if has_tty; then
     post_push_gh_prompt
     post_push_docker_prompt
     post_push_merge_to_main_prompt "$pub_br"
@@ -374,6 +402,9 @@ if not lines[0].startswith("## [Unreleased]"):
     print("ERROR: Malformed [Unreleased] block.", file=sys.stderr)
     sys.exit(1)
 rest = lines[1].lstrip("\n") if len(lines) > 1 else ""
+# The [Unreleased] placeholder stays in [Unreleased]; it must not be copied into the release.
+placeholder = "_Add entries here during development; rotate into a dated release section when tagging._"
+rest = "\n".join(l for l in rest.split("\n") if l.strip() != placeholder).strip()
 
 new_unreleased = """## [Unreleased]
 
@@ -381,7 +412,7 @@ new_unreleased = """## [Unreleased]
 
 _Add entries here during development; rotate into a dated release section when tagging._"""
 
-new_release = f"## [v{version}] ({release_date})\n{rest}"
+new_release = f"## [v{version}] ({release_date})\n\n{rest}"
 
 parts[idx] = new_unreleased.strip()
 parts.insert(idx + 1, new_release.strip())
@@ -412,11 +443,14 @@ echo "Next steps:"
 echo "  git add CHANGELOG.md docker-image.config && git commit -m \"Release v${VERSION}\""
 echo "  git tag -a \"v${VERSION}\" -m \"v${VERSION}\""
 echo "  git push && git push origin \"v${VERSION}\""
-echo "  (CI: .github/workflows creates the GitHub Release and publishes Docker images on tag push.)"
+echo "  git push ${GITLAB_REMOTE} && git push ${GITLAB_REMOTE} \"v${VERSION}\""
+echo "  gh release create \"v${VERSION}\" --title \"v${VERSION}\" --notes-file <(./scripts/extract_changelog_section.sh CHANGELOG.md \"[v${VERSION}]\") --verify-tag"
+echo "  (GitHub Actions are not used: create the GitHub Release with gh as above, CREATE_GH_RELEASE=1, or --publish-only."
+echo "   GitLab CI creates the GitLab Release and publishes Docker images when the tag reaches ${GITLAB_REMOTE}.)"
 echo "  Then merge ${RELEASE_BRANCH:-dev} into ${MAIN_BRANCH:-main} so the default branch matches the release."
 echo ""
 
-if [[ -r /dev/tty ]]; then
+if has_tty; then
   ans="$(read_tty "Create git commit and annotated tag v${VERSION} now? [y/N] ")"
   case "${ans}" in
     y|Y|yes|YES)
@@ -426,12 +460,13 @@ if [[ -r /dev/tty ]]; then
       git -C "$ROOT" tag -a "v${VERSION}" -m "v${VERSION}"
       echo "Created commit and tag v${VERSION}."
       PUSHED=0
-      ans2="$(read_tty "Push branch and tag to origin? [y/N] ")"
+      ans2="$(read_tty "Push branch and tag to origin and ${GITLAB_REMOTE}? [y/N] ")"
       case "${ans2}" in
         y|Y|yes|YES)
           br="$(git -C "$ROOT" rev-parse --abbrev-ref HEAD)"
           git -C "$ROOT" push origin "$br" && git -C "$ROOT" push origin "v${VERSION}"
           PUSHED=1
+          push_to_gitlab "$br" || true
           ;;
         *) echo "Skipped push." ;;
       esac

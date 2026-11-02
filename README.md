@@ -1,5 +1,7 @@
 # phprand
 
+![php-rand social preview](images/social-preview.png)
+
 A comprehensive collection of useful developer tools built with PHP and modern web technologies.
 
 **Demo:** [https://rand.demo.roste.org/](https://rand.demo.roste.org/)
@@ -110,13 +112,13 @@ docker run -d -p 12345:80 --name php-rand php-rand
 ### Manual Installation (Without Docker)
 
 Requirements:
-- PHP 8.3+ with extensions: mbstring, mcrypt, gd, yaml, xml, gmp
+- PHP 8.5.12+ with extensions: mbstring, mcrypt, gd, yaml, xml, gmp
 - Web server (Apache, Nginx, etc.) with PHP support
 - Composer (for dependency management)
 
 ```bash
 # Install system dependencies (Ubuntu/Debian)
-sudo apt install -y php8.3-common php8.3-mbstring php8.3-mcrypt php8.3-gd php8.3-yaml php8.3-xml php8.3-gmp
+sudo apt install -y php8.5-common php8.5-mbstring php8.5-mcrypt php8.5-gd php8.5-yaml php8.5-xml php8.5-gmp
 
 # Clone repository (assuming webroot is /var/www/html)
 cd /var/www/html
@@ -218,16 +220,33 @@ What it does:
 - sets `VERSION=vX.Y.Z` in `docker-image.config` so local Docker builds match the release
 - creates a release commit and annotated tag (`vX.Y.Z`; commit includes `CHANGELOG.md` and `docker-image.config`)
 - optionally pushes branch + tag after an explicit confirmation prompt
-- **GitHub Release + Docker Hub / GHCR images:** pushing the tag runs `.github/workflows/release.yml` and `docker-release.yml`. You normally do **not** need `gh` or `docker-pushimage.sh` unless Actions are off or you want an immediate local registry push.
-- after a successful push, prompts (from `/dev/tty`, not stdin) to run `gh release create` and `./docker-pushimage.sh` — default is **Y** (Enter accepts) so a normal push is not cut short after `git`
+- **GitHub Release:** after push, prompt (from `/dev/tty`) runs `gh release create` — default is **Y**.
+- **Docker Hub / GHCR images:** publish via **GitLab CI** on `gitlab01` when the version tag is pushed there (see `.gitlab-ci.yml`). Optional local fallback prompt runs `./docker-pushimage.sh` — default is **Y** if you still want a local publish.
 - then prompts to **merge `dev` into `main` and push** (default **Y**) so the default branch matches the release line; override branch names with `RELEASE_BRANCH` / `MAIN_BRANCH` if needed
 - if you already pushed the tag but skipped those steps: `./scripts/release.sh 1.2.10 --publish-only` (includes the same `gh`, Docker, and merge prompts when run from `dev`)
 
-**Why GitHub might still show an older “Latest” release:** the badge uses **GitHub Releases**, not tags only. You need either a successful `release.yml` run on tag push or `gh release create`. If that step failed earlier, create the release with `--publish-only` or from the Releases UI.
+### Docker images
+
+**Primary (GitLab CI):** remote `ssh://git@gitlab01/kriss/php-rand.git` — push branch `dev` for rolling `:dev`/`:develop`, or a version tag (`vX.Y.Z`) for `:latest` + version tags. Set CI/CD variables `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN`, and `GITHUB_TOKEN` (GHCR) on the GitLab project. Runner must allow Docker-in-Docker (privileged).
+
+**Local fallback** (optional; GitHub Actions Docker workflows stay unused):
+
+```bash
+./docker-pushimage.sh --dev                 # :dev + :develop (demo / tip of branch)
+./docker-pushimage.sh                       # :latest + :vX.Y.Z from docker-image.config
+./docker-pushimage.sh --release 1.4.1       # VERSION override
+./docker-pushimage.sh --dev --dry-run       # plan only
+```
+
+Credentials: `DOCKERHUB_USERNAME` / `DOCKERHUB_TOKEN` and optional `GITHUB_TOKEN` in `.env.local` (see `.env.example`). `SKIP_DOCKERHUB=1` or `SKIP_GHCR=1` to publish to one registry only. When a registry is enabled, login/push failure aborts the script so Hub and GHCR stay in sync.
+
+Older clones that installed the retired local pre-push Docker hook can clear it with `./scripts/install-git-hooks.sh`.
+
+**Why GitHub might still show an older “Latest” release:** the badge uses **GitHub Releases**, not tags only. Create the release with `gh` via `release.sh` / `--publish-only` or from the Releases UI.
 
 Environment toggles:
-- `CREATE_GH_RELEASE=1` — after push, run `gh release create` with changelog notes (skipped if the release already exists, e.g. CI created it first)
-- `PUBLISH_DOCKER=1` — after push, run `./docker-pushimage.sh` (uses updated `docker-image.config`; still uses your Docker Hub / `.env` credentials)
+- `CREATE_GH_RELEASE=1` — after push, run `gh release create` with changelog notes (skipped if the release already exists)
+- `PUBLISH_DOCKER=1` — after push, run `./docker-pushimage.sh` locally (optional if GitLab CI already publishes)
 - `MERGE_RELEASE_TO_MAIN=1` — after the above, merge `dev` into `main` and push (non-interactive; combine with other toggles as needed)
 
 Common options:
@@ -240,12 +259,6 @@ Other release helpers (run from repo root):
 - **`scripts/extract_changelog_section.sh`** — Prints one `CHANGELOG.md` section by heading title (from `## <title>` through the next `## [` line). Example: `./scripts/extract_changelog_section.sh CHANGELOG.md "[v1.2.10]"`. Use `--dry-run` to verify the heading exists without printing the body. Requires [ripgrep](https://github.com/BurntSushi/ripgrep) (`rg`) for `--dry-run`.
 
 - **`scripts/update-release-descriptions.php`** — For each `## [vX.Y.Z]` block in `CHANGELOG.md`, runs `gh release edit <tag> --notes-file …` so existing GitHub Releases match the changelog (useful after editing old sections). Requires the [GitHub CLI](https://cli.github.com/) authenticated for this repo. Use `php scripts/update-release-descriptions.php --dry-run` to list what would be updated without calling the API.
-
-CI Docker publish requirements:
-- Docker Hub secrets: `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN`
-- GHCR publish uses `GITHUB_TOKEN` automatically
-- **Release images** (`latest`, `vX.Y.Z`): pushed on `v*` tags via `docker-release.yml`
-- **Dev images** (`dev`, `develop`): republished on every push to `dev` via `docker-dev.yml` (rolling tags only)
 
 ## Key Features
 
@@ -277,7 +290,7 @@ All functions include PHPDoc comments with descriptions, parameters, return type
 
 ## Architecture
 
-- **Backend:** PHP 8.3+ with modular design (Docker image: PHP 8.5)
+- **Backend:** PHP 8.5.12+ with modular design (Docker image: PHP 8.5)
 - **Frontend:** Vanilla JavaScript, jQuery, Bootstrap 5, Tabler UI
 - **Dependencies:** Composer-managed (minify utilities)
 - **Extensible:** Easy to add new tools by creating new modules

@@ -36,8 +36,8 @@ console.log('Hello World!');
                     <div class="copyable-content" style="padding: 0; border-radius: 0 0 0.4rem 0.4rem;">
                         <pre class="copyable-body" style="border: none; padding: 20px; margin: 0; background: transparent;"><code id="markdownHtmlOutput" style="white-space: pre-wrap; word-break: break-word; color: #e9ecef; font-family: monospace;">&lt;h1&gt;Marked in the browser&lt;/h1&gt;</code></pre>
                         <div class="copyable-actions" style="padding: 0 14px 14px;">
-                            <button type="button" class="btn btn-sm btn-outline-light" style="border: 1px solid #e9ecef;" onclick="copyToClipboard('markdownHtmlOutput', this)">
-                                <i class="bi bi-files"></i> Copy HTML
+                            <button type="button" class="btn btn-sm <?= btnClass('light') ?>" style="border: 1px solid #e9ecef;" onclick="copyToClipboard('markdownHtmlOutput', this)">
+                                <i class="icon-copy"></i> Copy HTML
                             </button>
                         </div>
                     </div>

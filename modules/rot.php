@@ -57,7 +57,7 @@
 
                 <!-- Action Button -->
                 <div class="d-flex gap-3">
-                    <?= submitBtn("rot", "action", "🔄 Generate ROT", "arrow-repeat", "lg") ?>
+                    <?= submitBtn("rot", "action", "🔄 Generate ROT", "refresh-cw", "lg") ?>
                 </div>
             </form>
         </div>

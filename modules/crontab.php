@@ -18,7 +18,7 @@ $moreOptionsOpen = ($effectiveTimezone !== $serverTimezone)
 ?>
 <div id="crontab" class="content">
     <div class="card card-primary">
-        <h1 class="card-header"><?= icon("calendar-event") ?> Crontab Explorer</h1>
+        <h1 class="card-header"><?= icon("calendar-days") ?> Crontab Explorer</h1>
         <div class="card-body">
             <p class="text-muted mb-4">Type a standard 5-field expression (or a macro like <code>@daily</code>); results update shortly after you stop typing. Times use the server timezone <code><?= htmlspecialchars($serverTimezone, ENT_QUOTES, 'UTF-8') ?></code>, which is also shown in the analysis panel.</p>
             <form
@@ -115,7 +115,7 @@ $moreOptionsOpen = ($effectiveTimezone !== $serverTimezone)
                         <label class="form-label mb-2"><strong>Schedule analysis</strong></label>
                         <div class="responseDiv pt-2">
                             <div class="text-muted text-center py-5">
-                                <div style="font-size: 3rem; margin-bottom: 10px;"><?= icon("calendar-event", 2) ?></div>
+                                <div style="font-size: 3rem; margin-bottom: 10px;"><?= icon("calendar-days", 2) ?></div>
                                 <div>Cron validation, explanation, and upcoming run times will appear here...</div>
                             </div>
                         </div>
@@ -123,7 +123,7 @@ $moreOptionsOpen = ($effectiveTimezone !== $serverTimezone)
                 </div>
 
                 <div class="d-flex gap-3 flex-wrap">
-                    <?= submitBtn("crontab", "action", "Analyze Schedule", "calendar-event", "lg") ?>
+                    <?= submitBtn("crontab", "action", "Analyze Schedule", "calendar-days", "lg") ?>
                 </div>
             </form>
         </div>

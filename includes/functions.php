@@ -1,21 +1,21 @@
 <?php
 
 /**
- * Generate a Bootstrap Icon HTML element
+ * Generate a Lucide icon HTML element
  * 
- * Creates a styled icon element using Bootstrap Icons CSS classes with optional
+ * Creates a styled icon element using the Lucide icon font (lucide-static) with optional
  * color, size, and margin customization.
  *
- * @param string $icon The Bootstrap icon name (without 'bi-' prefix). Default: "question-circle"
+ * @param string $icon The Lucide icon name (without 'icon-' prefix), see https://lucide.dev/icons. Default: "circle-question-mark"
  * @param float $rem Font size in rem units. Default: 1
  * @param string|null $color CSS color value to apply to the icon. Default: null
  * @param int $margin Bootstrap margin class value (1-5). Default: 1
  * @return string HTML string containing the styled icon element
  * 
  * @example
- * echo icon('check-circle', 1.5, '#51cf66', 2); // Green check icon, 1.5rem, margin-2
+ * echo icon('circle-check', 1.5, '#51cf66', 2); // Green check icon, 1.5rem, margin-2
  */
-function icon($icon = "question-circle", $rem = 1, $color = null, $margin = 1) {
+function icon($icon = "circle-question-mark", $rem = 1, $color = null, $margin = 1) {
   $style = "";
   if ($color !== null) {
     $style .= "color: {$color};";
@@ -23,7 +23,20 @@ function icon($icon = "question-circle", $rem = 1, $color = null, $margin = 1) {
   if ($rem !== 1) {
     $style .= "font-size: {$rem}rem;";
   }
-  return "<i class='bi bi-{$icon} m-{$margin}' style='{$style}'></i>";
+  return "<i class='icon-{$icon} m-{$margin}' style='{$style}' aria-hidden='true'></i>";
+}
+
+/**
+ * Bootstrap button color class honoring the global BTN_OUTLINE setting.
+ *
+ * @param string $color Bootstrap color name, e.g. "primary", "light", "danger"
+ * @return string "btn-{$color}" or "btn-outline-{$color}"
+ *
+ * @example
+ * echo "<button class='btn btn-sm " . btnClass('light') . "'>Copy</button>";
+ */
+function btnClass(string $color): string {
+  return (BTN_OUTLINE ? 'btn-outline-' : 'btn-') . $color;
 }
 
 /**
@@ -43,16 +56,16 @@ function icon($icon = "question-circle", $rem = 1, $color = null, $margin = 1) {
 function alert($message, $type = 'success') {
   $icon = "";
   if ($type == "danger") {
-    $icon = icon("exclamation-triangle");
+    $icon = icon("triangle-alert");
   }
   if ($type == "warning") {
-    $icon = icon("exclamation-circle");
+    $icon = icon("circle-alert");
   }
   if ($type == "success") {
-    $icon = icon("check-circle");
+    $icon = icon("circle-check");
   }
   if ($type == "info") {
-    $icon = icon("info-circle");
+    $icon = icon("info");
   }
   return "
   <div class='alert alert-{$type} alert-dismissible fade show' style='margin:15px;' role='alert'>
@@ -237,10 +250,11 @@ function str_rot($s, $n = 13) {
  * Generate a random string from specified character sets
  * 
  * Creates a random string of specified length using selected character sets:
- * lowercase (l), uppercase (u), numbers (n), symbols (s), extended Unicode (e),
- * and custom characters (c). Can combine multiple sets.
+ * alphanumeric (a), lowercase (l), uppercase (u), numbers (n), symbols (s),
+ * extended Unicode (e), and custom characters (c). Can combine multiple sets.
  *
  * @param string $charsets Flags for character sets to include:
+ *                         'a' = alphanumeric 0-9a-zA-Z
  *                         'l' = lowercase a-z
  *                         'u' = uppercase A-Z
  *                         'n' = numbers 0-9
@@ -252,20 +266,14 @@ function str_rot($s, $n = 13) {
  * @return string Random string of specified length, or "[empty]" if no valid character sets
  * 
  * @example
+ * genStr('a', 12);             // 12 chars: alphanumeric
  * genStr('lun', 12);           // 12 chars: lowercase, uppercase, numbers
  * genStr('luns', 20);          // 20 chars: lowercase, uppercase, numbers, symbols
  * genStr('lunc', 15, '!@#');   // 15 chars: lowercase, uppercase, numbers, custom
  */
 function genStr(string $charsets, ?int $length = null, $cchars = null) {
-    $charsets = str_split($charsets);
-    $l        = (in_array('l', $charsets)                    ? range('a', 'z')                                   : []);
-    $u        = (in_array('u', $charsets)                    ? range('A', 'Z')                                   : []);
-    $n        = (in_array('n', $charsets)                    ? range(0, 9)                                       : []);
-    $s        = (in_array('s', $charsets)                    ? str_split("!#¤%&\/() = ?;: -_.,'\"*^<>{}[]@~+´`") : []);
-    $e        = (in_array('e', $charsets)                    ? str_split("ƒ†‡™•")                                : []);
-    $c        = (in_array('c', $charsets) && !empty($cchars) ? str_split($cchars)                                : []);
-    $all      = array_merge($l, $u, $n, $s, $e, $c);
-    $str      = '';
+    $all = stringgen_charset_chars($charsets, $cchars);
+    $str = '';
     if (empty($all)) {
       return "[empty]";
     }
@@ -276,32 +284,59 @@ function genStr(string $charsets, ?int $length = null, $cchars = null) {
 }
 
 /**
+ * Build the unique character pool for string generation.
+ *
+ * @param string $charsets Character set flags (a/l/u/n/s/e/c)
+ * @param string|null $cchars Custom characters when 'c' is in $charsets
+ * @return array<int, string> Unique character pool
+ */
+function stringgen_charset_chars(string $charsets, $cchars = null): array {
+    $flags = str_split($charsets);
+    $pool = [];
+    if (in_array('a', $flags, true)) {
+        $pool = array_merge($pool, range('a', 'z'), range('A', 'Z'), array_map('strval', range(0, 9)));
+    }
+    if (in_array('l', $flags, true)) {
+        $pool = array_merge($pool, range('a', 'z'));
+    }
+    if (in_array('u', $flags, true)) {
+        $pool = array_merge($pool, range('A', 'Z'));
+    }
+    if (in_array('n', $flags, true)) {
+        $pool = array_merge($pool, array_map('strval', range(0, 9)));
+    }
+    if (in_array('s', $flags, true)) {
+        $pool = array_merge($pool, str_split("!#¤%&\/() = ?;: -_.,'\"*^<>{}[]@~+´`"));
+    }
+    if (in_array('e', $flags, true)) {
+        $pool = array_merge($pool, str_split("ƒ†‡™•"));
+    }
+    if (in_array('c', $flags, true) && !empty($cchars)) {
+        $pool = array_merge($pool, str_split((string) $cchars));
+    }
+    return array_values(array_unique(array_map('strval', $pool), SORT_STRING));
+}
+
+/**
  * Generate a random string using cryptographically secure random_bytes()
  * 
  * Uses random_bytes() for cryptographically secure randomness, suitable for
  * security-critical applications like tokens, passwords, and keys.
  *
- * @param string $charsets Character set flags (l=lowercase, u=uppercase, n=numbers, s=symbols, e=extended, c=custom)
+ * @param string $charsets Character set flags (a=alphanumeric, l=lowercase, u=uppercase, n=numbers, s=symbols, e=extended, c=custom)
  * @param int $length Length of the generated string
  * @param string|null $cchars Custom characters if 'c' is in charsets
  * @return string Randomly generated string
  */
 function genStrCrypto(string $charsets, ?int $length = null, $cchars = null) {
-    $charsets = str_split($charsets);
-    $l        = (in_array('l', $charsets)                    ? range('a', 'z')                                   : []);
-    $u        = (in_array('u', $charsets)                    ? range('A', 'Z')                                   : []);
-    $n        = (in_array('n', $charsets)                    ? range(0, 9)                                       : []);
-    $s        = (in_array('s', $charsets)                    ? str_split("!#¤%&\/() = ?;: -_.,'\"*^<>{}[]@~+´`") : []);
-    $e        = (in_array('e', $charsets)                    ? str_split("ƒ†‡™•")                                : []);
-    $c        = (in_array('c', $charsets) && !empty($cchars) ? str_split($cchars)                                : []);
-    $all      = array_merge($l, $u, $n, $s, $e, $c);
-    $str      = '';
+    $all = stringgen_charset_chars($charsets, $cchars);
+    $str = '';
     if (empty($all)) {
       return "[empty]";
     }
-    $max = count($all) - 1;
+    $count = count($all);
     for ($i = 0; $i < $length; $i++) {
-      $randomIndex = ord(random_bytes(1)) % (count($all));
+      $randomIndex = ord(random_bytes(1)) % $count;
       $str .= $all[$randomIndex];
     }
     return $str;
@@ -379,12 +414,12 @@ function spinWheel(?array $wheelItems = [], int $spins = 1, bool $unique = false
  * @param string $value The value attribute sent with form submission. Default: ""
  * @param string $name The name attribute of the button. Default: "action"
  * @param string $text The button text/label to display. Default: "Generate"
- * @param string $icon Bootstrap icon name (without 'bi-' prefix), or 'dice' for special styling. Default: "dice"
+ * @param string $icon Lucide icon name (without 'icon-' prefix), or 'dice' for special styling. Default: "dice"
  * @param string $size Bootstrap button size class: 'sm', 'lg'. Default: "lg"
  * @return string HTML submit button element
  * 
  * @example
- * echo submitBtn('hash', 'action', 'Generate Hash', 'key-fill');
+ * echo submitBtn('hash', 'action', 'Generate Hash', 'key-round');
  * echo submitBtn('spin', 'action', 'Spin', 'dice', 'lg');
  */
 function submitBtn(string $value = "", string $name = "action", string $text = "Generate", string $icon = "dice", string $size = "lg") {
@@ -393,6 +428,63 @@ function submitBtn(string $value = "", string $name = "action", string $text = "
     <button name="'.$name.'" value="'.$value.'" type="submit" class="genBtn btn btn-success btn-'.$size.' my-3">
       '.$icon.' '.$text.'
     </button>';
+}
+
+/**
+ * Shared private-key passphrase UI: off by default, with an explicit enable toggle.
+ *
+ * @param array{
+ *   id_prefix: string,
+ *   help?: string,
+ *   wrapper_class?: string,
+ *   input_placeholder?: string
+ * } $opts
+ */
+function crypto_passphrase_field_html(array $opts): string {
+  $idPrefix = preg_replace('/[^a-zA-Z0-9_-]/', '', (string) ($opts['id_prefix'] ?? 'crypto')) ?: 'crypto';
+  $toggleId = $idPrefix . 'PassphraseEnabled';
+  $inputId = $idPrefix . 'Passphrase';
+  $wrapperClass = trim((string) ($opts['wrapper_class'] ?? 'mb-4'));
+  $help = (string) ($opts['help'] ?? 'When disabled, the private key is exported unencrypted. Passphrase protection is available in server/auto modes; client-only mode disables this option.');
+  $placeholder = (string) ($opts['input_placeholder'] ?? 'Enter a passphrase to encrypt the private key');
+  $safeToggleId = htmlspecialchars($toggleId, ENT_QUOTES, 'UTF-8');
+  $safeInputId = htmlspecialchars($inputId, ENT_QUOTES, 'UTF-8');
+  $safeWrapperClass = htmlspecialchars($wrapperClass, ENT_QUOTES, 'UTF-8');
+  $safeHelp = htmlspecialchars($help, ENT_QUOTES, 'UTF-8');
+  $safePlaceholder = htmlspecialchars($placeholder, ENT_QUOTES, 'UTF-8');
+
+  return <<<HTML
+<div class="{$safeWrapperClass}" data-crypto-passphrase-field>
+    <div class="form-check form-switch mb-2">
+        <input
+            class="form-check-input"
+            type="checkbox"
+            role="switch"
+            name="passphrase_enabled"
+            value="1"
+            id="{$safeToggleId}"
+            autocomplete="off"
+        >
+        <label class="form-check-label" for="{$safeToggleId}">
+            <strong>Protect private key with a passphrase</strong>
+        </label>
+    </div>
+    <div class="d-none" data-crypto-passphrase-input>
+        <label for="{$safeInputId}" class="form-label"><strong>Passphrase</strong></label>
+        <input
+            type="text"
+            name="passphrase"
+            id="{$safeInputId}"
+            class="form-control form-control-lg"
+            placeholder="{$safePlaceholder}"
+            data-original-placeholder="{$safePlaceholder}"
+            disabled
+            autocomplete="off"
+        >
+        <div class="form-text">{$safeHelp}</div>
+    </div>
+</div>
+HTML;
 }
 
 /* ────────────────────────────────────────────────────────────────────────── */
@@ -1588,6 +1680,208 @@ function is_base_selector($b) {
     return is_int($b) && $b >= 1 && $b <= 64;
 }
 
+/**
+ * Whether a from/to selector is accepted by convert_any().
+ * Accepts named encodings (text, hex, base64) and numeric bases 1..64
+ * (including aliases like bin/oct/dec and digit strings).
+ */
+function is_convert_any_selector($selector): bool {
+    $normalized = normalize_selector($selector);
+    if (is_base_selector($normalized)) {
+        return true;
+    }
+    return in_array($normalized, ['text', 'hex', 'base64'], true);
+}
+
+/**
+ * Human-readable label for a convert_any() selector.
+ */
+function convert_any_selector_label($selector): string {
+    $normalized = normalize_selector($selector);
+    if ($normalized === 'text') {
+        return 'Text';
+    }
+    if ($normalized === 'hex') {
+        return 'Hex (encoding)';
+    }
+    if ($normalized === 'base64') {
+        return 'Base64 (encoding)';
+    }
+    if (!is_base_selector($normalized)) {
+        return (string) $selector;
+    }
+    $named = [
+        2 => 'Base 2 (binary)',
+        8 => 'Base 8 (octal)',
+        10 => 'Base 10 (decimal)',
+        16 => 'Base 16 (hexadecimal)',
+    ];
+    return $named[$normalized] ?? ('Base ' . $normalized);
+}
+
+/**
+ * Guess a convert_any() from-selector for free-form input.
+ * Prefers common bases/encodings; caller can still force an explicit from.
+ *
+ * @return string|int 'text'|'hex'|'base64'|1..64
+ */
+function detect_convert_any_selector(string $input) {
+    $input = trim($input);
+    if ($input === '') {
+        throw new InvalidArgumentException('Input is empty.');
+    }
+
+    // Spaces / newlines → plain text (encodings and numeric bases are single tokens)
+    if (preg_match('/\s/', $input)) {
+        return 'text';
+    }
+
+    if (convert_any_input_looks_like_base64($input)) {
+        return 'base64';
+    }
+
+    // Strip padding from failed base64/base32-looking tokens and keep detecting
+    if (strpos($input, '=') !== false) {
+        $input = rtrim($input, '=');
+        if ($input === '') {
+            return 'text';
+        }
+        if (convert_any_input_looks_like_base64($input)) {
+            return 'base64';
+        }
+    }
+
+    // Fast paths for unambiguous digit alphabets
+    if (preg_match('/^[01]+$/', $input)) {
+        return 2;
+    }
+    if (preg_match('/^[0-9]+$/', $input)) {
+        return 10;
+    }
+    if (preg_match('/^[0-9A-Fa-f]+$/', $input)) {
+        return 16;
+    }
+
+    // Remaining single-token alphabets: letters beyond F, or +/
+    if (!preg_match('#^[0-9A-Za-z+/]+$#', $input)) {
+        return 'text';
+    }
+
+    $maxDigit = convert_any_input_max_digit_value($input);
+    $minBase = max(2, $maxDigit + 1);
+
+    // Letter-only: mixed/lowercase reads as text; ALL CAPS → high numeric base
+    if (preg_match('/^[A-Za-z]+$/', $input)) {
+        if (preg_match('/^[A-Z]+$/', $input)) {
+            if ($minBase <= 32) {
+                return 32;
+            }
+            return min(36, $minBase);
+        }
+        return 'text';
+    }
+
+    if (strpbrk($input, '+/') !== false) {
+        return 64;
+    }
+
+    if ($minBase <= 32) {
+        return 32;
+    }
+    if ($minBase <= 36) {
+        return 36;
+    }
+    return min(64, $minBase);
+}
+
+/**
+ * Highest digit value in $input using bases≤36 case-insensitivity (a-z ≡ A-Z ≡ 10..35),
+ * and +/ as 62/63 for higher bases.
+ */
+function convert_any_input_max_digit_value(string $input): int {
+    $max = -1;
+    $len = strlen($input);
+    for ($i = 0; $i < $len; $i++) {
+        $ch = $input[$i];
+        if ($ch >= '0' && $ch <= '9') {
+            $pos = ord($ch) - ord('0');
+        } elseif ($ch >= 'A' && $ch <= 'Z') {
+            $pos = 10 + (ord($ch) - ord('A'));
+        } elseif ($ch >= 'a' && $ch <= 'z') {
+            $pos = 10 + (ord($ch) - ord('a'));
+        } elseif ($ch === '+') {
+            $pos = 62;
+        } elseif ($ch === '/') {
+            $pos = 63;
+        } else {
+            continue;
+        }
+        if ($pos > $max) {
+            $max = $pos;
+        }
+    }
+    return $max;
+}
+
+/**
+ * Whether $input is confidently RFC 4648 Base64 (encoding), not a numeric base.
+ */
+function convert_any_input_looks_like_base64(string $input): bool {
+    if ($input === '' || preg_match('/\s/', $input)) {
+        return false;
+    }
+
+    // Length mod 4 == 1 is never valid base64
+    if ((strlen($input) % 4) === 1) {
+        return false;
+    }
+
+    $padded = $input;
+    $mod = strlen($input) % 4;
+    if ($mod > 0) {
+        $padded .= str_repeat('=', 4 - $mod);
+    }
+
+    if (!preg_match('#^[A-Za-z0-9+/]+={0,2}$#', $padded)) {
+        return false;
+    }
+
+    $decoded = base64_decode($padded, true);
+    if ($decoded === false || $decoded === '') {
+        return false;
+    }
+
+    // Strong signals: padding or base64 punctuation
+    if (strpbrk($input, '+/=') !== false) {
+        return true;
+    }
+
+    // Pure digits → numeric base, not base64 ("1000" etc. can decode by chance)
+    if (preg_match('/^[0-9]+$/', $input)) {
+        return false;
+    }
+
+    // Hex alphabet → prefer base 16 over base64
+    if (preg_match('/^[0-9A-Fa-f]+$/', $input)) {
+        return false;
+    }
+
+    // Mixed alphanumeric that decodes cleanly and is mostly printable
+    if (strlen($input) < 4) {
+        return false;
+    }
+
+    $printable = 0;
+    $bytes = strlen($decoded);
+    for ($i = 0; $i < $bytes; $i++) {
+        $o = ord($decoded[$i]);
+        if ($o === 9 || $o === 10 || $o === 13 || ($o >= 32 && $o <= 126)) {
+            $printable++;
+        }
+    }
+    return $bytes > 0 && ($printable / $bytes) >= 0.85;
+}
+
 # ─────────────────────────────────────────────────────────────────────────── //
 #                            FUNCTION: str_to_bytes                           //
 # ─────────────────────────────────────────────────────────────────────────── //
@@ -1804,15 +2098,15 @@ function copyableOutput($content, $label = "", $useAsInput = null, ?string $extr
   $html .= htmlspecialchars($content ?? '');
   $html .= "  </div>";
   $html .= "  <div class='copyable-actions'>";
-  $html .= "  <button type='button' class='btn btn-sm btn-outline-light' onclick=\"copyToClipboard('$uniqueId', this)\" style='white-space: nowrap; border: 1px solid #e9ecef;'>";
-  $html .= "    <i class='bi bi-files'></i> Copy";
+  $html .= "  <button type='button' class='btn btn-sm " . btnClass('light') . "' onclick=\"copyToClipboard('$uniqueId', this)\" style='white-space: nowrap; border: 1px solid #e9ecef;'>";
+  $html .= "    <i class='icon-copy'></i> Copy";
   $html .= "  </button>";
   if ($extraActionsHtml !== null && $extraActionsHtml !== '') {
     $html .= $extraActionsHtml;
   }
   if (is_array($useAsInput) && !empty($useAsInput['inputName'])) {
     $inputName = $useAsInput['inputName'];
-    $attrs = ' class="btn btn-sm btn-outline-info btn-use-as-input" data-copyable-id="' . htmlspecialchars($uniqueId) . '" data-input-name="' . htmlspecialchars($inputName) . '"';
+    $attrs = ' class="btn btn-sm ' . btnClass('info') . ' btn-use-as-input" data-copyable-id="' . htmlspecialchars($uniqueId) . '" data-input-name="' . htmlspecialchars($inputName) . '"';
     if (!empty($useAsInput['swapNames']) && is_array($useAsInput['swapNames']) && count($useAsInput['swapNames']) === 2) {
       $attrs .= ' data-swap-names="' . htmlspecialchars(json_encode($useAsInput['swapNames'])) . '"';
     }
@@ -1823,7 +2117,7 @@ function copyableOutput($content, $label = "", $useAsInput = null, ?string $extr
       }
     }
     $html .= "  <button type='button'" . $attrs . " style='white-space: nowrap; border: 1px solid #0dcaf0;' title='Replace input with this output (click again to undo)'>";
-    $html .= "    <i class='bi bi-arrow-left-right'></i> Use as input";
+    $html .= "    <i class='icon-arrow-left-right'></i> Use as input";
     $html .= "  </button>";
   }
   $html .= "  </div>";

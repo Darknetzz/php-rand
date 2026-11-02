@@ -12,6 +12,13 @@ body {
   min-height: 100vh;
 }
 
+/* Lucide icon font: align glyphs with adjacent text (lucide-static sets no box metrics). */
+[class^="icon-"], [class*=" icon-"] {
+  display: inline-block;
+  line-height: 1;
+  vertical-align: -0.125em;
+}
+
 /* Global spacing scaler (driven by Settings -> Item spacing). */
 .container .m-1 { margin: calc(0.25rem * var(--rand-space-scale)) !important; }
 .container .m-2 { margin: calc(0.5rem * var(--rand-space-scale)) !important; }
@@ -230,6 +237,75 @@ textarea.rand-code-textarea {
   color-scheme: light;
 }
 
+/* Syntax Highlighter preview */
+.syntax-highlight-preview {
+  border: 2px solid #495057;
+  border-radius: 0.5rem;
+  min-height: 380px;
+  max-height: 580px;
+  overflow: hidden;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+  background: #0d1117;
+}
+.syntax-highlight-preview-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 0.55rem 0.75rem;
+  border-bottom: 1px solid rgba(233, 236, 239, 0.18);
+  background: rgba(0, 0, 0, 0.28);
+  flex-shrink: 0;
+}
+.syntax-highlight-preview-body {
+  overflow: auto;
+  min-height: 0;
+}
+.syntax-highlight-preview pre {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border: none;
+}
+.syntax-highlight-preview code.hljs {
+  display: block;
+  padding: 1rem 1.1rem;
+  min-height: 300px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  white-space: pre;
+  tab-size: 2;
+  overflow: visible;
+  border-radius: 0;
+  background: transparent !important;
+}
+[data-bs-theme="light"] .syntax-highlight-preview {
+  border-color: #adb5bd;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  background: #ffffff;
+}
+[data-bs-theme="light"] .syntax-highlight-preview-toolbar {
+  border-bottom-color: rgba(33, 37, 41, 0.12);
+  background: rgba(0, 0, 0, 0.04);
+}
+#syntax_highlight[data-syntax-theme="light"] .syntax-highlight-preview {
+  background: #ffffff;
+}
+#syntax_highlight[data-syntax-theme="light"] .syntax-highlight-preview-toolbar {
+  border-bottom-color: rgba(33, 37, 41, 0.12);
+  background: rgba(0, 0, 0, 0.04);
+}
+#syntax_highlight[data-syntax-theme="dark"] .syntax-highlight-preview {
+  background: #0d1117;
+}
+#syntax_highlight[data-syntax-theme="dark"] .syntax-highlight-preview-toolbar {
+  border-bottom-color: rgba(233, 236, 239, 0.18);
+  background: rgba(0, 0, 0, 0.28);
+}
+
 /* Crontab expression: compact monospace field */
 textarea.crontab-expression-textarea {
   max-width: none !important;
@@ -392,12 +468,51 @@ th.tablehead,
   position: relative;
   display: flex;
   gap: 8px;
-  align-items: flex-start;
+  align-items: center;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
-.input-with-random-btn input,
-.input-with-random-btn textarea {
-  flex: 1;
+/*
+ * Stretch only direct field children (not inputs nested in .input-group).
+ * flex-basis 0 + width:auto overrides Bootstrap's width:100% so the shuffle
+ * button stays inside the column and rows share the same right edge.
+ * The :focus selector beats the global `.form-control:focus` 500px cap,
+ * which otherwise shrinks the field while it has focus.
+ */
+.input-with-random-btn > input,
+.input-with-random-btn > textarea,
+.input-with-random-btn > .input-group,
+.input-with-random-btn > .subnet-network-fields,
+.input-with-random-btn > [data-shared-random],
+.input-with-random-btn > .form-control:focus {
+  flex: 1 1 0;
+  min-width: 0;
+  width: auto;
+  max-width: 100%;
+}
+
+.subnet-network-fields {
+  width: 100%;
+}
+
+/* Shared mono input-group styling (matches networking tool field borders) */
+.rand-input-group > .form-control,
+.rand-input-group > .input-group-text {
+  border: 2px solid #495057;
+  font-family: monospace;
+}
+.rand-input-group > :not(:first-child) {
+  margin-left: -2px;
+}
+.rand-input-group-suffix {
+  flex: 0 0 4.75rem;
+  max-width: 4.75rem;
+}
+[data-bs-theme="light"] .rand-input-group > .form-control,
+[data-bs-theme="light"] .rand-input-group > .input-group-text {
+  border-color: #ced4da;
 }
 
 .random-data-btn {
@@ -479,6 +594,20 @@ th.tablehead,
   word-break: break-all;
   text-align: right;
   width: 100%;
+  user-select: text;
+  cursor: pointer;
+  border-radius: 4px;
+  outline: none;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.calc-display:focus-visible {
+  box-shadow: inset 0 0 0 1px rgba(155, 89, 182, 0.55);
+}
+
+.calc-display.calc-copied {
+  color: #b8f0c8;
+  background: rgba(40, 167, 69, 0.18);
 }
 
 .calc-memory-row {
@@ -640,6 +769,11 @@ th.tablehead,
   color: #0f172a;
 }
 
+[data-bs-theme="light"] .calc-display.calc-copied {
+  color: #146c43;
+  background: rgba(25, 135, 84, 0.15);
+}
+
 [data-bs-theme="light"] .calc-btn {
   background: #e2e8f0;
   color: #0f172a;
@@ -655,4 +789,79 @@ th.tablehead,
 
 [data-bs-theme="light"] .navbar.border-bottom {
   border-color: rgba(15, 23, 42, 0.1) !important;
+}
+
+/* ========== Module Subnav (pill-style sub-page navigation) ========== */
+.module-subnav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 12px 15px;
+  margin: 0 15px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.module-subnav .subnav-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.65);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+}
+
+.module-subnav .subnav-pill:hover {
+  color: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.module-subnav .subnav-pill.active {
+  color: #fff;
+  background: rgba(13, 110, 253, 0.25);
+  border-color: rgba(13, 110, 253, 0.5);
+  box-shadow: 0 0 8px rgba(13, 110, 253, 0.15);
+}
+
+.module-subnav .subnav-pill i {
+  font-size: 1rem;
+}
+
+.subnav-panel {
+  display: none;
+}
+
+.subnav-panel.active {
+  display: block;
+}
+
+/* Light theme */
+[data-bs-theme="light"] .module-subnav {
+  border-bottom-color: rgba(15, 23, 42, 0.1);
+}
+
+[data-bs-theme="light"] .module-subnav .subnav-pill {
+  color: rgba(15, 23, 42, 0.6);
+  background: rgba(15, 23, 42, 0.04);
+  border-color: rgba(15, 23, 42, 0.12);
+}
+
+[data-bs-theme="light"] .module-subnav .subnav-pill:hover {
+  color: rgba(15, 23, 42, 0.85);
+  background: rgba(15, 23, 42, 0.08);
+  border-color: rgba(15, 23, 42, 0.2);
+}
+
+[data-bs-theme="light"] .module-subnav .subnav-pill.active {
+  color: #0d6efd;
+  background: rgba(13, 110, 253, 0.08);
+  border-color: rgba(13, 110, 253, 0.35);
+  box-shadow: 0 0 8px rgba(13, 110, 253, 0.08);
 }

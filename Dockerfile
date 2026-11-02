@@ -11,7 +11,8 @@ RUN printf '%s\n' '#!/bin/sh' 'echo "php-rand ${PHP_RAND_VERSION:-unknown}"' 'ex
 
 # Install system dependencies and common PHP extensions (adjust as needed).
 # CLIs for handlers: shellcheck (lint), openssh-client (ssh-keygen); curl for HEALTHCHECK.
-# PHP 8.5: OPcache is built-in; do not use docker-php-ext-install opcache (it fails).
+# PHP 8.5: OPcache is always built in and loaded; it is enabled via custom.ini below.
+# Do not use docker-php-ext-install opcache (it fails).
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         libzip-dev libicu-dev libonig-dev libpng-dev libjpeg-dev libfreetype6-dev libxml2-dev libgmp-dev git unzip \

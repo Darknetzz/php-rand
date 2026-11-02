@@ -27,6 +27,7 @@ function getHandlerRegistry(): array {
         'rot' => 'handle_rot',
         'openssl' => 'handle_openssl',
         'datetime' => 'handle_datetime',
+        'relative_time' => 'handle_relative_time',
         'stringtools' => 'handle_stringtools',
         'ip' => 'handle_ip',
         'urlencode' => 'handle_urlencode',
@@ -221,7 +222,7 @@ function output_copyable(string $content, string $label = "", ?array $useAsInput
  * Processes requests to generate random strings with specified character sets
  * and options. Returns formatted output with generated strings and statistics.
  *
- * @param array $req Request array containing: 'digits', 'strings', 'l', 'u', 'n', 's', 'e', 'c', 'cchars'
+ * @param array $req Request array containing: 'digits', 'strings', 'a', 'l', 'u', 'n', 's', 'e', 'c', 'cchars'
  * @return string Formatted HTML output with generated strings or error message
  */
 function handle_stringgen(array $req): string {
@@ -240,7 +241,7 @@ function handle_stringgen(array $req): string {
     $strings = $stringsValidation['value'];
     
     $charsets = '';
-    foreach (['l', 'u', 'n', 's', 'e', 'c'] as $opt) {
+    foreach (['a', 'l', 'u', 'n', 's', 'e', 'c'] as $opt) {
         if (req_bool($req, $opt)) {
             $charsets .= $opt;
         }
@@ -252,6 +253,7 @@ function handle_stringgen(array $req): string {
     
     $cchars = req_get($req, 'cchars', '');
     $cryptoSafe = req_bool($req, 'cryptoSafe');
+    $poolSize = count(stringgen_charset_chars($charsets, $cchars));
 
     $results = [];
     $infoTables = [];
@@ -270,8 +272,8 @@ function handle_stringgen(array $req): string {
         $table .= "<tr><td>SHA1</td><td><pre>" . hash('sha1', $string) . "</pre></td></tr>";
         $table .= "<tr><td>SHA256</td><td><pre>" . hash('sha256', $string) . "</pre></td></tr>";
         $table .= "<tr><td>SHA512</td><td><pre>" . hash('sha512', $string) . "</pre></td></tr>";
-        $combinations = number_format(strlen($charsets)**$length);
-        $table .= "<tr><td>Possible combinations</td><td><pre>$combinations (" . strlen($charsets) . "^$length)</pre></td></tr>";
+        $combinations = number_format($poolSize ** $length);
+        $table .= "<tr><td>Possible combinations</td><td><pre>$combinations (" . $poolSize . "^$length)</pre></td></tr>";
         $table .= "</table>";
         $infoTables[] = $table;
     }
@@ -286,10 +288,10 @@ function handle_stringgen(array $req): string {
 
     $infoContent = implode('', $infoTables);
     $output .= "
-    <button class='btn btn-info' type='button' data-bs-toggle='collapse' data-bs-target='#additionalInfo' aria-expanded='false' aria-controls='additionalInfo'>" . icon('info-circle') . "</button>
+    <button class='btn btn-info' type='button' data-bs-toggle='collapse' data-bs-target='#additionalInfo' aria-expanded='false' aria-controls='additionalInfo'>" . icon('info') . "</button>
     <div id='additionalInfo' class='collapse' style='margin:15px;'>
       <div class='card border-info'>
-        <h4 class='card-header text-bg-info'>" . icon('info-circle') . " Info</h4>
+        <h4 class='card-header text-bg-info'>" . icon('info') . " Info</h4>
         <div class='card-body'>$infoContent</div>
       </div>
     </div>";
@@ -495,22 +497,38 @@ function handle_base(array $req): string {
         return formatOutput("Input must be at most 1,000,000 characters.", type: "danger");
     }
 
-    // Validate source and target formats (whitelist allowed formats)
-    $allowedFormats = ['text', 'base64', 'base32', 'hex', '64', '32', '16', '2', 64, 32, 16, 2];
-    $from = req_get($req, 'from', 'text');
-    $to = req_get($req, 'to', 64);
+    $fromRaw = req_get($req, 'from', 'auto');
+    $to = req_get($req, 'to', 'base64');
+    $autoDetected = false;
 
-    if (!in_array($from, $allowedFormats, true)) {
-        return formatOutput("Invalid source format specified.", type: "danger");
+    if (strtolower(trim((string) $fromRaw)) === 'auto') {
+        try {
+            $from = detect_convert_any_selector($input);
+            $autoDetected = true;
+        } catch (Exception $e) {
+            return formatOutput($e->getMessage(), type: "danger");
+        }
+    } else {
+        $from = $fromRaw;
+        if (!is_convert_any_selector($from)) {
+            return formatOutput("Invalid source format specified.", type: "danger");
+        }
     }
-    if (!in_array($to, $allowedFormats, true)) {
+
+    if (!is_convert_any_selector($to)) {
         return formatOutput("Invalid target format specified.", type: "danger");
     }
 
     try {
         $result = convert_any($input, $from, $to);
+        $fromLabel = convert_any_selector_label($from);
+        $toLabel = convert_any_selector_label($to);
+        $heading = htmlspecialchars($fromLabel . ' → ' . $toLabel, ENT_QUOTES, 'UTF-8');
+        if ($autoDetected) {
+            $heading .= ' <span class="text-muted fw-normal">(auto-detected source)</span>';
+        }
         $output = "<div style='margin-bottom: 20px;'>";
-        $output .= "<div style='margin-bottom: 15px;'><strong>Base $from → Base $to</strong></div>";
+        $output .= "<div style='margin-bottom: 15px;'><strong>{$heading}</strong></div>";
         $output .= copyableOutput($result, '', ['inputName' => 'base', 'swapNames' => ['from', 'to']]);
         $output .= "</div>";
         return $output;
@@ -622,6 +640,61 @@ function handle_ip_normalize_subnet_mask(string $subnet): ?string {
 }
 
 /**
+ * Parse IPv4 alone or IPv4/CIDR (e.g. 10.0.0.0/20).
+ *
+ * @return array{ip: string, prefix: ?int}|null
+ */
+function handle_ip_parse_ipv4_optional_cidr(string $raw): ?array {
+    $raw = trim($raw);
+    if ($raw === '') {
+        return null;
+    }
+    if (preg_match('/^(\d{1,3}(?:\.\d{1,3}){3})\s*\/\s*(\d{1,2})$/', $raw, $m)) {
+        if (filter_var($m[1], FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === false) {
+            return null;
+        }
+        $prefix = (int) $m[2];
+        if ($prefix < 0 || $prefix > 32) {
+            return null;
+        }
+
+        return ['ip' => $m[1], 'prefix' => $prefix];
+    }
+    if (filter_var($raw, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === false) {
+        return null;
+    }
+
+    return ['ip' => $raw, 'prefix' => null];
+}
+
+/**
+ * Convert a contiguous dotted IPv4 mask to a CIDR prefix length.
+ */
+function handle_ip_mask_to_prefix(string $mask): ?int {
+    if (filter_var($mask, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === false) {
+        return null;
+    }
+    $long = ip2long($mask);
+    if ($long === false) {
+        return null;
+    }
+    $unsigned = (int) sprintf('%u', $long);
+    if ($unsigned === 0) {
+        return 0;
+    }
+    if ($unsigned === 0xFFFFFFFF) {
+        return 32;
+    }
+    $host = (~$unsigned) & 0xFFFFFFFF;
+    // Contiguous mask: host bits form 2^n - 1
+    if (($host & ($host + 1)) !== 0) {
+        return null;
+    }
+
+    return 32 - (int) log($host + 1, 2);
+}
+
+/**
  * Render a key/value result table for networking tools.
  *
  * @param array<string, string> $rows
@@ -709,8 +782,12 @@ function handle_ip(array $req): string {
             return formatOutput('Invalid CIDR notation.', type: 'danger');
         }
 
+        $prefix = (int) (explode('/', $range['cidr'], 2)[1] ?? -1);
+        $mask = handle_ip_normalize_subnet_mask('/' . $prefix);
+
         return handle_ip_kv_table([
             'CIDR' => $range['cidr'],
+            'Subnet mask' => $mask ?? '—',
             'Start' => $range['start'],
             'End' => $range['end'],
             'Total addresses' => (string) $range['total'],
@@ -741,13 +818,21 @@ function handle_ip(array $req): string {
     }
 
     // subnetmask
-    $ip = trim(req_get($req, 'ip', ''));
+    $ipRaw = trim(req_get($req, 'ip', ''));
     $subnetRaw = trim(req_get($req, 'subnet', ''));
-    if ($ip === '' || $subnetRaw === '') {
-        return formatOutput('IP and subnet (mask or /prefix) are required.', type: 'danger');
+    if ($ipRaw === '') {
+        return formatOutput('IP address is required (optionally with /prefix, e.g. 10.0.0.0/20).', type: 'danger');
     }
-    if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === false) {
-        return formatOutput('Invalid IPv4 address.', type: 'danger');
+    $parsed = handle_ip_parse_ipv4_optional_cidr($ipRaw);
+    if ($parsed === null) {
+        return formatOutput('Invalid IPv4 address or CIDR (e.g. 192.168.1.100 or 10.0.0.0/20).', type: 'danger');
+    }
+    $ip = $parsed['ip'];
+    if ($subnetRaw === '' && $parsed['prefix'] !== null) {
+        $subnetRaw = '/' . $parsed['prefix'];
+    }
+    if ($subnetRaw === '') {
+        return formatOutput('Subnet (mask or /prefix) is required.', type: 'danger');
     }
     $subnet = handle_ip_normalize_subnet_mask($subnetRaw);
     if ($subnet === null) {
@@ -976,6 +1061,183 @@ function handle_datetime(array $req): string {
 }
 
 /**
+ * Handle relative time calculator requests (absolute↔relative, diffs).
+ *
+ * @param array $req Request with mode + mode-specific fields
+ * @return string Formatted HTML
+ */
+function handle_relative_time(array $req): string {
+    $mode = trim((string) req_get($req, 'relative_mode', 'to_relative'));
+    $validModes = ['to_relative', 'from_relative', 'diff'];
+    if (!in_array($mode, $validModes, true)) {
+        return formatOutput('Invalid relative-time mode.', type: 'danger');
+    }
+
+    $tzResult = relative_time_timezone((string) req_get($req, 'relative_timezone', ''));
+    if (!$tzResult['ok']) {
+        return formatOutput(htmlspecialchars($tzResult['error'], ENT_QUOTES, 'UTF-8'), type: 'danger');
+    }
+    /** @var DateTimeZone $tz */
+    $tz = $tzResult['tz'];
+    $timezone = (string) $tzResult['timezone'];
+
+    $referenceRaw = trim((string) req_get($req, 'relative_reference', ''));
+    if ($referenceRaw === '') {
+        $reference = new DateTimeImmutable('now', $tz);
+    } else {
+        $refParsed = relative_time_parse_instant($referenceRaw, $tz);
+        if (!$refParsed['ok']) {
+            return formatOutput(htmlspecialchars('Reference time: ' . $refParsed['error'], ENT_QUOTES, 'UTF-8'), type: 'danger');
+        }
+        $reference = $refParsed['datetime'];
+    }
+
+    if ($mode === 'to_relative') {
+        $instantRaw = trim((string) req_get($req, 'relative_instant', ''));
+        $parsed = relative_time_parse_instant($instantRaw, $tz);
+        if (!$parsed['ok']) {
+            return formatOutput(htmlspecialchars($parsed['error'], ENT_QUOTES, 'UTF-8'), type: 'danger');
+        }
+        /** @var DateTimeImmutable $target */
+        $target = $parsed['datetime'];
+        $details = relative_time_diff_details($reference, $target);
+        $formats = relative_time_format_instant($target);
+
+        $output = relative_time_result_header($details['human'], $timezone);
+        $output .= output_copyable($details['human'], 'Relative');
+        $output .= output_copyable($details['precise'], 'Exact difference');
+        $output .= relative_time_formats_table($formats);
+        $output .= relative_time_meta_line($reference, $target, $details['signed_seconds']);
+        return $output;
+    }
+
+    if ($mode === 'from_relative') {
+        $inputStyle = trim((string) req_get($req, 'relative_input_style', 'expression'));
+        if ($inputStyle === 'offset') {
+            $amountRaw = trim((string) req_get($req, 'relative_amount', ''));
+            if ($amountRaw === '' || !is_numeric($amountRaw)) {
+                return formatOutput('Offset amount must be a number.', type: 'danger');
+            }
+            $amount = (float) $amountRaw;
+            $unit = trim((string) req_get($req, 'relative_unit', 'days'));
+            $direction = trim((string) req_get($req, 'relative_direction', 'from_now'));
+            $applied = relative_time_apply_offset($reference, $amount, $unit, $direction);
+            if (!$applied['ok']) {
+                return formatOutput(htmlspecialchars($applied['error'], ENT_QUOTES, 'UTF-8'), type: 'danger');
+            }
+            $target = $applied['datetime'];
+            $expressionUsed = (string) ($applied['expression'] ?? '');
+        } else {
+            $expression = trim((string) req_get($req, 'relative_expression', ''));
+            $applied = relative_time_parse_expression($expression, $reference);
+            if (!$applied['ok']) {
+                return formatOutput(htmlspecialchars($applied['error'], ENT_QUOTES, 'UTF-8'), type: 'danger');
+            }
+            $target = $applied['datetime'];
+            $expressionUsed = $expression;
+        }
+
+        $details = relative_time_diff_details($reference, $target);
+        $formats = relative_time_format_instant($target);
+
+        $output = relative_time_result_header($formats['local'], $timezone);
+        if ($expressionUsed !== '') {
+            $output .= output_copyable($expressionUsed, 'Expression evaluated');
+        }
+        $output .= output_copyable($details['human'], 'Relative to reference');
+        $output .= relative_time_formats_table($formats);
+        $output .= relative_time_meta_line($reference, $target, $details['signed_seconds']);
+        return $output;
+    }
+
+    // diff
+    $fromRaw = trim((string) req_get($req, 'relative_from', ''));
+    $toRaw = trim((string) req_get($req, 'relative_to', ''));
+    $fromParsed = relative_time_parse_instant($fromRaw, $tz);
+    if (!$fromParsed['ok']) {
+        return formatOutput(htmlspecialchars('From: ' . $fromParsed['error'], ENT_QUOTES, 'UTF-8'), type: 'danger');
+    }
+    $toParsed = relative_time_parse_instant($toRaw, $tz);
+    if (!$toParsed['ok']) {
+        return formatOutput(htmlspecialchars('To: ' . $toParsed['error'], ENT_QUOTES, 'UTF-8'), type: 'danger');
+    }
+    /** @var DateTimeImmutable $from */
+    $from = $fromParsed['datetime'];
+    /** @var DateTimeImmutable $to */
+    $to = $toParsed['datetime'];
+    $details = relative_time_diff_details($from, $to);
+
+    $directionLabel = $details['signed_seconds'] < 0
+        ? 'To is before From'
+        : ($details['signed_seconds'] > 0 ? 'To is after From' : 'Same instant');
+
+    $output = relative_time_result_header($details['human'], $timezone);
+    $output .= '<div class="mb-3"><span class="badge bg-secondary">' . htmlspecialchars($directionLabel, ENT_QUOTES, 'UTF-8') . '</span></div>';
+    $output .= output_copyable($details['human'], 'Short relative');
+    $output .= output_copyable($details['precise'], 'Exact difference');
+    $output .= output_copyable((string) abs($details['signed_seconds']), 'Absolute seconds');
+    $output .= relative_time_parts_table($details['parts']);
+    $output .= '<div class="mt-3 small text-muted">From: <code>'
+        . htmlspecialchars($from->format('Y-m-d H:i:s T'), ENT_QUOTES, 'UTF-8')
+        . '</code> → To: <code>'
+        . htmlspecialchars($to->format('Y-m-d H:i:s T'), ENT_QUOTES, 'UTF-8')
+        . '</code></div>';
+    return $output;
+}
+
+function relative_time_result_header(string $headline, string $timezone): string {
+    return '<div class="border border-primary border-opacity-25 rounded-3 px-4 py-4 mb-4 text-center bg-primary bg-opacity-10">'
+        . '<p class="mb-2 fs-3 fw-semibold lh-sm">' . htmlspecialchars($headline, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</p>'
+        . '<span class="badge bg-primary text-white">' . icon('earth') . ' '
+        . htmlspecialchars($timezone, ENT_QUOTES, 'UTF-8') . '</span>'
+        . '</div>';
+}
+
+function relative_time_formats_table(array $formats): string {
+    $labels = [
+        'local' => 'Local (with TZ)',
+        'iso8601' => 'ISO 8601',
+        'rfc2822' => 'RFC 2822',
+        'unix' => 'Unix (seconds)',
+        'unix_ms' => 'Unix (milliseconds)',
+    ];
+    $html = '<div class="table-responsive mt-3"><table class="table table-dark table-striped table-hover align-middle mb-0" style="border: 1px solid #334155;">';
+    $html .= '<caption class="text-start fw-bold" style="caption-side: top; color: var(--bs-body-color);">Absolute formats</caption>';
+    $html .= '<thead><tr><th>Format</th><th>Value</th></tr></thead><tbody>';
+    foreach ($labels as $key => $label) {
+        if (!isset($formats[$key])) {
+            continue;
+        }
+        $html .= '<tr><td>' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</td><td style="max-width: 360px;">'
+            . copyableOutput($formats[$key], '') . '</td></tr>';
+    }
+    $html .= '</tbody></table></div>';
+    return $html;
+}
+
+function relative_time_parts_table(array $parts): string {
+    $html = '<div class="table-responsive mt-3"><table class="table table-dark table-striped table-hover align-middle mb-0" style="border: 1px solid #334155;">';
+    $html .= '<caption class="text-start fw-bold" style="caption-side: top; color: var(--bs-body-color);">Breakdown</caption>';
+    $html .= '<thead><tr><th>Unit</th><th>Value</th></tr></thead><tbody>';
+    foreach ($parts as $name => $val) {
+        $html .= '<tr><td>' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '</td><td>'
+            . copyableOutput((string) $val, '') . '</td></tr>';
+    }
+    $html .= '</tbody></table></div>';
+    return $html;
+}
+
+function relative_time_meta_line(DateTimeImmutable $reference, DateTimeImmutable $target, int $signedSeconds): string {
+    return '<div class="mt-3 small text-muted">Reference: <code>'
+        . htmlspecialchars($reference->format('Y-m-d H:i:s T'), ENT_QUOTES, 'UTF-8')
+        . '</code> · Target: <code>'
+        . htmlspecialchars($target->format('Y-m-d H:i:s T'), ENT_QUOTES, 'UTF-8')
+        . '</code> · Δt = <code>'
+        . htmlspecialchars((string) $signedSeconds, ENT_QUOTES, 'UTF-8')
+        . 's</code></div>';
+}
+
+/**
  * Normalize CRLF/CR line endings to LF.
  */
 function stringtools_normalize_line_endings_to_lf(string $string): string {
@@ -1016,6 +1278,7 @@ function handle_stringtools(array $req): string {
     $string = req_get($req, 'string', '');
     
     if (strlen($string) > 1000000) {
+        http_response_code(422);
         return formatOutput("Input must be at most 1,000,000 characters.", type: "danger");
     }
 
@@ -1032,12 +1295,14 @@ function handle_stringtools(array $req): string {
     $tool = req_get($req, 'tool', '');
 
     if (empty($tool) || !in_array($tool, $allowedTools)) {
+        http_response_code(422);
         return formatOutput("Invalid tool selected.", type: "danger");
     }
 
     if ($tool === 'removecustomcharacters') {
         $customCharacters = (string) req_get($req, 'custom_characters', '');
         if ($customCharacters === '') {
+            http_response_code(422);
             return formatOutput('Enter characters to remove in the "Custom characters" field.', type: 'danger');
         }
     }
@@ -1079,11 +1344,8 @@ function handle_stringtools(array $req): string {
         default => $string
     };
 
-    if (req_bool($req, 'outputToTextbox')) {
-        return $string;
-    }
-
-    return formatOutput(nl2br($string));
+    // Plain text: the module renders this into a read-only textarea
+    return $string;
 }
 
 function handle_urlencode(array $req): string {
@@ -1418,7 +1680,7 @@ function handle_spinwheel(array $req): string {
 
 function handle_calculator(array $req): string {
     return formatOutput(
-        'This calculator runs entirely in your browser. Use the on-screen keypad to compute results.',
+        'This calculator runs entirely in your browser. Use the keypad, keyboard, or paste a number/expression (Ctrl/Cmd+V). Copy the result with Ctrl/Cmd+C or by clicking the display.',
         type: 'info'
     );
 }
@@ -2401,7 +2663,7 @@ function handle_regex(array $req): string {
         
         // Display results
         $output .= "<div style='margin-bottom: 20px; padding: 15px; background: rgba(32, 201, 151, 0.1); border-radius: 0.5rem; border-left: 4px solid #20c997;'>";
-        $output .= "<strong>" . icon('check-circle', 1, '#20c997') . " Pattern Valid</strong><br>";
+        $output .= "<strong>" . icon('circle-check', 1, '#20c997') . " Pattern Valid</strong><br>";
         $output .= "<code style='word-break: break-all;'>" . htmlspecialchars($fullPattern) . "</code><br>";
         $output .= "<strong>Matches Found:</strong> " . ($matchCount > 0 ? "<span style='color: #20c997; font-weight: bold;'>{$matchCount}</span>" : "<span style='color: #dc3545;'>0</span>");
         $output .= "</div>";
@@ -2468,7 +2730,7 @@ function handle_regex(array $req): string {
             }
         } else {
             $output .= "<div style='padding: 15px; background: rgba(220, 53, 69, 0.1); border-radius: 0.5rem; border-left: 4px solid #dc3545;'>";
-            $output .= "<strong>" . icon('x-circle', 1, '#dc3545') . " No matches found</strong><br>";
+            $output .= "<strong>" . icon('circle-x', 1, '#dc3545') . " No matches found</strong><br>";
             $output .= "The pattern does not match the test string.";
             $output .= "</div>";
         }
@@ -2519,8 +2781,8 @@ function handle_crontab(array $req): string {
         $output .= "<div class='card border-info mb-3 mb-xl-0'><h5 class='card-header'>Schedule Summary</h5><div class='card-body'>";
         $output .= crontab_human_summary_block($summary);
         $output .= "<div class='d-flex flex-wrap gap-2 mb-3'>";
-        $output .= "<span class='badge bg-info text-white'>" . icon('arrow-repeat') . " One-shot at cron startup</span>";
-        $output .= "<span class='badge bg-primary text-white'>" . icon('globe2') . ' ' . htmlspecialchars($timezone, ENT_QUOTES, 'UTF-8') . "</span>";
+        $output .= "<span class='badge bg-info text-white'>" . icon('refresh-cw') . " One-shot at cron startup</span>";
+        $output .= "<span class='badge bg-primary text-white'>" . icon('earth') . ' ' . htmlspecialchars($timezone, ENT_QUOTES, 'UTF-8') . "</span>";
         $output .= "</div>";
         $output .= "<div class='alert alert-info mb-3'><strong>@reboot</strong> is a Vixie-style crontab extension: the job runs once when the cron daemon starts (often after a system reboot), not on a repeating calendar schedule.</div>";
         $output .= "<div class='mb-3'><strong>Reference time:</strong> <code>" . htmlspecialchars($referenceTime->format('Y-m-d H:i:s T'), ENT_QUOTES, 'UTF-8') . "</code></div>";
@@ -2584,7 +2846,7 @@ function handle_crontab(array $req): string {
     }
 
     $dueBadge = $isDue
-        ? "<span class='badge bg-success text-white'>" . icon('check-circle') . " Due at reference time</span>"
+        ? "<span class='badge bg-success text-white'>" . icon('circle-check') . " Due at reference time</span>"
         : "<span class='badge bg-secondary text-white'>" . icon('clock') . " Not due at reference time</span>";
 
     $macroNotice = '';
@@ -2607,8 +2869,8 @@ function handle_crontab(array $req): string {
     $output .= "<div class='card border-info mb-3 mb-xl-0'><h5 class='card-header'>Schedule Summary</h5><div class='card-body'>";
     $output .= crontab_human_summary_block($summary);
     $output .= "<div class='d-flex flex-wrap gap-2 mb-3'>{$dueBadge}";
-    $output .= "<span class='badge bg-primary text-white'>" . icon('globe2') . ' ' . htmlspecialchars($timezone, ENT_QUOTES, 'UTF-8') . "</span>";
-    $output .= "<span class='badge bg-dark text-white'>" . icon('list-ol') . ' ' . intval($runCount) . " future runs</span>";
+    $output .= "<span class='badge bg-primary text-white'>" . icon('earth') . ' ' . htmlspecialchars($timezone, ENT_QUOTES, 'UTF-8') . "</span>";
+    $output .= "<span class='badge bg-dark text-white'>" . icon('list-ordered') . ' ' . intval($runCount) . " future runs</span>";
     $output .= "</div>";
     $output .= $macroNotice;
     $output .= "<div class='mb-3'><strong>Reference time:</strong> <code>" . htmlspecialchars($referenceTime->format('Y-m-d H:i:s T'), ENT_QUOTES, 'UTF-8') . "</code></div>";
@@ -2776,9 +3038,9 @@ function handle_shellcheck(array $req): string {
     $output .= "<div class='card border-info mb-3'><h5 class='card-header'>ShellCheck Summary</h5><div class='card-body'>";
     $output .= "<div class='d-flex flex-wrap gap-2 mb-3'>";
     $output .= "<span class='badge bg-primary text-white'>" . icon('terminal') . ' ' . htmlspecialchars($displayFilename, ENT_QUOTES, 'UTF-8') . "</span>";
-    $output .= "<span class='badge bg-dark text-white'>" . icon('filter') . ' min severity: ' . htmlspecialchars($severity, ENT_QUOTES, 'UTF-8') . "</span>";
+    $output .= "<span class='badge bg-dark text-white'>" . icon('funnel') . ' min severity: ' . htmlspecialchars($severity, ENT_QUOTES, 'UTF-8') . "</span>";
     $output .= "<span class='badge bg-secondary text-white'>" . icon('cpu') . ' shell: ' . htmlspecialchars($shell === 'auto' ? 'auto' : $shell, ENT_QUOTES, 'UTF-8') . "</span>";
-    $output .= "<span class='badge bg-success text-white'>" . icon('check-circle') . ' binary: ' . htmlspecialchars($shellcheckPath, ENT_QUOTES, 'UTF-8') . "</span>";
+    $output .= "<span class='badge bg-success text-white'>" . icon('circle-check') . ' binary: ' . htmlspecialchars($shellcheckPath, ENT_QUOTES, 'UTF-8') . "</span>";
     $output .= "</div>";
     $output .= "<div class='d-flex flex-wrap gap-2'>";
     foreach (['error', 'warning', 'info', 'style'] as $level) {
@@ -2793,7 +3055,7 @@ function handle_shellcheck(array $req): string {
     $output .= "</div></div></div>";
 
     if ($fixedScript !== null && $fixedScript !== '' && $fixedScript !== $script) {
-        $output .= "<div class='card border-success mb-3'><h5 class='card-header'>" . icon('magic') . " Auto-fixed script</h5><div class='card-body'>";
+        $output .= "<div class='card border-success mb-3'><h5 class='card-header'>" . icon('wand-sparkles') . " Auto-fixed script</h5><div class='card-body'>";
         $output .= "<p class='small text-muted mb-2'>ShellCheck suggested edits (for the same severity and shell options) were applied with GNU <code>patch</code>. Review the result before running it.</p>";
         $output .= copyableOutput($fixedScript, '', ['inputName' => 'shellcheck_script']);
         $output .= "</div></div>";
@@ -2829,8 +3091,8 @@ function handle_shellcheck(array $req): string {
         }
         $output .= "</div>";
         $output .= shellcheck_excerpt_html($lines, $comment);
-        $output .= "<div class='mt-3'><a href='" . htmlspecialchars($wikiUrl, ENT_QUOTES, 'UTF-8') . "' target='_blank' rel='noopener noreferrer' class='btn btn-sm btn-outline-light'>"
-            . icon('box-arrow-up-right') . " Open SC" . str_pad((string) $code, 4, '0', STR_PAD_LEFT) . " docs</a></div>";
+        $output .= "<div class='mt-3'><a href='" . htmlspecialchars($wikiUrl, ENT_QUOTES, 'UTF-8') . "' target='_blank' rel='noopener noreferrer' class='btn btn-sm " . btnClass('light') . "'>"
+            . icon('external-link') . " Open SC" . str_pad((string) $code, 4, '0', STR_PAD_LEFT) . " docs</a></div>";
         $output .= "</div></div>";
     }
 
@@ -3250,6 +3512,24 @@ function crypto_make_key_config(string $algorithm, int $rsaBits = 4096, string $
     return null;
 }
 
+/**
+ * Passphrase from generate forms that use the enable toggle (passphrase_enabled=1).
+ * When the toggle is off, always return '' so the private key stays unencrypted.
+ */
+function crypto_req_optional_passphrase(array $req): array {
+    if (!req_bool($req, 'passphrase_enabled')) {
+        return ['ok' => true, 'passphrase' => ''];
+    }
+    $passphrase = trim((string) req_get($req, 'passphrase', ''));
+    if ($passphrase === '') {
+        return ['ok' => false, 'error' => 'Passphrase protection is enabled, but no passphrase was entered.'];
+    }
+    if (strlen($passphrase) > 256) {
+        return ['ok' => false, 'error' => 'Passphrase must be at most 256 characters.'];
+    }
+    return ['ok' => true, 'passphrase' => $passphrase];
+}
+
 function crypto_generate_keypair(string $algorithm, int $rsaBits = 4096, string $curve = 'prime256v1', string $passphrase = ''): array {
     $config = crypto_make_key_config($algorithm, $rsaBits, $curve);
     if ($config === null) {
@@ -3261,13 +3541,17 @@ function crypto_generate_keypair(string $algorithm, int $rsaBits = 4096, string 
         return ['ok' => false, 'error' => "Unable to generate {$algorithm} keypair."];
     }
 
+    // Pass null (not "") when unencrypted: openssl_pkey_export with "" still emits
+    // BEGIN ENCRYPTED PRIVATE KEY with an empty password, which makes ssh-add prompt.
     $exportOptions = [];
+    $exportPassphrase = null;
     if ($passphrase !== '') {
         $exportOptions = ['cipher' => 'aes-256-cbc'];
+        $exportPassphrase = $passphrase;
     }
 
     $privatePem = '';
-    $privateExported = openssl_pkey_export($privateKey, $privatePem, $passphrase, $exportOptions);
+    $privateExported = openssl_pkey_export($privateKey, $privatePem, $exportPassphrase, $exportOptions);
     if ($privateExported === false || $privatePem === '') {
         return ['ok' => false, 'error' => "Unable to export private key for {$algorithm}."];
     }
@@ -3290,7 +3574,7 @@ function crypto_data_download_link(string $filename, string $content, string $la
     $safeHref = htmlspecialchars($href, ENT_QUOTES, 'UTF-8');
     $safeFilename = htmlspecialchars($filename, ENT_QUOTES, 'UTF-8');
     $safeLabel = htmlspecialchars($label, ENT_QUOTES, 'UTF-8');
-    return "<a class='btn btn-outline-light btn-sm' href='{$safeHref}' download='{$safeFilename}' style='white-space: nowrap; border: 1px solid #e9ecef;'>" . icon('download') . " {$safeLabel}</a>";
+    return "<a class='btn " . btnClass('light') . " btn-sm' href='{$safeHref}' download='{$safeFilename}' style='white-space: nowrap; border: 1px solid #e9ecef;'>" . icon('download') . " {$safeLabel}</a>";
 }
 
 function crypto_render_key_output(array $items, string $title): string {
@@ -3504,7 +3788,7 @@ function crypto_openssh_to_pem_with_ssh_keygen(string $opensshLine): array {
     return ['ok' => true, 'pem' => trim($output) . PHP_EOL];
 }
 
-/** @param resource $key */
+/** @param OpenSSLAsymmetricKey|resource $key */
 function crypto_signature_digest_for_key($key): int {
     $d = openssl_pkey_get_details($key);
     if (!is_array($d)) {
@@ -3825,7 +4109,8 @@ function crypto_classify_verify_public_key(string $raw, string $mode): array {
             break;
         }
     }
-    if ($first !== '' && preg_match('/^(ssh-rsa|ssh-ed25519|ssh-dss|ecdsa-sha2-[a-z0-9]+)\s+[A-Za-z0-9+/]+=*(\s+.*)?$/', $first)) {
+    // Use # delimiters: / inside [A-Za-z0-9+/] would end a /.../ pattern early (preg "Unknown modifier").
+    if ($first !== '' && preg_match('#^(ssh-rsa|ssh-ed25519|ssh-dss|ecdsa-sha2-[a-z0-9]+)\s+[A-Za-z0-9+/]+=*(\s+.*)?$#', $first)) {
         return ['pem' => '', 'openssh' => $first, 'detected' => 'openssh', 'error' => null];
     }
 
@@ -4066,10 +4351,11 @@ function handle_keypair_generate(array $req): string {
         return formatOutput("No supported algorithm selected for key generation.", type: "danger");
     }
 
-    $passphrase = trim((string) req_get($req, 'passphrase', ''));
-    if (strlen($passphrase) > 256) {
-        return formatOutput("Passphrase must be at most 256 characters.", type: "danger");
+    $passphraseResult = crypto_req_optional_passphrase($req);
+    if (!($passphraseResult['ok'] ?? false)) {
+        return formatOutput((string) ($passphraseResult['error'] ?? 'Invalid passphrase.'), type: 'danger');
     }
+    $passphrase = (string) $passphraseResult['passphrase'];
 
     $rsaBits = req_int($req, 'rsa_bits', 4096);
     $curve = (string) req_get($req, 'ecdsa_curve', 'prime256v1');
@@ -4156,9 +4442,9 @@ function handle_pem_openssh_convert(array $req): string {
 function handle_crypto_diagnostics(array $req): string {
     $algorithms = crypto_available_key_algorithms();
     $rows = [];
-    $okBadge = "<span class='badge bg-success text-white'>" . icon('check-circle') . " OK</span>";
-    $warnBadge = "<span class='badge bg-warning text-dark'>" . icon('exclamation-triangle') . " Warning</span>";
-    $errBadge = "<span class='badge bg-danger text-white'>" . icon('x-circle') . " Error</span>";
+    $okBadge = "<span class='badge bg-success text-white'>" . icon('circle-check') . " OK</span>";
+    $warnBadge = "<span class='badge bg-warning text-dark'>" . icon('triangle-alert') . " Warning</span>";
+    $errBadge = "<span class='badge bg-danger text-white'>" . icon('circle-x') . " Error</span>";
 
     foreach (['rsa', 'ecdsa', 'ed25519'] as $algo) {
         if (!in_array($algo, $algorithms, true)) {
@@ -4179,8 +4465,8 @@ function handle_crypto_diagnostics(array $req): string {
         ? trim((string) @shell_exec('command -v ssh-keygen 2>/dev/null'))
         : '';
     $sshKeygenStatus = $sshKeygenPath !== ''
-        ? "<span class='badge bg-success text-white me-2'>" . icon('check-circle') . " OK</span><code>" . htmlspecialchars($sshKeygenPath, ENT_QUOTES, 'UTF-8') . "</code>"
-        : "<span class='badge bg-warning text-dark'>" . icon('exclamation-triangle') . " Not found</span>";
+        ? "<span class='badge bg-success text-white me-2'>" . icon('circle-check') . " OK</span><code>" . htmlspecialchars($sshKeygenPath, ENT_QUOTES, 'UTF-8') . "</code>"
+        : "<span class='badge bg-warning text-dark'>" . icon('triangle-alert') . " Not found</span>";
 
     $output = "<div class='card border-info mb-3'><h5 class='card-header'>Crypto Runtime Diagnostics (Server)</h5><div class='card-body'>";
     $output .= "<div class='mb-3'><strong>Available key algorithms:</strong> " . htmlspecialchars(implode(', ', $algorithms), ENT_QUOTES, 'UTF-8') . "</div>";
@@ -4209,10 +4495,11 @@ function handle_ssh_keygen(array $req): string {
         return formatOutput("No supported algorithm selected for key generation.", type: "danger");
     }
 
-    $passphrase = trim((string) req_get($req, 'passphrase', ''));
-    if (strlen($passphrase) > 256) {
-        return formatOutput("Passphrase must be at most 256 characters.", type: "danger");
+    $passphraseResult = crypto_req_optional_passphrase($req);
+    if (!($passphraseResult['ok'] ?? false)) {
+        return formatOutput((string) ($passphraseResult['error'] ?? 'Invalid passphrase.'), type: 'danger');
     }
+    $passphrase = (string) $passphraseResult['passphrase'];
 
     $rsaBits = req_int($req, 'rsa_bits', 4096);
     $curve = (string) req_get($req, 'ecdsa_curve', 'prime256v1');
@@ -4288,10 +4575,11 @@ function handle_csr_generate(array $req): string {
     }
     $algorithm = $resolved[0];
 
-    $passphrase = trim((string) req_get($req, 'passphrase', ''));
-    if (strlen($passphrase) > 256) {
-        return formatOutput("Passphrase must be at most 256 characters.", type: "danger");
+    $passphraseResult = crypto_req_optional_passphrase($req);
+    if (!($passphraseResult['ok'] ?? false)) {
+        return formatOutput((string) ($passphraseResult['error'] ?? 'Invalid passphrase.'), type: 'danger');
     }
+    $passphrase = (string) $passphraseResult['passphrase'];
 
     $rsaBits = req_int($req, 'rsa_bits', 4096);
     $curve = (string) req_get($req, 'ecdsa_curve', 'prime256v1');

@@ -14,7 +14,7 @@
                     <div class="col-12 col-lg-6">
                         <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
                             <label for="serializationInput" class="form-label mb-0"><strong style="font-size: 1.1rem;">Input</strong></label>
-                            <button type="button" class="btn btn-sm btn-outline-secondary serialization-random-sample" title="Insert a random sample matching the selected output type"><?= icon('shuffle', 0.9) ?> Random sample</button>
+                            <button type="button" class="btn btn-sm <?= btnClass('secondary') ?> serialization-random-sample" title="Insert a random sample matching the selected output type"><?= icon('shuffle', 0.9) ?> Random sample</button>
                         </div>
                         <div data-no-random-buttons>
                             <textarea
@@ -44,7 +44,7 @@
                             </div>
                         </div>
                         <div class="copyable-actions" style="padding: 8px 14px; border-top: 1px solid rgba(255,255,255,0.12);">
-                        <button type="button" class="btn btn-sm btn-outline-light" style="border: 1px solid #e9ecef;" onclick="copyToClipboard('serializationresponse', this)"><?= icon("files") ?> Copy Output</button>
+                        <button type="button" class="btn btn-sm <?= btnClass('light') ?>" style="border: 1px solid #e9ecef;" onclick="copyToClipboard('serializationresponse', this)"><?= icon("copy") ?> Copy Output</button>
                         </div>
                         </div>
                     </div>
@@ -63,7 +63,7 @@
                 </div>
 
                 <div class="d-flex gap-3">
-                    <?= submitBtn("serialization", "action", "🔁 Convert", "arrow-repeat", "lg") ?>
+                    <?= submitBtn("serialization", "action", "🔁 Convert", "refresh-cw", "lg") ?>
                 </div>
             </form>
         </div>

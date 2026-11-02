@@ -42,8 +42,8 @@
 
                 <!-- Action Buttons -->
                 <div class="d-flex gap-2 flex-wrap">
-                    <?= submitBtn("bin2hex", "tool", "Binary → Hex", "file-text-fill") ?>
-                    <?= submitBtn("hex2bin", "tool", "Hex → Binary", "file-binary-fill") ?>
+                    <?= submitBtn("bin2hex", "tool", "Binary → Hex", "file-text") ?>
+                    <?= submitBtn("hex2bin", "tool", "Hex → Binary", "file-digit") ?>
                 </div>
             </form>
         </div>

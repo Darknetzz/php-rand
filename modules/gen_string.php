@@ -32,6 +32,11 @@
 
                 <?php
                 $opts = [
+                  "a" => [
+                    "desc" =>"Alphanumeric",
+                    "checked" => "",
+                    "chars" => "0-9a-zA-Z",
+                  ],
                   "n" => [
                     "desc" =>"Numbers",
                     "checked" => "checked",
@@ -76,7 +81,7 @@
 
                   echo '<input type="hidden" name="'.$opt.'" value="0">';
                   echo '
-                  <div class="d-flex justify-content-between align-items-center mb-3 p-2" style="background-color: rgba(0,0,0,0.03); border-radius: 0.25rem;">
+                  <div class="stringgen-charset-row d-flex justify-content-between align-items-center mb-3 p-2" data-charset="'.$opt.'" style="background-color: rgba(0,0,0,0.03); border-radius: 0.25rem;">
                     <div class="form-check form-switch">
                       <input type="checkbox" class="form-check-input" id="'.$opt.'" name="'.$opt.'" value="1" '.$checked.'>
                       <label class="form-check-label" for="'.$opt.'"><strong>'.$desc.'</strong></label>
@@ -109,12 +114,34 @@
 </div>
 
 <script>
-    // Toggle custom characters textarea
-    $("#c").change(function() {
-        if ($(this).is(":checked")) {
-            $("#cchars").slideDown();
-        } else {
-            $("#cchars").slideUp();
+    (function() {
+        const $form = $("#stringgen");
+        const $alphanumeric = $form.find("#a");
+        const $alphanumericRow = $form.find('.stringgen-charset-row[data-charset="a"]');
+        const otherThanNumbers = "#l, #u, #s, #e, #c";
+
+        function syncAlphanumericOption(immediate) {
+            const hideAlphanumeric = $form.find(otherThanNumbers).is(":checked");
+            if (hideAlphanumeric) {
+                $alphanumeric.prop("checked", false).prop("disabled", true);
+                immediate ? $alphanumericRow.hide() : $alphanumericRow.slideUp();
+            } else {
+                $alphanumeric.prop("disabled", false);
+                immediate ? $alphanumericRow.show() : $alphanumericRow.slideDown();
+            }
         }
-    });
+
+        $form.find("#c").on("change", function() {
+            if ($(this).is(":checked")) {
+                $("#cchars").slideDown();
+            } else {
+                $("#cchars").slideUp();
+            }
+        });
+
+        $form.find(otherThanNumbers).on("change", function() {
+            syncAlphanumericOption(false);
+        });
+        syncAlphanumericOption(true);
+    })();
 </script>

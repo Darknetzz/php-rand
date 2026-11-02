@@ -141,14 +141,409 @@ function loadStyleOnce(href) {
 }
 
 /* ===================================================================== */
+/*                    Highlight.js (shared CDN helpers)                   */
+/* ===================================================================== */
+const HLJS_VERSION = "11.12.0";
+const HLJS_CDN = "https://cdnjs.cloudflare.com/ajax/libs/highlight.js/" + HLJS_VERSION;
+const HLJS_THEME_STORAGE_KEY = "randSyntaxHighlightTheme";
+const HLJS_ALL_LANGUAGE_IDS = [
+    "1c", "abnf", "accesslog", "actionscript", "ada", "angelscript", "apache", "applescript", "arcade", "arduino", "armasm", "asciidoc",
+    "aspectj", "autohotkey", "autoit", "avrasm", "awk", "axapta", "bash", "basic", "bnf", "brainfuck", "c", "cal",
+    "capnproto", "ceylon", "clean", "clojure", "clojure-repl", "cmake", "coffeescript", "coq", "cos", "cpp", "crmsh", "crystal",
+    "csharp", "csp", "css", "d", "dart", "delphi", "diff", "django", "dns", "dockerfile", "dos", "dsconfig",
+    "dts", "dust", "ebnf", "elixir", "elm", "erb", "erlang", "erlang-repl", "excel", "fix", "flix", "fortran",
+    "freedesktop", "fsharp", "gams", "gauss", "gcode", "gherkin", "glsl", "gml", "go", "golo", "gradle", "graphql",
+    "groovy", "haml", "handlebars", "haskell", "haxe", "hsp", "http", "hy", "inform7", "ini", "irpf90", "isbl",
+    "java", "javascript", "jboss-cli", "json", "julia", "julia-repl", "kotlin", "lasso", "latex", "ldif", "leaf", "less",
+    "lisp", "livecodeserver", "livescript", "llvm", "lsl", "lua", "makefile", "markdown", "mathematica", "matlab", "maxima", "mel",
+    "mercury", "mipsasm", "mizar", "mojolicious", "monkey", "moonscript", "n1ql", "nestedtext", "nginx", "nim", "nix", "node-repl",
+    "nsis", "objectivec", "ocaml", "openscad", "oxygene", "parser3", "perl", "pf", "pgsql", "php", "php-template", "plaintext",
+    "pony", "powershell", "processing", "profile", "prolog", "properties", "protobuf", "puppet", "purebasic", "python", "python-repl", "q",
+    "qml", "r", "reasonml", "rib", "roboconf", "routeros", "rsl", "ruby", "ruleslanguage", "rust", "sas", "scala",
+    "scheme", "scilab", "scss", "shell", "smali", "smalltalk", "sml", "sqf", "sql", "stan", "stata", "step21",
+    "stylus", "subunit", "swift", "taggerscript", "tap", "tcl", "thrift", "tp", "twig", "typescript", "vala", "vbnet",
+    "vbscript", "vbscript-html", "verilog", "vhdl", "vim", "wasm", "wren", "x86asm", "xl", "xml", "xquery", "yaml",
+    "zephir"
+];
+
+function hljsThemeHref(theme) {
+    return HLJS_CDN + "/styles/" + (theme === "light" ? "github" : "github-dark") + ".min.css";
+}
+
+function ensureHighlightJsCore() {
+    return loadScriptOnce(HLJS_CDN + "/highlight.min.js");
+}
+
+function ensureHighlightJsTheme(theme) {
+    const normalized = theme === "light" ? "light" : "dark";
+    const activeHref = hljsThemeHref(normalized);
+    const otherHref = hljsThemeHref(normalized === "light" ? "dark" : "light");
+    return $.when(loadStyleOnce(activeHref), loadStyleOnce(otherHref)).then(function() {
+        document.querySelectorAll('link[rel="stylesheet"][href*="highlight.js"][href*="/styles/"]').forEach(function(link) {
+            const href = link.getAttribute("href") || "";
+            if (href === activeHref) {
+                link.disabled = false;
+                link.setAttribute("data-hljs-theme-active", "1");
+            } else if (href === otherHref || /\/styles\/(dark|github|github-dark)\.min\.css/.test(href)) {
+                link.disabled = true;
+                link.removeAttribute("data-hljs-theme-active");
+            }
+        });
+        return normalized;
+    });
+}
+
+function ensureHighlightJsLanguage(langId) {
+    const id = String(langId || "").toLowerCase().trim();
+    if (!id || id === "auto" || id === "plaintext") {
+        return $.Deferred().resolve().promise();
+    }
+    if (typeof hljs !== "undefined" && hljs.getLanguage && hljs.getLanguage(id)) {
+        return $.Deferred().resolve().promise();
+    }
+    return loadScriptOnce(HLJS_CDN + "/languages/" + encodeURIComponent(id) + ".min.js");
+}
+
+function ensureHighlightJsAllLanguages() {
+    if (window._hljsAllLangsPromise) {
+        return window._hljsAllLangsPromise;
+    }
+    const deferred = $.Deferred();
+    window._hljsAllLangsPromise = deferred.promise();
+    ensureHighlightJsCore().then(function() {
+        const missing = HLJS_ALL_LANGUAGE_IDS.filter(function(id) {
+            return !(typeof hljs !== "undefined" && hljs.getLanguage && hljs.getLanguage(id));
+        });
+        let offset = 0;
+        const batchSize = 12;
+        function nextBatch() {
+            if (offset >= missing.length) {
+                deferred.resolve();
+                return;
+            }
+            const batch = missing.slice(offset, offset + batchSize);
+            offset += batchSize;
+            $.when.apply($, batch.map(function(id) {
+                return ensureHighlightJsLanguage(id);
+            })).always(nextBatch);
+        }
+        nextBatch();
+    }).fail(function() {
+        deferred.reject();
+    });
+    return window._hljsAllLangsPromise;
+}
+
+function ensureHighlightJsAssets(theme) {
+    return ensureHighlightJsCore().then(function() {
+        return ensureHighlightJsTheme(theme || "dark");
+    });
+}
+
+/* ===================================================================== */
 /*                    FUNCTION: ensureMarkdownAssets                      */
 /* ===================================================================== */
 function ensureMarkdownAssets() {
     return $.when(
         loadScriptOnce("https://cdn.jsdelivr.net/npm/marked/lib/marked.umd.js"),
-        loadStyleOnce("https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/dark.min.css"),
-        loadScriptOnce("https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js")
+        ensureHighlightJsAssets("dark")
     );
+}
+
+function hljsLanguageLabel(langId) {
+    const id = String(langId || "");
+    if (typeof hljs !== "undefined" && hljs.getLanguage) {
+        const meta = hljs.getLanguage(id);
+        if (meta && meta.name) {
+            return meta.name;
+        }
+    }
+    return id.replace(/-/g, " ").replace(/\b\w/g, function(ch) {
+        return ch.toUpperCase();
+    });
+}
+
+function bakeHighlightedHtmlForPaste(sourceEl) {
+    if (!sourceEl) {
+        return "";
+    }
+    const csRoot = window.getComputedStyle(sourceEl);
+    const pre = document.createElement("pre");
+    pre.style.cssText = [
+        "font-family:" + (csRoot.fontFamily || "Consolas, 'Courier New', monospace"),
+        "font-size:11pt",
+        "line-height:1.45",
+        "white-space:pre",
+        "tab-size:4",
+        "margin:0",
+        "padding:12px",
+        "background:" + (csRoot.backgroundColor || "#0d1117"),
+        "color:" + (csRoot.color || "#e6edf3"),
+        "border-radius:4px"
+    ].join(";");
+
+    function walk(src, dstParent) {
+        src.childNodes.forEach(function(node) {
+            if (node.nodeType === Node.TEXT_NODE) {
+                dstParent.appendChild(document.createTextNode(node.textContent || ""));
+                return;
+            }
+            if (node.nodeType !== Node.ELEMENT_NODE) {
+                return;
+            }
+            const span = document.createElement("span");
+            const s = window.getComputedStyle(node);
+            const parts = [];
+            if (s.color) {
+                parts.push("color:" + s.color);
+            }
+            if (s.fontWeight && s.fontWeight !== "400" && s.fontWeight !== "normal") {
+                parts.push("font-weight:" + s.fontWeight);
+            }
+            if (s.fontStyle === "italic") {
+                parts.push("font-style:italic");
+            }
+            if (s.backgroundColor && s.backgroundColor !== "rgba(0, 0, 0, 0)" && s.backgroundColor !== "transparent") {
+                parts.push("background-color:" + s.backgroundColor);
+            }
+            if (parts.length) {
+                span.style.cssText = parts.join(";");
+            }
+            walk(node, span);
+            dstParent.appendChild(span);
+        });
+    }
+
+    walk(sourceEl, pre);
+    const wrap = document.createElement("div");
+    wrap.appendChild(pre);
+    return wrap.innerHTML;
+}
+
+/**
+ * Bootstrap button color class honoring BTN_OUTLINE (includes/config.php, exposed as window.RAND_BTN_OUTLINE).
+ * @param {string} color e.g. "primary", "light"
+ * @returns {string} "btn-primary" or "btn-outline-primary"
+ */
+function btnClass(color) {
+    return (window.RAND_BTN_OUTLINE ? "btn-outline-" : "btn-") + color;
+}
+
+function setCopyButtonFeedback(btn, ok) {
+    if (!btn) {
+        return;
+    }
+    const originalText = btn.getAttribute("data-original-text") || btn.innerHTML;
+    const originalClass = btn.getAttribute("data-original-class") || btn.className;
+    btn.setAttribute("data-original-text", originalText);
+    btn.setAttribute("data-original-class", originalClass);
+    btn.className = originalClass.replace(/\bbtn-(?:outline-)?(?:primary|secondary|success|danger|warning|info|light|dark)\b/g, "")
+        + (ok ? " btn-success" : " btn-danger");
+    btn.innerHTML = ok ? '<i class="icon-check"></i> Copied!' : '<i class="icon-triangle-alert"></i> Failed';
+    setTimeout(function() {
+        btn.innerHTML = originalText;
+        btn.className = originalClass;
+    }, 1600);
+}
+
+function fallbackCopyRichHtml(html, plainText, setFeedback) {
+    const host = document.createElement("div");
+    host.contentEditable = "true";
+    host.innerHTML = html;
+    host.style.position = "fixed";
+    host.style.left = "-9999px";
+    host.style.top = "0";
+    document.body.appendChild(host);
+    const selection = window.getSelection();
+    const range = document.createRange();
+    range.selectNodeContents(host);
+    selection.removeAllRanges();
+    selection.addRange(range);
+    let ok = false;
+    try {
+        ok = document.execCommand("copy");
+    } catch (e) {
+        ok = false;
+    }
+    selection.removeAllRanges();
+    document.body.removeChild(host);
+    if (!ok && plainText && typeof fallbackCopy === "function") {
+        fallbackCopy(plainText, setFeedback);
+        return;
+    }
+    setFeedback(ok);
+}
+
+function copyRichHtmlToClipboard(elementId, btnEl) {
+    if (typeof canUseClipboardCopy === "function" && !canUseClipboardCopy()) {
+        return;
+    }
+    const element = document.getElementById(elementId);
+    if (!element) {
+        return;
+    }
+    const btn = btnEl || null;
+    const setFeedback = function(ok) {
+        setCopyButtonFeedback(btn, ok);
+    };
+    const html = bakeHighlightedHtmlForPaste(element);
+    const plain = (element.textContent || "").replace(/\n$/, "");
+
+    if (navigator.clipboard && window.ClipboardItem) {
+        const item = new ClipboardItem({
+            "text/html": new Blob([html], { type: "text/html" }),
+            "text/plain": new Blob([plain], { type: "text/plain" })
+        });
+        navigator.clipboard.write([item]).then(function() {
+            setFeedback(true);
+        }).catch(function() {
+            fallbackCopyRichHtml(html, plain, setFeedback);
+        });
+        return;
+    }
+
+    fallbackCopyRichHtml(html, plain, setFeedback);
+}
+
+window.copyRichHtmlToClipboard = copyRichHtmlToClipboard;
+window.ensureHighlightJsAssets = ensureHighlightJsAssets;
+window.ensureHighlightJsLanguage = ensureHighlightJsLanguage;
+window.HLJS_ALL_LANGUAGE_IDS = HLJS_ALL_LANGUAGE_IDS;
+
+/* ===================================================================== */
+/*                 FUNCTION: initSyntaxHighlightUi                        */
+/* ===================================================================== */
+function initSyntaxHighlightUi($scope) {
+    const $root = ($scope && $scope.length) ? $scope.find("#syntax_highlight").addBack("#syntax_highlight") : $("#syntax_highlight");
+    if (!$root.length) {
+        return;
+    }
+    if ($root.data("syntaxHighlightInited")) {
+        const theme = $root.find("#syntaxHighlightTheme").val() === "light" ? "light" : "dark";
+        ensureHighlightJsTheme(theme);
+        return;
+    }
+    $root.data("syntaxHighlightInited", true);
+
+    const $input = $root.find("#syntaxHighlightInput");
+    const $lang = $root.find("#syntaxHighlightLang");
+    const $theme = $root.find("#syntaxHighlightTheme");
+    const $code = $root.find("#syntaxHighlightCode");
+    const $detected = $root.find("#syntaxHighlightDetected");
+    let renderTimer = null;
+    let renderSeq = 0;
+
+    function readStoredTheme() {
+        try {
+            const t = window.localStorage.getItem(HLJS_THEME_STORAGE_KEY);
+            return t === "light" ? "light" : "dark";
+        } catch (e) {
+            return "dark";
+        }
+    }
+
+    function storeTheme(theme) {
+        try {
+            window.localStorage.setItem(HLJS_THEME_STORAGE_KEY, theme === "light" ? "light" : "dark");
+        } catch (e) {
+            // ignore
+        }
+    }
+
+    function fillLanguageSelect() {
+        const current = $lang.val() || "auto";
+        const opts = ['<option value="auto">Auto-detect</option>'];
+        HLJS_ALL_LANGUAGE_IDS.forEach(function(id) {
+            opts.push('<option value="' + id + '">' + hljsLanguageLabel(id) + " (" + id + ")</option>");
+        });
+        $lang.html(opts.join(""));
+        $lang.val(current);
+        $lang.data("filled", true);
+    }
+
+    function setPreviewThemeClass(theme) {
+        $code.removeClass("syntax-highlight-theme-dark syntax-highlight-theme-light");
+        $code.addClass(theme === "light" ? "syntax-highlight-theme-light" : "syntax-highlight-theme-dark");
+        $root.attr("data-syntax-theme", theme === "light" ? "light" : "dark");
+    }
+
+    function renderHighlight() {
+        const seq = ++renderSeq;
+        const code = $input.val() || "";
+        const lang = String($lang.val() || "auto").toLowerCase();
+        const theme = $theme.val() === "light" ? "light" : "dark";
+
+        ensureHighlightJsAssets(theme).then(function() {
+            const langPromise = (lang === "auto")
+                ? $.Deferred().resolve().promise()
+                : ensureHighlightJsLanguage(lang);
+            return langPromise;
+        }).then(function() {
+            if (seq !== renderSeq || typeof hljs === "undefined") {
+                return;
+            }
+            setPreviewThemeClass(theme);
+            $code.removeClass(function(i, cls) {
+                return (cls.match(/(^|\s)language-\S+/g) || []).join(" ");
+            });
+
+            if (!code.trim()) {
+                $code.text("// Paste code to highlight…");
+                $detected.text("");
+                return;
+            }
+
+            let result;
+            try {
+                if (lang === "auto") {
+                    result = hljs.highlightAuto(code);
+                    const detectedId = result.language || "unknown";
+                    const label = detectedId === "unknown" ? "unknown" : hljsLanguageLabel(detectedId);
+                    $detected.text("Detected: " + label + (detectedId !== "unknown" ? " (" + detectedId + ")" : ""));
+                } else {
+                    result = hljs.highlight(code, { language: lang, ignoreIllegals: true });
+                    $detected.text("Language: " + hljsLanguageLabel(lang) + " (" + lang + ")");
+                }
+            } catch (err) {
+                $code.text(code);
+                $detected.text("Highlight failed; showing plain text.");
+                return;
+            }
+
+            $code.html(result.value);
+            if (result.language) {
+                $code.addClass("language-" + result.language);
+            } else if (lang !== "auto") {
+                $code.addClass("language-" + lang);
+            }
+        });
+    }
+
+    function scheduleRender() {
+        clearTimeout(renderTimer);
+        renderTimer = setTimeout(renderHighlight, 250);
+    }
+
+    fillLanguageSelect();
+    const initialTheme = readStoredTheme();
+    $theme.val(initialTheme);
+    setPreviewThemeClass(initialTheme);
+
+    $input.on("input", scheduleRender);
+    $lang.on("change", scheduleRender);
+    $theme.on("change", function() {
+        const theme = $theme.val() === "light" ? "light" : "dark";
+        storeTheme(theme);
+        ensureHighlightJsTheme(theme).always(scheduleRender);
+    });
+
+    renderHighlight();
+    ensureHighlightJsAllLanguages().always(function() {
+        fillLanguageSelect();
+        if (String($lang.val() || "auto") === "auto") {
+            scheduleRender();
+        }
+    });
 }
 
 /* ===================================================================== */
@@ -551,7 +946,7 @@ function buildClientCryptoWarningBannerHtml(marginClass) {
         detail = "<code>window.crypto.subtle</code> is not available in this browser.";
     }
     return "<div class=\"alert alert-warning " + marginClass + " d-flex align-items-start gap-2\" role=\"alert\">" +
-        "<i class=\"bi bi-exclamation-triangle-fill flex-shrink-0 mt-1\" aria-hidden=\"true\"></i>" +
+        "<i class=\"icon-triangle-alert flex-shrink-0 mt-1\" aria-hidden=\"true\"></i>" +
         "<div><strong>Client-side generation unavailable.</strong> " + detail +
         " <strong>Generation mode is set to server-side only.</strong> Auto and client-only are disabled until this environment supports WebCrypto.</div>" +
         "</div>";
@@ -682,7 +1077,7 @@ function renderBrowserInfoHtml(info) {
     html += "<div class='copyable-content'>";
     html += "<pre class='copyable-body' id='browserInfoJson' style='margin: 0; font-family: inherit; font-size: inherit;'>" + htmlEscape(rawJson) + "</pre>";
     html += "<div class='copyable-actions'>";
-    html += "<button type='button' class='btn btn-sm btn-outline-light' onclick='copyToClipboard(\"browserInfoJson\", this)' style='white-space: nowrap; border: 1px solid #e9ecef;'><i class='bi bi-clipboard'></i> Copy JSON</button>";
+    html += "<button type='button' class='btn btn-sm " + btnClass("light") + "' onclick='copyToClipboard(\"browserInfoJson\", this)' style='white-space: nowrap; border: 1px solid #e9ecef;'><i class='icon-clipboard'></i> Copy JSON</button>";
     html += "</div></div>";
     html += "</div></div>";
     return html;
@@ -728,11 +1123,11 @@ function buildClientKeyOutput(items, title) {
         html += "<div class='copyable-content'>";
         html += "<div class='copyable-body' id='" + htmlEscape(copyId) + "'>" + htmlEscape(item.content) + "</div>";
         html += "<div class='copyable-actions'>";
-        html += "<button type='button' class='btn btn-sm btn-outline-light' onclick=\"copyToClipboard('" + htmlEscape(copyId) + "', this)\" style='white-space: nowrap; border: 1px solid #e9ecef;\">";
-        html += "<i class='bi bi-files'></i> Copy";
+        html += "<button type='button' class='btn btn-sm " + btnClass("light") + "' onclick=\"copyToClipboard('" + htmlEscape(copyId) + "', this)\" style='white-space: nowrap; border: 1px solid #e9ecef;\">";
+        html += "<i class='icon-copy'></i> Copy";
         html += "</button>";
-        html += "<a class='btn btn-outline-light btn-sm' download='" + htmlEscape(item.filename) + "' href='" + encoded + "' style='white-space: nowrap; border: 1px solid #e9ecef;'>";
-        html += "<i class='bi bi-download'></i> Download " + htmlEscape(item.label);
+        html += "<a class='btn " + btnClass("light") + " btn-sm' download='" + htmlEscape(item.filename) + "' href='" + encoded + "' style='white-space: nowrap; border: 1px solid #e9ecef;'>";
+        html += "<i class='icon-download'></i> Download " + htmlEscape(item.label);
         html += "</a></div></div></div>";
     });
     html += "</div></div>";
@@ -789,10 +1184,10 @@ function buildClientSshKeyOutput(slotItems, title) {
         panelsHtml += "<div class='copyable-content'>";
         panelsHtml += "<div class='copyable-body' id='" + htmlEscape(copyId) + "'>" + htmlEscape(item.content) + "</div>";
         panelsHtml += "<div class='copyable-actions'>";
-        panelsHtml += "<button type='button' class='btn btn-sm btn-outline-light' onclick=\"copyToClipboard('" + htmlEscape(copyId) + "', this)\" style='white-space: nowrap; border: 1px solid #e9ecef;\">";
-        panelsHtml += "<i class='bi bi-files'></i> Copy</button>";
-        panelsHtml += "<a class='btn btn-outline-light btn-sm' download='" + htmlEscape(item.filename) + "' href='" + encoded + "' style='white-space: nowrap; border: 1px solid #e9ecef;'>";
-        panelsHtml += "<i class='bi bi-download'></i> Download " + htmlEscape(item.label);
+        panelsHtml += "<button type='button' class='btn btn-sm " + btnClass("light") + "' onclick=\"copyToClipboard('" + htmlEscape(copyId) + "', this)\" style='white-space: nowrap; border: 1px solid #e9ecef;\">";
+        panelsHtml += "<i class='icon-copy'></i> Copy</button>";
+        panelsHtml += "<a class='btn " + btnClass("light") + " btn-sm' download='" + htmlEscape(item.filename) + "' href='" + encoded + "' style='white-space: nowrap; border: 1px solid #e9ecef;'>";
+        panelsHtml += "<i class='icon-download'></i> Download " + htmlEscape(item.label);
         panelsHtml += "</a></div></div></div></div>";
     });
 
@@ -807,10 +1202,10 @@ function buildClientSshKeyOutput(slotItems, title) {
         privateHtml += "<div class='copyable-content'>";
         privateHtml += "<div class='copyable-body' id='" + htmlEscape(copyId) + "'>" + htmlEscape(priv.content) + "</div>";
         privateHtml += "<div class='copyable-actions'>";
-        privateHtml += "<button type='button' class='btn btn-sm btn-outline-light' onclick=\"copyToClipboard('" + htmlEscape(copyId) + "', this)\" style='white-space: nowrap; border: 1px solid #e9ecef;\">";
-        privateHtml += "<i class='bi bi-files'></i> Copy</button>";
-        privateHtml += "<a class='btn btn-outline-light btn-sm' download='" + htmlEscape(priv.filename) + "' href='" + encoded + "' style='white-space: nowrap; border: 1px solid #e9ecef;'>";
-        privateHtml += "<i class='bi bi-download'></i> Download " + htmlEscape(priv.label);
+        privateHtml += "<button type='button' class='btn btn-sm " + btnClass("light") + "' onclick=\"copyToClipboard('" + htmlEscape(copyId) + "', this)\" style='white-space: nowrap; border: 1px solid #e9ecef;\">";
+        privateHtml += "<i class='icon-copy'></i> Copy</button>";
+        privateHtml += "<a class='btn " + btnClass("light") + " btn-sm' download='" + htmlEscape(priv.filename) + "' href='" + encoded + "' style='white-space: nowrap; border: 1px solid #e9ecef;'>";
+        privateHtml += "<i class='icon-download'></i> Download " + htmlEscape(priv.label);
         privateHtml += "</a></div></div></div></div>";
     }
 
@@ -865,9 +1260,14 @@ async function maybeHandleClientSideKeygen(form, responseObj) {
         return false;
     }
 
-    const passphrase = (form.find("[name='passphrase']").val() || "").trim();
+    const passphraseEnabled = form.find("[name='passphrase_enabled']").is(":checked");
+    const passphrase = passphraseEnabled ? (form.find("[name='passphrase']").val() || "").trim() : "";
     const isSsh = action === "ssh_keygen";
-    if (passphrase !== "") {
+    if (passphraseEnabled && passphrase === "") {
+        showData(responseObj, "<div class='alert alert-danger'>Passphrase protection is enabled, but no passphrase was entered.</div>");
+        return true;
+    }
+    if (passphraseEnabled && passphrase !== "") {
         if (mode === "auto") return false;
         showData(responseObj, "<div class='alert alert-warning'>Client-side mode does not support private-key passphrase encryption yet. Use server mode.</div>");
         return true;
@@ -931,21 +1331,46 @@ async function maybeHandleClientSideKeygen(form, responseObj) {
 }
 
 function updatePassphraseStateForForm($form) {
-    const mode = ($form.find("[name='generation_mode']").val() || "").toLowerCase();
+    const $field = $form.find("[data-crypto-passphrase-field]");
     const $pass = $form.find("input[name='passphrase']");
+    const $toggle = $form.find("input[name='passphrase_enabled']");
+    const $inputWrap = $field.find("[data-crypto-passphrase-input]");
     if (!$pass.length) return;
 
+    const mode = ($form.find("[name='generation_mode']").val() || "").toLowerCase();
     const isClientOnly = mode === "client";
+    const originalPlaceholder = $pass.attr("data-original-placeholder") || "Enter a passphrase to encrypt the private key";
+
     if (isClientOnly) {
-        $pass.val("");
-        $pass.prop("disabled", true);
-        $pass.attr("placeholder", "Disabled in client-side mode; use server/auto for passphrase protection");
-    } else {
-        $pass.prop("disabled", false);
-        if ($pass.attr("data-original-placeholder")) {
-            $pass.attr("placeholder", $pass.attr("data-original-placeholder"));
+        if ($toggle.length) {
+            $toggle.prop("checked", false).prop("disabled", true);
         }
+        $pass.val("").prop("disabled", true);
+        $pass.attr("placeholder", "Disabled in client-side mode; use server/auto for passphrase protection");
+        if ($inputWrap.length) {
+            $inputWrap.addClass("d-none");
+        }
+        return;
     }
+
+    if ($toggle.length) {
+        $toggle.prop("disabled", false);
+        const enabled = $toggle.is(":checked");
+        if ($inputWrap.length) {
+            $inputWrap.toggleClass("d-none", !enabled);
+        }
+        if (enabled) {
+            $pass.prop("disabled", false);
+            $pass.attr("placeholder", originalPlaceholder);
+        } else {
+            $pass.val("").prop("disabled", true);
+            $pass.attr("placeholder", originalPlaceholder);
+        }
+        return;
+    }
+
+    $pass.prop("disabled", false);
+    $pass.attr("placeholder", originalPlaceholder);
 }
 
 /* ===================================================================== */
@@ -964,8 +1389,16 @@ function setFormVal(form, name = "action", value = "") {
 const ACTIVE_MODULE_STORAGE_KEY = "rand.activeModule";
 
 function normalizeModuleHash(value) {
-    const moduleName = (value || "").replace(/^#/, "").trim();
+    const raw = (value || "").replace(/^#/, "").trim();
+    // Strip subtab portion (e.g. "networking/dns" -> "networking")
+    const moduleName = raw.split("/")[0];
     return moduleName ? ("#" + moduleName) : "";
+}
+
+function getSubtabFromHash(value) {
+    const raw = (value || "").replace(/^#/, "").trim();
+    const parts = raw.split("/");
+    return parts.length > 1 ? parts[1] : "";
 }
 
 function persistActiveModule(hashValue) {
@@ -981,9 +1414,10 @@ function persistActiveModule(hashValue) {
 }
 
 function getPreferredInitialModule() {
-    const hashModule = normalizeModuleHash(window.location.hash);
-    if (hashModule) {
-        return hashModule;
+    // Preserve subtab from URL hash (e.g. #networking/dns)
+    const rawHash = (window.location.hash || "").replace(/^#/, "").trim();
+    if (rawHash) {
+        return "#" + rawHash;
     }
     try {
         const storedModule = normalizeModuleHash(window.localStorage.getItem(ACTIVE_MODULE_STORAGE_KEY));
@@ -1638,20 +2072,297 @@ function initCrontabLiveAnalyzeUi($scope) {
 }
 
 /* ===================================================================== */
+/*                      FUNCTION: initRelativeTimeUi                     */
+/* ===================================================================== */
+function initRelativeTimeUi($root) {
+    const $scope = ($root && $root.length) ? $root : $(document);
+    const $form = $scope.find("#relativeTimeForm").first();
+    if (!$form.length) {
+        return;
+    }
+
+    function syncRelativeTimeUi() {
+        const mode = $form.find("#relativeMode").val() || "to_relative";
+        $form.find(".relative-mode-panel").each(function() {
+            const $panel = $(this);
+            const active = $panel.attr("data-relative-mode") === mode;
+            $panel.toggleClass("d-none", !active);
+            $panel.find("input, select, textarea").prop("disabled", !active);
+        });
+
+        $form.find(".relative-reference-input").prop("disabled", true);
+        if (mode === "to_relative") {
+            $form.find("#relativeReferenceTo").prop("disabled", false);
+        } else if (mode === "from_relative") {
+            const style = $form.find('input[name="relative_input_style"]:checked').val() || "expression";
+            $form.find(".relative-from-style").each(function() {
+                const $panel = $(this);
+                const active = $panel.attr("data-from-style") === style;
+                $panel.toggleClass("d-none", !active);
+                $panel.find("input, select, textarea").prop("disabled", !active);
+            });
+            if (style === "expression") {
+                $form.find("#relativeReferenceFrom").prop("disabled", false);
+            } else {
+                $form.find("#relativeReferenceOffset").prop("disabled", false);
+            }
+        }
+    }
+
+    if (!$form.data("relative-ui-bound")) {
+        $form.data("relative-ui-bound", true);
+        $form.on("change", "#relativeMode, input[name='relative_input_style']", syncRelativeTimeUi);
+    }
+    syncRelativeTimeUi();
+}
+
+/* ===================================================================== */
+/*                      FUNCTION: initSubnetMaskUi                       */
+/* ===================================================================== */
+function initSubnetMaskUi($root) {
+    const $scope = ($root && $root.length) ? $root : $(document);
+    const $form = $scope.find("#subnetmask").first();
+    if (!$form.length || $form.data("subnet-ui-bound")) {
+        return;
+    }
+    $form.data("subnet-ui-bound", true);
+
+    const $ip = $form.find("#ipInput");
+    const $prefix = $form.find("#subnetCidrPrefix");
+    const $subnet = $form.find("#subnetInput");
+    let syncing = false;
+
+    function ipv4PrefixToMask(prefix) {
+        if (!Number.isInteger(prefix) || prefix < 0 || prefix > 32) {
+            return null;
+        }
+        const mask = prefix === 0 ? 0 : (0xFFFFFFFF << (32 - prefix)) >>> 0;
+        return [(mask >>> 24) & 255, (mask >>> 16) & 255, (mask >>> 8) & 255, mask & 255].join(".");
+    }
+
+    function ipv4MaskToPrefix(mask) {
+        const parts = String(mask || "").trim().split(".");
+        if (parts.length !== 4) {
+            return null;
+        }
+        let bits = 0;
+        let seenZero = false;
+        for (let i = 0; i < 4; i++) {
+            const p = Number(parts[i]);
+            if (!Number.isInteger(p) || p < 0 || p > 255) {
+                return null;
+            }
+            for (let b = 7; b >= 0; b--) {
+                const bit = (p >> b) & 1;
+                if (bit === 1) {
+                    if (seenZero) {
+                        return null;
+                    }
+                    bits++;
+                } else {
+                    seenZero = true;
+                }
+            }
+        }
+        return bits;
+    }
+
+    function parsePrefixField(raw) {
+        const m = String(raw || "").trim().match(/^\/?(\d{1,2})$/);
+        if (!m) {
+            return null;
+        }
+        const p = parseInt(m[1], 10);
+        return (p >= 0 && p <= 32) ? p : null;
+    }
+
+    function parseIpv4OptionalCidr(raw) {
+        const value = String(raw || "").trim();
+        const cidr = value.match(/^(\d{1,3}(?:\.\d{1,3}){3})\s*\/\s*(\d{1,2})$/);
+        if (cidr) {
+            const prefix = parseInt(cidr[2], 10);
+            if (prefix < 0 || prefix > 32) {
+                return null;
+            }
+            return { ip: cidr[1], prefix: prefix };
+        }
+        if (/^\d{1,3}(?:\.\d{1,3}){3}$/.test(value)) {
+            return { ip: value, prefix: null };
+        }
+        return null;
+    }
+
+    function setPrefix(prefix) {
+        const next = (prefix === null || prefix === undefined) ? "" : String(prefix);
+        if ($prefix.val() !== next) {
+            $prefix.val(next);
+        }
+    }
+
+    function setSubnetMask(mask) {
+        if (mask && $subnet.val() !== mask) {
+            $subnet.val(mask);
+        }
+    }
+
+    function applyPrefixToSubnet(prefix) {
+        const mask = ipv4PrefixToMask(prefix);
+        if (mask) {
+            setSubnetMask(mask);
+        }
+    }
+
+    function syncFromIpField() {
+        if (syncing) {
+            return;
+        }
+        const parsed = parseIpv4OptionalCidr($ip.val());
+        if (!parsed || parsed.prefix === null) {
+            return;
+        }
+        syncing = true;
+        if ($ip.val() !== parsed.ip) {
+            $ip.val(parsed.ip);
+        }
+        setPrefix(parsed.prefix);
+        applyPrefixToSubnet(parsed.prefix);
+        syncing = false;
+    }
+
+    function syncFromPrefixField() {
+        if (syncing) {
+            return;
+        }
+        const prefix = parsePrefixField($prefix.val());
+        if (prefix === null) {
+            return;
+        }
+        syncing = true;
+        setPrefix(prefix);
+        applyPrefixToSubnet(prefix);
+        syncing = false;
+    }
+
+    function syncFromSubnetField() {
+        if (syncing) {
+            return;
+        }
+        const raw = String($subnet.val() || "").trim();
+        if (!raw) {
+            return;
+        }
+        let prefix = parsePrefixField(raw);
+        if (prefix === null) {
+            prefix = ipv4MaskToPrefix(raw);
+        }
+        if (prefix === null) {
+            return;
+        }
+        syncing = true;
+        setPrefix(prefix);
+        syncing = false;
+    }
+
+    // Split IP/CIDR on paste or when leaving the field (avoid treating "/2" as done while typing "/20")
+    $ip.on("paste.subnetUi", function() {
+        setTimeout(syncFromIpField, 0);
+    });
+    $ip.on("change.subnetUi blur.subnetUi", syncFromIpField);
+    $prefix.on("input.subnetUi change.subnetUi", syncFromPrefixField);
+    $subnet.on("input.subnetUi change.subnetUi", syncFromSubnetField);
+
+    // Initial sync if fields are prefilled
+    syncFromIpField();
+    syncFromSubnetField();
+}
+
+/* ===================================================================== */
+/*                      FUNCTION: initModuleSubnav                       */
+/* ===================================================================== */
+function initModuleSubnav($module, requestedSubtab) {
+    const $subnav = $module.find(".module-subnav");
+    if (!$subnav.length) {
+        return;
+    }
+
+    // Already initialized? Just activate the requested subtab.
+    if ($subnav.data("subnav-initialized")) {
+        if (requestedSubtab) {
+            activateSubtab($module, requestedSubtab);
+        }
+        return;
+    }
+    $subnav.data("subnav-initialized", true);
+
+    // Determine which subtab to show
+    const moduleId = $module.attr("id");
+    const storageKey = "rand.subnav." + moduleId;
+    let activeTab = requestedSubtab || "";
+
+    if (!activeTab) {
+        try { activeTab = window.localStorage.getItem(storageKey) || ""; } catch(e) {}
+    }
+    if (!activeTab) {
+        // Default to first pill
+        const $first = $subnav.find(".subnav-pill").first();
+        activeTab = $first.data("subtab") || "";
+    }
+
+    activateSubtab($module, activeTab);
+
+    // Delegated click handler for pills
+    $subnav.on("click", ".subnav-pill", function(e) {
+        e.preventDefault();
+        const subtab = $(this).data("subtab");
+        activateSubtab($module, subtab);
+        // Update URL hash
+        const newHash = "#" + moduleId + "/" + subtab;
+        history.replaceState(null, "", newHash);
+        // Persist
+        try { window.localStorage.setItem(storageKey, subtab); } catch(e) {}
+    });
+}
+
+function activateSubtab($module, subtab) {
+    const $subnav = $module.find(".module-subnav");
+    const $panels = $module.find(".subnav-panel");
+    const $pills  = $subnav.find(".subnav-pill");
+
+    // If subtab is empty or not found, fall back to first
+    let $targetPill = $pills.filter('[data-subtab="' + subtab + '"]');
+    if (!$targetPill.length) {
+        $targetPill = $pills.first();
+        subtab = $targetPill.data("subtab") || "";
+    }
+
+    // Update pills
+    $pills.removeClass("active");
+    $targetPill.addClass("active");
+
+    // Update panels
+    $panels.removeClass("active");
+    $module.find('.subnav-panel[data-panel="' + subtab + '"]').addClass("active");
+}
+
+/* ===================================================================== */
 /*                           FUNCTION: navigate                          */
 /* ===================================================================== */
 function navigate(to) {
     console.log("[navigate] Navigating to: " + to);
 
-    const moduleName = (to || "").replace(/^#/, "");
+    const raw = (to || "").replace(/^#/, "");
+    const moduleName = raw.split("/")[0];
+    const subtab = raw.split("/")[1] || "";
     if (!moduleName) {
         return;
     }
     const normalizedTo = "#" + moduleName;
 
     persistActiveModule(normalizedTo);
-    if (window.location.hash !== normalizedTo) {
+    if (window.location.hash !== normalizedTo && !subtab) {
         history.replaceState(null, "", normalizedTo);
+    } else if (subtab) {
+        history.replaceState(null, "", "#" + moduleName + "/" + subtab);
     }
 
     // Reset all navbar link states
@@ -1677,11 +2388,15 @@ function navigate(to) {
     const showTarget = function() {
         $(".content").hide();
         $(normalizedTo).fadeIn();
+        initModuleSubnav($(normalizedTo), subtab);
         addRandomDataButtons($(normalizedTo));
         initLogoGeneratorUi($(normalizedTo));
         initCsrFormUi($(normalizedTo));
         initKeypairSignFormUi($(normalizedTo));
         initCrontabLiveAnalyzeUi($(normalizedTo));
+        initRelativeTimeUi($(normalizedTo));
+        initSubnetMaskUi($(normalizedTo));
+        initSyntaxHighlightUi($(normalizedTo));
         refreshClientCryptoGeneratorUi($(normalizedTo));
     };
 
@@ -1721,7 +2436,9 @@ function loadModule(moduleName) {
 
     const beforeLoad = moduleName === "markdown"
         ? ensureMarkdownAssets()
-        : $.Deferred().resolve().promise();
+        : (moduleName === "syntax_highlight"
+            ? ensureHighlightJsAssets("dark")
+            : $.Deferred().resolve().promise());
 
     return beforeLoad.then(function() {
         return $.ajax({
@@ -1734,6 +2451,8 @@ function loadModule(moduleName) {
             const $mod = $(selector);
             ensureEnhancersForScope($mod).always(function() {
                 addRandomDataButtons($mod);
+                initSubnetMaskUi($mod);
+                initSyntaxHighlightUi($mod);
             });
         }).fail(function() {
             $placeholder.remove();
@@ -1777,7 +2496,7 @@ function axiosNavigate(to, responseSelector = ".responseDiv") {
 function randomizeDice() {
     var dice = [1, 2, 3, 4, 5, 6];
     var diceIcon = dice[Math.floor(Math.random() * dice.length)];
-    $(".dice").html('<i class="bi bi-dice-' + diceIcon + '"></i>');
+    $(".dice").html('<i class="icon-dice-' + diceIcon + '"></i>');
 }
 
 
@@ -2062,14 +2781,14 @@ $(document).ready(function() {
         }
     });
 
-    // Keep passphrase inputs in sync with generation mode for keypair/SSH forms
-    $(document).on("change", "[name='generation_mode']", function() {
+    // Keep passphrase inputs in sync with generation mode / enable toggle
+    $(document).on("change", "[name='generation_mode'], [name='passphrase_enabled']", function() {
         const $form = $(this).closest("form");
         updatePassphraseStateForForm($form);
     });
 
     // Initialize state on any already-rendered forms
-    $("form[data-action='keypair_generate'], form[data-action='ssh_keygen']").each(function() {
+    $("form[data-action='keypair_generate'], form[data-action='ssh_keygen'], form[data-action='csr_generate']").each(function() {
         updatePassphraseStateForForm($(this));
     });
 
@@ -2112,8 +2831,8 @@ $(document).ready(function() {
 
         var html = "";
         if (data.demo_url) {
-            html += '<p class="mb-3"><a class="btn btn-outline-primary btn-sm" href="' + escapeHtml(data.demo_url) + '" target="_blank" rel="noopener noreferrer">';
-            html += '<i class="bi bi-box-arrow-up-right me-1" aria-hidden="true"></i>Live demo</a></p>';
+            html += '<p class="mb-3"><a class="btn ' + btnClass('primary') + ' btn-sm" href="' + escapeHtml(data.demo_url) + '" target="_blank" rel="noopener noreferrer">';
+            html += '<i class="icon-external-link me-1" aria-hidden="true"></i>Live demo</a></p>';
         }
         html += '<div class="about-info-summary mb-4">';
         html += '<dl class="row about-info-dl mb-0">';
@@ -2132,13 +2851,30 @@ $(document).ready(function() {
         html += '<div class="about-key-extensions mb-4">';
         (data.key_extensions || []).forEach(function(ext) {
             var badgeClass = ext.loaded ? "bg-green-lt text-green" : "bg-red-lt text-red";
-            var iconClass = ext.loaded ? "bi-check-circle-fill" : "bi-x-circle-fill";
+            var iconClass = ext.loaded ? "icon-circle-check" : "icon-circle-x";
             html += '<span class="badge ' + badgeClass + ' about-ext-badge me-1 mb-1" title="' + escapeHtml(ext.label) + '">';
-            html += '<i class="bi ' + iconClass + ' me-1" aria-hidden="true"></i>';
+            html += '<i class="' + iconClass + ' me-1" aria-hidden="true"></i>';
             html += escapeHtml(ext.name);
             html += "</span>";
         });
         html += "</div>";
+
+        var deps = data.dependencies || [];
+        if (deps.length) {
+            html += '<h3 class="h5 mb-2">External libraries</h3>';
+            html += '<p class="text-muted small">Third-party libraries and the versions this install loads.</p>';
+            html += '<div class="table-responsive mb-4"><table class="table table-sm table-vcenter about-deps-table mb-0">';
+            html += "<thead><tr><th>Library</th><th>Version</th><th>Type</th><th>Source</th></tr></thead><tbody>";
+            deps.forEach(function(dep) {
+                html += "<tr>";
+                html += '<td><a href="' + escapeHtml(dep.url) + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(dep.name) + "</a></td>";
+                html += "<td><code>" + escapeHtml(dep.version) + "</code></td>";
+                html += "<td>" + escapeHtml(dep.type) + "</td>";
+                html += '<td class="text-muted">' + escapeHtml(dep.source) + "</td>";
+                html += "</tr>";
+            });
+            html += "</tbody></table></div>";
+        }
 
         var loaded = data.loaded_extensions || [];
         html += '<details class="about-extensions-all">';
@@ -2242,6 +2978,8 @@ $(document).ready(function() {
     /*                      Add Random Data Buttons                          */
     /* ===================================================================== */
     addRandomDataButtons($(".content:visible").first());
+    initSubnetMaskUi($(".content:visible").first());
+    initSyntaxHighlightUi($(".content:visible").first());
 
 }); // document.ready
 
@@ -2296,6 +3034,20 @@ const CRONTAB_RANDOM_SCENARIOS = [
     { expression: "0 0 * * SUN#2", timezone: "America/New_York" },
     { expression: "0 0 L * *", timezone: "UTC" },
     { expression: "0 0 15W * *", timezone: "America/Vancouver" }
+];
+
+const RELATIVE_TIME_RANDOM_SCENARIOS = [
+    { mode: "to_relative", instant: "2020-01-01 00:00:00", expression: "", from: "", to: "" },
+    { mode: "to_relative", instant: "1735689600", expression: "", from: "", to: "" },
+    { mode: "to_relative", instant: "2030-06-15T14:30", expression: "", from: "", to: "" },
+    { mode: "from_relative", instant: "", expression: "2 days ago", from: "", to: "" },
+    { mode: "from_relative", instant: "", expression: "+3 hours", from: "", to: "" },
+    { mode: "from_relative", instant: "", expression: "next Monday", from: "", to: "" },
+    { mode: "from_relative", instant: "", expression: "first day of next month", from: "", to: "" },
+    { mode: "from_relative", instant: "", expression: "-90 minutes", from: "", to: "" },
+    { mode: "diff", instant: "", expression: "", from: "2024-01-01 00:00:00", to: "2026-09-20 16:00:00" },
+    { mode: "diff", instant: "", expression: "", from: "2000-01-01", to: "2026-01-01" },
+    { mode: "diff", instant: "", expression: "", from: "2026-09-20 09:00:00", to: "2026-09-20 17:30:00" }
 ];
 
 const SYNTAX_VALIDATE_KIND_OPTIONS = [
@@ -2599,10 +3351,12 @@ function randomDataGetCompatibleFormBundle($form) {
         const a = randomInt(10, 172);
         const b = randomInt(0, 255);
         const c = randomInt(0, 255);
+        const masks = ['255.255.255.0', '255.255.255.128', '255.255.255.192', '255.255.255.224',
+                      '255.255.0.0', '255.255.128.0', '255.255.192.0', '255.0.0.0'];
         bundle = {
             kind: "subnetmask",
             ip: a + "." + b + "." + c + "." + randomInt(2, 253),
-            subnet: "255.255.255.0"
+            subnet: masks[randomInt(0, masks.length - 1)]
         };
     } else if (formAction === "numgen" || formId === "numgen") {
         const from = randomInt(1, 500);
@@ -2633,6 +3387,16 @@ function randomDataGetCompatibleFormBundle($form) {
             kind: "crontab",
             cronExpression: cronSample.expression,
             cronTimezone: cronSample.timezone
+        };
+    } else if (formAction === "relative_time" || formId === "relativetimeform") {
+        const rtSample = randomPickAvoidRepeatFromForm($form, RELATIVE_TIME_RANDOM_SCENARIOS, "relativeTimeScenario");
+        bundle = {
+            kind: "relative_time",
+            relativeMode: rtSample.mode,
+            relativeInstant: rtSample.instant,
+            relativeExpression: rtSample.expression,
+            relativeFrom: rtSample.from,
+            relativeTo: rtSample.to
         };
     } else if (formAction === "shellcheck" || formId === "shellcheckform") {
         const shellcheckSample = randomPickAvoidRepeatFromForm($form, SHELLCHECK_RANDOM_SCENARIOS, "shellcheckScenario");
@@ -2831,6 +3595,39 @@ function generateRandomData(type, placeholder = '', $input = null) {
                 }
             }
         }
+        if (formAction === "relative_time" || formId === "relativetimeform") {
+            const sample = randomPickAvoidRepeatFromForm($form, RELATIVE_TIME_RANDOM_SCENARIOS, "relativeTimeScenario");
+            if (sample) {
+                $form.find("#relativeMode").val(sample.mode);
+                $form.find('input[name="relative_input_style"][value="expression"]').prop("checked", true);
+                initRelativeTimeUi($form);
+                if (sample.instant) {
+                    $form.find("#relativeInstant").val(sample.instant);
+                }
+                if (sample.expression) {
+                    $form.find("#relativeExpression").val(sample.expression);
+                }
+                if (sample.from) {
+                    $form.find("#relativeFrom").val(sample.from);
+                }
+                if (sample.to) {
+                    $form.find("#relativeTo").val(sample.to);
+                }
+                if (inputName === "relative_instant") {
+                    return sample.instant || "";
+                }
+                if (inputName === "relative_expression") {
+                    return sample.expression || "";
+                }
+                if (inputName === "relative_from") {
+                    return sample.from || "";
+                }
+                if (inputName === "relative_to") {
+                    return sample.to || "";
+                }
+                return sample.expression || sample.instant || sample.from || sample.to || "";
+            }
+        }
         if (formAction === "syntax_validate" || formId === "syntaxvalidateform") {
             if (inputName === "syntax_validate_kind") {
                 const picked = randomPickAvoidRepeatFromForm($form, SYNTAX_VALIDATE_KIND_OPTIONS, "syntaxValidateKindOnly");
@@ -2883,7 +3680,10 @@ function generateRandomData(type, placeholder = '', $input = null) {
     }
 
     if (bundle && bundle.kind === "subnetmask") {
-        if (inputName === "ip") return bundle.ip;
+        if (inputName === "ip") {
+            $form.find("#subnetInput").val(bundle.subnet).trigger("input");
+            return bundle.ip;
+        }
         if (inputName === "subnet") return bundle.subnet;
     }
 
@@ -3111,10 +3911,77 @@ function generateRandomData(type, placeholder = '', $input = null) {
 }
 
 /* ===================================================================== */
+/*                   FUNCTION: createRandomDataButton                    */
+/* ===================================================================== */
+function createRandomDataButton($input, options = {}) {
+    const title = options.title || 'Generate random data';
+    const alignSelf = options.alignSelf || ($input.is('textarea') ? 'flex-start' : 'center');
+    const height = options.height || ($input.is('textarea') ? 'auto' : 'fit-content');
+
+    const $btn = $('<button>', {
+        type: 'button',
+        class: 'btn btn-sm ' + btnClass('secondary') + ' random-data-btn',
+        title: title,
+        html: '<i class="icon-shuffle"></i>',
+        css: {
+            'flex-shrink': '0',
+            'height': height,
+            'align-self': alignSelf
+        }
+    });
+
+    $btn.on('click', function() {
+        const $form = $input.closest('form');
+        const formAction = (($form.attr('data-action') || '') + '').toLowerCase();
+        const inputType = $input.is('textarea')
+            ? 'textarea'
+            : ($input.is('select') ? 'select' : $input.attr('type'));
+        const placeholder = $input.attr('placeholder') || '';
+        const randomData = generateRandomData(inputType, placeholder, $input);
+        $input.val(randomData).trigger('change').trigger('input');
+        if (formAction === 'crontab') {
+            const inputName = ($input.attr('name') || '').toLowerCase();
+            if (inputName === 'cron_timezone') {
+                const det = document.getElementById('crontabMoreDetails');
+                if (det) {
+                    det.open = true;
+                }
+            }
+        }
+
+        const originalHtml = $btn.html();
+        const colorClass = btnClass('secondary');
+        $btn.html('<i class="icon-check"></i>').addClass('btn-success').removeClass(colorClass);
+        setTimeout(() => {
+            $btn.html(originalHtml).removeClass('btn-success').addClass(colorClass);
+        }, 1000);
+    });
+
+    return $btn;
+}
+
+/* ===================================================================== */
 /*                   FUNCTION: addRandomDataButtons                      */
 /* ===================================================================== */
 function addRandomDataButtons($root = null) {
     const $scope = ($root && $root.length) ? $root : $(document);
+
+    // Shared shuffle for a multi-field block (e.g. subnet IP + mask)
+    $scope.find('[data-shared-random]').each(function() {
+        const $block = $(this);
+        if ($block.parent().hasClass('input-with-random-btn') || $block.next('.random-data-btn').length) {
+            return;
+        }
+        const targetSel = String($block.attr('data-shared-random') || '').trim();
+        const $input = targetSel ? $block.find(targetSel).first() : $();
+        if (!$input.length) {
+            return;
+        }
+        $block.wrap('<div class="input-with-random-btn"></div>');
+        const title = $block.attr('data-shared-random-title') || 'Generate random data';
+        $block.after(createRandomDataButton($input, { title: title, alignSelf: 'center' }));
+    });
+
     // Find all text inputs, number inputs, and textareas that don't already have a random button
     const selectors = [
         'input[type="text"]:not([readonly]):not([disabled])',
@@ -3126,19 +3993,27 @@ function addRandomDataButtons($root = null) {
 
     $scope.find(selectors.join(',')).each(function() {
         const $input = $(this);
-        
+        const $inputGroup = $input.closest('.input-group');
+        const wrapTargetIsGroup = $inputGroup.length > 0;
+
         // Skip if already has a random button
         if ($input.parent().hasClass('input-with-random-btn')) {
             return;
         }
+        if (wrapTargetIsGroup && $inputGroup.parent().hasClass('input-with-random-btn')) {
+            return;
+        }
+        if ($input.closest('.input-with-random-btn').length > 0) {
+            return;
+        }
 
         // Skip certain inputs (checkboxes, hidden, etc.)
-        const skipIds = ['enablebordercheckbox', 'enablefilterscheckbox', 'enabledebugcheckbox'];
+        const skipIds = ['enablebordercheckbox', 'enablefilterscheckbox', 'enabledebugcheckbox', 'subnetCidrPrefix'];
         if (skipIds.includes($input.attr('id'))) {
             return;
         }
 
-        if ($input.closest('[data-no-random-buttons]').length > 0) {
+        if ($input.is('[data-no-random-buttons]') || $input.closest('[data-no-random-buttons]').length > 0) {
             return;
         }
 
@@ -3155,67 +4030,35 @@ function addRandomDataButtons($root = null) {
             return;
         }
 
-        // Get input details
-        const inputType = $input.is('textarea')
-            ? 'textarea'
-            : ($input.is('select') ? 'select' : $input.attr('type'));
-        const placeholder = $input.attr('placeholder') || '';
         const inputId = $input.attr('id') || 'input_' + Math.random().toString(36).substr(2, 9);
-        
         if (!$input.attr('id')) {
             $input.attr('id', inputId);
         }
 
-        // Wrap the input if not already wrapped (but not for wheel items - they're already in a flex container)
-        if (!isWheelItemInput && !$input.parent().hasClass('input-with-random-btn')) {
-            $input.wrap('<div class="input-with-random-btn" style="position: relative; display: flex; gap: 8px; align-items: flex-start;"></div>');
+        // Wrap the input (or whole input-group) if not already wrapped
+        if (!isWheelItemInput) {
+            if (wrapTargetIsGroup) {
+                if (!$inputGroup.parent().hasClass('input-with-random-btn')) {
+                    $inputGroup.wrap('<div class="input-with-random-btn"></div>');
+                }
+            } else if (!$input.parent().hasClass('input-with-random-btn')) {
+                $input.wrap('<div class="input-with-random-btn"></div>');
+            }
         }
 
-        const inputIdForTitle = $input.attr('id') || '';
         let randomBtnTitle = 'Generate random data';
-        if (inputIdForTitle === 'syntaxValidateKind') {
+        if (($input.attr('id') || '') === 'syntaxValidateKind') {
             randomBtnTitle = 'Random language';
         }
 
-        // Create the random button
-        const $btn = $('<button>', {
-            type: 'button',
-            class: 'btn btn-sm btn-outline-secondary random-data-btn',
-            title: randomBtnTitle,
-            html: '<i class="bi bi-shuffle"></i>',
-            css: {
-                'flex-shrink': '0',
-                'height': $input.is('textarea') ? 'auto' : 'fit-content',
-                'align-self': $input.is('textarea') ? 'flex-start' : 'center'
-            }
-        });
+        const $btn = createRandomDataButton($input, { title: randomBtnTitle });
 
-        // Add click handler
-        $btn.on('click', function() {
-            const $form = $input.closest('form');
-            const formAction = (($form.attr('data-action') || '') + '').toLowerCase();
-            const randomData = generateRandomData(inputType, placeholder, $input);
-            $input.val(randomData).trigger('change').trigger('input');
-            if (formAction === 'crontab') {
-                const inputName = ($input.attr('name') || '').toLowerCase();
-                if (inputName === 'cron_timezone') {
-                    const det = document.getElementById('crontabMoreDetails');
-                    if (det) {
-                        det.open = true;
-                    }
-                }
-            }
-
-            // Visual feedback
-            const originalHtml = $btn.html();
-            $btn.html('<i class="bi bi-check"></i>').addClass('btn-success').removeClass('btn-outline-secondary');
-            setTimeout(() => {
-                $btn.html(originalHtml).removeClass('btn-success').addClass('btn-outline-secondary');
-            }, 1000);
-        });
-
-        // Append button after input
-        $input.after($btn);
+        // Append button after input or after the input-group
+        if (wrapTargetIsGroup) {
+            $inputGroup.after($btn);
+        } else {
+            $input.after($btn);
+        }
     });
 }
 

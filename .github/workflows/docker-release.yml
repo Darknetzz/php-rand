@@ -1,9 +1,11 @@
+# UNUSED for auto CI (cost). Prefer local:
+#   ./docker-pushimage.sh --release
+#   PUBLISH_DOCKER=1 ./scripts/release.sh X.Y.Z --publish-only
+# Manual dispatch only if Actions are re-enabled.
 name: Publish Docker Images
 
 on:
-  push:
-    tags:
-      - "v*"
+  workflow_dispatch:
 
 jobs:
   docker-publish:

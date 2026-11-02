@@ -1,9 +1,10 @@
+# UNUSED for auto CI (cost). Prefer local:
+#   ./docker-pushimage.sh --dev
+# Manual dispatch only if Actions are re-enabled.
 name: Publish Dev Docker Images
 
 on:
-  push:
-    branches:
-      - dev
+  workflow_dispatch:
 
 jobs:
   docker-publish-dev:

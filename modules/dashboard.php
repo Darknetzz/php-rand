@@ -11,16 +11,16 @@
             </p>
             <div class="d-flex gap-3 justify-content-center flex-wrap">
                 <a href="#gen_string" class="link btn btn-primary btn-lg">
-                    <?= icon("braces-asterisk") ?> Start Generating
+                    <?= icon("braces") ?> Start Generating
                 </a>
-                <a href="#hash" class="link btn btn-outline-primary btn-lg">
+                <a href="#hash" class="link btn <?= btnClass('primary') ?> btn-lg">
                     <?= icon("shield-lock") ?> Explore Crypto
                 </a>
-                <a href="<?= htmlspecialchars(DEMO_URL, ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener noreferrer" class="btn btn-outline-primary btn-lg">
-                    <?= icon("box-arrow-up-right") ?> Live Demo
+                <a href="<?= htmlspecialchars(DEMO_URL, ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener noreferrer" class="btn <?= btnClass('primary') ?> btn-lg">
+                    <?= icon("external-link") ?> Live Demo
                 </a>
-                <a href="https://github.com/Darknetzz/phprand" target="_blank" rel="noopener noreferrer" class="btn btn-outline-secondary btn-lg">
-                    <?= icon("github") ?> View on GitHub
+                <a href="https://github.com/Darknetzz/phprand" target="_blank" rel="noopener noreferrer" class="btn <?= btnClass('secondary') ?> btn-lg">
+                    <?= icon("git-fork") ?> View on GitHub
                 </a>
             </div>
         </div>
@@ -53,7 +53,7 @@
     ?>
     <div class="alert alert-info d-flex align-items-center mb-4" style="border-left: 4px solid #0dcaf0;">
         <div class="flex-shrink-0">
-            <?= icon("stars", 2, "#0dcaf0") ?>
+            <?= icon("sparkles", 2, "#0dcaf0") ?>
         </div>
         <div class="ms-3">
             <h4 class="alert-heading mb-2">✨ New in <?= htmlspecialchars($latestVersion['version']) ?>: <?= htmlspecialchars($featureTitle) ?>!</h4>
@@ -80,10 +80,10 @@
         }
         
         $stats = [
-            ["icon" => "tools", "count" => $totalTools, "label" => "Tools Available", "color" => "primary"],
+            ["icon" => "wrench", "count" => $totalTools, "label" => "Tools Available", "color" => "primary"],
             ["icon" => "shield-lock", "count" => count($navbarItems["cryptography"]["subitems"]), "label" => "Crypto Tools", "color" => "success"],
-            ["icon" => "braces-asterisk", "count" => count($navbarItems["generators"]["subitems"]), "label" => "Generators", "color" => "info"],
-            ["icon" => "file-binary", "count" => count($navbarItems["encoding"]["subitems"]), "label" => "Encoders", "color" => "warning"],
+            ["icon" => "braces", "count" => count($navbarItems["generators"]["subitems"]), "label" => "Generators", "color" => "info"],
+            ["icon" => "file-digit", "count" => count($navbarItems["encoding"]["subitems"]), "label" => "Encoders", "color" => "warning"],
         ];
         
         foreach ($stats as $stat) {
@@ -113,11 +113,11 @@
                 <div class="card-body">
                     <p class="text-muted">Generate contextual test data instantly with our new random data buttons:</p>
                     <ul class="list-unstyled">
-                        <li class="mb-2"><?= icon("envelope", 1, "#20c997") ?> <strong>Emails:</strong> <code>user123@example.com</code></li>
-                        <li class="mb-2"><?= icon("link-45deg", 1, "#0dcaf0") ?> <strong>URLs:</strong> <code>https://demo.io/abc123</code></li>
-                        <li class="mb-2"><?= icon("hdd-network", 1, "#6f42c1") ?> <strong>IPs:</strong> <code>192.168.1.100</code></li>
-                        <li class="mb-2"><?= icon("file-earmark-code", 1, "#fd7e14") ?> <strong>JSON:</strong> Valid structured data</li>
-                        <li class="mb-2"><?= icon("code-slash", 1, "#d63384") ?> <strong>Code:</strong> JavaScript snippets</li>
+                        <li class="mb-2"><?= icon("mail", 1, "#20c997") ?> <strong>Emails:</strong> <code>user123@example.com</code></li>
+                        <li class="mb-2"><?= icon("link-2", 1, "#0dcaf0") ?> <strong>URLs:</strong> <code>https://demo.io/abc123</code></li>
+                        <li class="mb-2"><?= icon("network", 1, "#6f42c1") ?> <strong>IPs:</strong> <code>192.168.1.100</code></li>
+                        <li class="mb-2"><?= icon("file-code", 1, "#fd7e14") ?> <strong>JSON:</strong> Valid structured data</li>
+                        <li class="mb-2"><?= icon("code", 1, "#d63384") ?> <strong>Code:</strong> JavaScript snippets</li>
                     </ul>
                 </div>
             </div>
@@ -125,13 +125,13 @@
         <div class="col-md-6">
             <div class="card h-100 border-success" style="border-width: 2px;">
                 <div class="card-header bg-success text-white">
-                    <h3 class="card-title mb-0"><?= icon("lightning-charge") ?> Key Features</h3>
+                    <h3 class="card-title mb-0"><?= icon("zap") ?> Key Features</h3>
                 </div>
                 <div class="card-body">
                     <div class="row g-3">
                         <div class="col-6">
                             <div class="text-center p-3" style="background: rgba(32, 201, 151, 0.1); border-radius: 0.5rem;">
-                                <div class="mb-2"><?= icon("lock-fill", 2, "#20c997") ?></div>
+                                <div class="mb-2"><?= icon("lock", 2, "#20c997") ?></div>
                                 <strong>Privacy</strong>
                                 <div class="small text-muted">No input data is stored on the server</div>
                                 <button type="button" class="btn btn-link btn-sm p-0 mt-1" data-bs-toggle="modal" data-bs-target="#privacyModal">
@@ -141,7 +141,7 @@
                         </div>
                         <div class="col-6">
                             <div class="text-center p-3" style="background: rgba(13, 110, 253, 0.1); border-radius: 0.5rem;">
-                                <div class="mb-2"><?= icon("lightning-fill", 2, "#0d6efd") ?></div>
+                                <div class="mb-2"><?= icon("zap", 2, "#0d6efd") ?></div>
                                 <strong>Instant</strong>
                                 <div class="small text-muted">Real-time processing</div>
                             </div>
@@ -155,7 +155,7 @@
                         </div>
                         <div class="col-6">
                             <div class="text-center p-3" style="background: rgba(111, 66, 193, 0.1); border-radius: 0.5rem;">
-                                <div class="mb-2"><?= icon("github", 2, "#6f42c1") ?></div>
+                                <div class="mb-2"><?= icon("git-fork", 2, "#6f42c1") ?></div>
                                 <strong>Open Source</strong>
                                 <div class="small text-muted">Free & transparent</div>
                             </div>
@@ -169,7 +169,7 @@
     <!-- Available Tools -->
     <div class="card mb-4">
         <div class="card-header">
-            <h2 class="card-title mb-0"><?= icon("grid-3x3-gap") ?> Available Tools</h2>
+            <h2 class="card-title mb-0"><?= icon("layout-grid") ?> Available Tools</h2>
         </div>
         <div class="card-body">
             <div class="row g-3">
@@ -177,7 +177,7 @@
             foreach ($navbarItems as $moduleName => $module) {
                 $name       = $module["name"] ?? $moduleName;
                 $formalName = $module["formalName"] ?? ucfirst($name);
-                $icon       = $module["icon"] ?? icon('gear');
+                $icon       = $module["icon"] ?? icon('settings');
 
                 if ($name === "dashboard") {
                     continue;
@@ -204,7 +204,7 @@
                     foreach ($module["subitems"] as $subitemName => $subitem) {
                         $subName       = $subitem["name"] ?? $subitemName;
                         $subFormalName = $subitem["formalName"] ?? ucfirst($subName);
-                        $subIcon       = $subitem["icon"] ?? icon('gear');
+                        $subIcon       = $subitem["icon"] ?? icon('settings');
                         echo '<li class="mb-2">
                             <a class="link text-decoration-none" href="#'.$subName.'" style="color: inherit;">
                                 '.$subIcon.' '.$subFormalName.'
@@ -255,7 +255,7 @@
     <!-- Disclaimer -->
     <div class="alert alert-warning mt-4 d-flex align-items-start" style="border-left: 4px solid #ffc107;">
         <div class="flex-shrink-0 me-3">
-            <?= icon("exclamation-triangle-fill", 2, "#ffc107") ?>
+            <?= icon("triangle-alert", 2, "#ffc107") ?>
         </div>
         <div>
             <h4 class="alert-heading mb-2">Disclaimer</h4>

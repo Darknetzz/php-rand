@@ -1,6 +1,6 @@
 <div id="validators" class="content">
     <div class="mb-4">
-        <h1 class="h2 mb-1"><?= icon('patch-check') ?> Validators</h1>
+        <h1 class="h2 mb-1"><?= icon('badge-check') ?> Validators</h1>
         <p class="text-muted mb-0">JSON, YAML, XML, INI, JSON Lines, cron, PHP, Python, Ruby, JavaScript, and shell syntax checks (no execution).</p>
     </div>
     <?php
