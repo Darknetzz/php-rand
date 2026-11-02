@@ -8,6 +8,15 @@ All notable changes to this project are documented in this file.
 
 ### Major Features
 
+_Add entries here during development; rotate into a dated release section when tagging._
+
+---
+
+## [v1.5.0] (2026-11-02)
+
+### Major Features
+
+- **Release script** – `scripts/release.sh` no longer copies the `[Unreleased]` placeholder line into the new release section, and keeps a blank line after the version heading.
 - **OPcache status + fresh Docker base** – About → Key PHP extensions showed OPcache as missing because the extension registers as `Zend OPcache`; it now checks that name and reports whether the opcode cache is actually enabled (`opcache_get_status()`), since PHP 8.5 always loads it (`includes/about_info.php`). OPcache was already on in the container (`opcache.enable=1` in the `Dockerfile`). `docker-pushimage.sh` now builds with **`--pull`** so images always use the current `php:8.5-apache` base (a cached older base could fall below the PHP 8.5.12 minimum).
 - **GitLab releases** – Version tags now get a GitLab Release as well as the GitHub one. New **`gitlab-release`** job in **`.gitlab-ci.yml`** (tag `vX.Y.Z`, `glab` image, `CI_JOB_TOKEN`) uses the `## [vX.Y.Z]` section of `CHANGELOG.md` via `scripts/extract_changelog_section.sh` as release notes, and runs independently of the Docker job. **`scripts/release.sh`** pushes the branch and tag to the **`gitlab`** remote too (override with `GITLAB_REMOTE`; skipped if the remote is missing), including in `--publish-only`. `AGENTS.md` updated.
 - **Square logo + README header** – Added a 1:1 project logo in the green dice / **RAND** style of the social preview: **`images/logo.png`** (1024×1024, rendered with Ubuntu Bold) and editable source **`images/logo.svg`**. Removed the pink `docs/images/banner-gradient.png` banner from the top of **`README.md`**; the social preview is now the first image.
@@ -38,8 +47,6 @@ All notable changes to this project are documented in this file.
 - **Unit Converter (Data)** – Added SI bit units **kilobit (kb)**–**terabit (Tb)** and binary bit units **kibibit (Kib)**–**tebibit (Tib)**; From-unit select groups options as Bits/Bytes × decimal/binary via reusable `groups` + `<optgroup>` support (`modules/units.php`).
 - **Calculator clipboard** – Keyboard-first copy/paste: **Ctrl/Cmd+C** copies the current result, **Ctrl/Cmd+V** pastes a number or valid expression (`+ - * /`, precedence-aware, no `eval`). Clicking the display also copies; invalid pastes show **Error**.
 - **Crypto helpers (PHPStan)** – `crypto_signature_digest_for_key()` PHPDoc now accepts `OpenSSLAsymmetricKey|resource`, matching PHP 8+ OpenSSL key objects and sibling helpers.
-
-_Add entries here during development; rotate into a dated release section when tagging._
 
 ---
 
@@ -117,8 +124,6 @@ _Add entries here during development; rotate into a dated release section when t
 - **`modules/currency.php`**, **`modules/units.php`** – Minor copy or wiring updates where touched for consistency.
 
 </details>
-
-_Add entries here during development; rotate into a dated release section when tagging._
 
 ---
 

@@ -396,6 +396,9 @@ if not lines[0].startswith("## [Unreleased]"):
     print("ERROR: Malformed [Unreleased] block.", file=sys.stderr)
     sys.exit(1)
 rest = lines[1].lstrip("\n") if len(lines) > 1 else ""
+# The [Unreleased] placeholder stays in [Unreleased]; it must not be copied into the release.
+placeholder = "_Add entries here during development; rotate into a dated release section when tagging._"
+rest = "\n".join(l for l in rest.split("\n") if l.strip() != placeholder).strip()
 
 new_unreleased = """## [Unreleased]
 
@@ -403,7 +406,7 @@ new_unreleased = """## [Unreleased]
 
 _Add entries here during development; rotate into a dated release section when tagging._"""
 
-new_release = f"## [v{version}] ({release_date})\n{rest}"
+new_release = f"## [v{version}] ({release_date})\n\n{rest}"
 
 parts[idx] = new_unreleased.strip()
 parts.insert(idx + 1, new_release.strip())
