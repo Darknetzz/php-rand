@@ -2859,6 +2859,23 @@ $(document).ready(function() {
         });
         html += "</div>";
 
+        var deps = data.dependencies || [];
+        if (deps.length) {
+            html += '<h3 class="h5 mb-2">External libraries</h3>';
+            html += '<p class="text-muted small">Third-party libraries and the versions this install loads.</p>';
+            html += '<div class="table-responsive mb-4"><table class="table table-sm table-vcenter about-deps-table mb-0">';
+            html += "<thead><tr><th>Library</th><th>Version</th><th>Type</th><th>Source</th></tr></thead><tbody>";
+            deps.forEach(function(dep) {
+                html += "<tr>";
+                html += '<td><a href="' + escapeHtml(dep.url) + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(dep.name) + "</a></td>";
+                html += "<td><code>" + escapeHtml(dep.version) + "</code></td>";
+                html += "<td>" + escapeHtml(dep.type) + "</td>";
+                html += '<td class="text-muted">' + escapeHtml(dep.source) + "</td>";
+                html += "</tr>";
+            });
+            html += "</tbody></table></div>";
+        }
+
         var loaded = data.loaded_extensions || [];
         html += '<details class="about-extensions-all">';
         html += '<summary class="h6 mb-0">All loaded PHP extensions (' + (data.loaded_extension_count || loaded.length) + ")</summary>";
