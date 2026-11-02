@@ -30,10 +30,16 @@ MAIN_BRANCH="${MAIN_BRANCH:-main}"
 GITLAB_REMOTE="${GITLAB_REMOTE:-gitlab}"
 
 # Read prompts from the controlling terminal so stdin is never drained by git/ssh (set -e would exit on failed read).
+# True only when a controlling terminal can actually be opened; `[[ -r /dev/tty ]]` checks
+# permissions and is true even without one (e.g. CI, agents), so the read then fails.
+has_tty() {
+  { : </dev/tty; } 2>/dev/null
+}
+
 read_tty() {
   local prompt=$1
-  local __v
-  if [[ -r /dev/tty ]]; then
+  local __v=""
+  if has_tty; then
     IFS= read -r -p "$prompt" __v < /dev/tty || true
   else
     IFS= read -r -p "$prompt" __v || true
@@ -304,7 +310,7 @@ if [[ -z "$VERSION_RAW" ]] && [[ "$PUBLISH_ONLY" -eq 0 ]]; then
     echo "ERROR: Could not infer next version: no ## [vM.m.p] heading found in $CHANGELOG" >&2
     exit 1
   fi
-  if [[ -r /dev/tty ]]; then
+  if has_tty; then
     VERSION_RAW="$(read_tty "Next version [${SUGGEST}]: ")"
     VERSION_RAW="${VERSION_RAW:-$SUGGEST}"
   else
@@ -334,7 +340,7 @@ if [[ "$PUBLISH_ONLY" -eq 1 ]]; then
   echo "Post-release: GitLab tag + GitHub (gh) + Docker. Tag v${VERSION} should already exist on the remote."
   pub_br="$(git -C "$ROOT" rev-parse --abbrev-ref HEAD 2>/dev/null || echo "")"
   push_to_gitlab || true
-  if [[ -r /dev/tty ]]; then
+  if has_tty; then
     post_push_gh_prompt
     post_push_docker_prompt
     post_push_merge_to_main_prompt "$pub_br"
@@ -438,11 +444,13 @@ echo "  git add CHANGELOG.md docker-image.config && git commit -m \"Release v${V
 echo "  git tag -a \"v${VERSION}\" -m \"v${VERSION}\""
 echo "  git push && git push origin \"v${VERSION}\""
 echo "  git push ${GITLAB_REMOTE} && git push ${GITLAB_REMOTE} \"v${VERSION}\""
-echo "  (CI: GitHub Actions creates the GitHub Release; GitLab CI creates the GitLab Release and publishes Docker images.)"
+echo "  gh release create \"v${VERSION}\" --title \"v${VERSION}\" --notes-file <(./scripts/extract_changelog_section.sh CHANGELOG.md \"[v${VERSION}]\") --verify-tag"
+echo "  (GitHub Actions are not used: create the GitHub Release with gh as above, CREATE_GH_RELEASE=1, or --publish-only."
+echo "   GitLab CI creates the GitLab Release and publishes Docker images when the tag reaches ${GITLAB_REMOTE}.)"
 echo "  Then merge ${RELEASE_BRANCH:-dev} into ${MAIN_BRANCH:-main} so the default branch matches the release."
 echo ""
 
-if [[ -r /dev/tty ]]; then
+if has_tty; then
   ans="$(read_tty "Create git commit and annotated tag v${VERSION} now? [y/N] ")"
   case "${ans}" in
     y|Y|yes|YES)

@@ -8,6 +8,8 @@ All notable changes to this project are documented in this file.
 
 ### Major Features
 
+- **Release script without a terminal** – `scripts/release.sh` no longer aborts with `__v: unbound variable` when run without a controlling terminal (CI, agents): a new `has_tty()` actually opens `/dev/tty` instead of checking `[[ -r /dev/tty ]]`, which is true even with no terminal. The "Next steps" text no longer claims GitHub Actions creates the GitHub Release (Actions are unused); it prints the `gh release create` command instead.
+
 _Add entries here during development; rotate into a dated release section when tagging._
 
 ---
