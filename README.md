@@ -115,13 +115,13 @@ docker run -d -p 12345:80 --name php-rand php-rand
 ### Manual Installation (Without Docker)
 
 Requirements:
-- PHP 8.3+ with extensions: mbstring, mcrypt, gd, yaml, xml, gmp
+- PHP 8.4+ with extensions: mbstring, mcrypt, gd, yaml, xml, gmp
 - Web server (Apache, Nginx, etc.) with PHP support
 - Composer (for dependency management)
 
 ```bash
 # Install system dependencies (Ubuntu/Debian)
-sudo apt install -y php8.3-common php8.3-mbstring php8.3-mcrypt php8.3-gd php8.3-yaml php8.3-xml php8.3-gmp
+sudo apt install -y php8.4-common php8.4-mbstring php8.4-mcrypt php8.4-gd php8.4-yaml php8.4-xml php8.4-gmp
 
 # Clone repository (assuming webroot is /var/www/html)
 cd /var/www/html
@@ -293,7 +293,7 @@ All functions include PHPDoc comments with descriptions, parameters, return type
 
 ## Architecture
 
-- **Backend:** PHP 8.3+ with modular design (Docker image: PHP 8.5)
+- **Backend:** PHP 8.4+ with modular design (Docker image: PHP 8.5)
 - **Frontend:** Vanilla JavaScript, jQuery, Bootstrap 5, Tabler UI
 - **Dependencies:** Composer-managed (minify utilities)
 - **Extensible:** Easy to add new tools by creating new modules

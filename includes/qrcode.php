@@ -2,7 +2,7 @@
 
 use chillerlan\QRCode\Common\EccLevel;
 use chillerlan\QRCode\Data\QRMatrix;
-use chillerlan\QRCode\Output\QROutputInterface;
+use chillerlan\QRCode\Output\QRGdImagePNG;
 use chillerlan\QRCode\QRCode;
 use chillerlan\QRCode\QROptions;
 
@@ -103,7 +103,7 @@ function qrcode_generate_png(
     $bgRgb = qrcode_hex_to_rgb($bgHex) ?? [255, 255, 255];
 
     $options = new QROptions([
-        'outputType' => QROutputInterface::GDIMAGE_PNG,
+        'outputInterface' => QRGdImagePNG::class,
         'eccLevel' => qrcode_ecc_level($ecc),
         'scale' => 12,
         'quietzoneSize' => $margin,
