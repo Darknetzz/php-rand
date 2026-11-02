@@ -1,5 +1,8 @@
 # phprand
 
+<p align="center"><img src="docs/images/banner-gradient.png" alt="php-rand" width="720"></p>
+
+
 ![php-rand social preview](images/social-preview.png)
 
 A comprehensive collection of useful developer tools built with PHP and modern web technologies.
