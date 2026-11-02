@@ -41,16 +41,12 @@
 
                     <div class="col-lg-6 d-flex flex-column">
                         <label class="form-label mb-3"><strong style="font-size: 1.1rem;">Output</strong></label>
-                        <div class="copyable-content flex-grow-1 d-flex flex-column" style="min-height: 320px; padding: 0; background: linear-gradient(135deg, rgba(108, 92, 231, 0.12) 0%, rgba(13, 110, 253, 0.08) 100%); border: 2px solid #495057; border-radius: 0.5rem; box-shadow: 0 6px 16px rgba(0,0,0,0.25);">
-                        <div class="responseDiv copyable-body flex-grow-1" id="strtoolsresponse" style="margin:0; padding:20px; min-height: 200px; max-height: 480px; overflow-y: auto; background: transparent; border: none; border-radius: 0; box-shadow: none; font-family: monospace; white-space: pre-wrap; word-break: break-word; user-select: all;">
-                          <div style="opacity: 0.55; text-align: center; padding-top: 110px;">
-                            <div style="font-size: 3rem; margin-bottom: 10px;">🧵</div>
-                            <div>Processed output will appear here...</div>
-                          </div>
-                        </div>
-                        <div class="copyable-actions" style="padding: 8px 14px; border-top: 1px solid rgba(255,255,255,0.12);">
-                        <button type="button" class="btn btn-sm btn-outline-light copyOutput" data-target="#strtoolsresponse" style="border: 1px solid #e9ecef;"><?= icon("files") ?> Copy Output</button>
-                        </div>
+                        <textarea id="strtoolsresponse" class="form-control mb-2 flex-grow-1" readonly
+                          style="min-height:320px; font-family: monospace; resize: vertical; font-size: 0.95rem; border: 2px solid #495057; background-color: var(--bs-secondary-bg); cursor: default;"
+                          placeholder="Processed output will appear here..."></textarea>
+                        <div id="strtoolsstatus"></div>
+                        <div class="d-flex justify-content-end mb-3">
+                            <button type="button" class="btn btn-sm btn-outline-light copyOutput" data-target="#strtoolsresponse" style="border: 1px solid #e9ecef;"><?= icon("files") ?> Copy Output</button>
                         </div>
                     </div>
                 </div>
@@ -380,32 +376,36 @@ $(document).ready(function() {
             return;
         }
 
+        var responseDiv = $("#strtoolsresponse");
+        var statusDiv = $("#strtoolsstatus");
+        statusDiv.empty();
+
         if (!input) {
-            $("#strtoolsresponse").html('<div class="alert alert-warning mb-0">Please enter some text first.</div>');
+            statusDiv.html('<div class="alert alert-warning mb-2">Please enter some text first.</div>');
             return;
         }
 
-        var responseDiv = $("#strtoolsresponse");
-        var formData = form.serialize() + "&tool=" + tool;
+        var formData = form.serialize() + "&tool=" + tool + "&responsetype=text";
         submitToolForm(form, {
             data: formData,
             action: "stringtools",
             responseObj: responseDiv,
+            responseType: "text",
             loadingMessage: "Processing text...",
             onSuccess: function(data) {
-                responseDiv.html(data);
+                responseDiv.val(data);
 
                 // If auto-apply is checked, update input
                 if ($("#outputToTextbox").is(":checked")) {
-                    var outputText = data.replace(/<[^>]*>/g, '').trim();
                     history.push(input);
                     historyIndex++;
-                    $("#strtoolsinput").val(outputText);
+                    $("#strtoolsinput").val(data);
                     updateCharCount();
                 }
             },
-            onError: function() {
-                responseDiv.html('<div class="alert alert-danger mb-0">Error processing request</div>');
+            onError: function(xhr) {
+                responseDiv.val("");
+                statusDiv.html(xhr.responseText || '<div class="alert alert-danger mb-2">Error processing request</div>');
             }
         });
     });
@@ -418,7 +418,8 @@ $(document).ready(function() {
         history = [];
         historyIndex = -1;
         updateCharCount();
-        $("#strtoolsresponse").html("Output will appear here...");
+        $("#strtoolsresponse").val("");
+        $("#strtoolsstatus").empty();
     }
 
     /* ───────────────────────────────────────────────────────────────────── */

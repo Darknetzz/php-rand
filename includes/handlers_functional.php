@@ -1278,6 +1278,7 @@ function handle_stringtools(array $req): string {
     $string = req_get($req, 'string', '');
     
     if (strlen($string) > 1000000) {
+        http_response_code(422);
         return formatOutput("Input must be at most 1,000,000 characters.", type: "danger");
     }
 
@@ -1294,12 +1295,14 @@ function handle_stringtools(array $req): string {
     $tool = req_get($req, 'tool', '');
 
     if (empty($tool) || !in_array($tool, $allowedTools)) {
+        http_response_code(422);
         return formatOutput("Invalid tool selected.", type: "danger");
     }
 
     if ($tool === 'removecustomcharacters') {
         $customCharacters = (string) req_get($req, 'custom_characters', '');
         if ($customCharacters === '') {
+            http_response_code(422);
             return formatOutput('Enter characters to remove in the "Custom characters" field.', type: 'danger');
         }
     }
@@ -1341,11 +1344,8 @@ function handle_stringtools(array $req): string {
         default => $string
     };
 
-    if (req_bool($req, 'outputToTextbox')) {
-        return $string;
-    }
-
-    return formatOutput(nl2br($string));
+    // Plain text: the module renders this into a read-only textarea
+    return $string;
 }
 
 function handle_urlencode(array $req): string {

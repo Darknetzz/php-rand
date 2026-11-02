@@ -211,7 +211,10 @@ function copyToClipboard(elementId, btnEl) {
     }
     const element = document.getElementById(elementId);
     if (!element) return;
-    const text = (element.textContent || "").trim();
+    // Form fields hold their live value in .value; copy it verbatim
+    const text = (element.tagName === "TEXTAREA" || element.tagName === "INPUT")
+        ? element.value
+        : (element.textContent || "").trim();
     const btn = btnEl || (document.activeElement?.closest && document.activeElement.closest('button')) || null;
 
     const setFeedback = (ok) => {
