@@ -865,3 +865,77 @@ th.tablehead,
   border-color: rgba(13, 110, 253, 0.35);
   box-shadow: 0 0 8px rgba(13, 110, 253, 0.08);
 }
+
+/* ---------- Dice Roller ---------- */
+.dice-tray {
+  --dice-size: 72px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: calc(var(--dice-size) * 0.4);
+  padding: 80px 8px 24px;
+}
+
+.dice-tray-sm {
+  --dice-size: 48px;
+}
+
+.dice-tray-xs {
+  --dice-size: 34px;
+}
+
+.dice-roll-rolling .dice-summary {
+  visibility: hidden;
+}
+
+.dice-die {
+  position: relative;
+  width: var(--dice-size);
+  height: var(--dice-size);
+  perspective: calc(var(--dice-size) * 6);
+}
+
+.dice-cube {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+}
+
+.dice-face {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14%;
+  background: #2fb344;
+  box-shadow: inset 0 0 calc(var(--dice-size) * 0.14) rgba(0, 0, 0, 0.3);
+  color: #fff;
+  font-family: monospace;
+  font-size: calc(var(--dice-size) * var(--dice-font-scale, 0.5));
+  font-weight: 700;
+  line-height: 1;
+  backface-visibility: hidden;
+}
+
+.dice-face-pips {
+  display: grid;
+  grid-template: repeat(3, 1fr) / repeat(3, 1fr);
+  place-items: center;
+  padding: 12%;
+}
+
+.dice-pip {
+  width: 72%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.dice-face-front  { transform: translateZ(calc(var(--dice-size) / 2)); }
+.dice-face-back   { transform: rotateY(180deg) translateZ(calc(var(--dice-size) / 2)); }
+.dice-face-right  { transform: rotateY(90deg) translateZ(calc(var(--dice-size) / 2)); }
+.dice-face-left   { transform: rotateY(-90deg) translateZ(calc(var(--dice-size) / 2)); }
+.dice-face-top    { transform: rotateX(90deg) translateZ(calc(var(--dice-size) / 2)); }
+.dice-face-bottom { transform: rotateX(-90deg) translateZ(calc(var(--dice-size) / 2)); }

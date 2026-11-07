@@ -38,6 +38,7 @@ function getHandlerRegistry(): array {
         'diff' => 'handle_diff',
         'serialization' => 'handle_serialization',
         'spinwheel' => 'handle_spinwheel',
+        'dice_roll' => 'handle_dice_roll',
         'calc' => 'handle_calculator',
         'currency' => 'handle_currency',
         'qrcode' => 'handle_qrcode',
@@ -1676,6 +1677,38 @@ function handle_spinwheel(array $req): string {
         '<div class="alert alert-success mb-0">Winner: <strong>'
         . htmlspecialchars($pick, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</strong></div>'
     );
+}
+
+/**
+ * Roll dice on the server; renderDiceRoll() in js/rand.js animates the result.
+ *
+ * @param array $req Request array containing: 'dice_count', 'dice_sides'
+ * @return string HTML with the rolls in data attributes and a copyable summary, or an error message
+ */
+function handle_dice_roll(array $req): string {
+    $countValidation = req_int_validated($req, 'dice_count', 1, DICE_MAX_COUNT);
+    if (!$countValidation['valid']) {
+        return formatOutput('Number of dice: ' . $countValidation['error'], type: 'danger');
+    }
+    $sidesValidation = req_int_validated($req, 'dice_sides', DICE_MIN_SIDES, DICE_MAX_SIDES);
+    if (!$sidesValidation['valid']) {
+        return formatOutput('Sides per die: ' . $sidesValidation['error'], type: 'danger');
+    }
+    $count = $countValidation['value'];
+    $sides = $sidesValidation['value'];
+
+    $rolls = [];
+    for ($i = 0; $i < $count; $i++) {
+        $rolls[] = random_int(1, $sides);
+    }
+
+    $list = implode(', ', $rolls);
+    $summary = "{$count}d{$sides}: {$list}" . ($count > 1 ? ' = ' . array_sum($rolls) : '');
+
+    return "<div class='dice-roll'>"
+        . "<div class='dice-tray' role='img' aria-label='Rolled {$list}' data-dice-rolls='" . json_encode($rolls) . "' data-dice-sides='{$sides}'></div>"
+        . "<div class='dice-summary'>" . output_copyable($summary) . "</div>"
+        . "</div>";
 }
 
 function handle_calculator(array $req): string {

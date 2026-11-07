@@ -8,6 +8,7 @@ All notable changes to this project are documented in this file.
 
 ### Major Features
 
+- **Dice Roller** – New **Generators → Dice Roller** tool (`modules/dice_roller.php`): choose the number of dice (1–100) and sides per die (2–1000, default 6). Handler **`handle_dice_roll`** rolls server-side with `random_int`; `renderDiceRoll()` (`js/rand.js`) tumbles a 3D CSS cube per die, with pips on d6 and numbers otherwise, then reveals a copyable summary such as `3d6: 4, 1, 6 = 11`. Respects `prefers-reduced-motion`. Limits live in `includes/config.php`.
 - **Release script without a terminal** – `scripts/release.sh` no longer aborts with `__v: unbound variable` when run without a controlling terminal (CI, agents): a new `has_tty()` actually opens `/dev/tty` instead of checking `[[ -r /dev/tty ]]`, which is true even with no terminal. The "Next steps" text no longer claims GitHub Actions creates the GitHub Release (Actions are unused); it prints the `gh release create` command instead.
 
 _Add entries here during development; rotate into a dated release section when tagging._

@@ -42,6 +42,11 @@ $navbarItems = [
                 "formalName" => "Spin Wheel",
                 "icon"       => icon('ban')
             ],
+            "dice_roller" => [
+                "name"       => "dice_roller",
+                "formalName" => "Dice Roller",
+                "icon"       => icon('dices')
+            ],
         ],
     ],
     "cryptography" => [

@@ -2499,6 +2499,120 @@ function randomizeDice() {
     $(".dice").html('<i class="icon-dice-' + diceIcon + '"></i>');
 }
 
+/* ===================================================================== */
+/*                       FUNCTION: renderDiceRoll                        */
+/* ===================================================================== */
+// Cube faces, in this order: name, value on a d6 (opposite faces sum to 7),
+// and the cube rotation [rotateX, rotateY] that brings the face to the front.
+const DICE_FACES = [
+    { name: "front",  d6: 1, rotation: [0, 0] },
+    { name: "back",   d6: 6, rotation: [0, 180] },
+    { name: "right",  d6: 2, rotation: [0, -90] },
+    { name: "left",   d6: 5, rotation: [0, 90] },
+    { name: "top",    d6: 3, rotation: [-90, 0] },
+    { name: "bottom", d6: 4, rotation: [90, 0] }
+];
+// Lit cells of a 3x3 grid for each d6 value.
+const DICE_PIPS = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
+
+function randomBetween(min, max) {
+    return min + Math.random() * (max - min);
+}
+
+function buildDiceFace(faceName, value, usePips) {
+    const face = document.createElement("div");
+    face.className = "dice-face dice-face-" + faceName;
+    if (!usePips) {
+        face.textContent = value;
+        return face;
+    }
+    face.classList.add("dice-face-pips");
+    for (let cell = 0; cell < 9; cell++) {
+        const pip = document.createElement("span");
+        if (DICE_PIPS[value].includes(cell)) {
+            pip.className = "dice-pip";
+        }
+        face.appendChild(pip);
+    }
+    return face;
+}
+
+// Non-d6 dice can't map values to fixed faces, so the result goes on the front
+// and the other faces just show random values while the cube tumbles.
+function buildDie(result, sides) {
+    const isD6 = sides === 6;
+    const die = document.createElement("div");
+    die.className = "dice-die";
+    const cube = document.createElement("div");
+    cube.className = "dice-cube";
+    DICE_FACES.forEach(function(face, index) {
+        let value = isD6 ? face.d6 : Math.floor(Math.random() * sides) + 1;
+        if (!isD6 && index === 0) {
+            value = result;
+        }
+        cube.appendChild(buildDiceFace(face.name, value, isD6));
+    });
+    die.appendChild(cube);
+    const shown = isD6 ? DICE_FACES.find(function(face) { return face.d6 === result; }) : DICE_FACES[0];
+    return { die, cube, rotation: shown.rotation };
+}
+
+function animateDie(parts) {
+    const [x, y] = parts.rotation;
+    const tilt = randomBetween(-7, 7);
+    const restCube = "rotateX(" + x + "deg) rotateY(" + y + "deg)";
+    const restDie = "rotate(" + tilt + "deg)";
+    parts.cube.style.transform = restCube;
+    parts.die.style.transform = restDie;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        return Promise.resolve();
+    }
+
+    const timing = { duration: randomBetween(1000, 1500), delay: randomBetween(0, 200), fill: "backwards" };
+    const spin = function() {
+        const turns = (Math.random() < 0.5 ? -1 : 1) * (2 + Math.floor(Math.random() * 2));
+        return turns * 360 + randomBetween(0, 360);
+    };
+    const tumble = parts.cube.animate([
+        { transform: "rotateX(" + (x + spin()) + "deg) rotateY(" + (y + spin()) + "deg)" },
+        { transform: restCube }
+    ], { ...timing, easing: "cubic-bezier(0.2, 0.7, 0.3, 1)" });
+    const hop = function(height, offset, angle) {
+        return { offset, easing: height ? "ease-in" : "ease-out", transform: "translateY(" + height + "px) rotate(" + (tilt + angle) + "deg)" };
+    };
+    const bounce = parts.die.animate([
+        hop(-70, 0, randomBetween(-40, 40)),
+        hop(0, 0.42, 0),
+        hop(-24, 0.6, 0),
+        hop(0, 0.76, 0),
+        hop(-7, 0.88, 0),
+        hop(0, 1, 0)
+    ], timing);
+    return Promise.all([tumble.finished, bounce.finished]);
+}
+
+function renderDiceRoll($response) {
+    const $roll = $response.find(".dice-roll");
+    const tray = $roll.find(".dice-tray")[0];
+    if (!tray) {
+        return; // Validation error from the server.
+    }
+    const rolls = JSON.parse(tray.dataset.diceRolls);
+    const sides = parseInt(tray.dataset.diceSides, 10);
+    const digits = String(sides).length;
+    tray.classList.toggle("dice-tray-sm", rolls.length > 12 && rolls.length <= 40);
+    tray.classList.toggle("dice-tray-xs", rolls.length > 40);
+    tray.style.setProperty("--dice-font-scale", [0.5, 0.42, 0.32, 0.26][digits - 1]);
+
+    const dice = rolls.map(function(result) { return buildDie(result, sides); });
+    dice.forEach(function(parts) { tray.appendChild(parts.die); });
+
+    $roll.addClass("dice-roll-rolling");
+    Promise.all(dice.map(animateDie)).finally(function() {
+        $roll.removeClass("dice-roll-rolling");
+    });
+}
+
 
 /* ===================================================================== */
 /*                        FUNCTION: document.ready                       */
@@ -2679,6 +2793,13 @@ $(document).ready(function() {
                         $root.html(buildClientCryptoDiagnosticsHtml());
                     }
                 }, 0);
+            };
+        }
+        if ((form.data("action") || "") === "dice_roll") {
+            submitOpts.loadingMessage = "Rolling...";
+            submitOpts.onSuccess = function(dataOut) {
+                showData(responseDiv, dataOut);
+                renderDiceRoll(responseDiv);
             };
         }
 

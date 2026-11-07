@@ -16,6 +16,11 @@ define("DEMO_URL", "https://rand.demo.roste.org/");
 // Applied via btnClass() in PHP and JS. Radio/checkbox toggle groups (btn-check) always stay outline.
 define("BTN_OUTLINE", false);
 
+# Dice roller limits (form and handle_dice_roll)
+define("DICE_MAX_COUNT", 100);
+define("DICE_MIN_SIDES", 2);
+define("DICE_MAX_SIDES", 1000);
+
 # Encoding
 ini_set('default_charset', 'UTF-8');
 mb_internal_encoding('UTF-8');
