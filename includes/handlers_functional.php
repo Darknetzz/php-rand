@@ -223,7 +223,7 @@ function output_copyable(string $content, string $label = "", ?array $useAsInput
  * Processes requests to generate random strings with specified character sets
  * and options. Returns formatted output with generated strings and statistics.
  *
- * @param array $req Request array containing: 'digits', 'strings', 'a', 'l', 'u', 'n', 's', 'e', 'c', 'cchars'
+ * @param array $req Request array containing: 'digits', 'strings', 'a', 'l', 'u', 'n', 's', 'e', 'x', 'X', 'c', 'cchars'
  * @return string Formatted HTML output with generated strings or error message
  */
 function handle_stringgen(array $req): string {
@@ -242,7 +242,7 @@ function handle_stringgen(array $req): string {
     $strings = $stringsValidation['value'];
     
     $charsets = '';
-    foreach (['a', 'l', 'u', 'n', 's', 'e', 'c'] as $opt) {
+    foreach (['a', 'l', 'u', 'n', 's', 'e', 'x', 'X', 'c'] as $opt) {
         if (req_bool($req, $opt)) {
             $charsets .= $opt;
         }
@@ -281,7 +281,7 @@ function handle_stringgen(array $req): string {
 
     $output = "<hr>";
     if ($cryptoSafe) {
-        $output .= "<div class='alert alert-success mb-3'>" . icon('shield-check') . " <strong>Cryptographically Secure Random</strong> - Generated using random_bytes()</div>";
+        $output .= "<div class='alert alert-success mb-3'>" . icon('shield-check') . " <strong>Cryptographically Secure Random</strong> - Generated using random_int()</div>";
     }
     foreach ($results as $string) {
         $output .= output_copyable($string);

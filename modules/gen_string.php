@@ -24,7 +24,7 @@
                             <input type="checkbox" class="form-check-input" id="cryptoSafe" name="cryptoSafe" value="1" checked>
                             <label class="form-check-label" for="cryptoSafe">
                                 <strong>🔐 Cryptographically Secure</strong>
-                                <small class="text-muted d-block">Use random_bytes() for security-critical applications</small>
+                                <small class="text-muted d-block">Use random_int() for security-critical applications</small>
                             </label>
                         </div>
                     </div>
@@ -61,6 +61,16 @@
                     "desc" =>"Extended symbols",
                     "checked" => "",
                     "chars" => "ƒ†‡™•",
+                  ],
+                  "x" => [
+                    "desc" =>"Hexadecimal (lowercase)",
+                    "checked" => "",
+                    "chars" => "0-9a-f",
+                  ],
+                  "X" => [
+                    "desc" =>"Hexadecimal (uppercase)",
+                    "checked" => "",
+                    "chars" => "0-9A-F",
                   ],
                   "c" => [
                     "desc" =>"Custom characters",
@@ -118,7 +128,8 @@
         const $form = $("#stringgen");
         const $alphanumeric = $form.find("#a");
         const $alphanumericRow = $form.find('.stringgen-charset-row[data-charset="a"]');
-        const otherThanNumbers = "#l, #u, #s, #e, #c";
+        const otherThanNumbers = "#l, #u, #s, #e, #x, #X, #c";
+        const nonHexSets = "#a, #n, #l, #u, #s, #e";
 
         function syncAlphanumericOption(immediate) {
             const hideAlphanumeric = $form.find(otherThanNumbers).is(":checked");
@@ -137,6 +148,14 @@
             } else {
                 $("#cchars").slideUp();
             }
+        });
+
+        // Hex is a complete set on its own: picking one case clears the other
+        // built-in sets (custom characters stay) so the output is pure hex.
+        $form.find("#x, #X").on("change", function() {
+            if (!$(this).is(":checked")) return;
+            $form.find(nonHexSets).prop("checked", false);
+            $form.find(this.id === "x" ? "#X" : "#x").prop("checked", false);
         });
 
         $form.find(otherThanNumbers).on("change", function() {

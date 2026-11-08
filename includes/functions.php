@@ -260,6 +260,8 @@ function str_rot($s, $n = 13) {
  *                         'n' = numbers 0-9
  *                         's' = symbols: !#¤%&/() = ?;: -_.,'\"*^<>{}[]@~+´`
  *                         'e' = extended: ƒ†‡™•
+ *                         'x' = hexadecimal lowercase 0-9a-f
+ *                         'X' = hexadecimal uppercase 0-9A-F
  *                         'c' = custom characters (requires $cchars parameter)
  * @param int|null $length The length of the string to generate. Required
  * @param string|null $cchars Custom characters to include when 'c' is in $charsets
@@ -286,7 +288,7 @@ function genStr(string $charsets, ?int $length = null, $cchars = null) {
 /**
  * Build the unique character pool for string generation.
  *
- * @param string $charsets Character set flags (a/l/u/n/s/e/c)
+ * @param string $charsets Character set flags (a/l/u/n/s/e/x/X/c)
  * @param string|null $cchars Custom characters when 'c' is in $charsets
  * @return array<int, string> Unique character pool
  */
@@ -311,6 +313,12 @@ function stringgen_charset_chars(string $charsets, $cchars = null): array {
     if (in_array('e', $flags, true)) {
         $pool = array_merge($pool, str_split("ƒ†‡™•"));
     }
+    if (in_array('x', $flags, true)) {
+        $pool = array_merge($pool, str_split('0123456789abcdef'));
+    }
+    if (in_array('X', $flags, true)) {
+        $pool = array_merge($pool, str_split('0123456789ABCDEF'));
+    }
     if (in_array('c', $flags, true) && !empty($cchars)) {
         $pool = array_merge($pool, str_split((string) $cchars));
     }
@@ -318,12 +326,12 @@ function stringgen_charset_chars(string $charsets, $cchars = null): array {
 }
 
 /**
- * Generate a random string using cryptographically secure random_bytes()
+ * Generate a random string using cryptographically secure random_int()
  * 
- * Uses random_bytes() for cryptographically secure randomness, suitable for
+ * Uses random_int() for cryptographically secure randomness, suitable for
  * security-critical applications like tokens, passwords, and keys.
  *
- * @param string $charsets Character set flags (a=alphanumeric, l=lowercase, u=uppercase, n=numbers, s=symbols, e=extended, c=custom)
+ * @param string $charsets Character set flags (a=alphanumeric, l=lowercase, u=uppercase, n=numbers, s=symbols, e=extended, x/X=hex lower/upper, c=custom)
  * @param int $length Length of the generated string
  * @param string|null $cchars Custom characters if 'c' is in charsets
  * @return string Randomly generated string
@@ -334,10 +342,10 @@ function genStrCrypto(string $charsets, ?int $length = null, $cchars = null) {
     if (empty($all)) {
       return "[empty]";
     }
-    $count = count($all);
+    // random_int() is CSPRNG-backed and unbiased (no modulo bias for pool sizes that don't divide 256)
+    $max = count($all) - 1;
     for ($i = 0; $i < $length; $i++) {
-      $randomIndex = ord(random_bytes(1)) % $count;
-      $str .= $all[$randomIndex];
+      $str .= $all[random_int(0, $max)];
     }
     return $str;
 }
