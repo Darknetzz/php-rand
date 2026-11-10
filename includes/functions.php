@@ -245,6 +245,91 @@ function str_rot($s, $n = 13) {
   return strtr($s, $letters, $rep);
 }
 
+/**
+ * Split a UTF-8 string into characters (not bytes).
+ *
+ * @return array<int, string>
+ */
+function utf8_chars(string $s): array {
+  return $s === '' ? [] : mb_str_split($s, 1, 'UTF-8');
+}
+
+/**
+ * Reverse a UTF-8 string character by character.
+ */
+function utf8_reverse(string $s): string {
+  return implode('', array_reverse(utf8_chars($s)));
+}
+
+/**
+ * Shuffle the characters of a UTF-8 string (Fisher–Yates with random_int()).
+ */
+function utf8_shuffle(string $s): string {
+  $chars = utf8_chars($s);
+  for ($i = count($chars) - 1; $i > 0; $i--) {
+    $j = random_int(0, $i);
+    [$chars[$i], $chars[$j]] = [$chars[$j], $chars[$i]];
+  }
+  return implode('', $chars);
+}
+
+/**
+ * Swap upper and lower case for every letter, including non-ASCII (å ↔ Å).
+ */
+function utf8_invert_case(string $s): string {
+  $out = '';
+  foreach (utf8_chars($s) as $c) {
+    $upper = mb_strtoupper($c, 'UTF-8');
+    $out .= ($c === $upper) ? mb_strtolower($c, 'UTF-8') : $upper;
+  }
+  return $out;
+}
+
+/**
+ * Transliterate a UTF-8 string to ASCII (æ → ae, ø → o, é → e) where possible.
+ * Characters with no ASCII equivalent are left for the caller to strip.
+ */
+function utf8_to_ascii(string $s): string {
+  if (class_exists('Transliterator')) {
+    $t = Transliterator::create('Any-Latin; Latin-ASCII');
+    if ($t !== null) {
+      $out = $t->transliterate($s);
+      if ($out !== false) {
+        return $out;
+      }
+    }
+  }
+  $out = @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $s);
+  return $out === false ? $s : $out;
+}
+
+/**
+ * Levenshtein distance counted in UTF-8 characters (PHP's levenshtein() counts bytes,
+ * so "a" → "å" would cost 2). Same cost parameters as levenshtein().
+ */
+function utf8_levenshtein(string $s1, string $s2, int $ins = 1, int $rep = 1, int $del = 1): int {
+  $a = utf8_chars($s1);
+  $b = utf8_chars($s2);
+  $m = count($a);
+  $n = count($b);
+  $prev = [];
+  for ($j = 0; $j <= $n; $j++) {
+    $prev[$j] = $j * $ins;
+  }
+  for ($i = 1; $i <= $m; $i++) {
+    $cur = [$i * $del];
+    for ($j = 1; $j <= $n; $j++) {
+      $cur[$j] = min(
+        $prev[$j] + $del,
+        $cur[$j - 1] + $ins,
+        $prev[$j - 1] + ($a[$i - 1] === $b[$j - 1] ? 0 : $rep)
+      );
+    }
+    $prev = $cur;
+  }
+  return $prev[$n];
+}
+
 
 /**
  * Generate a random string from specified character sets
@@ -293,7 +378,7 @@ function genStr(string $charsets, ?int $length = null, $cchars = null) {
  * @return array<int, string> Unique character pool
  */
 function stringgen_charset_chars(string $charsets, $cchars = null): array {
-    $flags = str_split($charsets);
+    $flags = utf8_chars($charsets);
     $pool = [];
     if (in_array('a', $flags, true)) {
         $pool = array_merge($pool, range('a', 'z'), range('A', 'Z'), array_map('strval', range(0, 9)));
@@ -308,19 +393,19 @@ function stringgen_charset_chars(string $charsets, $cchars = null): array {
         $pool = array_merge($pool, array_map('strval', range(0, 9)));
     }
     if (in_array('s', $flags, true)) {
-        $pool = array_merge($pool, str_split("!#¤%&\/() = ?;: -_.,'\"*^<>{}[]@~+´`"));
+        $pool = array_merge($pool, utf8_chars("!#¤%&\/() = ?;: -_.,'\"*^<>{}[]@~+´`"));
     }
     if (in_array('e', $flags, true)) {
-        $pool = array_merge($pool, str_split("ƒ†‡™•"));
+        $pool = array_merge($pool, utf8_chars("ƒ†‡™•"));
     }
     if (in_array('x', $flags, true)) {
-        $pool = array_merge($pool, str_split('0123456789abcdef'));
+        $pool = array_merge($pool, utf8_chars('0123456789abcdef'));
     }
     if (in_array('X', $flags, true)) {
-        $pool = array_merge($pool, str_split('0123456789ABCDEF'));
+        $pool = array_merge($pool, utf8_chars('0123456789ABCDEF'));
     }
     if (in_array('c', $flags, true) && !empty($cchars)) {
-        $pool = array_merge($pool, str_split((string) $cchars));
+        $pool = array_merge($pool, utf8_chars((string) $cchars));
     }
     return array_values(array_unique(array_map('strval', $pool), SORT_STRING));
 }

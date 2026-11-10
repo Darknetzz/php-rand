@@ -21,6 +21,9 @@ define("DICE_MAX_COUNT", 100);
 define("DICE_MIN_SIDES", 2);
 define("DICE_MAX_SIDES", 1000);
 
+# Levenshtein: max characters per string (O(m×n) pure-PHP UTF-8 implementation)
+define("LEVENSHTEIN_MAX_CHARS", 1000);
+
 # Encoding
 ini_set('default_charset', 'UTF-8');
 mb_internal_encoding('UTF-8');

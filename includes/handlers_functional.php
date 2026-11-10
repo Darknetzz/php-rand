@@ -1282,6 +1282,10 @@ function handle_stringtools(array $req): string {
         http_response_code(422);
         return formatOutput("Input must be at most 1,000,000 characters.", type: "danger");
     }
+    if (!mb_check_encoding($string, 'UTF-8')) {
+        http_response_code(422);
+        return formatOutput("Input must be valid UTF-8 text.", type: "danger");
+    }
 
     // Validate tool selection
     $allowedTools = [
@@ -1312,24 +1316,24 @@ function handle_stringtools(array $req): string {
     $string = match($tool) {
         'trim' => trim($string),
         'removewhitespace' => preg_replace('/\s+/', '', $string),
-        'reverse' => strrev($string),
+        'reverse' => utf8_reverse($string),
         'repeat' => str_repeat($string, 2),
-        'shuffle' => str_shuffle($string),
+        'shuffle' => utf8_shuffle($string),
         'uppercase' => mb_strtoupper($string, 'UTF-8'),
         'lowercase' => mb_strtolower($string, 'UTF-8'),
         'titlecase' => mb_convert_case($string, MB_CASE_TITLE, 'UTF-8'),
         'camelcase' => lcfirst(str_replace(' ', '', mb_convert_case($string, MB_CASE_TITLE, 'UTF-8'))),
-        'slugify' => strtolower(preg_replace('/[^a-zA-Z0-9_]/', '', str_replace([" ", "-"], "_", $string))),
-        'kebabcase' => strtolower(preg_replace('/[^a-zA-Z0-9_-]/', '', str_replace([" ", "_"], "-", $string))),
-        'randomcase' => implode('', array_map(fn($c) => (mt_rand(0, 100) >= 50) ? mb_strtoupper($c, 'UTF-8') : mb_strtolower($c, 'UTF-8'), preg_split('//u', $string, -1, PREG_SPLIT_NO_EMPTY))),
-        'invertedcase' => strtr($string, 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ', 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'),
+        'slugify' => strtolower(preg_replace('/[^a-zA-Z0-9_]/', '', str_replace([" ", "-"], "_", utf8_to_ascii($string)))),
+        'kebabcase' => strtolower(preg_replace('/[^a-zA-Z0-9_-]/', '', str_replace([" ", "_"], "-", utf8_to_ascii($string)))),
+        'randomcase' => implode('', array_map(fn($c) => (mt_rand(0, 100) >= 50) ? mb_strtoupper($c, 'UTF-8') : mb_strtolower($c, 'UTF-8'), utf8_chars($string))),
+        'invertedcase' => utf8_invert_case($string),
         'l33t5p34k' => str_replace(['a','e','o','t','l','s','b','A','E','O','T','L','S','B'], ['4','3','0','7','1','5','6','4','3','0','7','1','5','6'], $string),
         'crlf2lf' => stringtools_normalize_line_endings_to_lf($string),
         'lf2crlf' => stringtools_convert_line_endings_to_crlf($string),
         'formatlineendings' => stringtools_normalize_line_endings_to_lf($string),
         'removecustomcharacters' => stringtools_remove_custom_characters($string, (string) req_get($req, 'custom_characters', '')),
         'removehtmltags' => strip_tags($string),
-        'removepunctuation' => preg_replace('/[^\w\s]/', '', $string),
+        'removepunctuation' => preg_replace('/[^\p{L}\p{M}\p{N}_\s]/u', '', $string),
         'removenewlines' => str_replace(["\r\n", "\r", "\n"], '', $string),
         'removetabs' => str_replace("\t", '', $string),
         'removespaces' => str_replace(" ", '', $string),
@@ -1339,9 +1343,9 @@ function handle_stringtools(array $req): string {
         'removenonprintable' => preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', $string),
         'removewhitespaceext' => preg_replace('/\s+/', '', $string),
         'removenumbers' => preg_replace('/\d/', '', $string),
-        'removeletters' => preg_replace('/[a-zA-Z]/', '', $string),
-        'removesymbols' => preg_replace('/[^a-zA-Z0-9\s]/', '', $string),
-        'removeextendedsymbols' => preg_replace('/[^a-zA-Z0-9\s\-_.]/', '', $string),
+        'removeletters' => preg_replace('/[\p{L}\p{M}]/u', '', $string),
+        'removesymbols' => preg_replace('/[^\p{L}\p{M}\p{N}\s]/u', '', $string),
+        'removeextendedsymbols' => preg_replace('/[^\p{L}\p{M}\p{N}\s\-_.]/u', '', $string),
         default => $string
     };
 
@@ -1403,16 +1407,17 @@ function handle_levenshtein(array $req): string {
     $ins = max(0, req_int($req, 'insertion_cost', 1));
     $rep = max(0, req_int($req, 'replacement_cost', 1));
     $del = max(0, req_int($req, 'deletion_cost', 1));
-    if (strlen($s1) > 255 || strlen($s2) > 255) {
+    if (!mb_check_encoding($s1, 'UTF-8') || !mb_check_encoding($s2, 'UTF-8')) {
+        return formatOutput('Input must be valid UTF-8 text.', type: 'danger');
+    }
+    $max = LEVENSHTEIN_MAX_CHARS;
+    if (mb_strlen($s1, 'UTF-8') > $max || mb_strlen($s2, 'UTF-8') > $max) {
         return formatOutput(
-            'Each string must be at most 255 characters for Levenshtein distance (PHP limit). Shorten the input or compare smaller chunks.',
+            'Each string must be at most ' . number_format($max) . ' characters for Levenshtein distance. Shorten the input or compare smaller chunks.',
             type: 'warning'
         );
     }
-    $dist = levenshtein($s1, $s2, $ins, $rep, $del);
-    if ($dist < 0) {
-        return formatOutput('Could not compute distance (invalid arguments or empty strings).', type: 'danger');
-    }
+    $dist = utf8_levenshtein($s1, $s2, $ins, $rep, $del);
     $body = '<p class="lead mb-2"><strong>Distance:</strong> ' . (int) $dist . '</p>';
     $body .= '<p class="text-muted small mb-0">Costs used — insertion: ' . $ins . ', replacement: ' . $rep . ', deletion: ' . $del . '</p>';
     return formatOutput($body);
