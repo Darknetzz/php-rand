@@ -562,7 +562,6 @@ function submitToolForm($form, options = {}) {
     var responseType = options.responseType || form.data("responsetype") || "html";
     var action = options.action || form.data("action") || form.find("input[name=action]").val();
     var url = options.url || form.attr("action") || "gen.php";
-    var data = options.data || form.serialize();
     var loadingMessage = options.loadingMessage || "Generating...";
     var onSuccess = options.onSuccess || function(dataOut) { showData(responseObj, dataOut); };
     var onError = options.onError || function(xhr) {
@@ -576,6 +575,8 @@ function submitToolForm($form, options = {}) {
     if (action) {
         setFormVal(form, "action", action);
     }
+    // Serialize after the hidden action/responsetype inputs exist.
+    var data = options.data || form.serialize();
 
     if (responseObj.length === 0) {
         $("#error").html("<br><div class='alert alert-danger'>No response object found.</div>").show();
@@ -1384,6 +1385,30 @@ function setFormVal(form, name = "action", value = "") {
         .attr("type", "hidden")
         .attr("name", name).val(value);
     $(form).append(hiddenInput);
+}
+
+/* ===================================================================== */
+/*                       FUNCTION: getFormSubmitter                       */
+/* ===================================================================== */
+/**
+ * Resolve the submit button that triggered a form submit.
+ * jQuery's serialize() never includes buttons, and on Enter (implicit
+ * submission) focus stays in the text field, so `.genBtn:focus` is empty.
+ * Order: SubmitEvent.submitter (set by the browser for clicks and Enter),
+ * then a focused submit button inside this form, then the form's first
+ * submit button (the browser's default button for implicit submission).
+ */
+function getFormSubmitter(form, e) {
+    var $form = $(form);
+    var submitter = e && e.originalEvent && e.originalEvent.submitter;
+    if (submitter && $form.has(submitter).length) {
+        return $(submitter);
+    }
+    var $focused = $form.find("button[type=submit]:focus, input[type=submit]:focus").first();
+    if ($focused.length) {
+        return $focused;
+    }
+    return $form.find("button[type=submit], input[type=submit]").first();
 }
 
 const ACTIVE_MODULE_STORAGE_KEY = "rand.activeModule";
@@ -2722,8 +2747,8 @@ $(document).ready(function() {
 
         var form = $(this);
 
-        // Set clicken `.genBtn` as form value
-        var clickedGenBtn = $('.genBtn:focus');
+        // Button that submitted the form (also resolved on Enter / implicit submit)
+        var clickedGenBtn = getFormSubmitter(form, e);
 
         // Set response type
         if (form.data("responsetype")) {
@@ -2759,12 +2784,7 @@ $(document).ready(function() {
         //   responseType = "html";
         // }
 
-        var btnName = $("button[clicked=true]").prop("name");
-        var btnValue = $("button[clicked=true]").val();
         var serializeForm = form.serialize();
-        if (btnName && btnValue !== undefined) {
-            serializeForm += "&" + btnName + "=" + btnValue;
-        }
         console.log("[submitForm] Sending form: " + serializeForm);
         const handledBrowserInspector = await maybeHandleBrowserInspector(form, form.find(".responseDiv"));
         if (handledBrowserInspector) {
