@@ -254,16 +254,37 @@ function handle_stringgen(array $req): string {
     
     $cchars = req_get($req, 'cchars', '');
     $cryptoSafe = req_bool($req, 'cryptoSafe');
-    $poolSize = count(stringgen_charset_chars($charsets, $cchars));
+    $avoidAmbiguous = req_bool($req, 'avoidAmbiguous');
+
+    // Optional max count per character type; empty field = no limit
+    $max = [];
+    foreach (array_keys(STRINGGEN_CHAR_TYPES) as $type) {
+        $raw = trim((string) req_get($req, "max_$type", ''));
+        if ($raw === '') {
+            continue;
+        }
+        if (!ctype_digit($raw)) {
+            return formatOutput("Max " . STRINGGEN_CHAR_TYPES[$type] . " must be a whole number of 0 or more.", type: "danger");
+        }
+        $max[$type] = (int) $raw;
+    }
+
+    $pool = stringgen_charset_chars($charsets, $cchars, $avoidAmbiguous);
+    $limitError = stringgen_validate_limits($pool, $length, $max);
+    if ($limitError !== null) {
+        return formatOutput($limitError, type: "danger");
+    }
+    $poolSize = count($pool);
+    $opts = ['avoidAmbiguous' => $avoidAmbiguous, 'max' => $max];
 
     $results = [];
     $infoTables = [];
 
     for ($i = 0; $i < $strings; $i++) {
         if ($cryptoSafe) {
-            $string = genStrCrypto($charsets, $length, $cchars);
+            $string = genStrCrypto($charsets, $length, $cchars, $opts);
         } else {
-            $string = genStr($charsets, $length, $cchars);
+            $string = genStr($charsets, $length, $cchars, $opts);
         }
         $results[] = $string;
         
@@ -274,7 +295,8 @@ function handle_stringgen(array $req): string {
         $table .= "<tr><td>SHA256</td><td><pre>" . hash('sha256', $string) . "</pre></td></tr>";
         $table .= "<tr><td>SHA512</td><td><pre>" . hash('sha512', $string) . "</pre></td></tr>";
         $combinations = number_format($poolSize ** $length);
-        $table .= "<tr><td>Possible combinations</td><td><pre>$combinations (" . $poolSize . "^$length)</pre></td></tr>";
+        $limitNote = empty($max) ? '' : "<br><small>Upper bound: max limits reduce this</small>";
+        $table .= "<tr><td>Possible combinations</td><td><pre>$combinations (" . $poolSize . "^$length)</pre>$limitNote</td></tr>";
         $table .= "</table>";
         $infoTables[] = $table;
     }

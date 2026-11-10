@@ -114,6 +114,34 @@
                 ';
                 ?>
 
+                <div class="card border-secondary mb-3">
+                    <h5 class="card-header">Character Rules</h5>
+                    <div class="card-body" style="padding: 20px;">
+                        <div class="form-check form-switch mb-3">
+                            <input type="hidden" name="avoidAmbiguous" value="0">
+                            <input type="checkbox" class="form-check-input" id="avoidAmbiguous" name="avoidAmbiguous" value="1">
+                            <label class="form-check-label" for="avoidAmbiguous">
+                                <strong>Avoid ambiguous characters</strong>
+                                <small class="text-muted d-block">Leaves out look-alikes: <code><?= htmlspecialchars(implode(' ', mb_str_split(STRINGGEN_AMBIGUOUS_CHARS))) ?></code></small>
+                            </label>
+                        </div>
+                        <label class="form-label"><strong>Max per type</strong> <small class="text-muted">(leave empty for no limit)</small></label>
+                        <div class="row g-2">
+                            <?php foreach (STRINGGEN_CHAR_TYPES as $type => $label): ?>
+                            <div class="col-6 col-md-3">
+                                <div class="input-group">
+                                    <span class="input-group-text"><?= htmlspecialchars($label) ?></span>
+                                    <input type="number" class="form-control" name="max_<?= $type ?>" id="stringgenMax_<?= $type ?>" min="0" placeholder="∞" aria-label="Max <?= htmlspecialchars($label) ?>">
+                                </div>
+                            </div>
+                            <?php endforeach; ?>
+                        </div>
+                        <div class="form-text mt-2">
+                            <small>Special counts every character that is not a digit or letter (symbols, extended and custom symbols). Example: Special = 1 gives at most one special character.</small>
+                        </div>
+                    </div>
+                </div>
+
                 <?= submitBtn("stringgen") ?>
                 
                 <div class="responseDiv mt-3" id="stringgenresponse" style="border: 1px solid #dee2e6; padding: 20px; min-height: 100px; background-color: rgba(0,0,0,0.1); border-radius: 0.25rem; font-family: monospace; word-break: break-all;"></div>

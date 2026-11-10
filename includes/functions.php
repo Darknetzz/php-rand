@@ -265,24 +265,129 @@ function str_rot($s, $n = 13) {
  *                         'c' = custom characters (requires $cchars parameter)
  * @param int|null $length The length of the string to generate. Required
  * @param string|null $cchars Custom characters to include when 'c' is in $charsets
+ * @param array $opts Optional: 'avoidAmbiguous' => bool, 'max' => [type => int|null]
+ *                    (types: n/l/u/s, see stringgen_char_type())
  * @return string Random string of specified length, or "[empty]" if no valid character sets
- * 
+ *
  * @example
  * genStr('a', 12);             // 12 chars: alphanumeric
  * genStr('lun', 12);           // 12 chars: lowercase, uppercase, numbers
  * genStr('luns', 20);          // 20 chars: lowercase, uppercase, numbers, symbols
  * genStr('lunc', 15, '!@#');   // 15 chars: lowercase, uppercase, numbers, custom
+ * genStr('luns', 16, null, ['max' => ['s' => 1], 'avoidAmbiguous' => true]);
  */
-function genStr(string $charsets, ?int $length = null, $cchars = null) {
-    $all = stringgen_charset_chars($charsets, $cchars);
-    $str = '';
-    if (empty($all)) {
-      return "[empty]";
+function genStr(string $charsets, ?int $length = null, $cchars = null, array $opts = []) {
+    return stringgen_generate($charsets, (int) $length, $cchars, $opts, false);
+}
+
+/** Characters dropped by "Avoid ambiguous characters" (look-alikes such as 0/O, 1/l/I). */
+const STRINGGEN_AMBIGUOUS_CHARS = '0Oo1lI|';
+
+/** Character types that can be capped with a max count, in display order. */
+const STRINGGEN_CHAR_TYPES = [
+    'n' => 'Numbers',
+    'l' => 'Lowercase',
+    'u' => 'Uppercase',
+    's' => 'Special',
+];
+
+/**
+ * Classify a character for max-count limits.
+ *
+ * @return string 'n' (digit), 'l' (lowercase), 'u' (uppercase) or 's' (anything else)
+ */
+function stringgen_char_type(string $ch): string {
+    if (preg_match('/^\p{Nd}$/u', $ch)) return 'n';
+    if (preg_match('/^\p{Ll}$/u', $ch)) return 'l';
+    if (preg_match('/^\p{Lu}$/u', $ch)) return 'u';
+    return 's';
+}
+
+/**
+ * Validate generation options against a character pool.
+ *
+ * @param array<int, string> $pool Character pool
+ * @param int $length Requested length
+ * @param array<string, int|null> $max Max count per type (null/missing = unlimited)
+ * @return string|null Error message, or null when a string of $length can be built
+ */
+function stringgen_validate_limits(array $pool, int $length, array $max): ?string {
+    if (empty($pool)) {
+        return "No characters left to choose from with the selected options.";
     }
+    $capacity = 0;
+    $types = array_unique(array_map('stringgen_char_type', $pool));
+    foreach ($types as $type) {
+        $limit = $max[$type] ?? null;
+        if ($limit === null) {
+            return null; // at least one unlimited type in the pool
+        }
+        $capacity += $limit;
+    }
+    if ($capacity < $length) {
+        return "The max limits allow at most {$capacity} characters with the selected sets, but the length is {$length}. Raise a limit or shorten the string.";
+    }
+    return null;
+}
+
+/**
+ * Generate a random string with optional per-type max counts.
+ *
+ * Characters are drawn one at a time from the pool, dropping a type once it
+ * reaches its max; when limits apply, the result is shuffled afterwards so the
+ * capped types are not clustered at the start.
+ *
+ * @param bool $crypto Use random_int() (CSPRNG) instead of mt_rand()
+ * @return string Generated string, or "[empty]" if the pool is empty or limits can't be met
+ */
+function stringgen_generate(string $charsets, int $length, $cchars, array $opts, bool $crypto): string {
+    $pool = stringgen_charset_chars($charsets, $cchars, !empty($opts['avoidAmbiguous']));
+    $max = array_filter($opts['max'] ?? [], static fn($v) => $v !== null);
+    if (stringgen_validate_limits($pool, $length, $max) !== null) {
+        return "[empty]";
+    }
+    $rand = $crypto ? 'random_int' : 'mt_rand';
+
+    if (empty($max)) {
+        $last = count($pool) - 1;
+        $str = '';
+        for ($i = 0; $i < $length; $i++) {
+            $str .= $pool[$rand(0, $last)];
+        }
+        return $str;
+    }
+
+    $byType = [];
+    foreach ($pool as $ch) {
+        $byType[stringgen_char_type($ch)][] = $ch;
+    }
+    $used = array_fill_keys(array_keys($byType), 0);
+    $buildAvailable = static function () use ($byType, &$used, $max): array {
+        $avail = [];
+        foreach ($byType as $type => $chars) {
+            if (!isset($max[$type]) || $used[$type] < $max[$type]) {
+                array_push($avail, ...$chars);
+            }
+        }
+        return $avail;
+    };
+    $available = $buildAvailable();
+    $out = [];
     for ($i = 0; $i < $length; $i++) {
-      $str .= $all[array_rand($all)];
+        $ch = $available[$rand(0, count($available) - 1)];
+        $out[] = $ch;
+        $type = stringgen_char_type($ch);
+        $used[$type]++;
+        if (isset($max[$type]) && $used[$type] >= $max[$type]) {
+            $available = $buildAvailable();
+        }
     }
-    return $str;
+    // Fisher–Yates with the same RNG, so capped types land in random positions
+    for ($i = count($out) - 1; $i > 0; $i--) {
+        $j = $rand(0, $i);
+        [$out[$i], $out[$j]] = [$out[$j], $out[$i]];
+    }
+    return implode('', $out);
 }
 
 /**
@@ -290,9 +395,10 @@ function genStr(string $charsets, ?int $length = null, $cchars = null) {
  *
  * @param string $charsets Character set flags (a/l/u/n/s/e/x/X/c)
  * @param string|null $cchars Custom characters when 'c' is in $charsets
- * @return array<int, string> Unique character pool
+ * @param bool $avoidAmbiguous Drop look-alike characters (STRINGGEN_AMBIGUOUS_CHARS)
+ * @return array<int, string> Unique character pool (multibyte-safe)
  */
-function stringgen_charset_chars(string $charsets, $cchars = null): array {
+function stringgen_charset_chars(string $charsets, $cchars = null, bool $avoidAmbiguous = false): array {
     $flags = str_split($charsets);
     $pool = [];
     if (in_array('a', $flags, true)) {
@@ -308,10 +414,10 @@ function stringgen_charset_chars(string $charsets, $cchars = null): array {
         $pool = array_merge($pool, array_map('strval', range(0, 9)));
     }
     if (in_array('s', $flags, true)) {
-        $pool = array_merge($pool, str_split("!#¤%&\/() = ?;: -_.,'\"*^<>{}[]@~+´`"));
+        $pool = array_merge($pool, mb_str_split("!#¤%&\/() = ?;: -_.,'\"*^<>{}[]@~+´`"));
     }
     if (in_array('e', $flags, true)) {
-        $pool = array_merge($pool, str_split("ƒ†‡™•"));
+        $pool = array_merge($pool, mb_str_split("ƒ†‡™•"));
     }
     if (in_array('x', $flags, true)) {
         $pool = array_merge($pool, str_split('0123456789abcdef'));
@@ -320,9 +426,13 @@ function stringgen_charset_chars(string $charsets, $cchars = null): array {
         $pool = array_merge($pool, str_split('0123456789ABCDEF'));
     }
     if (in_array('c', $flags, true) && !empty($cchars)) {
-        $pool = array_merge($pool, str_split((string) $cchars));
+        $pool = array_merge($pool, mb_str_split((string) $cchars));
     }
-    return array_values(array_unique(array_map('strval', $pool), SORT_STRING));
+    $pool = array_unique(array_map('strval', $pool), SORT_STRING);
+    if ($avoidAmbiguous) {
+        $pool = array_diff($pool, mb_str_split(STRINGGEN_AMBIGUOUS_CHARS));
+    }
+    return array_values($pool);
 }
 
 /**
@@ -334,20 +444,12 @@ function stringgen_charset_chars(string $charsets, $cchars = null): array {
  * @param string $charsets Character set flags (a=alphanumeric, l=lowercase, u=uppercase, n=numbers, s=symbols, e=extended, x/X=hex lower/upper, c=custom)
  * @param int $length Length of the generated string
  * @param string|null $cchars Custom characters if 'c' is in charsets
+ * @param array $opts Same as genStr(): 'avoidAmbiguous', 'max'
  * @return string Randomly generated string
  */
-function genStrCrypto(string $charsets, ?int $length = null, $cchars = null) {
-    $all = stringgen_charset_chars($charsets, $cchars);
-    $str = '';
-    if (empty($all)) {
-      return "[empty]";
-    }
+function genStrCrypto(string $charsets, ?int $length = null, $cchars = null, array $opts = []) {
     // random_int() is CSPRNG-backed and unbiased (no modulo bias for pool sizes that don't divide 256)
-    $max = count($all) - 1;
-    for ($i = 0; $i < $length; $i++) {
-      $str .= $all[random_int(0, $max)];
-    }
-    return $str;
+    return stringgen_generate($charsets, (int) $length, $cchars, $opts, true);
 }
 
 
