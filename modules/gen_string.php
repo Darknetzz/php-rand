@@ -122,7 +122,7 @@
                             <input type="checkbox" class="form-check-input" id="avoidAmbiguous" name="avoidAmbiguous" value="1">
                             <label class="form-check-label" for="avoidAmbiguous">
                                 <strong>Avoid ambiguous characters</strong>
-                                <small class="text-muted d-block">Leaves out look-alikes: <code><?= htmlspecialchars(implode(' ', mb_str_split(STRINGGEN_AMBIGUOUS_CHARS))) ?></code></small>
+                                <small class="text-muted d-block">Leaves out look-alikes: <code><?= htmlspecialchars(implode(' ', utf8_chars(STRINGGEN_AMBIGUOUS_CHARS))) ?></code></small>
                             </label>
                         </div>
                         <label class="form-label"><strong>Max per type</strong> <small class="text-muted">(leave empty for no limit)</small></label>
