@@ -381,6 +381,14 @@ th.tablehead,
   font-size: var(--rand-output-font-size);
 }
 
+/* Which RNG produced the output (rng_source_notice); stays readable inside large output boxes */
+.rng-notice {
+  font-size: 1rem;
+  font-weight: normal;
+  text-align: left;
+  margin-block: 0.75rem;
+}
+
 .tool-loading {
   text-align: center;
   padding: 3rem 0;
