@@ -455,64 +455,85 @@ function genStrCrypto(string $charsets, ?int $length = null, $cchars = null, arr
 
 /* ───────────────────────────────────────────────────────────────────── */
 /**
- * Spin a wheel and randomly select items
- * 
- * Simulates spinning a wheel by randomly selecting items from a list.
- * Can return unique selections or allow duplicates. Useful for games,
- * raffles, or random selections.
+ * Shared random number source.
  *
- * @param array|null $wheelItems Array of items to select from. Default: empty
- * @param int $spins Number of times to spin (1-100). Default: 1
- * @param bool $unique If true, ensure each spin selects a unique item. Default: false
- * @return string|array Formatted HTML output containing selected items, or error message
- * 
- * @example
- * spinWheel(['Item1', 'Item2', 'Item3'], 1);     // Single spin
- * spinWheel(['A', 'B', 'C'], 3, true);           // 3 spins, all unique
+ * Secure by default: rng_int()/rng_bytes() use random_int()/random_bytes() (CSPRNG).
+ * After rng_seed($seed) they switch to the seeded Mersenne Twister (mt_rand) so output
+ * is reproducible. Seeded output is NOT cryptographically secure; rng_seed(null)
+ * switches back to secure mode.
  */
-function spinWheel(?array $wheelItems = [], int $spins = 1, bool $unique = false) {
-
-  if (empty($wheelItems)) {
-    return alert("You must enter at least one item.", "danger");
+function rng_seed(?int $seed): void {
+  $GLOBALS['__rng_seeded'] = $seed !== null;
+  if ($seed !== null) {
+    mt_srand($seed);
   }
+}
 
-  if ($spins > 100 || $spins < 1) {
-    return alert("You can't spin less than once or more than 100 times.", "danger");
+/** True when rng_* helpers use the seeded (non-secure) generator. */
+function rng_is_seeded(): bool {
+  return !empty($GLOBALS['__rng_seeded']);
+}
+
+/** Random integer in [$min, $max]: random_int() when secure, mt_rand() when seeded. */
+function rng_int(int $min, int $max): int {
+  return rng_is_seeded() ? mt_rand($min, $max) : random_int($min, $max);
+}
+
+/** Random element of a non-empty array (keys are ignored). */
+function rng_pick(array $list) {
+  $values = array_values($list);
+  return $values[rng_int(0, count($values) - 1)];
+}
+
+/** $length random bytes: random_bytes() when secure, mt_rand() bytes when seeded. */
+function rng_bytes(int $length): string {
+  if (!rng_is_seeded()) {
+    return random_bytes($length);
   }
-
-  $countItems = count($wheelItems);
-  $moreSpins  = (isset($spins) && $spins > 1 ? true : false);
-  $spins      = ($moreSpins) ? $spins : 1;
-
-  if ($countItems < 2) {
-    return alert("You must enter at least two items.", "danger");
+  $out = '';
+  for ($i = 0; $i < $length; $i++) {
+    $out .= chr(mt_rand(0, 255));
   }
+  return $out;
+}
 
-  if (($spins > $countItems) && $unique !== false) {
-    return alert("You can't spin more than the number of items in the wheel if you want unique results.", "danger");
+/**
+ * Uniform random GMP integer in [$min, $max] (rejection sampling over rng_bytes(), no modulo bias).
+ * Replaces gmp_random_range(), which is neither a CSPRNG nor seeded by mt_srand().
+ */
+function rng_gmp_range(\GMP $min, \GMP $max): \GMP {
+  $span = gmp_sub($max, $min);
+  if (gmp_sign($span) < 0) {
+    throw new \ValueError('rng_gmp_range(): $min must be <= $max');
   }
-
-  $excludes = [];
-  for ($i = 0; $i < $spins; $i++) {
-      $dice = mt_rand(0, $countItems-1);
-
-      if ($unique !== false) {
-          while (in_array($dice, $excludes)) {
-              $dice = mt_rand(0, $countItems-1);
-          }
-      }
-
-      $item           = (!empty($wheelItems[$dice]) ? $wheelItems[$dice] : "Item #".$dice+1);
-      $items[]        = "<b>".$item."</b>";
-      $excludes[]     = $dice;
+  if (gmp_sign($span) === 0) {
+    return $min;
   }
+  $bits = strlen(gmp_strval($span, 2));
+  $bytes = intdiv($bits + 7, 8);
+  $topMask = (1 << ($bits - 8 * ($bytes - 1))) - 1;
+  do {
+    $raw = rng_bytes($bytes);
+    $raw[0] = chr(ord($raw[0]) & $topMask);
+    $n = gmp_import($raw);
+  } while (gmp_cmp($n, $span) > 0);
+  return gmp_add($min, $n);
+}
 
-  if (empty($items)) {
-    return alert("No items");
+/**
+ * Notice telling the user which random source produced the output.
+ *
+ * @param string|null $insecureSource Null for random_int() (secure); otherwise a short
+ *                                    description of the non-secure source used.
+ */
+function rng_source_notice(?string $insecureSource = null): string {
+  if ($insecureSource === null) {
+    return "<div class='alert alert-success rng-notice'>" . icon('shield-check')
+      . " <strong>Cryptographically Secure Random</strong> - Generated using random_int()</div>";
   }
-
-  $output = implode("<br>", $items);
-  return formatOutput($output);
+  return "<div class='alert alert-warning rng-notice'>" . icon('shield-alert')
+    . " <strong>Not cryptographically secure</strong> - Generated using "
+    . htmlspecialchars($insecureSource, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "</div>";
 }
 
 /**
@@ -789,7 +810,7 @@ function compare_unsigned_integer_strings(string $left, string $right): int {
 }
 
 function numgen_large_gmp_available(): bool {
-  return function_exists('gmp_init') && function_exists('gmp_cmp') && function_exists('gmp_pow') && function_exists('gmp_random_range') && function_exists('gmp_prob_prime');
+  return function_exists('gmp_init') && function_exists('gmp_cmp') && function_exists('gmp_pow') && function_exists('gmp_prob_prime') && function_exists('gmp_import');
 }
 
 function numgen_large_type_count_for_digits(int $numDigits, string $type) {
@@ -826,7 +847,7 @@ function random_large_numgen_digit_length(int $minDigits, int $maxDigits, string
     $total = gmp_add($total, $weight);
   }
 
-  $pick = gmp_random_range(gmp_init(0, 10), gmp_sub($total, gmp_init(1, 10)));
+  $pick = rng_gmp_range(gmp_init(0, 10), gmp_sub($total, gmp_init(1, 10)));
   $running = gmp_init(0, 10);
   foreach ($weights as $digits => $weight) {
     $running = gmp_add($running, $weight);
@@ -842,9 +863,9 @@ function random_numeric_string_with_digits(int $numDigits): string {
   if ($numDigits <= 0) {
     return '0';
   }
-  $result = (string) mt_rand(1, 9);
+  $result = (string) rng_int(1, 9);
   for ($i = 1; $i < $numDigits; $i++) {
-    $result .= (string) mt_rand(0, 9);
+    $result .= (string) rng_int(0, 9);
   }
   return $result;
 }
@@ -856,14 +877,14 @@ function random_numeric_string_with_parity(int $numDigits, string $type): string
   }
   if ($numDigits === 1) {
     $singleDigitChoices = $type === 'even' ? [2, 4, 6, 8] : [1, 3, 5, 7, 9];
-    return (string) $singleDigitChoices[mt_rand(0, count($singleDigitChoices) - 1)];
+    return (string) $singleDigitChoices[rng_int(0, count($singleDigitChoices) - 1)];
   }
 
-  $result = (string) mt_rand(1, 9);
+  $result = (string) rng_int(1, 9);
   for ($i = 1; $i < $numDigits - 1; $i++) {
-    $result .= (string) mt_rand(0, 9);
+    $result .= (string) rng_int(0, 9);
   }
-  $result .= (string) $choices[mt_rand(0, count($choices) - 1)];
+  $result .= (string) $choices[rng_int(0, count($choices) - 1)];
   return $result;
 }
 
@@ -872,9 +893,9 @@ function random_palindromic_string_with_digits(int $numDigits): string {
     return '0';
   }
   $half = (int) ceil($numDigits / 2);
-  $left = (string) mt_rand(1, 9);
+  $left = (string) rng_int(1, 9);
   for ($i = 1; $i < $half; $i++) {
-    $left .= (string) mt_rand(0, 9);
+    $left .= (string) rng_int(0, 9);
   }
   $right = strrev($numDigits % 2 === 1 ? substr($left, 0, -1) : $left);
   return $left . $right;
@@ -924,7 +945,7 @@ function random_large_prime_string(int $minDigits, int $maxDigits) {
     $numDigits = $minDigits === $maxDigits ? $minDigits : random_large_numgen_digit_length($minDigits, $maxDigits, 'any');
     if ($numDigits === 1) {
       $oneDigitPrimes = ['2', '3', '5', '7'];
-      return $oneDigitPrimes[mt_rand(0, 3)];
+      return $oneDigitPrimes[rng_int(0, 3)];
     }
     $candidate = random_numeric_string_with_parity($numDigits, 'odd');
     if (is_prime_gmp_string($candidate)) {
@@ -1054,9 +1075,9 @@ function random_palindromic_with_digits(int $numDigits): int {
     return 0;
   }
   $half = (int) ceil($numDigits / 2);
-  $s = (string) mt_rand(1, 9);
+  $s = (string) rng_int(1, 9);
   for ($i = 1; $i < $half; $i++) {
-    $s .= (string) mt_rand(0, 9);
+    $s .= (string) rng_int(0, 9);
   }
   $left = $s;
   $right = strrev($numDigits % 2 === 1 ? substr($s, 0, -1) : $s);
@@ -1071,7 +1092,7 @@ function random_palindromic_with_digits(int $numDigits): int {
  *
  * @param int $from Starting value of the range (lower bound)
  * @param int $to Ending value of the range (upper bound)
- * @param string|null $seed Optional seed for mt_srand() for reproducibility.
+ * @param string|null $seed Optional seed passed to rng_seed() (reproducible, not cryptographically secure).
  * @param string $type One of 'any', 'prime', 'odd', 'even', 'square', 'composite', 'palindromic', 'fibonacci'. Default: 'any'
  * @return int|string Random integer within range, or alert string on error
  * 
@@ -1095,7 +1116,7 @@ function numGen(int $from, int $to, ?string $seed = null, string $type = 'any') 
       if (!ctype_digit(strval($seed)) || strlen($seed) > 17) {
           echo alert("<b>Warning: Seed was not used because it's not a valid seed.</b><br>", "warning");
       } else {
-          mt_srand($seed);
+          rng_seed((int) $seed);
       }
   }
 
@@ -1105,7 +1126,7 @@ function numGen(int $from, int $to, ?string $seed = null, string $type = 'any') 
 
   $candidates = [];
   if ($type === 'any') {
-    $num = mt_rand($from, $to);
+    $num = rng_int($from, $to);
     return $num;
   }
   if ($type === 'prime') {
@@ -1125,9 +1146,9 @@ function numGen(int $from, int $to, ?string $seed = null, string $type = 'any') 
           if ($oddLow > $oddHigh) {
             continue;
           }
-          $n = $oddLow + 2 * mt_rand(0, (int) (($oddHigh - $oddLow) / 2));
+          $n = $oddLow + 2 * rng_int(0, (int) (($oddHigh - $oddLow) / 2));
         } else {
-          $n = mt_rand($from, $to);
+          $n = rng_int($from, $to);
         }
         if (is_prime($n)) {
           return $n;
@@ -1147,7 +1168,7 @@ function numGen(int $from, int $to, ?string $seed = null, string $type = 'any') 
       return alert("No odd numbers in the range $from–$to.", "warning");
     }
     $count = (int) (($end - $start) / 2 + 1);
-    return $start + 2 * mt_rand(0, $count - 1);
+    return $start + 2 * rng_int(0, $count - 1);
   } elseif ($type === 'even') {
     $start = $from % 2 === 0 ? $from : $from + 1;
     $end   = $to % 2 === 0 ? $to : $to - 1;
@@ -1155,14 +1176,14 @@ function numGen(int $from, int $to, ?string $seed = null, string $type = 'any') 
       return alert("No even numbers in the range $from–$to.", "warning");
     }
     $count = (int) (($end - $start) / 2 + 1);
-    return $start + 2 * mt_rand(0, $count - 1);
+    return $start + 2 * rng_int(0, $count - 1);
   } elseif ($type === 'square') {
     $kMin = max(1, (int) ceil(sqrt($from)));
     $kMax = (int) floor(sqrt($to));
     if ($kMin > $kMax) {
       return alert("No perfect square in the range $from–$to.", "warning");
     }
-    $k = mt_rand($kMin, $kMax);
+    $k = rng_int($kMin, $kMax);
     return $k * $k;
   } elseif ($type === 'composite') {
     $rangeSize = $to - $from + 1;
@@ -1173,7 +1194,7 @@ function numGen(int $from, int $to, ?string $seed = null, string $type = 'any') 
         return alert("No composite numbers in the range $from–$to.", "warning");
       }
       for ($attempt = 0; $attempt < $maxAttempts; $attempt++) {
-        $n = mt_rand($from, $to);
+        $n = rng_int($from, $to);
         if ($n > 1 && !is_prime($n)) {
           return $n;
         }
@@ -1198,7 +1219,7 @@ function numGen(int $from, int $to, ?string $seed = null, string $type = 'any') 
       $lenFrom = strlen((string) $from);
       $lenTo = strlen((string) $to);
       for ($attempt = 0; $attempt < $maxAttempts; $attempt++) {
-        $numDig = $lenFrom === $lenTo ? $lenFrom : mt_rand($lenFrom, $lenTo);
+        $numDig = $lenFrom === $lenTo ? $lenFrom : rng_int($lenFrom, $lenTo);
         $n = random_palindromic_with_digits($numDig);
         if ($n >= $from && $n <= $to) {
           return $n;
@@ -1213,7 +1234,7 @@ function numGen(int $from, int $to, ?string $seed = null, string $type = 'any') 
   if (count($candidates) === 0) {
     return alert("No " . htmlspecialchars($type) . " numbers in the range $from–$to.", "warning");
   }
-  return $candidates[array_rand($candidates)];
+  return rng_pick($candidates);
 }
 
 /**

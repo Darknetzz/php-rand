@@ -302,9 +302,7 @@ function handle_stringgen(array $req): string {
     }
 
     $output = "<hr>";
-    if ($cryptoSafe) {
-        $output .= "<div class='alert alert-success mb-3'>" . icon('shield-check') . " <strong>Cryptographically Secure Random</strong> - Generated using random_int()</div>";
-    }
+    $output .= rng_source_notice($cryptoSafe ? null : 'array_rand()');
     foreach ($results as $string) {
         $output .= output_copyable($string);
     }
@@ -466,10 +464,9 @@ function handle_numgen(array $req): string {
         $separator = ', ';
     }
 
-    // Apply seed once so the same seed gives a reproducible sequence for multiple numbers
-    if ($seed !== null) {
-        mt_srand((int) $seed);
-    }
+    // Secure (random_int) by default; a seed switches to seeded mt_rand once so the
+    // same seed gives a reproducible sequence for multiple numbers.
+    rng_seed($seed !== null ? (int) $seed : null);
 
     $results = [];
     for ($i = 0; $i < $qty; $i++) {
@@ -495,6 +492,7 @@ function handle_numgen(array $req): string {
     if ($seedWarning) {
         $output .= formatOutput($seedWarning, 6, "warning");
     }
+    $output .= rng_source_notice(rng_is_seeded() ? 'seeded mt_rand() (reproducible)' : null);
     if ($seed) {
         $output .= "<div style='margin-top: 15px; opacity: 0.7;'><small><strong>Seed used:</strong> " . htmlspecialchars($seed) . "</small></div>";
     }
@@ -1693,7 +1691,7 @@ function handle_spinwheel(array $req): string {
             }
         }
     } else {
-        $pick = $labels[array_rand($labels)];
+        $pick = rng_pick($labels);
     }
     return formatOutput(
         '<div class="alert alert-success mb-0">Winner: <strong>'

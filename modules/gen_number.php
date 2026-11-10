@@ -119,6 +119,7 @@
                     <div class="form-check form-switch">
                         <input type="checkbox" class="form-check-input" id="number_toolsseedtoggle" name="numgenuseseed" value="1">
                         <label class="form-check-label" for="number_toolsseedtoggle">Use custom seed (for reproducible results)</label>
+                        <small class="text-muted d-block">Numbers are cryptographically secure (random_int()) by default. A seed switches to mt_rand(), which is reproducible but not secure.</small>
                     </div>
                 </div>
 
