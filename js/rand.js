@@ -245,7 +245,7 @@ function ensureHighlightJsAssets(theme) {
 /* ===================================================================== */
 function ensureMarkdownAssets() {
     return $.when(
-        loadScriptOnce("https://cdn.jsdelivr.net/npm/marked/lib/marked.umd.js"),
+        loadScriptOnce("https://cdn.jsdelivr.net/npm/marked@18.3.0/lib/marked.umd.js"),
         ensureHighlightJsAssets("dark")
     );
 }
