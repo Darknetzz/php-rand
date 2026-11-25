@@ -974,6 +974,31 @@ th.tablehead,
   background: #fff;
 }
 
+/* Result shown over the die when its face is too small to read (js/rand.js). */
+.dice-result-badge {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  padding: 0.1em 0.35em;
+  border-radius: 0.4em;
+  background: rgba(0, 0, 0, 0.72);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35);
+  color: #fff;
+  font-family: monospace;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.6);
+  transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+  pointer-events: none;
+}
+
+.dice-result-badge-shown {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
 /* Dice with too many sides to draw (d61+) roll as a ball, like a real d100. */
 .dice-ball {
   border-radius: 50%;

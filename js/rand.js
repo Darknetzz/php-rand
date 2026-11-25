@@ -2533,6 +2533,8 @@ function randomizeDice() {
 // above DICE_SHAPE_MAX_FACES, where faces would be too small to see.
 // Coordinates follow CSS: x right, y down, z toward the viewer.
 const DICE_SHAPE_MAX_FACES = 60;
+// Below this font size (fraction of --dice-size) the result also gets a badge.
+const DICE_BADGE_MIN_FONT = 0.2;
 // Lit cells of a 3x3 grid for each d6 value.
 const DICE_PIPS = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
 const DICE_LIGHT = vecNorm([-0.35, -0.6, 1]);
@@ -2913,6 +2915,17 @@ function buildDie(result, sides, size) {
         return { die, solid, rest: "rotate(0deg)", from: function() { return "rotate(" + (360 * (2 + Math.floor(Math.random() * 2)) * (Math.random() < 0.5 ? -1 : 1)) + "deg)"; } };
     }
 
+    // Faces too small to read the number on get a flat badge with the result
+    // once the die lands; the tiny face numbers stay on the die.
+    let badge = null;
+    if (layout.byValue[result].fontSize < size * DICE_BADGE_MIN_FONT) {
+        badge = document.createElement("span");
+        badge.className = "dice-result-badge";
+        badge.textContent = result;
+        badge.style.fontSize = (size * Math.min(0.32, 0.8 / String(sides).length)).toFixed(1) + "px";
+        die.appendChild(badge);
+    }
+
     // Rest pose: the rolled face toward the viewer, slightly tilted to show depth.
     const tiltX = randomBetween(-24, -12), tiltY = randomBetween(-22, 22);
     const front = layout.byValue[result].front;
@@ -2948,6 +2961,7 @@ function buildDie(result, sides, size) {
     return {
         die,
         solid,
+        badge,
         rest: "rotateX(" + tiltX + "deg) rotateY(" + tiltY + "deg) " + frontCss,
         from: function() {
             const spin = function() {
@@ -2964,7 +2978,13 @@ function animateDie(parts) {
     const restDie = "rotate(" + tilt + "deg)";
     parts.solid.style.transform = parts.rest;
     parts.die.style.transform = restDie;
+    const showBadge = function() {
+        if (parts.badge) {
+            parts.badge.classList.add("dice-result-badge-shown");
+        }
+    };
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        showBadge();
         return Promise.resolve();
     }
 
@@ -2984,7 +3004,7 @@ function animateDie(parts) {
         hop(-7, 0.88, 0),
         hop(0, 1, 0)
     ], timing);
-    return Promise.all([tumble.finished, bounce.finished]);
+    return Promise.all([tumble.finished, bounce.finished]).then(showBadge);
 }
 
 function renderDiceRoll($response) {
