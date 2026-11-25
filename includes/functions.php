@@ -630,6 +630,41 @@ function rng_source_notice(?string $insecureSource = null): string {
 }
 
 /**
+ * Badge with the entropy in bits and a rough strength label
+ * (< 40 weak, < 60 fair, < 80 strong, otherwise very strong).
+ */
+function entropy_badge_html(float $bits): string {
+  [$label, $color] = match (true) {
+    $bits < 40 => ['Weak', 'danger'],
+    $bits < 60 => ['Fair', 'warning'],
+    $bits < 80 => ['Strong', 'info'],
+    default => ['Very strong', 'success'],
+  };
+  return "<span class='badge text-bg-{$color} entropy-badge' title='Entropy: how many guesses an attacker who knows the method needs (2^bits)'>"
+    . icon('shield') . ' ' . number_format($bits, 1) . " bits &middot; {$label}</span>";
+}
+
+/**
+ * The EFF large wordlist (7,776 words, CC BY 3.0, https://www.eff.org/dice) from
+ * includes/data/eff_large_wordlist.txt ("11111<TAB>abacus" lines). Loaded once per request.
+ *
+ * @return list<string>
+ */
+function passphrase_wordlist(): array {
+  static $words = null;
+  if ($words === null) {
+    $words = [];
+    $lines = @file(__DIR__ . '/data/eff_large_wordlist.txt', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [];
+    foreach ($lines as $line) {
+      if (preg_match('/^\d{5}\t(\S+)/', $line, $m)) {
+        $words[] = $m[1];
+      }
+    }
+  }
+  return $words;
+}
+
+/**
  * Generate an HTML submit button element
  * 
  * Creates a styled Bootstrap submit button with icon and text. Commonly used

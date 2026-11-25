@@ -41,6 +41,7 @@ function getHandlerRegistry(): array {
         'dice_roll' => 'handle_dice_roll',
         'coin_flip' => 'handle_coin_flip',
         'list_shuffle' => 'handle_list_shuffle',
+        'passphrase' => 'handle_passphrase',
         'calc' => 'handle_calculator',
         'currency' => 'handle_currency',
         'qrcode' => 'handle_qrcode',
@@ -331,6 +332,7 @@ function handle_stringgen(array $req): string {
         $combinations = number_format($poolSize ** $length);
         $limitNote = empty($max) ? '' : "<br><small>Upper bound: max limits reduce this</small>";
         $table .= "<tr><td>Possible combinations</td><td><pre>$combinations (" . $poolSize . "^$length)</pre>$limitNote</td></tr>";
+        $table .= "<tr><td>Entropy</td><td>" . entropy_badge_html($length * log($poolSize, 2)) . "$limitNote</td></tr>";
         $table .= "</table>";
         $infoTables[] = $table;
     }
@@ -1897,6 +1899,73 @@ function handle_coin_flip(array $req): string {
 
     return dice_tray_html($flips, 2, "Flipped {$list}", $summary, [1 => 'H', 2 => 'T'], 'dice-tray-coin', 'coin_flip', ['Heads' => $heads, 'Tails' => $tails])
         . rng_seed_notes($seedRes['seed'], $seedRes['warning']);
+}
+
+/**
+ * Passphrase generator: words from the EFF large wordlist picked with rng_pick() (random_int()).
+ *
+ * @param array $req Request array containing: 'pp_words', 'pp_count', 'pp_separator' (hyphen|space|dot|underscore|none),
+ *                   'pp_case' (none|first|random), optional 'pp_digit', 'pp_symbol'
+ * @return string Copyable passphrase(s) with an entropy badge, or an error message
+ */
+function handle_passphrase(array $req): string {
+    $wordsV = req_int_validated($req, 'pp_words', PASSPHRASE_MIN_WORDS, PASSPHRASE_MAX_WORDS);
+    if (!$wordsV['valid']) {
+        return formatOutput('Number of words: ' . $wordsV['error'], type: 'danger');
+    }
+    $countV = req_int_validated($req, 'pp_count', 1, PASSPHRASE_MAX_COUNT);
+    if (!$countV['valid']) {
+        return formatOutput('Number of passphrases: ' . $countV['error'], type: 'danger');
+    }
+    $separators = ['hyphen' => '-', 'space' => ' ', 'dot' => '.', 'underscore' => '_', 'none' => ''];
+    $sepKey = (string) req_get($req, 'pp_separator', 'hyphen');
+    $case = (string) req_get($req, 'pp_case', 'none');
+    if (!isset($separators[$sepKey]) || !in_array($case, ['none', 'first', 'random'], true)) {
+        return formatOutput('Invalid separator or capitalisation.', type: 'danger');
+    }
+    $wordlist = passphrase_wordlist();
+    if (count($wordlist) < 2) {
+        return formatOutput('The word list (includes/data/eff_large_wordlist.txt) is missing.', type: 'danger');
+    }
+    $words = $wordsV['value'];
+    $addDigit = req_bool($req, 'pp_digit');
+    $addSymbol = req_bool($req, 'pp_symbol');
+    $symbols = utf8_chars(PASSPHRASE_SYMBOLS);
+
+    rng_seed(null); // always secure
+    $results = [];
+    for ($n = 0; $n < $countV['value']; $n++) {
+        $picked = [];
+        for ($i = 0; $i < $words; $i++) {
+            $word = rng_pick($wordlist);
+            if ($case === 'first' || ($case === 'random' && rng_int(0, 1) === 1)) {
+                $word = ucfirst($word);
+            }
+            $picked[] = $word;
+        }
+        $phrase = implode($separators[$sepKey], $picked);
+        if ($addDigit) {
+            $phrase .= (string) rng_int(0, 9);
+        }
+        if ($addSymbol) {
+            $phrase .= rng_pick($symbols);
+        }
+        $results[] = $phrase;
+    }
+
+    // Each word adds log2(list size); random capitalisation 1 bit per word; extras their own pool.
+    $bits = $words * log(count($wordlist), 2)
+        + ($case === 'random' ? $words : 0)
+        + ($addDigit ? log(10, 2) : 0)
+        + ($addSymbol ? log(count($symbols), 2) : 0);
+
+    $count = count($results);
+    $out = "<div class='passphrase-meta'>" . entropy_badge_html($bits)
+        . " <small class='text-muted'>{$words} words from a " . number_format(count($wordlist)) . "-word list"
+        . ($addDigit ? ' + digit' : '') . ($addSymbol ? ' + symbol' : '') . "</small></div>";
+    $out .= output_copyable(implode("\n", $results), $count > 1 ? "{$count} passphrases" : '');
+    $out .= rng_source_notice(null);
+    return $out;
 }
 
 /**

@@ -389,6 +389,12 @@ th.tablehead,
   margin-block: 0.75rem;
 }
 
+/* Passphrase Generator: entropy badge row above the result */
+.passphrase-meta {
+  font-size: 1rem;
+  margin-bottom: 0.75rem;
+}
+
 /* "Seed used" line under seeded output (rng_seed_notes) */
 .rng-seed-used {
   font-size: 1rem;

@@ -220,6 +220,11 @@ function getAboutDependencies(): array
         $add($name, $version, 'PHP', $isDirect ? 'Composer' : 'Composer (dependency)', 'https://packagist.org/packages/' . $name);
     }
 
+    // Bundled data files.
+    if (is_file(APP_ROOT . DIRSEP . 'includes' . DIRSEP . 'data' . DIRSEP . 'eff_large_wordlist.txt')) {
+        $add('EFF large wordlist (CC BY 3.0)', '2016-07-18', 'Data', 'Bundled (includes/data/eff_large_wordlist.txt)', 'https://www.eff.org/dice');
+    }
+
     return array_values($deps);
 }
 

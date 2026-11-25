@@ -16,6 +16,7 @@ A comprehensive collection of useful developer tools built with PHP and modern w
 ### Generators
 - Number generator
 - String generator
+- Passphrase generator (diceware-style, EFF wordlist)
 - Image generator (built into this repository)
 - QR Code generator
 - ID generator

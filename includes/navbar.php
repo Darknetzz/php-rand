@@ -22,6 +22,11 @@ $navbarItems = [
                 "formalName" => "String Generator",
                 "icon"       => icon('case-lower')
             ],
+            "gen_passphrase" => [
+                "name"       => "gen_passphrase",
+                "formalName" => "Passphrase Generator",
+                "icon"       => icon('key-round')
+            ],
             "gen_image" => [
                 "name"       => "gen_image",
                 "formalName" => "Image Generator",
