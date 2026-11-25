@@ -899,6 +899,158 @@ th.tablehead,
   padding: 80px 8px 24px;
 }
 
+/* ---------- Magic 8-Ball (handle_eightball) ---------- */
+.eightball-result {
+  text-align: center;
+}
+
+.eightball-question {
+  font-size: 1.1rem;
+  font-style: italic;
+  margin-bottom: 1rem;
+}
+
+.eightball {
+  --eightball-tone: 129 58% 40%;
+  width: 220px;
+  height: 220px;
+  margin: 0 auto 1rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 35% 30%, #555 0%, #1a1a1a 45%, #000 100%);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.45);
+  animation: eightball-shake 0.7s ease-in-out;
+}
+
+.eightball-neutral {
+  --eightball-tone: 43 75% 45%;
+}
+
+.eightball-negative {
+  --eightball-tone: 0 65% 45%;
+}
+
+.eightball-window {
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px;
+  background: radial-gradient(circle, #10203a 0%, #050a14 100%);
+  border: 3px solid #2a2a2a;
+}
+
+.eightball-answer {
+  color: #fff;
+  background: hsl(var(--eightball-tone));
+  clip-path: polygon(50% 100%, 0 0, 100% 0);
+  width: 100%;
+  aspect-ratio: 1 / 0.9;
+  padding: 8px 16px 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.15;
+  animation: eightball-reveal 0.9s ease-out 0.6s backwards;
+}
+
+.eightball-summary {
+  text-align: left;
+}
+
+@keyframes eightball-shake {
+  0%, 100% { transform: translate(0, 0) rotate(0); }
+  20% { transform: translate(-8px, 2px) rotate(-6deg); }
+  40% { transform: translate(8px, -2px) rotate(6deg); }
+  60% { transform: translate(-6px, 1px) rotate(-4deg); }
+  80% { transform: translate(4px, 0) rotate(2deg); }
+}
+
+@keyframes eightball-reveal {
+  from { opacity: 0; transform: scale(0.6) rotate(-20deg); filter: blur(4px); }
+  to { opacity: 1; transform: none; filter: none; }
+}
+
+/* ---------- Card Draw (handle_card_draw) ---------- */
+.card-draw-table {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  padding: 16px 0 24px;
+}
+
+.playing-card {
+  position: relative;
+  width: 72px;
+  height: 104px;
+  border-radius: 8px;
+  background: #fff;
+  border: 1px solid #c8c8c8;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: Georgia, "Times New Roman", serif;
+  animation: card-deal 0.45s ease-out backwards;
+  animation-delay: calc(min(var(--i), 20) * 0.06s);
+}
+
+.playing-card-red {
+  color: #c62828;
+}
+
+.playing-card-black {
+  color: #111;
+}
+
+.playing-card-pip {
+  font-size: 2.4rem;
+  line-height: 1;
+}
+
+.playing-card-corner {
+  position: absolute;
+  top: 4px;
+  left: 6px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
+}
+
+.playing-card-corner-end {
+  top: auto;
+  left: auto;
+  bottom: 4px;
+  right: 6px;
+  transform: rotate(180deg);
+}
+
+.playing-card-joker .playing-card-corner {
+  font-size: 0.55rem;
+  letter-spacing: 0.02em;
+}
+
+@keyframes card-deal {
+  from { opacity: 0; transform: translate(-40px, -60px) rotate(-25deg); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .eightball,
+  .eightball-answer,
+  .playing-card {
+    animation: none;
+  }
+}
+
 /* Recent results (result_history_html() / renderResultHistory()) */
 .rand-history {
   border-top: 1px solid var(--bs-border-color);

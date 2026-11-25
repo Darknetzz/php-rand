@@ -3313,6 +3313,16 @@ $(document).ready(function() {
             };
         }
 
+        if (["eightball", "card_draw"].includes(form.data("action") || "")) {
+            submitOpts.onSuccess = function(dataOut) {
+                showData(responseDiv, dataOut);
+                // CSS reveal/deal animation: add to "Recent results" once it has finished.
+                const animations = responseDiv[0].getAnimations ? responseDiv[0].getAnimations({ subtree: true }) : [];
+                Promise.allSettled(animations.map(function(a) { return a.finished; }))
+                    .then(function() { recordResultHistory(responseDiv); });
+            };
+        }
+
         submitToolForm(form, submitOpts);
         randomizeDice();
     });

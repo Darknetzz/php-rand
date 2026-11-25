@@ -25,6 +25,8 @@ define("COIN_MAX_COUNT", 100);
 # List shuffler limits (form and handle_list_shuffle)
 define("LIST_SHUFFLE_MAX_ITEMS", 10000);
 define("LIST_SHUFFLE_MAX_BYTES", 1000000);
+# Magic 8-ball question length (form and handle_eightball)
+define("EIGHTBALL_MAX_QUESTION", 200);
 # Passphrase generator (form and handle_passphrase); word list in includes/data/
 define("PASSPHRASE_MIN_WORDS", 3);
 define("PASSPHRASE_MAX_WORDS", 20);

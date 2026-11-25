@@ -42,6 +42,8 @@ function getHandlerRegistry(): array {
         'coin_flip' => 'handle_coin_flip',
         'list_shuffle' => 'handle_list_shuffle',
         'passphrase' => 'handle_passphrase',
+        'eightball' => 'handle_eightball',
+        'card_draw' => 'handle_card_draw',
         'calc' => 'handle_calculator',
         'currency' => 'handle_currency',
         'qrcode' => 'handle_qrcode',
@@ -1969,6 +1971,133 @@ function handle_passphrase(array $req): string {
     $out .= output_copyable(implode("\n", $results), $count > 1 ? "{$count} passphrases" : '');
     $out .= rng_source_notice(null);
     return $out;
+}
+
+/**
+ * Magic 8-ball answers (original wording): 10 positive, 5 neutral, 5 negative.
+ *
+ * @return array<string, list<string>> Answers by tone
+ */
+function eightball_answers(): array {
+    return [
+        'positive' => [
+            'Absolutely.', 'Everything lines up: yes.', 'Yes, go for it.', 'No question about it.',
+            'The odds are in your favour.', 'Count on it.', 'Looks good from here.',
+            'Yes, and sooner than you think.', 'It\'s a safe bet.', 'The stars agree.',
+        ],
+        'neutral' => [
+            'Hard to say right now.', 'Ask again after a coffee.', 'The picture is still blurry.',
+            'Could go either way.', 'Not enough information yet.',
+        ],
+        'negative' => [
+            'Not likely.', 'I wouldn\'t bet on it.', 'The answer is no.', 'Doubtful at best.', 'Better not.',
+        ],
+    ];
+}
+
+/**
+ * Magic 8-ball / yes-no answer, picked server-side with rng_pick(); the ball reveal is CSS (style.css).
+ *
+ * @param array $req Request array containing: 'eightball_mode' (eightball|yesno), optional 'eightball_question',
+ *                   optional 'eightball_useseed' + 'eightball_seed'
+ * @return string The ball with the answer, a copyable summary and history attributes, or an error message
+ */
+function handle_eightball(array $req): string {
+    $mode = req_get($req, 'eightball_mode', 'eightball') === 'yesno' ? 'yesno' : 'eightball';
+    $question = trim((string) req_get($req, 'eightball_question', ''));
+    if (!mb_check_encoding($question, 'UTF-8') || mb_strlen($question, 'UTF-8') > EIGHTBALL_MAX_QUESTION) {
+        return formatOutput('The question must be valid text of at most ' . EIGHTBALL_MAX_QUESTION . ' characters.', type: 'danger');
+    }
+    $seedRes = req_seed($req, 'eightball_');
+    if (!$seedRes['valid']) {
+        return formatOutput($seedRes['error'], type: 'danger');
+    }
+
+    rng_seed($seedRes['seed'] !== null ? (int) $seedRes['seed'] : null);
+    if ($mode === 'yesno') {
+        [$answer, $tone] = rng_int(0, 1) === 1 ? ['Yes', 'positive'] : ['No', 'negative'];
+    } else {
+        $all = [];
+        foreach (eightball_answers() as $t => $list) {
+            foreach ($list as $a) {
+                $all[] = [$a, $t];
+            }
+        }
+        [$answer, $tone] = rng_pick($all);
+    }
+    rng_seed(null);
+
+    $summary = $question !== '' ? "Q: {$question}\nA: {$answer}" : $answer;
+    $h = fn(string $v) => htmlspecialchars($v, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    return "<div class='eightball-result'" . result_history_attrs('eightball', $question !== '' ? "{$question} → {$answer}" : $answer) . ">"
+        . ($question !== '' ? "<div class='eightball-question'>“" . $h($question) . "”</div>" : '')
+        . "<div class='eightball eightball-{$tone}' role='img' aria-label='" . $h("Answer: {$answer}") . "'>"
+        . "<div class='eightball-window'><span class='eightball-answer'>" . $h($answer) . "</span></div></div>"
+        . "<div class='eightball-summary'>" . output_copyable($summary) . "</div>"
+        . "</div>"
+        . rng_seed_notes($seedRes['seed'], $seedRes['warning']);
+}
+
+/**
+ * A 52-card deck (A–K in ♠♥♦♣), optionally with a red and a black joker.
+ *
+ * @return list<array{rank: string, suit: string, name: string, red: bool}>
+ */
+function card_deck(bool $jokers = false): array {
+    $suits = ['♠' => ['spades', false], '♥' => ['hearts', true], '♦' => ['diamonds', true], '♣' => ['clubs', false]];
+    $ranks = ['A' => 'Ace', '2' => 'Two', '3' => 'Three', '4' => 'Four', '5' => 'Five', '6' => 'Six', '7' => 'Seven',
+        '8' => 'Eight', '9' => 'Nine', '10' => 'Ten', 'J' => 'Jack', 'Q' => 'Queen', 'K' => 'King'];
+    $deck = [];
+    foreach ($suits as $suit => [$suitName, $red]) {
+        foreach ($ranks as $rank => $rankName) {
+            $deck[] = ['rank' => $rank, 'suit' => $suit, 'name' => "{$rankName} of {$suitName}", 'red' => $red];
+        }
+    }
+    if ($jokers) {
+        $deck[] = ['rank' => 'Joker', 'suit' => '★', 'name' => 'Red joker', 'red' => true];
+        $deck[] = ['rank' => 'Joker', 'suit' => '★', 'name' => 'Black joker', 'red' => false];
+    }
+    return $deck;
+}
+
+/**
+ * Draw cards without replacement from a shuffled deck (rng_shuffle(): random_int(), or seeded mt_rand()).
+ *
+ * @param array $req Request array containing: 'card_count', optional 'card_jokers', optional 'card_useseed' + 'card_seed'
+ * @return string Dealt cards (CSS deal animation), a copyable summary and history attributes, or an error message
+ */
+function handle_card_draw(array $req): string {
+    $deck = card_deck(req_bool($req, 'card_jokers'));
+    $countV = req_int_validated($req, 'card_count', 1, count($deck));
+    if (!$countV['valid']) {
+        return formatOutput('Number of cards: ' . $countV['error'], type: 'danger');
+    }
+    $seedRes = req_seed($req, 'card_');
+    if (!$seedRes['valid']) {
+        return formatOutput($seedRes['error'], type: 'danger');
+    }
+
+    rng_seed($seedRes['seed'] !== null ? (int) $seedRes['seed'] : null);
+    $hand = array_slice(rng_shuffle($deck), 0, $countV['value']);
+    rng_seed(null);
+
+    $short = fn(array $c) => $c['rank'] === 'Joker' ? $c['name'] : $c['rank'] . $c['suit'];
+    $summary = implode(', ', array_map($short, $hand));
+    $cards = '';
+    foreach ($hand as $i => $c) {
+        $color = $c['red'] ? 'playing-card-red' : 'playing-card-black';
+        $joker = $c['rank'] === 'Joker' ? ' playing-card-joker' : '';
+        $corner = "<span class='playing-card-corner'>{$c['rank']}<br>{$c['suit']}</span>";
+        $cards .= "<div class='playing-card {$color}{$joker}' style='--i: {$i}' role='img' aria-label='" . htmlspecialchars($c['name'], ENT_QUOTES) . "'>"
+            . $corner . "<span class='playing-card-pip'>{$c['suit']}</span>"
+            . "<span class='playing-card-corner playing-card-corner-end'>{$c['rank']}<br>{$c['suit']}</span></div>";
+    }
+    $n = count($hand);
+    return "<div class='card-draw'" . result_history_attrs('card_draw', $summary) . ">"
+        . "<div class='card-draw-table'>{$cards}</div>"
+        . "<div class='card-draw-summary'>" . output_copyable($summary, $n > 1 ? "{$n} cards" : '') . "</div>"
+        . "</div>"
+        . rng_seed_notes($seedRes['seed'], $seedRes['warning']);
 }
 
 /**

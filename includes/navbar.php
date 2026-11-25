@@ -57,6 +57,16 @@ $navbarItems = [
                 "formalName" => "Coin Flip",
                 "icon"       => icon('coins')
             ],
+            "card_draw" => [
+                "name"       => "card_draw",
+                "formalName" => "Card Draw",
+                "icon"       => icon('spade')
+            ],
+            "magic_8ball" => [
+                "name"       => "magic_8ball",
+                "formalName" => "Magic 8-Ball",
+                "icon"       => icon('circle-question-mark')
+            ],
             "list_shuffler" => [
                 "name"       => "list_shuffler",
                 "formalName" => "List Shuffler",
