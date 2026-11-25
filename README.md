@@ -20,7 +20,7 @@ A comprehensive collection of useful developer tools built with PHP and modern w
 - Image generator (built into this repository)
 - Colour generator (random colours and palettes with locks)
 - QR Code generator
-- ID generator
+- ID generator and timestamp decoder (ULID, UUID v1/v6/v7, Snowflake)
 - Spin the wheel
 - Dice roller (with dice notation: 2d6+3, 4d6kh3, d%)
 - Coin flip

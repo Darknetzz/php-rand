@@ -6,10 +6,16 @@
     $nanoLen = isset($_POST['nanoid_length']) ? (int) $_POST['nanoid_length'] : 21;
     $nanoLen = max(6, min(128, $nanoLen));
     ?>
+    <nav class="module-subnav" aria-label="ID Generator navigation">
+        <a class="subnav-pill" data-subtab="generate" href="#gen_id/generate"><?= icon("hash") ?> Generate</a>
+        <a class="subnav-pill" data-subtab="decode" href="#gen_id/decode"><?= icon("clock") ?> Decode timestamp</a>
+    </nav>
+
+    <div class="subnav-panel" data-panel="generate">
     <div class="card card-primary">
         <h1 class="card-header">🆔 ID Generator</h1>
         <div class="card-body">
-            <p class="text-muted mb-4">Generate UUIDv4, ULID, or NanoID values in bulk.</p>
+            <p class="text-muted mb-4">Generate UUIDv4, ULID, or NanoID values in bulk. Use <strong>Decode timestamp</strong> to read the time out of an existing ID.</p>
             <form class="form" action="gen.php" method="POST" id="genid" data-action="genid">
                 <div class="row g-4 mb-4">
                     <div class="col-12 col-lg-6">
@@ -60,6 +66,52 @@
                 <?= submitBtn("genid", "action", "Generate IDs", "hash", "lg") ?>
             </form>
         </div>
+    </div>
+    </div>
+
+    <div class="subnav-panel" data-panel="decode">
+    <div class="card card-primary">
+        <h1 class="card-header">ID Timestamp Decoder</h1>
+        <div class="card-body">
+            <p class="text-muted mb-4">Pull the embedded time and fields out of a ULID, a UUID (v1, v6 and v7 carry a timestamp) or a Snowflake ID. The type is detected automatically.</p>
+            <form class="form" action="gen.php" method="POST" id="id_decode_form" data-action="id_decode" data-no-random-buttons>
+                <div class="mb-3">
+                    <label class="form-label" for="id_decode_value"><strong>ID</strong></label>
+                    <input type="text" name="id_decode_value" id="id_decode_value" class="form-control form-control-lg font-monospace" maxlength="80" placeholder="01ARZ3NDEKTSV4RRFFQ69G5FAV, 017f22e2-79b0-7cc3-98c4-dc0c0c07398f, 175928847299117063" autocomplete="off" spellcheck="false" required>
+                </div>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label" for="id_decode_type"><strong>Type</strong></label>
+                        <select name="id_decode_type" id="id_decode_type" class="form-select">
+                            <option value="auto" selected>Auto-detect</option>
+                            <option value="ulid">ULID</option>
+                            <option value="uuid">UUID</option>
+                            <option value="snowflake">Snowflake</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label" for="id_decode_epoch"><strong>Snowflake epoch</strong></label>
+                        <select name="id_decode_epoch" id="id_decode_epoch" class="form-select">
+                            <?php foreach (SNOWFLAKE_EPOCHS as $key => [$label, $ms]): ?>
+                                <option value="<?= $key ?>"><?= htmlspecialchars($label) ?></option>
+                            <?php endforeach; ?>
+                            <option value="custom">Custom…</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4 d-none" id="id_decode_custom_epoch_wrap">
+                        <label class="form-label" for="id_decode_custom_epoch"><strong>Custom epoch</strong> <small class="text-muted">(Unix ms)</small></label>
+                        <input type="text" name="id_decode_custom_epoch" id="id_decode_custom_epoch" class="form-control font-monospace" inputmode="numeric" placeholder="1288834974657" disabled>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label" for="id_decode_timezone"><strong>Show time in</strong></label>
+                    <?= timezone_select_html("id_decode_timezone", "", "UTC", "id='id_decode_timezone'") ?>
+                </div>
+                <?= submitBtn("id_decode", text: "Decode", icon: "scan-search") ?>
+                <div class="responseDiv mt-3" id="id_decode_response"></div>
+            </form>
+        </div>
+    </div>
     </div>
 </div>
 <script>
@@ -142,5 +194,26 @@
 
     toggleNanoLength();
     updateFormatPreview();
+
+    // Decoder: custom epoch field, and default to the browser's timezone.
+    var epochEl = document.getElementById('id_decode_epoch');
+    var customWrapEl = document.getElementById('id_decode_custom_epoch_wrap');
+    var customEl = document.getElementById('id_decode_custom_epoch');
+    if (epochEl && customWrapEl && customEl) {
+        var syncEpoch = function () {
+            var custom = epochEl.value === 'custom';
+            customWrapEl.classList.toggle('d-none', !custom);
+            customEl.disabled = !custom;
+        };
+        epochEl.addEventListener('change', syncEpoch);
+        syncEpoch();
+    }
+    var tzEl = document.getElementById('id_decode_timezone');
+    try {
+        var browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        if (tzEl && browserTz && tzEl.querySelector('option[value="' + browserTz + '"]')) {
+            tzEl.value = browserTz;
+        }
+    } catch (e) {}
 })();
 </script>

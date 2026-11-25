@@ -2668,3 +2668,41 @@ function logo_discover_font_files(): array {
     return $paths;
 }
 
+/**
+ * Timezone <select> with every identifier and its current UTC offset.
+ *
+ * @param string|null $selected Selected identifier; null = the server's default timezone
+ * @param string $attrs Extra raw attributes (id, data-*), already escaped
+ */
+function timezone_select_html(string $inputName = "timezone", string $extraClass = "timezone-select", ?string $selected = null, string $attrs = ""): string {
+  $selected ??= (date_default_timezone_get() ?: 'UTC');
+  $name = htmlspecialchars($inputName, ENT_QUOTES, 'UTF-8');
+  $class = htmlspecialchars(trim("form-select form-select-lg {$extraClass}"), ENT_QUOTES, 'UTF-8');
+  $html = "<select name='{$name}' class='{$class}' {$attrs} style='font-family: monospace; border: 2px solid #495057; max-height: 400px;'>";
+  foreach (DateTimeZone::listIdentifiers() as $timezone) {
+    $offsetSeconds = (new DateTime("now", new DateTimeZone($timezone)))->getOffset();
+    $offsetHours = $offsetSeconds / 3600;
+    $offset = $offsetSeconds === 0 ? "UTC" : "UTC" . ($offsetHours > 0 ? '+' : '-') . abs($offsetHours);
+    $sel = $timezone === $selected ? ' selected' : '';
+    $html .= '<option value="' . $timezone . '"' . $sel . '>' . $timezone . ' (' . $offset . ')</option>';
+  }
+  return $html . "</select>";
+}
+
+/**
+ * Captioned two-column table (label | copyable value).
+ *
+ * @param array<string,string> $rows Value by label
+ */
+function copyable_table_html(string $caption, array $rows): string {
+  $html = '<div class="table-responsive mt-3"><table class="table table-dark table-striped table-hover align-middle mb-0" style="border: 1px solid #334155;">';
+  if ($caption !== '') {
+    $html .= '<caption class="text-start fw-bold" style="caption-side: top; color: var(--bs-body-color);">' . htmlspecialchars($caption, ENT_QUOTES, 'UTF-8') . '</caption>';
+  }
+  $html .= '<tbody>';
+  foreach ($rows as $label => $value) {
+    $html .= '<tr><td style="width: 30%;">' . htmlspecialchars((string) $label, ENT_QUOTES, 'UTF-8') . '</td><td style="max-width: 360px;">'
+      . copyableOutput((string) $value, '') . '</td></tr>';
+  }
+  return $html . '</tbody></table></div>';
+}

@@ -52,6 +52,7 @@ function getHandlerRegistry(): array {
         'crontab' => 'handle_crontab',
         'brainfuck' => 'handle_brainfuck',
         'genid' => 'handle_genid',
+        'id_decode' => 'handle_id_decode',
         'jwt' => 'handle_jwt',
         'shellcheck' => 'handle_shellcheck',
         'syntax_validate' => 'handle_syntax_validate',
@@ -1252,30 +1253,17 @@ function relative_time_formats_table(array $formats): string {
         'unix' => 'Unix (seconds)',
         'unix_ms' => 'Unix (milliseconds)',
     ];
-    $html = '<div class="table-responsive mt-3"><table class="table table-dark table-striped table-hover align-middle mb-0" style="border: 1px solid #334155;">';
-    $html .= '<caption class="text-start fw-bold" style="caption-side: top; color: var(--bs-body-color);">Absolute formats</caption>';
-    $html .= '<thead><tr><th>Format</th><th>Value</th></tr></thead><tbody>';
+    $rows = [];
     foreach ($labels as $key => $label) {
-        if (!isset($formats[$key])) {
-            continue;
+        if (isset($formats[$key])) {
+            $rows[$label] = $formats[$key];
         }
-        $html .= '<tr><td>' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</td><td style="max-width: 360px;">'
-            . copyableOutput($formats[$key], '') . '</td></tr>';
     }
-    $html .= '</tbody></table></div>';
-    return $html;
+    return copyable_table_html('Absolute formats', $rows);
 }
 
 function relative_time_parts_table(array $parts): string {
-    $html = '<div class="table-responsive mt-3"><table class="table table-dark table-striped table-hover align-middle mb-0" style="border: 1px solid #334155;">';
-    $html .= '<caption class="text-start fw-bold" style="caption-side: top; color: var(--bs-body-color);">Breakdown</caption>';
-    $html .= '<thead><tr><th>Unit</th><th>Value</th></tr></thead><tbody>';
-    foreach ($parts as $name => $val) {
-        $html .= '<tr><td>' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '</td><td>'
-            . copyableOutput((string) $val, '') . '</td></tr>';
-    }
-    $html .= '</tbody></table></div>';
-    return $html;
+    return copyable_table_html('Breakdown', array_map('strval', $parts));
 }
 
 function relative_time_meta_line(DateTimeImmutable $reference, DateTimeImmutable $target, int $signedSeconds): string {
@@ -4089,6 +4077,215 @@ function handle_genid(array $req): string {
     $output = output_copyable(implode("\n", $ids), $label);
     $output .= "<div style='margin-top: 8px; font-size: 0.85rem; opacity: 0.75;'>Generated <strong>{$qty}</strong> ID" . ($qty > 1 ? "s" : "") . ".</div>";
 
+    return $output;
+}
+
+/**
+ * Guess an ID's type: 'uuid', 'ulid', 'snowflake' or null.
+ */
+function id_detect_type(string $id): ?string {
+    if (preg_match('/^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}$/i', $id)) {
+        return 'uuid';
+    }
+    if (preg_match('/^[0-7][0-9A-HJKMNP-TV-Z]{25}$/i', $id)) {
+        return 'ulid';
+    }
+    if (preg_match('/^\d{1,20}$/', $id)) {
+        return 'snowflake';
+    }
+    return null;
+}
+
+/**
+ * Time rows for a decoded ID: UTC, the chosen timezone, ISO 8601, Unix ms and relative.
+ *
+ * @param int $unixMs Milliseconds since the Unix epoch
+ * @param string $precision Extra sub-millisecond digits to show (UUID v1/v6 100 ns ticks)
+ * @return array<string,string>
+ */
+function id_decode_time_rows(int $unixMs, DateTimeZone $tz, string $precision = ''): array {
+    $seconds = intdiv($unixMs, 1000);
+    $msPart = $unixMs % 1000;
+    if ($msPart < 0) {
+        $seconds--;
+        $msPart += 1000;
+    }
+    $utc = (new DateTimeImmutable('@' . $seconds))->setTimezone(new DateTimeZone('UTC'));
+    $local = $utc->setTimezone($tz);
+    $frac = sprintf('.%03d', $msPart) . $precision;
+    return [
+        'UTC' => $utc->format('Y-m-d H:i:s') . $frac . ' UTC',
+        $tz->getName() => $local->format('Y-m-d H:i:s') . $frac . ' ' . $local->format('T (P)'),
+        'ISO 8601' => $local->format('Y-m-d\TH:i:s') . sprintf('.%03d', $msPart) . $local->format('P'),
+        'Unix (milliseconds)' => (string) $unixMs,
+        'Relative' => relative_time_humanize($utc, new DateTimeImmutable('now')),
+    ];
+}
+
+/**
+ * Decode a ULID: 48-bit millisecond timestamp + 80 random bits.
+ *
+ * @return array{ms: int, fields: array<string,string>}
+ */
+function id_decode_ulid(string $id): array {
+    $alphabet = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+    $id = strtoupper($id);
+    $bits = '';
+    for ($i = 0; $i < 26; $i++) {
+        $bits .= str_pad(decbin(strpos($alphabet, $id[$i])), 5, '0', STR_PAD_LEFT);
+    }
+    $bits = substr($bits, 2); // 130 bits encode 128
+    $ms = bindec(substr($bits, 0, 48));
+    $randomHex = '';
+    foreach (str_split(substr($bits, 48), 4) as $nibble) {
+        $randomHex .= dechex(bindec($nibble));
+    }
+    return ['ms' => (int) $ms, 'fields' => [
+        'Type' => 'ULID',
+        'Timestamp part' => substr($id, 0, 10),
+        'Randomness part' => substr($id, 10),
+        'Randomness (hex)' => $randomHex,
+    ]];
+}
+
+/**
+ * Decode a UUID's version/variant and, for v1/v6/v7, its timestamp.
+ *
+ * @return array{ms: ?int, precision: string, fields: array<string,string>}
+ */
+function id_decode_uuid(string $id): array {
+    $hex = strtolower(str_replace('-', '', $id));
+    $canonical = substr($hex, 0, 8) . '-' . substr($hex, 8, 4) . '-' . substr($hex, 12, 4) . '-' . substr($hex, 16, 4) . '-' . substr($hex, 20);
+    $fields = ['Type' => 'UUID', 'Canonical form' => $canonical];
+    if ($hex === str_repeat('0', 32) || $hex === str_repeat('f', 32)) {
+        $fields['Version'] = $hex[0] === '0' ? 'Nil UUID (all zeros)' : 'Max UUID (all ones)';
+        return ['ms' => null, 'precision' => '', 'fields' => $fields];
+    }
+    $version = hexdec($hex[12]);
+    $variantNibble = hexdec($hex[16]);
+    $variant = match (true) {
+        $variantNibble < 8 => 'NCS (reserved, backward compatibility)',
+        $variantNibble < 12 => 'RFC 9562 / RFC 4122',
+        $variantNibble < 14 => 'Microsoft (reserved)',
+        default => 'Reserved for future definition',
+    };
+    $versionNames = [
+        1 => 'Version 1 (Gregorian time + node)',
+        2 => 'Version 2 (DCE Security)',
+        3 => 'Version 3 (MD5 name-based)',
+        4 => 'Version 4 (random)',
+        5 => 'Version 5 (SHA-1 name-based)',
+        6 => 'Version 6 (reordered Gregorian time)',
+        7 => 'Version 7 (Unix time + random)',
+        8 => 'Version 8 (custom)',
+    ];
+    $fields['Version'] = $versionNames[$version] ?? "Version {$version} (unknown)";
+    $fields['Variant'] = $variant;
+    $ms = null;
+    $precision = '';
+    if ($variantNibble >= 8 && $variantNibble < 12 && in_array($version, [1, 6], true)) {
+        $ticks = $version === 1
+            ? (hexdec(substr($hex, 13, 3)) << 48) | (hexdec(substr($hex, 8, 4)) << 32) | hexdec(substr($hex, 0, 8))
+            : (hexdec(substr($hex, 0, 8)) << 28) | (hexdec(substr($hex, 8, 4)) << 12) | hexdec(substr($hex, 13, 3));
+        // 100 ns ticks since 1582-10-15 → Unix ms; the last 4 digits are sub-millisecond.
+        $sinceUnix = $ticks - 122192928000000000;
+        $ms = intdiv($sinceUnix, 10000) - ($sinceUnix < 0 && $sinceUnix % 10000 !== 0 ? 1 : 0);
+        $precision = sprintf('%04d', $sinceUnix - $ms * 10000);
+        $node = substr($hex, 20);
+        $fields['Timestamp (100 ns ticks since 1582-10-15)'] = (string) $ticks;
+        $fields['Clock sequence'] = (string) (hexdec(substr($hex, 16, 4)) & 0x3fff);
+        $fields['Node'] = implode(':', str_split($node, 2))
+            . ((hexdec($node[1]) & 1) ? ' (multicast bit set: random node, not a MAC)' : ' (MAC address)');
+    } elseif ($variantNibble >= 8 && $variantNibble < 12 && $version === 7) {
+        $ms = (int) hexdec(substr($hex, 0, 12));
+        $fields['Timestamp (hex)'] = substr($hex, 0, 12);
+        $fields['Random (rand_a + rand_b)'] = substr($hex, 13, 3) . substr($hex, 17);
+    } else {
+        $fields['Timestamp'] = 'None (this UUID version has no embedded time)';
+    }
+    return ['ms' => $ms, 'precision' => $precision, 'fields' => $fields];
+}
+
+/**
+ * Decode a Snowflake ID: 41-bit ms timestamp since $epochMs, 10-bit machine, 12-bit sequence.
+ *
+ * @return array{ms: int, fields: array<string,string>}
+ */
+function id_decode_snowflake(int $id, int $epochMs, string $epochLabel): array {
+    $machine = ($id >> 12) & 0x3ff;
+    return ['ms' => ($id >> 22) + $epochMs, 'fields' => [
+        'Type' => 'Snowflake',
+        'Epoch' => "{$epochLabel} ({$epochMs} ms)",
+        'Timestamp (ms since epoch)' => (string) ($id >> 22),
+        'Machine ID (10 bits)' => (string) $machine,
+        'Worker / datacenter ID (upper 5 bits)' => (string) ($machine >> 5),
+        'Process / worker ID (lower 5 bits)' => (string) ($machine & 0x1f),
+        'Sequence (12 bits)' => (string) ($id & 0xfff),
+    ]];
+}
+
+/**
+ * Decode an ID's embedded timestamp and fields (ULID, UUID, Snowflake).
+ *
+ * @param array $req 'id_decode_value', 'id_decode_type' (auto|ulid|uuid|snowflake),
+ *                   'id_decode_epoch' (SNOWFLAKE_EPOCHS key or custom), 'id_decode_custom_epoch', 'id_decode_timezone'
+ */
+function handle_id_decode(array $req): string {
+    $raw = trim((string) req_get($req, 'id_decode_value', ''));
+    $id = (string) preg_replace('/^(urn:uuid:|\{)|\}$/i', '', $raw);
+    if ($id === '') {
+        return formatOutput('Paste an ID to decode.', type: 'danger');
+    }
+    if (strlen($id) > 64) {
+        return formatOutput('That is too long to be a ULID, UUID or Snowflake.', type: 'danger');
+    }
+    $tzResult = relative_time_timezone((string) req_get($req, 'id_decode_timezone', ''));
+    if (!$tzResult['ok']) {
+        return formatOutput($tzResult['error'], type: 'danger');
+    }
+
+    $type = (string) req_get($req, 'id_decode_type', 'auto');
+    $detected = id_detect_type($id);
+    if ($type === 'auto') {
+        if ($detected === null) {
+            return formatOutput('Could not recognise this ID. Expected a UUID (32 hex digits), a ULID (26 Crockford Base32 characters) or a Snowflake (a number).', type: 'danger');
+        }
+        $type = $detected;
+    } elseif (!in_array($type, ['ulid', 'uuid', 'snowflake'], true)) {
+        return formatOutput('Invalid ID type selected.', type: 'danger');
+    } elseif ($detected !== $type) {
+        return formatOutput('This is not a valid ' . strtoupper($type) . '.', type: 'danger');
+    }
+
+    $precision = '';
+    if ($type === 'ulid') {
+        $decoded = id_decode_ulid($id);
+    } elseif ($type === 'uuid') {
+        $decoded = id_decode_uuid($id);
+        $precision = $decoded['precision'];
+    } else {
+        if (strlen(ltrim($id, '0')) > 19 || (strlen(ltrim($id, '0')) === 19 && strcmp(ltrim($id, '0'), (string) PHP_INT_MAX) > 0)) {
+            return formatOutput('Snowflake IDs are 63-bit numbers (at most ' . PHP_INT_MAX . ').', type: 'danger');
+        }
+        $epochKey = (string) req_get($req, 'id_decode_epoch', 'twitter');
+        if ($epochKey === 'custom') {
+            $customRaw = trim((string) req_get($req, 'id_decode_custom_epoch', ''));
+            if (!preg_match('/^-?\d{1,15}$/', $customRaw)) {
+                return formatOutput('Custom epoch must be a Unix timestamp in milliseconds.', type: 'danger');
+            }
+            [$epochLabel, $epochMs] = ['Custom', (int) $customRaw];
+        } elseif (isset(SNOWFLAKE_EPOCHS[$epochKey])) {
+            [$epochLabel, $epochMs] = SNOWFLAKE_EPOCHS[$epochKey];
+        } else {
+            return formatOutput('Invalid Snowflake epoch selected.', type: 'danger');
+        }
+        $decoded = id_decode_snowflake((int) $id, $epochMs, $epochLabel);
+    }
+
+    $output = copyable_table_html('Fields', $decoded['fields']);
+    if ($decoded['ms'] !== null) {
+        $output .= copyable_table_html('Embedded time', id_decode_time_rows($decoded['ms'], $tzResult['tz'], $precision));
+    }
     return $output;
 }
 

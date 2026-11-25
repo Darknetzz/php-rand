@@ -24,6 +24,12 @@ define("DICE_MAX_SIDES", 1000);
 define("DICE_NOTATION_MAX_LENGTH", 100);
 define("DICE_NOTATION_MAX_GROUPS", 20);
 define("DICE_NOTATION_MAX_CONSTANT", 1000000);
+# ID decoder Snowflake epochs (ms since the Unix epoch) for handle_id_decode
+define("SNOWFLAKE_EPOCHS", [
+    "twitter" => ["Twitter / X", 1288834974657],
+    "discord" => ["Discord", 1420070400000],
+    "unix"    => ["Unix (0)", 0],
+]);
 # Coin flip limit (form and handle_coin_flip)
 define("COIN_MAX_COUNT", 100);
 # List shuffler limits (form and handle_list_shuffle)
