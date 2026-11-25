@@ -12,6 +12,8 @@
                     </div>
                 </div>
 
+                <?= seed_field_html("coin_", "flips") ?>
+
                 <?= submitBtn("coin_flip", text: "Flip") ?>
 
                 <div class="responseDiv mt-3" id="coin_flip_response"></div>

@@ -389,6 +389,14 @@ th.tablehead,
   margin-block: 0.75rem;
 }
 
+/* "Seed used" line under seeded output (rng_seed_notes) */
+.rng-seed-used {
+  font-size: 1rem;
+  font-weight: normal;
+  opacity: 0.7;
+  margin-top: 0.75rem;
+}
+
 .tool-loading {
   text-align: center;
   padding: 3rem 0;

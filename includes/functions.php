@@ -647,6 +647,33 @@ function submitBtn(string $value = "", string $name = "action", string $text = "
 }
 
 /**
+ * Shared "Use custom seed" switch and seed input, read back with req_seed().
+ * Fields are named "{$prefix}useseed" and "{$prefix}seed"; rand.js shows the input
+ * while the switch is on ([data-seed-toggle]).
+ *
+ * @param string $prefix Field name prefix, e.g. "numgen" or "dice_"
+ * @param string $what   What the seed makes reproducible, e.g. "numbers" or "rolls"
+ */
+function seed_field_html(string $prefix, string $what = 'results'): string {
+  $p = htmlspecialchars($prefix, ENT_QUOTES, 'UTF-8');
+  $w = htmlspecialchars($what, ENT_QUOTES, 'UTF-8');
+  $W = htmlspecialchars(ucfirst($what), ENT_QUOTES, 'UTF-8');
+  return <<<HTML
+<div class="mb-3" data-seed-field>
+    <div class="form-check form-switch">
+        <input type="checkbox" class="form-check-input" id="{$p}useseed" name="{$p}useseed" value="1" data-seed-toggle>
+        <label class="form-check-label" for="{$p}useseed">Use custom seed (for reproducible {$w})</label>
+        <small class="text-muted d-block">{$W} are cryptographically secure (random_int()) by default. A seed switches to mt_rand(), which is reproducible but not secure.</small>
+    </div>
+    <div class="mt-2" data-seed-input style="display:none;">
+        <label class="form-label" for="{$p}seed">Seed value</label>
+        <input type="text" name="{$p}seed" id="{$p}seed" class="form-control" value="" placeholder="Digits only, 1–17 digits" inputmode="numeric" autocomplete="off" style="font-family: monospace;">
+    </div>
+</div>
+HTML;
+}
+
+/**
  * Shared private-key passphrase UI: off by default, with an explicit enable toggle.
  *
  * @param array{
@@ -2241,16 +2268,16 @@ function bits_to_php_int($bits) {
 // echo convert_any(str_repeat('1', 13), 1, 2), PHP_EOL;    // Unary 13 -> 1101
 
 /* ===================================================================== */
-/*                     FUNCTION: resolve_numgen_seed                       */
+/*                     FUNCTION: resolve_rng_seed                           */
 /* ===================================================================== */
 /**
- * Validates custom seed for the number generator; if invalid, returns a generated seed and warning.
+ * Validates a custom seed (Number Generator, Dice Roller, Coin Flip); if invalid, returns a generated seed and warning.
  * Valid seed: non-empty, digits only, 1–17 characters (mt_srand constraint).
  *
- * @param string|null $customSeed Raw seed value from user (e.g. $_POST['numgenseed'])
+ * @param string|null $customSeed Raw seed value from user (e.g. $_POST['numgenseed'], $_POST['dice_seed'])
  * @return array{seed: string|null, warning: string|null} Effective seed to use; warning message if custom was invalid
  */
-function resolve_numgen_seed(?string $customSeed): array {
+function resolve_rng_seed(?string $customSeed): array {
   $trimmed = $customSeed !== null ? trim($customSeed) : '';
   if ($trimmed === '') {
     return ['seed' => null, 'warning' => null];

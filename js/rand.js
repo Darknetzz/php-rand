@@ -3313,6 +3313,16 @@ $(document).ready(function() {
         }
     });
 
+    // Seed switch (seed_field_html()): show the seed input only while it is on
+    $(document).on("change", "[data-seed-toggle]", function() {
+        const $input = $(this).closest("[data-seed-field]").find("[data-seed-input]");
+        if ($(this).is(":checked")) {
+            $input.slideDown();
+        } else {
+            $input.slideUp();
+        }
+    });
+
     // Keep passphrase inputs in sync with generation mode / enable toggle
     $(document).on("change", "[name='generation_mode'], [name='passphrase_enabled']", function() {
         const $form = $(this).closest("form");

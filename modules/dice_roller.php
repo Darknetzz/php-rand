@@ -17,6 +17,8 @@
                     </div>
                 </div>
 
+                <?= seed_field_html("dice_", "rolls") ?>
+
                 <?= submitBtn("dice_roll", text: "Roll") ?>
 
                 <div class="responseDiv mt-3" id="dice_roller_response"></div>

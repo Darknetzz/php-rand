@@ -203,6 +203,38 @@ function req_int_validated(array $request, string $key, ?int $min = null, ?int $
 }
 
 /**
+ * Read the seed_field_html() fields: null seed (secure random_int()) when the switch is off
+ * or the seed is empty. An invalid seed is replaced by a generated one, with a warning
+ * (resolve_rng_seed()).
+ *
+ * @return array{valid: bool, seed: ?string, warning: ?string, error?: string}
+ */
+function req_seed(array $request, string $prefix): array {
+    if (!req_bool($request, $prefix . 'useseed') || trim((string) req_get($request, $prefix . 'seed', '')) === '') {
+        return ['valid' => true, 'seed' => null, 'warning' => null];
+    }
+    $validation = req_string($request, $prefix . 'seed', 1, 100);
+    if (!$validation['valid']) {
+        return ['valid' => false, 'seed' => null, 'warning' => null, 'error' => 'Seed: ' . $validation['error']];
+    }
+    return ['valid' => true] + resolve_rng_seed($validation['value']);
+}
+
+/**
+ * Notes shown under seeded output: invalid-seed warning, "not secure" notice and the seed used.
+ * Empty when no seed was used.
+ */
+function rng_seed_notes(?string $seed, ?string $warning): string {
+    if ($seed === null) {
+        return '';
+    }
+    $out = $warning ? formatOutput($warning, 6, "warning") : '';
+    $out .= rng_source_notice('seeded mt_rand() (reproducible)');
+    $out .= "<div class='rng-seed-used'><small><strong>Seed used:</strong> " . htmlspecialchars($seed) . "</small></div>";
+    return $out;
+}
+
+/**
  * Wrap content in a copyable output container
  *
  * @param string $content The content to display and copy
@@ -440,17 +472,11 @@ function handle_numgen(array $req): string {
     }
 
     // Resolve seed: validate custom seed if provided; invalid → use generated seed + warning
-    $seed = null;
-    $seedWarning = null;
-    if (req_bool($req, 'numgenuseseed')) {
-        $seedValidation = req_string($req, 'numgenseed', 1, 100);
-        if (!$seedValidation['valid']) {
-            return formatOutput($seedValidation['error'], type: "danger");
-        }
-        $resolved = resolve_numgen_seed($seedValidation['value']);
-        $seed = $resolved['seed'];
-        $seedWarning = $resolved['warning'];
+    $seedRes = req_seed($req, 'numgen');
+    if (!$seedRes['valid']) {
+        return formatOutput($seedRes['error'], type: "danger");
     }
+    $seed = $seedRes['seed'];
 
     // Validate quantity (1–500)
     $qty = isset($req['numgenqty']) ? (int) $req['numgenqty'] : 1;
@@ -490,13 +516,8 @@ function handle_numgen(array $req): string {
     $joined = joinNumGenResults($results, $separator);
     $output = output_copyable($joined);
 
-    if ($seedWarning) {
-        $output .= formatOutput($seedWarning, 6, "warning");
-    }
-    $output .= rng_source_notice(rng_is_seeded() ? 'seeded mt_rand() (reproducible)' : null);
-    if ($seed) {
-        $output .= "<div style='margin-top: 15px; opacity: 0.7;'><small><strong>Seed used:</strong> " . htmlspecialchars($seed) . "</small></div>";
-    }
+    $output .= $seed !== null ? rng_seed_notes($seed, $seedRes['warning']) : rng_source_notice(null);
+    rng_seed(null);
 
     return $output;
 }
@@ -1769,7 +1790,7 @@ function handle_spinwheel(array $req): string {
 /**
  * Roll dice on the server; renderDiceRoll() in js/rand.js animates the result.
  *
- * @param array $req Request array containing: 'dice_count', 'dice_sides'
+ * @param array $req Request array containing: 'dice_count', 'dice_sides', optional 'dice_useseed' + 'dice_seed'
  * @return string HTML with the rolls in data attributes and a copyable summary, or an error message
  */
 function handle_dice_roll(array $req): string {
@@ -1781,18 +1802,25 @@ function handle_dice_roll(array $req): string {
     if (!$sidesValidation['valid']) {
         return formatOutput('Sides per die: ' . $sidesValidation['error'], type: 'danger');
     }
+    $seedRes = req_seed($req, 'dice_');
+    if (!$seedRes['valid']) {
+        return formatOutput($seedRes['error'], type: 'danger');
+    }
     $count = $countValidation['value'];
     $sides = $sidesValidation['value'];
 
+    rng_seed($seedRes['seed'] !== null ? (int) $seedRes['seed'] : null);
     $rolls = [];
     for ($i = 0; $i < $count; $i++) {
-        $rolls[] = random_int(1, $sides);
+        $rolls[] = rng_int(1, $sides);
     }
+    rng_seed(null);
 
     $list = implode(', ', $rolls);
     $summary = "{$count}d{$sides}: {$list}" . ($count > 1 ? ' = ' . array_sum($rolls) : '');
 
-    return dice_tray_html($rolls, $sides, "Rolled {$list}", $summary);
+    return dice_tray_html($rolls, $sides, "Rolled {$list}", $summary)
+        . rng_seed_notes($seedRes['seed'], $seedRes['warning']);
 }
 
 /**
@@ -1816,7 +1844,7 @@ function dice_tray_html(array $rolls, int $sides, string $ariaLabel, string $sum
 /**
  * Flip coins on the server; drawn with the dice roller's d2 coin (H/T faces).
  *
- * @param array $req Request array containing: 'coin_count'
+ * @param array $req Request array containing: 'coin_count', optional 'coin_useseed' + 'coin_seed'
  * @return string HTML for renderDiceRoll() with a copyable summary, or an error message
  */
 function handle_coin_flip(array $req): string {
@@ -1824,13 +1852,19 @@ function handle_coin_flip(array $req): string {
     if (!$countValidation['valid']) {
         return formatOutput('Number of coins: ' . $countValidation['error'], type: 'danger');
     }
+    $seedRes = req_seed($req, 'coin_');
+    if (!$seedRes['valid']) {
+        return formatOutput($seedRes['error'], type: 'danger');
+    }
     $count = $countValidation['value'];
 
     $names = [1 => 'Heads', 2 => 'Tails'];
+    rng_seed($seedRes['seed'] !== null ? (int) $seedRes['seed'] : null);
     $flips = [];
     for ($i = 0; $i < $count; $i++) {
-        $flips[] = random_int(1, 2);
+        $flips[] = rng_int(1, 2);
     }
+    rng_seed(null);
 
     $list = implode(', ', array_map(fn($f) => $names[$f], $flips));
     $summary = $list;
@@ -1840,7 +1874,8 @@ function handle_coin_flip(array $req): string {
         $summary = "{$count} coins: {$list} ({$heads} " . ($heads === 1 ? 'head' : 'heads') . ", {$tails} " . ($tails === 1 ? 'tail' : 'tails') . ")";
     }
 
-    return dice_tray_html($flips, 2, "Flipped {$list}", $summary, [1 => 'H', 2 => 'T'], 'dice-tray-coin');
+    return dice_tray_html($flips, 2, "Flipped {$list}", $summary, [1 => 'H', 2 => 'T'], 'dice-tray-coin')
+        . rng_seed_notes($seedRes['seed'], $seedRes['warning']);
 }
 
 function handle_calculator(array $req): string {
