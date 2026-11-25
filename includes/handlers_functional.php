@@ -1286,6 +1286,62 @@ function stringtools_remove_custom_characters(string $string, string $characters
 }
 
 /**
+ * Split text into words for programming-case conversions.
+ *
+ * Splits on anything that is not a letter or digit (spaces, `-`, `_`, `.`, punctuation)
+ * and on camelCase boundaries (`myVarName` → my, Var, Name; `XMLHttp` → XML, Http).
+ * Works on UTF-8 text.
+ *
+ * @return array<int, string>
+ */
+function stringtools_split_words(string $string): array {
+    $words = [];
+    foreach (preg_split('/[^\p{L}\p{M}\p{N}]+/u', $string, -1, PREG_SPLIT_NO_EMPTY) ?: [] as $chunk) {
+        $parts = preg_split('/(?<=[\p{Ll}\p{N}])(?=\p{Lu})|(?<=\p{Lu})(?=\p{Lu}\p{Ll})/u', $chunk, -1, PREG_SPLIT_NO_EMPTY);
+        array_push($words, ...($parts ?: [$chunk]));
+    }
+    return $words;
+}
+
+/**
+ * Upper-case the first character of a UTF-8 word and lower-case the rest.
+ */
+function stringtools_capitalize_word(string $word): string {
+    return mb_strtoupper(mb_substr($word, 0, 1, 'UTF-8'), 'UTF-8') . mb_strtolower(mb_substr($word, 1, null, 'UTF-8'), 'UTF-8');
+}
+
+/**
+ * Convert text to a programming case, one line at a time so lists of names keep their lines.
+ *
+ * @param string $style camel, pascal, snake, constant, kebab or dot
+ */
+function stringtools_convert_case(string $string, string $style): string {
+    $lines = preg_split('/(\r\n|\r|\n)/', $string, -1, PREG_SPLIT_DELIM_CAPTURE) ?: [$string];
+    foreach ($lines as $i => $line) {
+        if ($i % 2 === 1) {
+            continue; // line ending
+        }
+        if ($style === 'kebab') {
+            $line = utf8_to_ascii($line); // URL-friendly: transliterate (blåbær → blabaer)
+        }
+        $words = stringtools_split_words($line);
+        if ($style === 'kebab') {
+            $words = array_values(array_filter(array_map(fn($w) => preg_replace('/[^A-Za-z0-9]/', '', $w), $words), 'strlen'));
+        }
+        $lower = array_map(fn($w) => mb_strtolower($w, 'UTF-8'), $words);
+        $lines[$i] = match ($style) {
+            'camel' => $words ? $lower[0] . implode('', array_map('stringtools_capitalize_word', array_slice($words, 1))) : '',
+            'pascal' => implode('', array_map('stringtools_capitalize_word', $words)),
+            'snake' => implode('_', $lower),
+            'constant' => mb_strtoupper(implode('_', $lower), 'UTF-8'),
+            'kebab' => implode('-', $lower),
+            'dot' => implode('.', $lower),
+        };
+    }
+    return implode('', $lines);
+}
+
+/**
  * Handle string transformation requests
  *
  * Applies various text transformations such as case conversion, whitespace handling,
@@ -1311,7 +1367,8 @@ function handle_stringtools(array $req): string {
     // Validate tool selection
     $allowedTools = [
         'trim', 'removewhitespace', 'reverse', 'repeat', 'shuffle', 'uppercase', 'lowercase',
-        'titlecase', 'camelcase', 'slugify', 'kebabcase', 'randomcase', 'invertedcase',
+        'titlecase', 'camelcase', 'pascalcase', 'snakecase', 'constantcase', 'dotcase',
+        'slugify', 'kebabcase', 'randomcase', 'invertedcase',
         'l33t5p34k', 'crlf2lf', 'lf2crlf', 'formatlineendings', 'removehtmltags',
         'removepunctuation', 'removenewlines', 'removetabs', 'removespaces', 'removeslashes',
         'removebackslashes', 'removenonascii', 'removenonprintable', 'removewhitespaceext',
@@ -1343,9 +1400,13 @@ function handle_stringtools(array $req): string {
         'uppercase' => mb_strtoupper($string, 'UTF-8'),
         'lowercase' => mb_strtolower($string, 'UTF-8'),
         'titlecase' => mb_convert_case($string, MB_CASE_TITLE, 'UTF-8'),
-        'camelcase' => lcfirst(str_replace(' ', '', mb_convert_case($string, MB_CASE_TITLE, 'UTF-8'))),
+        'camelcase' => stringtools_convert_case($string, 'camel'),
+        'pascalcase' => stringtools_convert_case($string, 'pascal'),
+        'snakecase' => stringtools_convert_case($string, 'snake'),
+        'constantcase' => stringtools_convert_case($string, 'constant'),
+        'dotcase' => stringtools_convert_case($string, 'dot'),
         'slugify' => strtolower(preg_replace('/[^a-zA-Z0-9_]/', '', str_replace([" ", "-"], "_", utf8_to_ascii($string)))),
-        'kebabcase' => strtolower(preg_replace('/[^a-zA-Z0-9_-]/', '', str_replace([" ", "_"], "-", utf8_to_ascii($string)))),
+        'kebabcase' => stringtools_convert_case($string, 'kebab'),
         'randomcase' => implode('', array_map(fn($c) => (mt_rand(0, 100) >= 50) ? mb_strtoupper($c, 'UTF-8') : mb_strtolower($c, 'UTF-8'), utf8_chars($string))),
         'invertedcase' => utf8_invert_case($string),
         'l33t5p34k' => str_replace(['a','e','o','t','l','s','b','A','E','O','T','L','S','B'], ['4','3','0','7','1','5','6','4','3','0','7','1','5','6'], $string),
