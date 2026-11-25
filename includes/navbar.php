@@ -124,6 +124,11 @@ $navbarItems = [
                 "formalName" => "CSR Generator",
                 "icon"       => icon('file-lock')
             ],
+            "password_strength" => [
+                "name"       => "password_strength",
+                "formalName" => "Password Strength",
+                "icon"       => icon('shield-check')
+            ],
             "pem_openssh" => [
                 "name"       => "pem_openssh",
                 "formalName" => "PEM/OpenSSH Converter",

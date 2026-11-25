@@ -2308,6 +2308,142 @@ function initColourGenUi($root) {
 }
 
 /* ===================================================================== */
+/*                      FUNCTION: initPasswordStrengthUi                 */
+/* ===================================================================== */
+// Password Strength Checker (modules/password_strength.php). Runs zxcvbn in the
+// browser; the password is never sent anywhere or stored.
+const ZXCVBN_VERSION = "4.4.2";
+const ZXCVBN_SRC = "https://cdnjs.cloudflare.com/ajax/libs/zxcvbn/" + ZXCVBN_VERSION + "/zxcvbn.js";
+const PWSTRENGTH_LABELS = ["Very weak", "Weak", "Fair", "Strong", "Very strong"];
+const PWSTRENGTH_TIMES = [
+    ["online_throttling_100_per_hour", "Online attack, rate-limited (100 guesses/hour)"],
+    ["online_no_throttling_10_per_second", "Online attack, no rate limit (10 guesses/second)"],
+    ["offline_slow_hashing_1e4_per_second", "Offline, slow hash like bcrypt (10k guesses/second)"],
+    ["offline_fast_hashing_1e10_per_second", "Offline, fast hash like MD5 (10 billion guesses/second)"]
+];
+
+/** Plain-language description of one zxcvbn match. */
+function pwstrengthDescribeMatch(m) {
+    switch (m.pattern) {
+        case "dictionary": {
+            const dict = { passwords: "common password", english_wikipedia: "common word", female_names: "name", male_names: "name", surnames: "surname", us_tv_and_film: "word from TV and film", user_inputs: "your input" }[m.dictionary_name] || "dictionary word";
+            return dict + (m.reversed ? ", reversed" : "") + (m.l33t ? ", with l33t substitutions" : "") + " (rank " + m.rank + ")";
+        }
+        case "spatial":
+            return "keyboard pattern (" + m.graph + ", " + m.turns + " turn" + (m.turns === 1 ? "" : "s") + ")";
+        case "repeat":
+            return "repeat of “" + m.base_token + "”";
+        case "sequence":
+            return (m.sequence_name || "") + " sequence" + (m.ascending ? "" : " (descending)");
+        case "regex":
+            return m.regex_name === "recent_year" ? "recent year" : (m.regex_name || "pattern");
+        case "date":
+            return "date";
+        case "bruteforce":
+            return "random characters";
+        default:
+            return m.pattern;
+    }
+}
+
+function initPasswordStrengthUi($root) {
+    const $scope = ($root && $root.length) ? $root : $(document);
+    const $form = $scope.find("#password_strength_form").first();
+    if (!$form.length || $form.data("pwstrength-ui-bound")) {
+        return;
+    }
+    $form.data("pwstrength-ui-bound", true);
+    const input = $form.find("#pwstrength_input")[0];
+    const toggle = $form.find("#pwstrength_toggle")[0];
+    const $card = $form.closest(".card-body");
+    const status = $card.find("#pwstrength_status")[0];
+    const result = $card.find("#pwstrength_result")[0];
+    let timer = null;
+
+    const cell = function(tag, text, className) {
+        const el = document.createElement(tag);
+        el.textContent = text;
+        if (className) {
+            el.className = className;
+        }
+        return el;
+    };
+
+    function render() {
+        const pw = input.value;
+        if (!pw) {
+            result.classList.add("d-none");
+            status.textContent = "";
+            return;
+        }
+        if (typeof window.zxcvbn !== "function") {
+            return;
+        }
+        // zxcvbn gets slow on very long input; the first 100 characters decide the score anyway.
+        const r = window.zxcvbn(pw.slice(0, 100));
+        result.classList.remove("d-none");
+        status.textContent = pw.length > 100 ? "Only the first 100 characters are checked." : "";
+
+        const meter = $card.find(".pwstrength-meter")[0];
+        meter.dataset.score = r.score;
+        $card.find("#pwstrength_label").text(r.score + "/4 – " + PWSTRENGTH_LABELS[r.score]).attr("data-score", r.score);
+        $card.find("#pwstrength_guesses").text("About 10^" + r.guesses_log10.toFixed(1) + " guesses needed (" + Math.round(r.guesses_log10 * Math.log2(10)) + " bits).");
+
+        const feedback = $card.find("#pwstrength_feedback").empty()[0];
+        if (r.feedback.warning) {
+            feedback.appendChild(cell("div", r.feedback.warning, "alert alert-warning py-2 mb-2"));
+        }
+        if (r.feedback.suggestions && r.feedback.suggestions.length) {
+            const ul = document.createElement("ul");
+            ul.className = "mb-0";
+            r.feedback.suggestions.forEach(function(s) { ul.appendChild(cell("li", s)); });
+            feedback.appendChild(ul);
+        } else if (!r.feedback.warning) {
+            feedback.appendChild(cell("div", "No obvious weaknesses found.", "text-success"));
+        }
+
+        const times = $card.find("#pwstrength_times").empty()[0];
+        PWSTRENGTH_TIMES.forEach(function(t) {
+            const tr = document.createElement("tr");
+            tr.appendChild(cell("td", t[1]));
+            tr.appendChild(cell("td", r.crack_times_display[t[0]], "text-end fw-semibold text-nowrap"));
+            times.appendChild(tr);
+        });
+
+        const patterns = $card.find("#pwstrength_patterns").empty()[0];
+        r.sequence.forEach(function(m) {
+            const tr = document.createElement("tr");
+            tr.appendChild(cell("td", m.token, "font-monospace"));
+            tr.appendChild(cell("td", pwstrengthDescribeMatch(m)));
+            tr.appendChild(cell("td", "10^" + Math.log10(Math.max(1, m.guesses)).toFixed(1), "text-nowrap"));
+            patterns.appendChild(tr);
+        });
+    }
+
+    input.addEventListener("input", function() {
+        clearTimeout(timer);
+        timer = setTimeout(render, 120);
+    });
+    toggle.addEventListener("click", function() {
+        const show = input.type === "password";
+        input.type = show ? "text" : "password";
+        toggle.setAttribute("aria-pressed", String(show));
+        toggle.title = show ? "Hide password" : "Show password";
+        toggle.innerHTML = "<i class='icon-" + (show ? "eye-off" : "eye") + "' aria-hidden='true'></i>";
+        input.focus();
+    });
+
+    status.textContent = "Loading zxcvbn…";
+    loadScriptOnce(ZXCVBN_SRC).then(function() {
+        status.textContent = "";
+        render();
+    }, function() {
+        status.textContent = "Could not load zxcvbn from the CDN, so the password can't be checked. Check your connection and reload.";
+        status.classList.add("text-danger");
+    });
+}
+
+/* ===================================================================== */
 /*                      FUNCTION: initChmodUi                            */
 /* ===================================================================== */
 // Chmod Calculator (modules/chmod.php): checkboxes, octal and symbolic views
@@ -2711,6 +2847,7 @@ function navigate(to) {
         initSubnetMaskUi($(normalizedTo));
         initChmodUi($(normalizedTo));
         initColourGenUi($(normalizedTo));
+        initPasswordStrengthUi($(normalizedTo));
         initSyntaxHighlightUi($(normalizedTo));
         initResultHistoryUi($(normalizedTo));
         refreshClientCryptoGeneratorUi($(normalizedTo));

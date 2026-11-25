@@ -39,6 +39,7 @@ A comprehensive collection of useful developer tools built with PHP and modern w
 - CSR generator
 - PEM/OpenSSH converter
 - Crypto diagnostics
+- Password strength checker (zxcvbn, runs in the browser)
 
 ### Encoding & Decoding
 - Base converters

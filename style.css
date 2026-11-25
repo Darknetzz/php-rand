@@ -1283,8 +1283,12 @@ th.tablehead,
   position: absolute;
   top: 0.4rem;
   right: 0.4rem;
-  background: transparent;
+  --tblr-btn-bg: transparent;
+  --tblr-btn-hover-bg: rgba(127, 127, 127, 0.25);
+  --tblr-btn-active-bg: rgba(127, 127, 127, 0.35);
+  background: var(--tblr-btn-bg);
   border: 0;
+  box-shadow: none;
   font-size: 1.1rem;
 }
 .colour-swatch-values {
@@ -1316,3 +1320,30 @@ th.tablehead,
   word-break: normal;
   overflow-x: auto;
 }
+
+/* Password Strength Checker (modules/password_strength.php) */
+.pwstrength-meter {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  height: 10px;
+}
+.pwstrength-meter span {
+  border-radius: 3px;
+  background: rgba(127, 127, 127, 0.25);
+  transition: background 0.2s;
+}
+.pwstrength-meter[data-score="0"] span:nth-child(-n+1) { background: #d63939; }
+.pwstrength-meter[data-score="1"] span:nth-child(-n+2) { background: #f76707; }
+.pwstrength-meter[data-score="2"] span:nth-child(-n+3) { background: #f59f00; }
+.pwstrength-meter[data-score="3"] span:nth-child(-n+4) { background: #74b816; }
+.pwstrength-meter[data-score="4"] span { background: #2fb344; }
+.pwstrength-label {
+  min-width: 9rem;
+  text-align: right;
+}
+.pwstrength-label[data-score="0"] { color: #d63939; }
+.pwstrength-label[data-score="1"] { color: #f76707; }
+.pwstrength-label[data-score="2"] { color: #f59f00; }
+.pwstrength-label[data-score="3"] { color: #74b816; }
+.pwstrength-label[data-score="4"] { color: #2fb344; }
