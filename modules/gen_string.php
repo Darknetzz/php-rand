@@ -125,19 +125,21 @@
                                 <small class="text-muted d-block">Leaves out look-alikes: <code><?= htmlspecialchars(implode(' ', utf8_chars(STRINGGEN_AMBIGUOUS_CHARS))) ?></code></small>
                             </label>
                         </div>
-                        <label class="form-label"><strong>Max per type</strong> <small class="text-muted">(leave empty for no limit)</small></label>
+                        <?php foreach (['min' => ['Min per type', 'leave empty or 0 for no minimum', '0'], 'max' => ['Max per type', 'leave empty for no limit', '∞']] as $kind => [$title, $hint, $placeholder]): ?>
+                        <label class="form-label<?= $kind === 'max' ? ' mt-3' : '' ?>"><strong><?= $title ?></strong> <small class="text-muted">(<?= $hint ?>)</small></label>
                         <div class="row g-2">
                             <?php foreach (STRINGGEN_CHAR_TYPES as $type => $label): ?>
                             <div class="col-6 col-md-3">
                                 <div class="input-group">
                                     <span class="input-group-text"><?= htmlspecialchars($label) ?></span>
-                                    <input type="number" class="form-control" name="max_<?= $type ?>" id="stringgenMax_<?= $type ?>" min="0" placeholder="∞" aria-label="Max <?= htmlspecialchars($label) ?>">
+                                    <input type="number" class="form-control" name="<?= $kind ?>_<?= $type ?>" id="stringgen<?= ucfirst($kind) ?>_<?= $type ?>" min="0" placeholder="<?= $placeholder ?>" aria-label="<?= ucfirst($kind) ?> <?= htmlspecialchars($label) ?>">
                                 </div>
                             </div>
                             <?php endforeach; ?>
                         </div>
+                        <?php endforeach; ?>
                         <div class="form-text mt-2">
-                            <small>Special counts every character that is not a digit or letter (symbols, extended and custom symbols). Example: Special = 1 gives at most one special character.</small>
+                            <small>Special counts every character that is not a digit or letter (symbols, extended and custom symbols). Example: Min Numbers = 2 guarantees at least two digits; Max Special = 1 gives at most one special character.</small>
                         </div>
                     </div>
                 </div>

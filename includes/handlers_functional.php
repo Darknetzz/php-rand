@@ -291,26 +291,29 @@ function handle_stringgen(array $req): string {
     $cryptoSafe = req_bool($req, 'cryptoSafe');
     $avoidAmbiguous = req_bool($req, 'avoidAmbiguous');
 
-    // Optional max count per character type; empty field = no limit
-    $max = [];
-    foreach (array_keys(STRINGGEN_CHAR_TYPES) as $type) {
-        $raw = trim((string) req_get($req, "max_$type", ''));
-        if ($raw === '') {
-            continue;
+    // Optional min/max count per character type; empty field = no limit
+    $limits = ['min' => [], 'max' => []];
+    foreach ($limits as $kind => $_) {
+        foreach (STRINGGEN_CHAR_TYPES as $type => $label) {
+            $raw = trim((string) req_get($req, "{$kind}_$type", ''));
+            if ($raw === '') {
+                continue;
+            }
+            if (!ctype_digit($raw)) {
+                return formatOutput(ucfirst($kind) . " $label must be a whole number of 0 or more.", type: "danger");
+            }
+            $limits[$kind][$type] = (int) $raw;
         }
-        if (!ctype_digit($raw)) {
-            return formatOutput("Max " . STRINGGEN_CHAR_TYPES[$type] . " must be a whole number of 0 or more.", type: "danger");
-        }
-        $max[$type] = (int) $raw;
     }
+    ['min' => $min, 'max' => $max] = $limits;
 
     $pool = stringgen_charset_chars($charsets, $cchars, $avoidAmbiguous);
-    $limitError = stringgen_validate_limits($pool, $length, $max);
+    $limitError = stringgen_validate_limits($pool, $length, $max, $min);
     if ($limitError !== null) {
         return formatOutput($limitError, type: "danger");
     }
     $poolSize = count($pool);
-    $opts = ['avoidAmbiguous' => $avoidAmbiguous, 'max' => $max];
+    $opts = ['avoidAmbiguous' => $avoidAmbiguous, 'min' => $min, 'max' => $max];
 
     $results = [];
     $infoTables = [];
@@ -330,7 +333,7 @@ function handle_stringgen(array $req): string {
         $table .= "<tr><td>SHA256</td><td><pre>" . hash('sha256', $string) . "</pre></td></tr>";
         $table .= "<tr><td>SHA512</td><td><pre>" . hash('sha512', $string) . "</pre></td></tr>";
         $combinations = number_format($poolSize ** $length);
-        $limitNote = empty($max) ? '' : "<br><small>Upper bound: max limits reduce this</small>";
+        $limitNote = (empty($max) && empty(array_filter($min))) ? '' : "<br><small>Upper bound: min/max limits reduce this</small>";
         $table .= "<tr><td>Possible combinations</td><td><pre>$combinations (" . $poolSize . "^$length)</pre>$limitNote</td></tr>";
         $table .= "<tr><td>Entropy</td><td>" . entropy_badge_html($length * log($poolSize, 2)) . "$limitNote</td></tr>";
         $table .= "</table>";
