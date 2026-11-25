@@ -100,7 +100,7 @@ while :; do
 done
 
 gh release delete "$TAG" --cleanup-tag --yes 2>/dev/null || true
-gh api -X DELETE "repos/${GH_REPO}/git/refs/tags/${TAG}" 2>/dev/null || true
+gh api -X DELETE "repos/${GH_REPO}/git/refs/tags/${TAG}" >/dev/null 2>&1 || true
 gh release create "$TAG" \
   --target "$SHA" \
   --title "Dev Latest" \
@@ -132,12 +132,19 @@ fi
 api="${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/releases"
 payload="$(jq -n --arg tag "$TAG" --arg desc "$(cat "$notes_file")" \
   '{tag_name: $tag, name: "Dev Latest", description: $desc}')"
-code="$(curl -sS -o /dev/null -w '%{http_code}' -X PUT -H "JOB-TOKEN: ${CI_JOB_TOKEN}" \
-  -H 'Content-Type: application/json' --data "$payload" "${api}/${TAG}")"
-if [[ "$code" == "404" ]]; then
-  code="$(curl -sS -o /dev/null -w '%{http_code}' -X POST -H "JOB-TOKEN: ${CI_JOB_TOKEN}" \
-    -H 'Content-Type: application/json' --data "$payload" "$api")"
+resp="$(mktemp)"
+gl_release() { # <method> <url> -> prints HTTP code, body in $resp
+  curl -sS -o "$resp" -w '%{http_code}' -X "$1" -H "JOB-TOKEN: ${CI_JOB_TOKEN}" \
+    -H 'Content-Type: application/json' --data "$payload" "$2"
+}
+# Create first (the job token can create releases); update when it already exists.
+code="$(gl_release POST "$api")"
+[[ "$code" == "409" ]] && code="$(gl_release PUT "${api}/${TAG}")"
+if [[ "$code" =~ ^20[01]$ ]]; then
+  echo "GitLab release ${TAG} updated"
+else
+  # Non-fatal: the GitLab release follows the moved tag; only its notes go stale.
+  echo "WARNING: GitLab release API returned HTTP ${code}: $(head -c 300 "$resp")" >&2
 fi
-[[ "$code" =~ ^20[01]$ ]] || { echo "ERROR: GitLab release API returned HTTP ${code}" >&2; exit 1; }
-echo "GitLab release ${TAG} updated"
+rm -f "$resp"
 echo "Done: https://github.com/${GH_REPO}/releases/tag/${TAG}"
