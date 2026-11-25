@@ -3140,11 +3140,21 @@ function renderDiceRoll($response) {
     const rolls = JSON.parse(tray.dataset.diceRolls);
     const sides = parseInt(tray.dataset.diceSides, 10);
     const labels = tray.dataset.diceLabels ? JSON.parse(tray.dataset.diceLabels) : null;
+    // Dice notation: sides per die (mixed groups) and dice dropped by keep/drop.
+    const sidesList = tray.dataset.diceSidesList ? JSON.parse(tray.dataset.diceSidesList) : null;
+    const dropped = tray.dataset.diceDropped ? JSON.parse(tray.dataset.diceDropped) : null;
     tray.classList.toggle("dice-tray-sm", rolls.length > 12 && rolls.length <= 40);
     tray.classList.toggle("dice-tray-xs", rolls.length > 40);
     const size = parseFloat(getComputedStyle(tray).getPropertyValue("--dice-size")) || 72;
 
-    const dice = rolls.map(function(result) { return buildDie(result, sides, size, labels); });
+    const dice = rolls.map(function(result, i) {
+        const parts = buildDie(result, sidesList ? sidesList[i] : sides, size, labels);
+        if (dropped && dropped[i]) {
+            parts.die.classList.add("dice-die-dropped");
+            parts.die.title = "Dropped";
+        }
+        return parts;
+    });
     dice.forEach(function(parts) { tray.appendChild(parts.die); });
 
     $roll.addClass("dice-roll-rolling");

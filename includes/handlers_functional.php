@@ -1802,6 +1802,10 @@ function handle_spinwheel(array $req): string {
  * @return string HTML with the rolls in data attributes and a copyable summary, or an error message
  */
 function handle_dice_roll(array $req): string {
+    $notation = trim((string) req_get($req, 'dice_notation', ''));
+    if ($notation !== '') {
+        return handle_dice_notation_roll($notation, $req);
+    }
     $countValidation = req_int_validated($req, 'dice_count', 1, DICE_MAX_COUNT);
     if (!$countValidation['valid']) {
         return formatOutput('Number of dice: ' . $countValidation['error'], type: 'danger');
@@ -1832,6 +1836,164 @@ function handle_dice_roll(array $req): string {
 }
 
 /**
+ * Parse tabletop dice notation: terms like `3d6`, `d%` (d100), `4d6kh3` / `4d6dl1`
+ * (keep highest / drop lowest; also kl, dh, and k = kh, d = dl) and constants,
+ * joined with + or - (`1d20+2d6+3`). Spaces and case are ignored.
+ *
+ * @return array{valid: bool, error?: string, terms?: list<array{sign: int, count?: int, sides?: int, keep?: string, keepN?: int, value?: int, label: string}>}
+ */
+function parse_dice_notation(string $notation): array {
+    $expr = strtolower((string) preg_replace('/\s+/', '', $notation));
+    if ($expr === '') {
+        return ['valid' => false, 'error' => 'Enter a dice expression like 2d6+3.'];
+    }
+    if (strlen($expr) > DICE_NOTATION_MAX_LENGTH) {
+        return ['valid' => false, 'error' => 'Dice expression is too long (max ' . DICE_NOTATION_MAX_LENGTH . ' characters).'];
+    }
+    $termRe = '/\G([+-]?)(?:(\d*)d(\d+|%)(?:(kh|kl|dh|dl|k|d)(\d+))?|(\d+))/';
+    $terms = [];
+    $pos = 0;
+    $totalDice = 0;
+    $groups = 0;
+    while ($pos < strlen($expr)) {
+        if (!preg_match($termRe, $expr, $m, 0, $pos) || ($pos > 0 && $m[1] === '')) {
+            return ['valid' => false, 'error' => 'Could not read the dice expression at "' . substr($expr, $pos) . '". Use terms like 2d6, 4d6kh3, d% or 5, joined with + or -.'];
+        }
+        $pos += strlen($m[0]);
+        $sign = ($m[1] ?? '') === '-' ? -1 : 1;
+        if (isset($m[6]) && $m[6] !== '') {
+            $value = (int) $m[6];
+            if (strlen($m[6]) > 7 || $value > DICE_NOTATION_MAX_CONSTANT) {
+                return ['valid' => false, 'error' => 'Constants can be at most ' . DICE_NOTATION_MAX_CONSTANT . '.'];
+            }
+            $terms[] = ['sign' => $sign, 'value' => $value, 'label' => (string) $value];
+            continue;
+        }
+        $count = $m[2] === '' ? 1 : (int) $m[2];
+        $sides = $m[3] === '%' ? 100 : (int) $m[3];
+        if ($count < 1 || strlen($m[2]) > 4) {
+            return ['valid' => false, 'error' => "Each group needs 1–" . DICE_MAX_COUNT . " dice (got {$m[2]})."];
+        }
+        if ($sides < DICE_MIN_SIDES || $sides > DICE_MAX_SIDES || strlen($m[3]) > 5) {
+            return ['valid' => false, 'error' => 'Dice need ' . DICE_MIN_SIDES . '–' . DICE_MAX_SIDES . " sides (got d{$m[3]})."];
+        }
+        $term = ['sign' => $sign, 'count' => $count, 'sides' => $sides, 'label' => "{$count}d" . ($m[3] === '%' ? '%' : $sides)];
+        if (($m[4] ?? '') !== '') {
+            $keep = ['k' => 'kh', 'd' => 'dl'][$m[4]] ?? $m[4];
+            $n = (int) $m[5];
+            $isKeep = $keep[0] === 'k';
+            if (strlen($m[5]) > 4 || ($isKeep && ($n < 1 || $n > $count)) || (!$isKeep && ($n < 1 || $n >= $count))) {
+                return ['valid' => false, 'error' => $isKeep
+                    ? "Can only keep 1–{$count} of {$term['label']}."
+                    : "Can only drop 1–" . ($count - 1) . " of {$term['label']}."];
+            }
+            $term['keep'] = $keep;
+            $term['keepN'] = $n;
+            $term['label'] .= $keep . $n;
+        }
+        $totalDice += $count;
+        $groups++;
+        $terms[] = $term;
+    }
+    if ($groups === 0) {
+        return ['valid' => false, 'error' => 'The expression needs at least one dice group, like 1d20.'];
+    }
+    if ($groups > DICE_NOTATION_MAX_GROUPS) {
+        return ['valid' => false, 'error' => 'At most ' . DICE_NOTATION_MAX_GROUPS . ' dice groups per roll.'];
+    }
+    if ($totalDice > DICE_MAX_COUNT) {
+        return ['valid' => false, 'error' => 'At most ' . DICE_MAX_COUNT . " dice per roll (this expression has {$totalDice})."];
+    }
+    return ['valid' => true, 'terms' => $terms];
+}
+
+/**
+ * Which rolls of one keep/drop group are dropped.
+ *
+ * @param int[] $rolls
+ * @return array<int,bool> Dropped flags by roll index
+ */
+function dice_dropped_flags(array $rolls, string $keep, int $n): array {
+    $order = array_keys($rolls);
+    // Lowest first; ties keep their roll order so the result is stable.
+    usort($order, fn($a, $b) => [$rolls[$a], $a] <=> [$rolls[$b], $b]);
+    $count = count($rolls);
+    $drop = match ($keep) {
+        'kh' => array_slice($order, 0, $count - $n),
+        'kl' => array_slice($order, $n),
+        'dh' => array_slice($order, $count - $n),
+        'dl' => array_slice($order, 0, $n),
+        default => [],
+    };
+    $flags = array_fill(0, $count, false);
+    foreach ($drop as $i) {
+        $flags[$i] = true;
+    }
+    return $flags;
+}
+
+/**
+ * Roll a dice-notation expression (parse_dice_notation()); summary like
+ * `4d6kh3+3: [6, 5, 3, (1)] + 3 = 17`, dropped dice in parentheses.
+ */
+function handle_dice_notation_roll(string $notation, array $req): string {
+    $parsed = parse_dice_notation($notation);
+    if (!$parsed['valid']) {
+        return formatOutput($parsed['error'], type: 'danger');
+    }
+    $seedRes = req_seed($req, 'dice_');
+    if (!$seedRes['valid']) {
+        return formatOutput($seedRes['error'], type: 'danger');
+    }
+
+    rng_seed($seedRes['seed'] !== null ? (int) $seedRes['seed'] : null);
+    $rolls = [];
+    $dieSides = [];
+    $dropped = [];
+    $parts = [];
+    $total = 0;
+    $expr = '';
+    foreach ($parsed['terms'] as $i => $term) {
+        $expr .= ($term['sign'] < 0 ? '-' : ($i > 0 ? '+' : '')) . $term['label'];
+        $op = $i === 0 ? ($term['sign'] < 0 ? '-' : '') : ($term['sign'] < 0 ? ' - ' : ' + ');
+        if (isset($term['value'])) {
+            $total += $term['sign'] * $term['value'];
+            $parts[] = $op . $term['value'];
+            continue;
+        }
+        $group = [];
+        for ($j = 0; $j < $term['count']; $j++) {
+            $group[] = rng_int(1, $term['sides']);
+        }
+        $flags = isset($term['keep'])
+            ? dice_dropped_flags($group, $term['keep'], $term['keepN'])
+            : array_fill(0, count($group), false);
+        $shown = [];
+        foreach ($group as $j => $r) {
+            $rolls[] = $r;
+            $dieSides[] = $term['sides'];
+            $dropped[] = $flags[$j];
+            $shown[] = $flags[$j] ? "({$r})" : (string) $r;
+            if (!$flags[$j]) {
+                $total += $term['sign'] * $r;
+            }
+        }
+        $parts[] = $op . '[' . implode(', ', $shown) . ']';
+    }
+    rng_seed(null);
+
+    $summary = "{$expr}: " . implode('', $parts) . " = {$total}";
+    $kept = [];
+    foreach ($rolls as $i => $r) {
+        $kept[] = $dropped[$i] ? "{$r} (dropped)" : (string) $r;
+    }
+
+    return dice_tray_html($rolls, max($dieSides), "Rolled {$expr}: " . implode(', ', $kept) . ", total {$total}", $summary,
+            historyTool: 'dice_roll', dieSides: $dieSides, dropped: $dropped)
+        . rng_seed_notes($seedRes['seed'], $seedRes['warning']);
+}
+
+/**
  * Attributes that make rand.js add a result to a result_history_html() list
  * (recordResultHistory()). Empty when $tool is empty.
  *
@@ -1856,9 +2018,17 @@ function result_history_attrs(string $tool, string $text, array $tally = []): st
  * @param array<int,string> $labels Optional face text by value (e.g. coin H/T); numbers otherwise
  * @param string $historyTool result_history_html() key that records $summary once the roll lands
  * @param array<string,int> $tally Counts added to that history's running tally (e.g. Heads/Tails)
+ * @param int[] $dieSides Sides of each die when they differ (dice notation); $sides otherwise
+ * @param bool[] $dropped Dice dropped by keep/drop notation, drawn dimmed
  */
-function dice_tray_html(array $rolls, int $sides, string $ariaLabel, string $summary, array $labels = [], string $trayClass = '', string $historyTool = '', array $tally = []): string {
+function dice_tray_html(array $rolls, int $sides, string $ariaLabel, string $summary, array $labels = [], string $trayClass = '', string $historyTool = '', array $tally = [], array $dieSides = [], array $dropped = []): string {
     $attrs = "data-dice-rolls='" . json_encode($rolls) . "' data-dice-sides='{$sides}'";
+    if ($dieSides) {
+        $attrs .= " data-dice-sides-list='" . json_encode(array_values($dieSides)) . "'";
+    }
+    if (in_array(true, $dropped, true)) {
+        $attrs .= " data-dice-dropped='" . json_encode(array_values($dropped)) . "'";
+    }
     if ($labels) {
         $attrs .= " data-dice-labels='" . htmlspecialchars(json_encode($labels), ENT_QUOTES) . "'";
     }

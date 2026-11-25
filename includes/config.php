@@ -20,6 +20,10 @@ define("BTN_OUTLINE", false);
 define("DICE_MAX_COUNT", 100);
 define("DICE_MIN_SIDES", 2);
 define("DICE_MAX_SIDES", 1000);
+# Dice notation (2d6+3, 4d6kh3): max expression length, dice groups and |constant|
+define("DICE_NOTATION_MAX_LENGTH", 100);
+define("DICE_NOTATION_MAX_GROUPS", 20);
+define("DICE_NOTATION_MAX_CONSTANT", 1000000);
 # Coin flip limit (form and handle_coin_flip)
 define("COIN_MAX_COUNT", 100);
 # List shuffler limits (form and handle_list_shuffle)

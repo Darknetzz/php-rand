@@ -1116,6 +1116,17 @@ th.tablehead,
   visibility: hidden;
 }
 
+/* Dice notation keep/drop (4d6kh3): dropped dice fade once they land. */
+.dice-die-dropped {
+  opacity: 0.35;
+  filter: grayscale(0.8);
+  transition: opacity 0.4s, filter 0.4s;
+}
+.dice-roll-rolling .dice-die-dropped {
+  opacity: 1;
+  filter: none;
+}
+
 .dice-die {
   position: relative;
   width: var(--dice-size);

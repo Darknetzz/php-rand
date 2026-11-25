@@ -21,7 +21,7 @@ A comprehensive collection of useful developer tools built with PHP and modern w
 - QR Code generator
 - ID generator
 - Spin the wheel
-- Dice roller
+- Dice roller (with dice notation: 2d6+3, 4d6kh3, d%)
 - Coin flip
 - Card draw
 - Magic 8-ball / yes-no answer
