@@ -903,34 +903,67 @@ th.tablehead,
   perspective: calc(var(--dice-size) * 6);
 }
 
-.dice-cube {
+.dice-solid {
   position: relative;
   width: 100%;
   height: 100%;
   transform-style: preserve-3d;
 }
 
-.dice-face {
+/* One face of a polyhedron die: placed by an inline matrix3d and clipped to its
+   polygon (js/rand.js diceLayout). The darker outer layer shows as the edges. */
+.dice-poly-face {
+  --dice-face-l: 44%;
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+  background: hsl(129 58% calc(var(--dice-face-l) - 14%));
+  backface-visibility: hidden;
+}
+
+.dice-poly-face-inner {
   position: absolute;
   inset: 0;
+  background: hsl(129 58% var(--dice-face-l));
+}
+
+.dice-poly-face-rounded {
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 14%;
-  background: #2fb344;
+  background: hsl(129 58% var(--dice-face-l));
   box-shadow: inset 0 0 calc(var(--dice-size) * 0.14) rgba(0, 0, 0, 0.3);
+}
+
+.dice-face-label {
+  position: absolute;
+  transform: translate(-50%, -50%);
   color: #fff;
   font-family: monospace;
-  font-size: calc(var(--dice-size) * var(--dice-font-scale, 0.5));
   font-weight: 700;
   line-height: 1;
-  backface-visibility: hidden;
+  white-space: nowrap;
+}
+
+.dice-poly-face-rounded .dice-face-label,
+.dice-ball .dice-face-label {
+  left: 50%;
+  top: 50%;
+}
+
+.dice-face-label-underline {
+  text-decoration: underline;
+  text-underline-offset: 0.08em;
 }
 
 .dice-face-pips {
   display: grid;
   grid-template: repeat(3, 1fr) / repeat(3, 1fr);
   place-items: center;
+  width: 100%;
+  height: 100%;
   padding: 12%;
 }
 
@@ -941,9 +974,9 @@ th.tablehead,
   background: #fff;
 }
 
-.dice-face-front  { transform: translateZ(calc(var(--dice-size) / 2)); }
-.dice-face-back   { transform: rotateY(180deg) translateZ(calc(var(--dice-size) / 2)); }
-.dice-face-right  { transform: rotateY(90deg) translateZ(calc(var(--dice-size) / 2)); }
-.dice-face-left   { transform: rotateY(-90deg) translateZ(calc(var(--dice-size) / 2)); }
-.dice-face-top    { transform: rotateX(90deg) translateZ(calc(var(--dice-size) / 2)); }
-.dice-face-bottom { transform: rotateX(-90deg) translateZ(calc(var(--dice-size) / 2)); }
+/* Dice with too many sides to draw (d61+) roll as a ball, like a real d100. */
+.dice-ball {
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, hsl(129 58% 62%), hsl(129 58% 42%) 45%, hsl(129 58% 22%));
+  box-shadow: inset 0 0 calc(var(--dice-size) * 0.08) rgba(0, 0, 0, 0.35);
+}

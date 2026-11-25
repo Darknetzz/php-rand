@@ -2527,80 +2527,451 @@ function randomizeDice() {
 /* ===================================================================== */
 /*                       FUNCTION: renderDiceRoll                        */
 /* ===================================================================== */
-// Cube faces, in this order: name, value on a d6 (opposite faces sum to 7),
-// and the cube rotation [rotateX, rotateY] that brings the face to the front.
-const DICE_FACES = [
-    { name: "front",  d6: 1, rotation: [0, 0] },
-    { name: "back",   d6: 6, rotation: [0, 180] },
-    { name: "right",  d6: 2, rotation: [0, -90] },
-    { name: "left",   d6: 5, rotation: [0, 90] },
-    { name: "top",    d6: 3, rotation: [-90, 0] },
-    { name: "bottom", d6: 4, rotation: [90, 0] }
-];
+// Each die is drawn with as many faces as it has sides: a coin for d2, the
+// Platonic solids for d4/d6/d8/d12/d20, a trapezohedron (d10-style kites)
+// for other even counts, a prism (barrel die) for odd counts, and a ball
+// above DICE_SHAPE_MAX_FACES, where faces would be too small to see.
+// Coordinates follow CSS: x right, y down, z toward the viewer.
+const DICE_SHAPE_MAX_FACES = 60;
 // Lit cells of a 3x3 grid for each d6 value.
 const DICE_PIPS = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
+const DICE_LIGHT = vecNorm([-0.35, -0.6, 1]);
+const DICE_HUE = "129 58%";
+const diceLayoutCache = {};
 
 function randomBetween(min, max) {
     return min + Math.random() * (max - min);
 }
 
-function buildDiceFace(faceName, value, usePips) {
-    const face = document.createElement("div");
-    face.className = "dice-face dice-face-" + faceName;
-    if (!usePips) {
-        face.textContent = value;
-        return face;
+function vecAdd(a, b) { return [a[0] + b[0], a[1] + b[1], a[2] + b[2]]; }
+function vecSub(a, b) { return [a[0] - b[0], a[1] - b[1], a[2] - b[2]]; }
+function vecScale(a, k) { return [a[0] * k, a[1] * k, a[2] * k]; }
+function vecDot(a, b) { return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]; }
+function vecCross(a, b) { return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]; }
+function vecLen(a) { return Math.sqrt(vecDot(a, a)); }
+function vecNorm(a) { return vecScale(a, 1 / vecLen(a)); }
+function vecMean(points) {
+    return vecScale(points.reduce(vecAdd, [0, 0, 0]), 1 / points.length);
+}
+
+// 3x3 matrices as row arrays.
+function matMul(a, b) {
+    return a.map(function(row) {
+        return [0, 1, 2].map(function(j) { return row[0] * b[0][j] + row[1] * b[1][j] + row[2] * b[2][j]; });
+    });
+}
+function matApply(m, v) { return [vecDot(m[0], v), vecDot(m[1], v), vecDot(m[2], v)]; }
+function matRotX(deg) {
+    const r = deg * Math.PI / 180, c = Math.cos(r), s = Math.sin(r);
+    return [[1, 0, 0], [0, c, -s], [0, s, c]];
+}
+function matRotY(deg) {
+    const r = deg * Math.PI / 180, c = Math.cos(r), s = Math.sin(r);
+    return [[c, 0, s], [0, 1, 0], [-s, 0, c]];
+}
+
+// Triangle faces of a solid whose edges all have the shortest vertex distance.
+function diceTriangleFaces(verts) {
+    let edge = Infinity;
+    verts.forEach(function(a, i) {
+        verts.forEach(function(b, j) { if (j > i) { edge = Math.min(edge, vecLen(vecSub(a, b))); } });
+    });
+    const adjacent = function(i, j) { return Math.abs(vecLen(vecSub(verts[i], verts[j])) - edge) < edge * 1e-3; };
+    const faces = [];
+    for (let i = 0; i < verts.length; i++) {
+        for (let j = i + 1; j < verts.length; j++) {
+            for (let k = j + 1; k < verts.length; k++) {
+                if (adjacent(i, j) && adjacent(j, k) && adjacent(i, k)) {
+                    faces.push([verts[i], verts[j], verts[k]]);
+                }
+            }
+        }
     }
-    face.classList.add("dice-face-pips");
+    return faces;
+}
+
+// Dual solid: one face per vertex, from the centres of the faces around it.
+function diceDualFaces(verts, faces) {
+    return verts.map(function(v) {
+        return faces.filter(function(f) { return f.includes(v); }).map(vecMean);
+    });
+}
+
+function diceRing(count, offset, map) {
+    const ring = [];
+    for (let k = 0; k < count; k++) {
+        ring.push(map(2 * Math.PI * (k + offset) / count));
+    }
+    return ring;
+}
+
+// Unit-scale faces for a die: { verts, up?, numbered }. `fit` is the
+// circumradius relative to --dice-size. Returns null for a ball.
+function diceGeometry(sides) {
+    const numbered = function(verts, up) { return { verts, up, numbered: true }; };
+    const phi = (1 + Math.sqrt(5)) / 2;
+    const octa = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
+    const icosa = [];
+    [-1, 1].forEach(function(a) {
+        [-phi, phi].forEach(function(b) { icosa.push([0, a, b], [a, b, 0], [b, 0, a]); });
+    });
+
+    if (sides === 2) {
+        const disc = function(z) { return diceRing(32, 0, function(t) { return [Math.cos(t), Math.sin(t), z]; }); };
+        const front = disc(0.12), back = disc(-0.12);
+        const faces = [numbered(front), numbered(back)];
+        front.forEach(function(v, k) {
+            const next = (k + 1) % front.length;
+            faces.push({ verts: [v, front[next], back[next], back[k]], numbered: false });
+        });
+        return { faces, fit: 0.5 };
+    }
+    if (sides === 4) {
+        return { faces: diceTriangleFaces([[1, 1, 1], [1, -1, -1], [-1, 1, -1], [-1, -1, 1]]).map(function(f) { return numbered(f); }), fit: 0.72 };
+    }
+    if (sides === 6) {
+        const octaFaces = diceTriangleFaces(octa);
+        // Square faces read best with an edge, not a corner, at the top.
+        return { faces: diceDualFaces(octa, octaFaces).map(function(f) { return numbered(f, "edge"); }), fit: 0.72, pips: true, rounded: true };
+    }
+    if (sides === 8) {
+        return { faces: diceTriangleFaces(octa).map(function(f) { return numbered(f); }), fit: 0.66 };
+    }
+    if (sides === 12 || sides === 20) {
+        const icosaFaces = diceTriangleFaces(icosa);
+        const faces = sides === 20 ? icosaFaces : diceDualFaces(icosa, icosaFaces);
+        return { faces: faces.map(function(f) { return numbered(f); }), fit: 0.62 };
+    }
+    if (sides > DICE_SHAPE_MAX_FACES) {
+        return null;
+    }
+    if (sides % 2 === 0) {
+        // Trapezohedron: two zigzag rings between two poles; the ring height
+        // keeps every kite planar.
+        const n = sides / 2;
+        const cosA = Math.cos(Math.PI / n);
+        const c = (1 - cosA) / (1 + cosA);
+        const upper = diceRing(n, 0, function(t) { return [Math.cos(t), -c, Math.sin(t)]; });
+        const lower = diceRing(n, 0.5, function(t) { return [Math.cos(t), c, Math.sin(t)]; });
+        const faces = [];
+        for (let k = 0; k < n; k++) {
+            faces.push(numbered([[0, -1, 0], upper[k], lower[k], upper[(k + 1) % n]]));
+            faces.push(numbered([[0, 1, 0], lower[k], upper[(k + 1) % n], lower[(k + 1) % n]]));
+        }
+        return { faces, fit: 0.56 };
+    }
+    // Prism lying along the x axis; labels run along the axis.
+    const len = 1.1;
+    const ringA = diceRing(sides, 0, function(t) { return [-len, Math.cos(t), Math.sin(t)]; });
+    const ringB = diceRing(sides, 0, function(t) { return [len, Math.cos(t), Math.sin(t)]; });
+    const faces = [{ verts: ringA, numbered: false }, { verts: ringB, numbered: false }];
+    for (let k = 0; k < sides; k++) {
+        const next = (k + 1) % sides;
+        const t = 2 * Math.PI * (k + 0.5) / sides;
+        faces.push(numbered([ringA[k], ringA[next], ringB[next], ringB[k]], [0, -Math.sin(t), Math.cos(t)]));
+    }
+    return { faces, fit: 0.6 };
+}
+
+// Inward edge lines of a convex 2D polygon: { p, n } with dot(q - p, n) >= 0 inside.
+function diceEdgeLines(poly, inside) {
+    return poly.map(function(p, i) {
+        const q = poly[(i + 1) % poly.length];
+        let n = [p[1] - q[1], q[0] - p[0]];
+        const len = Math.hypot(n[0], n[1]);
+        n = [n[0] / len, n[1] / len];
+        if ((inside[0] - p[0]) * n[0] + (inside[1] - p[1]) * n[1] < 0) {
+            n = [-n[0], -n[1]];
+        }
+        return { p, n };
+    });
+}
+
+function diceEdgeDistance(lines, q) {
+    return Math.min.apply(null, lines.map(function(l) { return (q[0] - l.p[0]) * l.n[0] + (q[1] - l.p[1]) * l.n[1]; }));
+}
+
+// Polygon shrunk by `inset` (convex: intersect neighbouring offset edges).
+function diceInsetPolygon(lines, inset) {
+    return lines.map(function(b, i) {
+        const a = lines[(i - 1 + lines.length) % lines.length];
+        const ca = a.p[0] * a.n[0] + a.p[1] * a.n[1] + inset;
+        const cb = b.p[0] * b.n[0] + b.p[1] * b.n[1] + inset;
+        const det = a.n[0] * b.n[1] - a.n[1] * b.n[0];
+        return [(ca * b.n[1] - cb * a.n[1]) / det, (a.n[0] * cb - b.n[0] * ca) / det];
+    });
+}
+
+// Point deepest inside the polygon (grid search, then a finer pass).
+function diceLabelPoint(poly, lines) {
+    const xs = poly.map(function(p) { return p[0]; }), ys = poly.map(function(p) { return p[1]; });
+    let best = [(Math.min.apply(null, xs) + Math.max.apply(null, xs)) / 2, (Math.min.apply(null, ys) + Math.max.apply(null, ys)) / 2];
+    let span = [Math.max.apply(null, xs) - Math.min.apply(null, xs), Math.max.apply(null, ys) - Math.min.apply(null, ys)];
+    let bestDist = diceEdgeDistance(lines, best);
+    for (let pass = 0; pass < 3; pass++) {
+        const center = best;
+        for (let i = -6; i <= 6; i++) {
+            for (let j = -6; j <= 6; j++) {
+                const q = [center[0] + span[0] * i / 12, center[1] + span[1] * j / 12];
+                const d = diceEdgeDistance(lines, q);
+                if (d > bestDist) {
+                    best = q;
+                    bestDist = d;
+                }
+            }
+        }
+        span = [span[0] / 6, span[1] / 6];
+    }
+    return best;
+}
+
+// Largest font size whose label box fits inside the face.
+function diceFitFont(lines, center, digits, margin, max) {
+    let lo = 0, hi = max;
+    for (let i = 0; i < 18; i++) {
+        const fs = (lo + hi) / 2;
+        const hw = 0.32 * digits * fs, hh = 0.42 * fs;
+        const fits = [[-hw, -hh], [hw, -hh], [hw, hh], [-hw, hh]].every(function(c) {
+            return diceEdgeDistance(lines, [center[0] + c[0], center[1] + c[1]]) >= margin;
+        });
+        if (fits) { lo = fs; } else { hi = fs; }
+    }
+    return lo;
+}
+
+function polygonCss(poly) {
+    return "polygon(" + poly.map(function(p) { return p[0].toFixed(2) + "px " + p[1].toFixed(2) + "px"; }).join(", ") + ")";
+}
+
+// Numbers like 6 and 9 read as each other upside down, so real dice underline them.
+function diceNeedsUnderline(value, sides) {
+    const flip = { 0: "0", 1: "1", 6: "9", 8: "8", 9: "6" };
+    const digits = String(value).split("");
+    if (!digits.every(function(d) { return d in flip; })) {
+        return false;
+    }
+    const turned = digits.reverse().map(function(d) { return flip[d]; }).join("");
+    return turned !== String(value) && turned[0] !== "0" && parseInt(turned, 10) <= sides;
+}
+
+// Faces placed in px for a die of `size` px: transform, clip path and label.
+// The same layout is reused by every die in a roll.
+function diceLayout(sides, size) {
+    const key = sides + "@" + size;
+    if (diceLayoutCache[key] !== undefined) {
+        return diceLayoutCache[key];
+    }
+    const geometry = diceGeometry(sides);
+    if (!geometry) {
+        diceLayoutCache[key] = null;
+        return null;
+    }
+    const maxRadius = Math.max.apply(null, geometry.faces.map(function(f) {
+        return Math.max.apply(null, f.verts.map(vecLen));
+    }));
+    const scale = geometry.fit * size / maxRadius;
+    const half = size / 2;
+    const edge = Math.max(1, size * 0.022);
+    const digits = String(sides).length;
+
+    const faces = geometry.faces.map(function(face) {
+        const verts = face.verts.map(function(v) { return vecScale(v, scale); });
+        const center = vecMean(verts);
+        let n = vecNorm(vecCross(vecSub(verts[1], verts[0]), vecSub(verts[2], verts[0])));
+        if (vecDot(n, center) < 0) {
+            n = vecScale(n, -1);
+        }
+        const project = function(u, v) {
+            return function(p) { const d = vecSub(p, center); return [vecDot(d, u), vecDot(d, v)]; };
+        };
+        // Any in-plane basis first, to order the corners and find the label spot.
+        const anyU = vecNorm(vecSub(verts[0], center));
+        const flat = project(anyU, vecCross(n, anyU));
+        const sorted = verts.slice().sort(function(a, b) {
+            const pa = flat(a), pb = flat(b);
+            return Math.atan2(pa[1], pa[0]) - Math.atan2(pb[1], pb[0]);
+        });
+        const flatPoly = sorted.map(flat);
+        const flatLabel = diceLabelPoint(flatPoly, diceEdgeLines(flatPoly, [0, 0]));
+        const label3d = vecAdd(center, vecAdd(vecScale(anyU, flatLabel[0]), vecScale(vecCross(n, anyU), flatLabel[1])));
+
+        // "Up" for the label: given, an edge midpoint, or the farthest corner.
+        let up;
+        if (Array.isArray(face.up)) {
+            up = face.up;
+        } else if (face.up === "edge") {
+            up = vecSub(vecMean([sorted[0], sorted[1]]), center);
+        } else {
+            up = sorted.reduce(function(far, p) {
+                return vecLen(vecSub(p, label3d)) > vecLen(vecSub(far, label3d)) ? p : far;
+            }, sorted[0]);
+            up = vecSub(up, label3d);
+        }
+        up = vecSub(up, vecScale(n, vecDot(up, n)));
+        const v = vecNorm(vecScale(up, -1));
+        const u = vecCross(v, n);
+
+        const local = project(u, v);
+        const poly = sorted.map(local);
+        const minX = Math.min.apply(null, poly.map(function(p) { return p[0]; }));
+        const minY = Math.min.apply(null, poly.map(function(p) { return p[1]; }));
+        const maxX = Math.max.apply(null, poly.map(function(p) { return p[0]; }));
+        const maxY = Math.max.apply(null, poly.map(function(p) { return p[1]; }));
+        const boxPoly = poly.map(function(p) { return [p[0] - minX, p[1] - minY]; });
+        const lp = local(label3d);
+        const labelPoint = [lp[0] - minX, lp[1] - minY];
+        const lines = diceEdgeLines(boxPoly, labelPoint);
+        const origin = vecAdd(vecAdd(center, vecAdd(vecScale(u, minX), vecScale(v, minY))), [half, half, 0]);
+
+        return {
+            normal: n,
+            // Rows u, v, n: turns this face to the front with its label upright.
+            front: [u, v, n],
+            numbered: face.numbered,
+            width: maxX - minX,
+            height: maxY - minY,
+            transform: "matrix3d(" + [u[0], u[1], u[2], 0, v[0], v[1], v[2], 0, n[0], n[1], n[2], 0, origin[0], origin[1], origin[2], 1]
+                .map(function(x) { return +x.toFixed(4); }).join(",") + ")",
+            clip: polygonCss(boxPoly),
+            innerClip: polygonCss(diceInsetPolygon(lines, edge)),
+            label: labelPoint,
+            fontSize: diceFitFont(lines, labelPoint, digits, edge * 1.6, size * 0.5)
+        };
+    });
+
+    // Number the faces 1..N, giving opposite faces values that sum to N + 1
+    // when the solid has them (as on real dice).
+    const numberedFaces = faces.filter(function(f) { return f.numbered; });
+    numberedFaces.forEach(function(face) {
+        face.opposite = numberedFaces.find(function(o) { return vecDot(o.normal, face.normal) < -0.999; });
+    });
+    const paired = numberedFaces.every(function(f) { return f.opposite; });
+    const byValue = {};
+    let next = 1;
+    numberedFaces.forEach(function(face) {
+        if (face.value) {
+            return;
+        }
+        face.value = next++;
+        byValue[face.value] = face;
+        if (paired) {
+            face.opposite.value = sides + 1 - face.value;
+            byValue[face.opposite.value] = face.opposite;
+        }
+    });
+
+    const layout = { faces, byValue, pips: !!geometry.pips, rounded: !!geometry.rounded };
+    diceLayoutCache[key] = layout;
+    return layout;
+}
+
+function buildDiceLabel(value, sides, fontSize, point) {
+    const label = document.createElement("span");
+    label.className = "dice-face-label";
+    label.textContent = value;
+    label.style.fontSize = fontSize.toFixed(1) + "px";
+    if (point) {
+        label.style.left = point[0].toFixed(2) + "px";
+        label.style.top = point[1].toFixed(2) + "px";
+    }
+    if (diceNeedsUnderline(value, sides)) {
+        label.classList.add("dice-face-label-underline");
+    }
+    return label;
+}
+
+function buildPipFace(face, value) {
+    const pips = document.createElement("div");
+    pips.className = "dice-face-pips";
     for (let cell = 0; cell < 9; cell++) {
         const pip = document.createElement("span");
         if (DICE_PIPS[value].includes(cell)) {
             pip.className = "dice-pip";
         }
-        face.appendChild(pip);
+        pips.appendChild(pip);
     }
-    return face;
+    return pips;
 }
 
-// Non-d6 dice can't map values to fixed faces, so the result goes on the front
-// and the other faces just show random values while the cube tumbles.
-function buildDie(result, sides) {
-    const isD6 = sides === 6;
+// Lightness of a face once the die is at rest, so the lit side faces the light.
+function diceShade(rest, face) {
+    const light = Math.max(0, vecDot(matApply(rest, face.normal), DICE_LIGHT));
+    return 24 + 24 * light;
+}
+
+function buildDie(result, sides, size) {
     const die = document.createElement("div");
     die.className = "dice-die";
-    const cube = document.createElement("div");
-    cube.className = "dice-cube";
-    DICE_FACES.forEach(function(face, index) {
-        let value = isD6 ? face.d6 : Math.floor(Math.random() * sides) + 1;
-        if (!isD6 && index === 0) {
-            value = result;
+    const solid = document.createElement("div");
+    solid.className = "dice-solid";
+    die.appendChild(solid);
+
+    const layout = diceLayout(sides, size);
+    if (!layout) {
+        solid.classList.add("dice-ball");
+        solid.appendChild(buildDiceLabel(result, sides, size * Math.min(0.42, 1 / String(sides).length)));
+        return { die, solid, rest: "rotate(0deg)", from: function() { return "rotate(" + (360 * (2 + Math.floor(Math.random() * 2)) * (Math.random() < 0.5 ? -1 : 1)) + "deg)"; } };
+    }
+
+    // Rest pose: the rolled face toward the viewer, slightly tilted to show depth.
+    const tiltX = randomBetween(-24, -12), tiltY = randomBetween(-22, 22);
+    const front = layout.byValue[result].front;
+    const rest = matMul(matMul(matRotX(tiltX), matRotY(tiltY)), front);
+    const frontCss = "matrix3d(" + [0, 1, 2].map(function(j) {
+        return [front[0][j], front[1][j], front[2][j], 0].map(function(x) { return +x.toFixed(5); }).join(",");
+    }).join(",") + ",0,0,0,1)";
+
+    layout.faces.forEach(function(face) {
+        const el = document.createElement("div");
+        el.className = "dice-poly-face";
+        el.style.width = face.width.toFixed(2) + "px";
+        el.style.height = face.height.toFixed(2) + "px";
+        el.style.transform = face.transform;
+        const lightness = diceShade(rest, face);
+        el.style.setProperty("--dice-face-l", lightness.toFixed(1) + "%");
+        if (layout.rounded) {
+            el.classList.add("dice-poly-face-rounded");
+            el.appendChild(layout.pips ? buildPipFace(face, face.value) : buildDiceLabel(face.value, sides, face.fontSize));
+        } else {
+            el.style.clipPath = face.clip;
+            const inner = document.createElement("div");
+            inner.className = "dice-poly-face-inner";
+            inner.style.clipPath = face.innerClip;
+            el.appendChild(inner);
+            if (face.numbered && face.fontSize >= 3) {
+                el.appendChild(buildDiceLabel(face.value, sides, face.fontSize, face.label));
+            }
         }
-        cube.appendChild(buildDiceFace(face.name, value, isD6));
+        solid.appendChild(el);
     });
-    die.appendChild(cube);
-    const shown = isD6 ? DICE_FACES.find(function(face) { return face.d6 === result; }) : DICE_FACES[0];
-    return { die, cube, rotation: shown.rotation };
+
+    return {
+        die,
+        solid,
+        rest: "rotateX(" + tiltX + "deg) rotateY(" + tiltY + "deg) " + frontCss,
+        from: function() {
+            const spin = function() {
+                const turns = (Math.random() < 0.5 ? -1 : 1) * (2 + Math.floor(Math.random() * 2));
+                return turns * 360 + randomBetween(0, 360);
+            };
+            return "rotateX(" + (tiltX + spin()) + "deg) rotateY(" + (tiltY + spin()) + "deg) " + frontCss;
+        }
+    };
 }
 
 function animateDie(parts) {
-    const [x, y] = parts.rotation;
     const tilt = randomBetween(-7, 7);
-    const restCube = "rotateX(" + x + "deg) rotateY(" + y + "deg)";
     const restDie = "rotate(" + tilt + "deg)";
-    parts.cube.style.transform = restCube;
+    parts.solid.style.transform = parts.rest;
     parts.die.style.transform = restDie;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
         return Promise.resolve();
     }
 
     const timing = { duration: randomBetween(1000, 1500), delay: randomBetween(0, 200), fill: "backwards" };
-    const spin = function() {
-        const turns = (Math.random() < 0.5 ? -1 : 1) * (2 + Math.floor(Math.random() * 2));
-        return turns * 360 + randomBetween(0, 360);
-    };
-    const tumble = parts.cube.animate([
-        { transform: "rotateX(" + (x + spin()) + "deg) rotateY(" + (y + spin()) + "deg)" },
-        { transform: restCube }
+    const tumble = parts.solid.animate([
+        { transform: parts.from() },
+        { transform: parts.rest }
     ], { ...timing, easing: "cubic-bezier(0.2, 0.7, 0.3, 1)" });
     const hop = function(height, offset, angle) {
         return { offset, easing: height ? "ease-in" : "ease-out", transform: "translateY(" + height + "px) rotate(" + (tilt + angle) + "deg)" };
@@ -2624,12 +2995,11 @@ function renderDiceRoll($response) {
     }
     const rolls = JSON.parse(tray.dataset.diceRolls);
     const sides = parseInt(tray.dataset.diceSides, 10);
-    const digits = String(sides).length;
     tray.classList.toggle("dice-tray-sm", rolls.length > 12 && rolls.length <= 40);
     tray.classList.toggle("dice-tray-xs", rolls.length > 40);
-    tray.style.setProperty("--dice-font-scale", [0.5, 0.42, 0.32, 0.26][digits - 1]);
+    const size = parseFloat(getComputedStyle(tray).getPropertyValue("--dice-size")) || 72;
 
-    const dice = rolls.map(function(result) { return buildDie(result, sides); });
+    const dice = rolls.map(function(result) { return buildDie(result, sides, size); });
     dice.forEach(function(parts) { tray.appendChild(parts.die); });
 
     $roll.addClass("dice-roll-rolling");
