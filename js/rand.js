@@ -4412,9 +4412,10 @@ function generateRandomData(type, placeholder = '', $input = null) {
     const randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
 
     const randomText = (sentences = 3, wordMin = 8, wordMax = 15) => {
-        const words = ['lorem', 'ipsum', 'dolor', 'sit', 'amet', 'consectetur', 'adipiscing', 'elit', 
-                      'sed', 'do', 'eiusmod', 'tempor', 'incididunt', 'ut', 'labore', 'et', 'dolore',
-                      'magna', 'aliqua', 'enim', 'ad', 'minim', 'veniam', 'quis', 'nostrud', 'exercitation'];
+        // Shared with the Placeholder Data tool: includes/data/lorem_words.txt via index.php
+        const words = (Array.isArray(window.RAND_LOREM_WORDS) && window.RAND_LOREM_WORDS.length)
+            ? window.RAND_LOREM_WORDS
+            : ['lorem', 'ipsum', 'dolor', 'sit', 'amet'];
         let result = [];
         for (let i = 0; i < sentences; i++) {
             let sentence = [];

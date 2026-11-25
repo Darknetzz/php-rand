@@ -693,6 +693,40 @@ function passphrase_wordlist(): array {
 }
 
 /**
+ * Lorem ipsum vocabulary (includes/data/lorem_words.txt), shared with the
+ * random-fill buttons in js/rand.js through window.RAND_LOREM_WORDS (index.php).
+ *
+ * @return list<string>
+ */
+function lorem_words(): array {
+  static $words = null;
+  if ($words === null) {
+    $words = @file(__DIR__ . '/data/lorem_words.txt', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: ['lorem', 'ipsum'];
+  }
+  return $words;
+}
+
+/**
+ * Fields the Placeholder Data tool can generate, label by key.
+ *
+ * @return array<string,string>
+ */
+function fake_data_fields(): array {
+  return [
+      'name' => 'Name',
+      'email' => 'Email',
+      'username' => 'Username',
+      'phone' => 'Phone',
+      'address' => 'Address',
+      'ipv4' => 'IPv4',
+      'ipv6' => 'IPv6',
+      'mac' => 'MAC address',
+      'url' => 'URL',
+      'date' => 'Date',
+  ];
+}
+
+/**
  * Generate an HTML submit button element
  * 
  * Creates a styled Bootstrap submit button with icon and text. Commonly used

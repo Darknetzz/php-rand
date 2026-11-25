@@ -53,6 +53,8 @@ function getHandlerRegistry(): array {
         'brainfuck' => 'handle_brainfuck',
         'genid' => 'handle_genid',
         'id_decode' => 'handle_id_decode',
+        'lorem' => 'handle_lorem',
+        'fake_data' => 'handle_fake_data',
         'jwt' => 'handle_jwt',
         'shellcheck' => 'handle_shellcheck',
         'syntax_validate' => 'handle_syntax_validate',
@@ -4287,6 +4289,165 @@ function handle_id_decode(array $req): string {
         $output .= copyable_table_html('Embedded time', id_decode_time_rows($decoded['ms'], $tzResult['tz'], $precision));
     }
     return $output;
+}
+
+/**
+ * One lorem ipsum sentence of $min–$max words, capitalised, with an occasional comma.
+ *
+ * @param list<string> $lead Words to start with (the classic "Lorem ipsum dolor sit amet")
+ */
+function lorem_sentence(int $min = 6, int $max = 14, array $lead = []): string {
+    $words = lorem_words();
+    $count = max(count($lead) + 2, rng_int($min, $max));
+    $out = $lead;
+    while (count($out) < $count) {
+        $out[] = rng_pick($words);
+    }
+    if ($count >= 8) {
+        $comma = rng_int(max(count($lead), 2), $count - 3);
+        $out[$comma] .= ',';
+    }
+    return ucfirst(implode(' ', $out)) . '.';
+}
+
+/**
+ * Lorem ipsum text: N paragraphs, sentences or words.
+ *
+ * @param array $req 'lorem_unit' (paragraphs|sentences|words), 'lorem_count', 'lorem_classic', optional seed
+ */
+function handle_lorem(array $req): string {
+    $unit = (string) req_get($req, 'lorem_unit', 'paragraphs');
+    if (!isset(LOREM_MAX[$unit])) {
+        return formatOutput('Invalid unit selected.', type: 'danger');
+    }
+    $countValidation = req_int_validated($req, 'lorem_count', 1, LOREM_MAX[$unit]);
+    if (!$countValidation['valid']) {
+        return formatOutput('Number of ' . $unit . ': ' . $countValidation['error'], type: 'danger');
+    }
+    $seedRes = req_seed($req, 'lorem_');
+    if (!$seedRes['valid']) {
+        return formatOutput($seedRes['error'], type: 'danger');
+    }
+    $count = $countValidation['value'];
+    $lead = req_bool($req, 'lorem_classic') ? ['lorem', 'ipsum', 'dolor', 'sit', 'amet'] : [];
+
+    rng_seed($seedRes['seed'] !== null ? (int) $seedRes['seed'] : null);
+    if ($unit === 'words') {
+        $words = $lead ? array_slice($lead, 0, $count) : [];
+        while (count($words) < $count) {
+            $words[] = rng_pick(lorem_words());
+        }
+        $text = ucfirst(implode(' ', $words)) . '.';
+    } elseif ($unit === 'sentences') {
+        $sentences = [];
+        for ($i = 0; $i < $count; $i++) {
+            $sentences[] = lorem_sentence(lead: $i === 0 ? $lead : []);
+        }
+        $text = implode(' ', $sentences);
+    } else {
+        $paragraphs = [];
+        for ($p = 0; $p < $count; $p++) {
+            $sentences = [];
+            $n = rng_int(4, 7);
+            for ($i = 0; $i < $n; $i++) {
+                $sentences[] = lorem_sentence(lead: ($p === 0 && $i === 0) ? $lead : []);
+            }
+            $paragraphs[] = implode(' ', $sentences);
+        }
+        $text = implode("\n\n", $paragraphs);
+    }
+    rng_seed(null);
+
+    $words = str_word_count($text);
+    return output_copyable($text, "{$count} " . ($count === 1 ? rtrim($unit, 's') : $unit) . " ({$words} words, " . mb_strlen($text) . ' characters)')
+        . rng_seed_notes($seedRes['seed'], $seedRes['warning']);
+}
+
+/**
+ * One row of fake data. Emails and URLs use reserved example/.test domains, IPs the
+ * documentation ranges (RFC 5737, RFC 3849), phone numbers the fictional 555-01xx block
+ * and MACs are locally administered.
+ *
+ * @param list<string> $fields Keys of fake_data_fields()
+ * @return array<string,string>
+ */
+function fake_data_row(array $fields): array {
+    static $data = null;
+    $data ??= require __DIR__ . '/data/fake_data.php';
+    $first = rng_pick($data['first_names']);
+    $last = rng_pick($data['last_names']);
+    $ascii = fn(string $s) => strtolower(utf8_to_ascii($s));
+    $row = [];
+    foreach ($fields as $field) {
+        $row[$field] = match ($field) {
+            'name' => "{$first} {$last}",
+            'email' => $ascii($first) . '.' . $ascii($last) . (rng_int(0, 1) ? rng_int(1, 99) : '') . '@' . rng_pick($data['domains']),
+            'username' => $ascii($first) . rng_pick(['', '_', '.']) . $ascii(substr($last, 0, rng_int(1, strlen($last)))) . rng_int(1, 999),
+            'phone' => sprintf('+1 (%d) 555-01%02d', rng_int(201, 989), rng_int(0, 99)),
+            'address' => rng_int(1, 9999) . ' ' . rng_pick($data['streets']) . ' ' . rng_pick($data['street_types'])
+                . ', ' . rng_pick($data['cities']) . ' ' . sprintf('%05d', rng_int(10000, 99999)),
+            'ipv4' => rng_pick($data['ipv4_prefixes']) . '.' . rng_int(1, 254),
+            'ipv6' => '2001:db8:' . implode(':', array_map(fn() => dechex(rng_int(0, 0xffff)), range(1, 6))),
+            'mac' => implode(':', array_map(fn($i) => sprintf('%02x', $i === 0 ? (rng_int(0, 255) & 0xfc) | 0x02 : rng_int(0, 255)), range(0, 5))),
+            'url' => 'https://' . rng_pick(['www.example.com', 'example.org', 'app.example.net', 'site.test'])
+                . '/' . rng_pick($data['url_words']) . '/' . rng_pick(lorem_words()) . '-' . rng_int(1, 999),
+            'date' => date('Y-m-d', rng_int(strtotime('2000-01-01'), time())),
+            default => '',
+        };
+    }
+    return $row;
+}
+
+/**
+ * Fake test data rows as plain lines (tab-separated), CSV or JSON.
+ *
+ * @param array $req 'fake_fields' (list of fake_data_fields() keys), 'fake_rows', 'fake_format' (lines|csv|json), optional seed
+ */
+function handle_fake_data(array $req): string {
+    $requested = req_get($req, 'fake_fields', []);
+    $requested = is_array($requested) ? $requested : [$requested];
+    $fields = array_values(array_intersect(array_keys(fake_data_fields()), $requested));
+    if (!$fields) {
+        return formatOutput('Select at least one field.', type: 'danger');
+    }
+    $rowsValidation = req_int_validated($req, 'fake_rows', 1, FAKE_DATA_MAX_ROWS);
+    if (!$rowsValidation['valid']) {
+        return formatOutput('Rows: ' . $rowsValidation['error'], type: 'danger');
+    }
+    $format = (string) req_get($req, 'fake_format', 'lines');
+    if (!in_array($format, ['lines', 'csv', 'json'], true)) {
+        return formatOutput('Invalid output format selected.', type: 'danger');
+    }
+    $seedRes = req_seed($req, 'fake_');
+    if (!$seedRes['valid']) {
+        return formatOutput($seedRes['error'], type: 'danger');
+    }
+
+    rng_seed($seedRes['seed'] !== null ? (int) $seedRes['seed'] : null);
+    $rows = [];
+    for ($i = 0; $i < $rowsValidation['value']; $i++) {
+        $rows[] = fake_data_row($fields);
+    }
+    rng_seed(null);
+
+    if ($format === 'json') {
+        $text = json_encode($rows, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+    } elseif ($format === 'csv') {
+        $fh = fopen('php://temp', 'r+');
+        fputcsv($fh, $fields, ',', '"', '');
+        foreach ($rows as $row) {
+            fputcsv($fh, array_values($row), ',', '"', '');
+        }
+        rewind($fh);
+        $text = rtrim((string) stream_get_contents($fh), "\n");
+        fclose($fh);
+    } else {
+        $text = implode("\n", array_map(fn($row) => implode("\t", $row), $rows));
+    }
+
+    $count = count($rows);
+    return "<div class='fake-data-output'>" . output_copyable($text, "{$count} row" . ($count === 1 ? '' : 's') . ' (' . strtoupper($format === 'lines' ? 'text' : $format) . ')') . "</div>"
+        . rng_seed_notes($seedRes['seed'], $seedRes['warning']);
 }
 
 /**

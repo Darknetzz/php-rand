@@ -30,6 +30,9 @@ define("SNOWFLAKE_EPOCHS", [
     "discord" => ["Discord", 1420070400000],
     "unix"    => ["Unix (0)", 0],
 ]);
+# Placeholder Data limits (handle_lorem, handle_fake_data)
+define("LOREM_MAX", ["paragraphs" => 50, "sentences" => 500, "words" => 5000]);
+define("FAKE_DATA_MAX_ROWS", 1000);
 # Coin flip limit (form and handle_coin_flip)
 define("COIN_MAX_COUNT", 100);
 # List shuffler limits (form and handle_list_shuffle)

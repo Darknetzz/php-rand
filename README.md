@@ -26,6 +26,7 @@ A comprehensive collection of useful developer tools built with PHP and modern w
 - Coin flip
 - Card draw
 - Magic 8-ball / yes-no answer
+- Placeholder data (lorem ipsum, fake names/emails/IPs as text, CSV or JSON)
 - List shuffler (shuffle, pick winners, split into teams)
 
 ### Cryptography

@@ -1308,3 +1308,11 @@ th.tablehead,
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* Placeholder Data: keep large outputs scrollable */
+.fake-data-output .copyable-body {
+  max-height: 480px;
+  white-space: pre;
+  word-break: normal;
+  overflow-x: auto;
+}

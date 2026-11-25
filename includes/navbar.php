@@ -72,6 +72,11 @@ $navbarItems = [
                 "formalName" => "Magic 8-Ball",
                 "icon"       => icon('circle-question-mark')
             ],
+            "placeholder_data" => [
+                "name"       => "placeholder_data",
+                "formalName" => "Placeholder Data",
+                "icon"       => icon('text-quote')
+            ],
             "list_shuffler" => [
                 "name"       => "list_shuffler",
                 "formalName" => "List Shuffler",

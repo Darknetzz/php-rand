@@ -32,7 +32,7 @@
         require_once("includes/_includes.php");
         require_once("includes/navbar.php");
     ?>
-    <script>window.RAND_BTN_OUTLINE = <?= BTN_OUTLINE ? 'true' : 'false' ?>;</script>
+    <script>window.RAND_BTN_OUTLINE = <?= BTN_OUTLINE ? 'true' : 'false' ?>; window.RAND_LOREM_WORDS = <?= json_encode(lorem_words()) ?>;</script>
     <br>
     <div class="container pt-5">
 
