@@ -22,6 +22,9 @@ define("DICE_MIN_SIDES", 2);
 define("DICE_MAX_SIDES", 1000);
 # Coin flip limit (form and handle_coin_flip)
 define("COIN_MAX_COUNT", 100);
+# List shuffler limits (form and handle_list_shuffle)
+define("LIST_SHUFFLE_MAX_ITEMS", 10000);
+define("LIST_SHUFFLE_MAX_BYTES", 1000000);
 
 # Levenshtein: max characters per string (O(m×n) pure-PHP UTF-8 implementation)
 define("LEVENSHTEIN_MAX_CHARS", 1000);

@@ -262,15 +262,10 @@ function utf8_reverse(string $s): string {
 }
 
 /**
- * Shuffle the characters of a UTF-8 string (Fisher–Yates with random_int()).
+ * Shuffle the characters of a UTF-8 string (rng_shuffle(): Fisher–Yates with random_int()).
  */
 function utf8_shuffle(string $s): string {
-  $chars = utf8_chars($s);
-  for ($i = count($chars) - 1; $i > 0; $i--) {
-    $j = random_int(0, $i);
-    [$chars[$i], $chars[$j]] = [$chars[$j], $chars[$i]];
-  }
-  return implode('', $chars);
+  return implode('', rng_shuffle(utf8_chars($s)));
 }
 
 /**
@@ -568,6 +563,19 @@ function rng_int(int $min, int $max): int {
 function rng_pick(array $list) {
   $values = array_values($list);
   return $values[rng_int(0, count($values) - 1)];
+}
+
+/**
+ * Shuffle a list (Fisher–Yates with rng_int(): random_int(), or mt_rand() when seeded).
+ * Unlike shuffle(), this is cryptographically secure by default. Keys are reset.
+ */
+function rng_shuffle(array $list): array {
+  $list = array_values($list);
+  for ($i = count($list) - 1; $i > 0; $i--) {
+    $j = rng_int(0, $i);
+    [$list[$i], $list[$j]] = [$list[$j], $list[$i]];
+  }
+  return $list;
 }
 
 /** $length random bytes: random_bytes() when secure, mt_rand() bytes when seeded. */

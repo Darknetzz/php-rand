@@ -52,6 +52,11 @@ $navbarItems = [
                 "formalName" => "Coin Flip",
                 "icon"       => icon('coins')
             ],
+            "list_shuffler" => [
+                "name"       => "list_shuffler",
+                "formalName" => "List Shuffler",
+                "icon"       => icon('shuffle')
+            ],
         ],
     ],
     "cryptography" => [

@@ -40,6 +40,7 @@ function getHandlerRegistry(): array {
         'spinwheel' => 'handle_spinwheel',
         'dice_roll' => 'handle_dice_roll',
         'coin_flip' => 'handle_coin_flip',
+        'list_shuffle' => 'handle_list_shuffle',
         'calc' => 'handle_calculator',
         'currency' => 'handle_currency',
         'qrcode' => 'handle_qrcode',
@@ -1896,6 +1897,104 @@ function handle_coin_flip(array $req): string {
 
     return dice_tray_html($flips, 2, "Flipped {$list}", $summary, [1 => 'H', 2 => 'T'], 'dice-tray-coin', 'coin_flip', ['Heads' => $heads, 'Tails' => $tails])
         . rng_seed_notes($seedRes['seed'], $seedRes['warning']);
+}
+
+/**
+ * Deal items round-robin into $groups groups, so group sizes differ by at most one.
+ *
+ * @return array<int, array<int, string>>
+ */
+function list_shuffle_deal(array $items, int $groups): array {
+    $out = array_fill(0, $groups, []);
+    foreach (array_values($items) as $i => $item) {
+        $out[$i % $groups][] = $item;
+    }
+    return $out;
+}
+
+/**
+ * List Shuffler: shuffle a list, pick N items, or split it into groups (server-side, rng_shuffle()).
+ *
+ * @param array $req Request array containing: 'list_items' (one per line), 'list_mode' (shuffle|pick|groups),
+ *                   'list_pick', 'list_group_by' (count|size), 'list_group_n', optional 'list_dedupe',
+ *                   optional 'list_useseed' + 'list_seed'
+ * @return string Copyable result(s) with the RNG notice, or an error message
+ */
+function handle_list_shuffle(array $req): string {
+    $raw = (string) req_get($req, 'list_items', '');
+    if (strlen($raw) > LIST_SHUFFLE_MAX_BYTES) {
+        return formatOutput('The list must be at most ' . number_format(LIST_SHUFFLE_MAX_BYTES) . ' bytes.', type: 'danger');
+    }
+    if (!mb_check_encoding($raw, 'UTF-8')) {
+        return formatOutput('The list must be valid UTF-8 text.', type: 'danger');
+    }
+    $items = array_values(array_filter(array_map('trim', preg_split('/\r\n|\r|\n/', $raw)), fn($l) => $l !== ''));
+    $removed = 0;
+    if (req_bool($req, 'list_dedupe')) {
+        $unique = array_values(array_unique($items));
+        $removed = count($items) - count($unique);
+        $items = $unique;
+    }
+    $total = count($items);
+    if ($total === 0) {
+        return formatOutput('Enter at least one item, one per line.', type: 'danger');
+    }
+    if ($total > LIST_SHUFFLE_MAX_ITEMS) {
+        return formatOutput('The list can have at most ' . number_format(LIST_SHUFFLE_MAX_ITEMS) . " items ({$total} given).", type: 'danger');
+    }
+
+    $mode = (string) req_get($req, 'list_mode', 'shuffle');
+    if (!in_array($mode, ['shuffle', 'pick', 'groups'], true)) {
+        return formatOutput('Invalid mode.', type: 'danger');
+    }
+    $n = 0;
+    $groupBy = req_get($req, 'list_group_by', 'count') === 'size' ? 'size' : 'count';
+    if ($mode === 'pick') {
+        $v = req_int_validated($req, 'list_pick', 1, $total);
+        if (!$v['valid']) {
+            return formatOutput('Number to pick: ' . $v['error'], type: 'danger');
+        }
+        $n = $v['value'];
+    } elseif ($mode === 'groups') {
+        $v = req_int_validated($req, 'list_group_n', 1, $total);
+        if (!$v['valid']) {
+            return formatOutput(($groupBy === 'size' ? 'Items per group: ' : 'Number of groups: ') . $v['error'], type: 'danger');
+        }
+        $n = $v['value'];
+    }
+
+    $seedRes = req_seed($req, 'list_');
+    if (!$seedRes['valid']) {
+        return formatOutput($seedRes['error'], type: 'danger');
+    }
+    rng_seed($seedRes['seed'] !== null ? (int) $seedRes['seed'] : null);
+    $shuffled = rng_shuffle($items);
+    rng_seed(null);
+
+    $itemWord = fn(int $c) => $c === 1 ? 'item' : 'items';
+    if ($mode === 'shuffle') {
+        $out = output_copyable(implode("\n", $shuffled), "Shuffled {$total} {$itemWord($total)}");
+    } elseif ($mode === 'pick') {
+        $out = output_copyable(implode("\n", array_slice($shuffled, 0, $n)), "Picked {$n} of {$total}");
+    } else {
+        $groupCount = $groupBy === 'size' ? (int) ceil($total / $n) : $n;
+        $groups = list_shuffle_deal($shuffled, $groupCount);
+        $out = "<div class='row g-3'>";
+        $all = [];
+        foreach ($groups as $i => $group) {
+            $label = 'Group ' . ($i + 1) . ' (' . count($group) . ')';
+            $out .= "<div class='col-md-6 col-xl-4'>" . output_copyable(implode("\n", $group), $label) . "</div>";
+            $all[] = $label . ":\n" . implode("\n", $group);
+        }
+        $out .= "</div>";
+        $out .= output_copyable(implode("\n\n", $all), "All {$groupCount} groups");
+    }
+
+    if ($removed > 0) {
+        $out .= formatOutput("Removed {$removed} duplicate " . ($removed === 1 ? 'line' : 'lines') . '.', 6, 'info');
+    }
+    $out .= $seedRes['seed'] !== null ? rng_seed_notes($seedRes['seed'], $seedRes['warning']) : rng_source_notice(null);
+    return $out;
 }
 
 function handle_calculator(array $req): string {

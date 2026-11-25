@@ -22,6 +22,7 @@ A comprehensive collection of useful developer tools built with PHP and modern w
 - Spin the wheel
 - Dice roller
 - Coin flip
+- List shuffler (shuffle, pick winners, split into teams)
 
 ### Cryptography
 - OpenSSL (AES encryption/decryption)
