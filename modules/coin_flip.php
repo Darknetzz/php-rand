@@ -18,6 +18,8 @@
 
                 <div class="responseDiv mt-3" id="coin_flip_response"></div>
             </form>
+
+            <?= result_history_html("coin_flip") ?>
         </div>
     </div>
 

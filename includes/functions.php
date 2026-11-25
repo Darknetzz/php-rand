@@ -674,6 +674,18 @@ HTML;
 }
 
 /**
+ * Container for a tool's "Recent results" list, kept in localStorage by rand.js
+ * (renderResultHistory()). Results are added from data-history-* attributes on the
+ * tool's response (see dice_tray_html()).
+ *
+ * @param string $tool Storage key, usually the form's action (e.g. "dice_roll")
+ */
+function result_history_html(string $tool): string {
+  $t = htmlspecialchars($tool, ENT_QUOTES, 'UTF-8');
+  return "<div class='rand-history mt-4' data-history='{$t}' hidden></div>";
+}
+
+/**
  * Shared private-key passphrase UI: off by default, with an explicit enable toggle.
  *
  * @param array{

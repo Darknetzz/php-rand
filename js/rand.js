@@ -2422,6 +2422,7 @@ function navigate(to) {
         initRelativeTimeUi($(normalizedTo));
         initSubnetMaskUi($(normalizedTo));
         initSyntaxHighlightUi($(normalizedTo));
+        initResultHistoryUi($(normalizedTo));
         refreshClientCryptoGeneratorUi($(normalizedTo));
     };
 
@@ -3024,8 +3025,102 @@ function renderDiceRoll($response) {
     dice.forEach(function(parts) { tray.appendChild(parts.die); });
 
     $roll.addClass("dice-roll-rolling");
-    Promise.all(dice.map(animateDie)).finally(function() {
+    return Promise.all(dice.map(animateDie)).finally(function() {
         $roll.removeClass("dice-roll-rolling");
+    });
+}
+
+
+/* ===================================================================== */
+/*                    FUNCTION: result history (recent results)           */
+/* ===================================================================== */
+// Shared "Recent results" list for random tools (result_history_html() in PHP).
+// Stored per tool in localStorage as {items: [{t, text}], tally: {label: count}},
+// newest first. The tally keeps counting after old items drop off the list.
+const RESULT_HISTORY_LIMIT = 20;
+const RESULT_HISTORY_STORAGE_PREFIX = "rand.history.";
+
+function readResultHistory(tool) {
+    try {
+        const data = JSON.parse(window.localStorage.getItem(RESULT_HISTORY_STORAGE_PREFIX + tool) || "null");
+        if (data && Array.isArray(data.items)) {
+            return { items: data.items, tally: (data.tally && typeof data.tally === "object") ? data.tally : {} };
+        }
+    } catch (e) {}
+    return { items: [], tally: {} };
+}
+
+function writeResultHistory(tool, data) {
+    try {
+        window.localStorage.setItem(RESULT_HISTORY_STORAGE_PREFIX + tool, JSON.stringify(data));
+    } catch (e) {}
+}
+
+function addResultHistory(tool, text, tally) {
+    const data = readResultHistory(tool);
+    data.items.unshift({ t: Date.now(), text: String(text) });
+    data.items = data.items.slice(0, RESULT_HISTORY_LIMIT);
+    Object.entries(tally || {}).forEach(function([label, count]) {
+        data.tally[label] = (parseInt(data.tally[label], 10) || 0) + (parseInt(count, 10) || 0);
+    });
+    writeResultHistory(tool, data);
+    renderResultHistory(tool);
+}
+
+// Add the result in $response (data-history-* from result_history_attrs()) to its history.
+function recordResultHistory($response) {
+    const el = $response.find("[data-history-tool]")[0];
+    if (!el) {
+        return;
+    }
+    let tally = null;
+    try {
+        tally = el.dataset.historyTally ? JSON.parse(el.dataset.historyTally) : null;
+    } catch (e) {}
+    addResultHistory(el.dataset.historyTool, el.dataset.historyText || "", tally);
+}
+
+function renderResultHistory(tool) {
+    const data = readResultHistory(tool);
+    $(".rand-history").filter(function() { return this.dataset.history === tool; }).each(function() {
+        const $box = $(this).empty();
+        if (!data.items.length) {
+            $box.prop("hidden", true);
+            return;
+        }
+        const $header = $("<div>", { class: "rand-history-header" })
+            .append($("<h3>", { class: "rand-history-title", text: "Recent results" }))
+            .append($("<button>", { type: "button", class: "btn btn-sm " + btnClass("secondary"), "data-history-clear": tool })
+                .html('<i class="icon-trash-2" aria-hidden="true"></i> Clear history'));
+        $box.append($header);
+
+        const labels = Object.keys(data.tally);
+        const total = labels.reduce(function(sum, label) { return sum + (parseInt(data.tally[label], 10) || 0); }, 0);
+        if (total > 0) {
+            const $tally = $("<div>", { class: "rand-history-tally" });
+            labels.forEach(function(label) {
+                const count = parseInt(data.tally[label], 10) || 0;
+                const pct = Math.round((count / total) * 1000) / 10;
+                $tally.append($("<span>", { class: "badge text-bg-secondary", text: label + ": " + count + " (" + pct + "%)" }));
+            });
+            $tally.append($("<span>", { class: "text-muted", text: total + " in total" }));
+            $box.append($tally);
+        }
+
+        const $list = $("<ol>", { class: "rand-history-list" });
+        data.items.forEach(function(item) {
+            const when = new Date(item.t);
+            $list.append($("<li>")
+                .append($("<time>", { datetime: when.toISOString(), text: when.toLocaleTimeString() }))
+                .append($("<span>", { text: item.text })));
+        });
+        $box.append($list).prop("hidden", false);
+    });
+}
+
+function initResultHistoryUi($scope) {
+    $scope.find(".rand-history").each(function() {
+        renderResultHistory(this.dataset.history);
     });
 }
 
@@ -3210,7 +3305,11 @@ $(document).ready(function() {
             submitOpts.loadingMessage = form.data("action") === "coin_flip" ? "Flipping..." : "Rolling...";
             submitOpts.onSuccess = function(dataOut) {
                 showData(responseDiv, dataOut);
-                renderDiceRoll(responseDiv);
+                const rolled = renderDiceRoll(responseDiv);
+                if (rolled) {
+                    // Add to "Recent results" once the dice land, so the list doesn't give the result away.
+                    rolled.then(function() { recordResultHistory(responseDiv); });
+                }
             };
         }
 
@@ -3311,6 +3410,15 @@ $(document).ready(function() {
             $("#error").hide();
             console.log("Showing " + elementToShow);
         }
+    });
+
+    // "Clear history" in a result_history_html() list
+    $(document).on("click", "[data-history-clear]", function() {
+        const tool = this.dataset.historyClear;
+        try {
+            window.localStorage.removeItem(RESULT_HISTORY_STORAGE_PREFIX + tool);
+        } catch (e) {}
+        renderResultHistory(tool);
     });
 
     // Seed switch (seed_field_html()): show the seed input only while it is on

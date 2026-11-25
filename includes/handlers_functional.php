@@ -1819,8 +1819,26 @@ function handle_dice_roll(array $req): string {
     $list = implode(', ', $rolls);
     $summary = "{$count}d{$sides}: {$list}" . ($count > 1 ? ' = ' . array_sum($rolls) : '');
 
-    return dice_tray_html($rolls, $sides, "Rolled {$list}", $summary)
+    return dice_tray_html($rolls, $sides, "Rolled {$list}", $summary, historyTool: 'dice_roll')
         . rng_seed_notes($seedRes['seed'], $seedRes['warning']);
+}
+
+/**
+ * Attributes that make rand.js add a result to a result_history_html() list
+ * (recordResultHistory()). Empty when $tool is empty.
+ *
+ * @param array<string,int> $tally Counts added to the history's running tally
+ */
+function result_history_attrs(string $tool, string $text, array $tally = []): string {
+    if ($tool === '') {
+        return '';
+    }
+    $attrs = " data-history-tool='" . htmlspecialchars($tool, ENT_QUOTES) . "'"
+        . " data-history-text='" . htmlspecialchars($text, ENT_QUOTES) . "'";
+    if ($tally) {
+        $attrs .= " data-history-tally='" . htmlspecialchars(json_encode($tally), ENT_QUOTES) . "'";
+    }
+    return $attrs;
 }
 
 /**
@@ -1828,14 +1846,16 @@ function handle_dice_roll(array $req): string {
  *
  * @param int[] $rolls Results, 1..$sides
  * @param array<int,string> $labels Optional face text by value (e.g. coin H/T); numbers otherwise
+ * @param string $historyTool result_history_html() key that records $summary once the roll lands
+ * @param array<string,int> $tally Counts added to that history's running tally (e.g. Heads/Tails)
  */
-function dice_tray_html(array $rolls, int $sides, string $ariaLabel, string $summary, array $labels = [], string $trayClass = ''): string {
+function dice_tray_html(array $rolls, int $sides, string $ariaLabel, string $summary, array $labels = [], string $trayClass = '', string $historyTool = '', array $tally = []): string {
     $attrs = "data-dice-rolls='" . json_encode($rolls) . "' data-dice-sides='{$sides}'";
     if ($labels) {
         $attrs .= " data-dice-labels='" . htmlspecialchars(json_encode($labels), ENT_QUOTES) . "'";
     }
     $class = trim("dice-tray {$trayClass}");
-    return "<div class='dice-roll'>"
+    return "<div class='dice-roll'" . result_history_attrs($historyTool, $summary, $tally) . ">"
         . "<div class='{$class}' role='img' aria-label='" . htmlspecialchars($ariaLabel, ENT_QUOTES) . "' {$attrs}></div>"
         . "<div class='dice-summary'>" . output_copyable($summary) . "</div>"
         . "</div>";
@@ -1868,13 +1888,13 @@ function handle_coin_flip(array $req): string {
 
     $list = implode(', ', array_map(fn($f) => $names[$f], $flips));
     $summary = $list;
+    $heads = count(array_keys($flips, 1, true));
+    $tails = $count - $heads;
     if ($count > 1) {
-        $heads = count(array_keys($flips, 1, true));
-        $tails = $count - $heads;
         $summary = "{$count} coins: {$list} ({$heads} " . ($heads === 1 ? 'head' : 'heads') . ", {$tails} " . ($tails === 1 ? 'tail' : 'tails') . ")";
     }
 
-    return dice_tray_html($flips, 2, "Flipped {$list}", $summary, [1 => 'H', 2 => 'T'], 'dice-tray-coin')
+    return dice_tray_html($flips, 2, "Flipped {$list}", $summary, [1 => 'H', 2 => 'T'], 'dice-tray-coin', 'coin_flip', ['Heads' => $heads, 'Tails' => $tails])
         . rng_seed_notes($seedRes['seed'], $seedRes['warning']);
 }
 

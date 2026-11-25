@@ -23,6 +23,8 @@
 
                 <div class="responseDiv mt-3" id="dice_roller_response"></div>
             </form>
+
+            <?= result_history_html("dice_roll") ?>
         </div>
     </div>
 
