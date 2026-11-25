@@ -2142,6 +2142,128 @@ function initRelativeTimeUi($root) {
 }
 
 /* ===================================================================== */
+/*                      FUNCTION: initChmodUi                            */
+/* ===================================================================== */
+// Chmod Calculator (modules/chmod.php): checkboxes, octal and symbolic views
+// of one mode (0–07777), kept in sync in the browser.
+const CHMOD_CLASSES = [
+    { who: "u", shift: 6, special: 0o4000, set: "s" },
+    { who: "g", shift: 3, special: 0o2000, set: "s" },
+    { who: "o", shift: 0, special: 0o1000, set: "t" }
+];
+const CHMOD_PERMS = [{ perm: "r", bit: 4 }, { perm: "w", bit: 2 }, { perm: "x", bit: 1 }];
+const CHMOD_SPECIAL_BITS = { suid: 0o4000, sgid: 0o2000, sticky: 0o1000 };
+
+function chmodToSymbolic(mode) {
+    return CHMOD_CLASSES.map(function(c) {
+        const bits = (mode >> c.shift) & 7;
+        const special = (mode & c.special) !== 0;
+        const exec = (bits & 1) !== 0;
+        const x = special ? (exec ? c.set : c.set.toUpperCase()) : (exec ? "x" : "-");
+        return ((bits & 4) ? "r" : "-") + ((bits & 2) ? "w" : "-") + x;
+    }).join("");
+}
+
+/** Mode from "rwxr-xr-x" (or ls-style "-rwxr-xr-x"), or null if invalid. */
+function chmodParseSymbolic(text) {
+    let s = String(text).trim();
+    if (s.length === 10 && "-dlbcps".indexOf(s[0]) !== -1) {
+        s = s.slice(1);
+    }
+    if (!/^[r-][w-][xsS-][r-][w-][xsS-][r-][w-][xtT-]$/.test(s)) {
+        return null;
+    }
+    let mode = 0;
+    CHMOD_CLASSES.forEach(function(c, i) {
+        const part = s.substr(i * 3, 3);
+        let bits = (part[0] === "r" ? 4 : 0) | (part[1] === "w" ? 2 : 0);
+        const x = part[2];
+        if (x === "x" || x === c.set) {
+            bits |= 1;
+        }
+        if (x === c.set || x === c.set.toUpperCase()) {
+            mode |= c.special;
+        }
+        mode |= bits << c.shift;
+    });
+    return mode;
+}
+
+function chmodToOctal(mode) {
+    return mode > 0o777 ? mode.toString(8).padStart(4, "0") : mode.toString(8).padStart(3, "0");
+}
+
+function initChmodUi($root) {
+    const $scope = ($root && $root.length) ? $root : $(document);
+    const $form = $scope.find("#chmod_form").first();
+    if (!$form.length || $form.data("chmod-ui-bound")) {
+        return;
+    }
+    $form.data("chmod-ui-bound", true);
+    const $octal = $form.find("#chmod_octal");
+    const $symbolic = $form.find("#chmod_symbolic");
+    const $command = $form.find(".chmod-command .copyable-body");
+
+    function modeFromCheckboxes() {
+        let mode = 0;
+        $form.find(".chmod-bit").each(function() {
+            if (this.checked) {
+                const c = CHMOD_CLASSES.find((k) => k.who === this.dataset.who);
+                const p = CHMOD_PERMS.find((k) => k.perm === this.dataset.perm);
+                mode |= p.bit << c.shift;
+            }
+        });
+        $form.find(".chmod-special").each(function() {
+            if (this.checked) {
+                mode |= CHMOD_SPECIAL_BITS[this.dataset.special];
+            }
+        });
+        return mode;
+    }
+
+    // Show mode everywhere except the field the user is typing in.
+    function render(mode, source) {
+        $form.find(".chmod-bit").each(function() {
+            const c = CHMOD_CLASSES.find((k) => k.who === this.dataset.who);
+            const p = CHMOD_PERMS.find((k) => k.perm === this.dataset.perm);
+            this.checked = ((mode >> c.shift) & p.bit) !== 0;
+        });
+        $form.find(".chmod-special").each(function() {
+            this.checked = (mode & CHMOD_SPECIAL_BITS[this.dataset.special]) !== 0;
+        });
+        if (source !== "octal") {
+            $octal.val(chmodToOctal(mode)).removeClass("is-invalid");
+        }
+        if (source !== "symbolic") {
+            $symbolic.val(chmodToSymbolic(mode)).removeClass("is-invalid");
+        }
+        $command.text("chmod " + chmodToOctal(mode) + " file");
+    }
+
+    $form.on("change", ".chmod-bit, .chmod-special", function() {
+        render(modeFromCheckboxes(), "checkbox");
+    });
+    $octal.on("input", function() {
+        const v = String(this.value).trim();
+        const ok = /^[0-7]{3,4}$/.test(v);
+        $octal.toggleClass("is-invalid", !ok && v !== "");
+        if (ok) {
+            render(parseInt(v, 8), "octal");
+        }
+    });
+    $symbolic.on("input", function() {
+        const mode = chmodParseSymbolic(this.value);
+        $symbolic.toggleClass("is-invalid", mode === null && String(this.value).trim() !== "");
+        if (mode !== null) {
+            render(mode, "symbolic");
+        }
+    });
+
+    const initial = /^[0-7]{3,4}$/.test($octal.val()) ? parseInt($octal.val(), 8) : 0o644;
+    render(initial, null);
+}
+
+/* ===================================================================== */
 /*                      FUNCTION: initSubnetMaskUi                       */
 /* ===================================================================== */
 function initSubnetMaskUi($root) {
@@ -2421,6 +2543,7 @@ function navigate(to) {
         initCrontabLiveAnalyzeUi($(normalizedTo));
         initRelativeTimeUi($(normalizedTo));
         initSubnetMaskUi($(normalizedTo));
+        initChmodUi($(normalizedTo));
         initSyntaxHighlightUi($(normalizedTo));
         initResultHistoryUi($(normalizedTo));
         refreshClientCryptoGeneratorUi($(normalizedTo));

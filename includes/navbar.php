@@ -262,6 +262,11 @@ $navbarItems = [
                 "formalName" => "ShellCheck",
                 "icon"       => icon("terminal"),
             ],
+            "chmod" => [
+                "name"       => "chmod",
+                "formalName" => "Chmod Calculator",
+                "icon"       => icon("file-lock"),
+            ],
             "validators" => [
                 "name"       => "validators",
                 "formalName" => "Validators",

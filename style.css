@@ -1225,3 +1225,12 @@ th.tablehead,
   background: radial-gradient(circle at 35% 30%, hsl(var(--dice-hue) 62%), hsl(var(--dice-hue) 42%) 45%, hsl(var(--dice-hue) 22%));
   box-shadow: inset 0 0 calc(var(--dice-size) * 0.08) rgba(0, 0, 0, 0.35);
 }
+
+/* Chmod Calculator */
+.chmod-grid {
+  max-width: 420px;
+}
+.chmod-grid .form-check-input {
+  width: 1.4em;
+  height: 1.4em;
+}

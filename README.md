@@ -72,6 +72,7 @@ A comprehensive collection of useful developer tools built with PHP and modern w
 - Browser client inspector (capabilities, optional permissions/WebRTC/public IP probes)
 - Crontab helper
 - ShellCheck (shell script linting)
+- Chmod calculator (checkboxes ↔ octal ↔ symbolic)
 
 ## Installation
 
