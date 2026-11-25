@@ -2538,7 +2538,6 @@ const DICE_BADGE_MIN_FONT = 0.2;
 // Lit cells of a 3x3 grid for each d6 value.
 const DICE_PIPS = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
 const DICE_LIGHT = vecNorm([-0.35, -0.6, 1]);
-const DICE_HUE = "129 58%";
 const diceLayoutCache = {};
 
 function randomBetween(min, max) {
@@ -2867,16 +2866,17 @@ function diceLayout(sides, size) {
     return layout;
 }
 
-function buildDiceLabel(value, sides, fontSize, point) {
+// `labels` (optional) maps a value to the text shown for it, e.g. coin H/T.
+function buildDiceLabel(value, sides, fontSize, point, labels) {
     const label = document.createElement("span");
     label.className = "dice-face-label";
-    label.textContent = value;
+    label.textContent = labels && labels[value] ? labels[value] : value;
     label.style.fontSize = fontSize.toFixed(1) + "px";
     if (point) {
         label.style.left = point[0].toFixed(2) + "px";
         label.style.top = point[1].toFixed(2) + "px";
     }
-    if (diceNeedsUnderline(value, sides)) {
+    if (!labels && diceNeedsUnderline(value, sides)) {
         label.classList.add("dice-face-label-underline");
     }
     return label;
@@ -2901,7 +2901,7 @@ function diceShade(rest, face) {
     return 24 + 24 * light;
 }
 
-function buildDie(result, sides, size) {
+function buildDie(result, sides, size, labels) {
     const die = document.createElement("div");
     die.className = "dice-die";
     const solid = document.createElement("div");
@@ -2952,7 +2952,7 @@ function buildDie(result, sides, size) {
             inner.style.clipPath = face.innerClip;
             el.appendChild(inner);
             if (face.numbered && face.fontSize >= 3) {
-                el.appendChild(buildDiceLabel(face.value, sides, face.fontSize, face.label));
+                el.appendChild(buildDiceLabel(face.value, sides, face.fontSize, face.label, labels));
             }
         }
         solid.appendChild(el);
@@ -3015,11 +3015,12 @@ function renderDiceRoll($response) {
     }
     const rolls = JSON.parse(tray.dataset.diceRolls);
     const sides = parseInt(tray.dataset.diceSides, 10);
+    const labels = tray.dataset.diceLabels ? JSON.parse(tray.dataset.diceLabels) : null;
     tray.classList.toggle("dice-tray-sm", rolls.length > 12 && rolls.length <= 40);
     tray.classList.toggle("dice-tray-xs", rolls.length > 40);
     const size = parseFloat(getComputedStyle(tray).getPropertyValue("--dice-size")) || 72;
 
-    const dice = rolls.map(function(result) { return buildDie(result, sides, size); });
+    const dice = rolls.map(function(result) { return buildDie(result, sides, size, labels); });
     dice.forEach(function(parts) { tray.appendChild(parts.die); });
 
     $roll.addClass("dice-roll-rolling");
@@ -3205,8 +3206,8 @@ $(document).ready(function() {
                 }, 0);
             };
         }
-        if ((form.data("action") || "") === "dice_roll") {
-            submitOpts.loadingMessage = "Rolling...";
+        if (["dice_roll", "coin_flip"].includes(form.data("action") || "")) {
+            submitOpts.loadingMessage = form.data("action") === "coin_flip" ? "Flipping..." : "Rolling...";
             submitOpts.onSuccess = function(dataOut) {
                 showData(responseDiv, dataOut);
                 renderDiceRoll(responseDiv);

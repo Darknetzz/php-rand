@@ -20,6 +20,8 @@ define("BTN_OUTLINE", false);
 define("DICE_MAX_COUNT", 100);
 define("DICE_MIN_SIDES", 2);
 define("DICE_MAX_SIDES", 1000);
+# Coin flip limit (form and handle_coin_flip)
+define("COIN_MAX_COUNT", 100);
 
 # Levenshtein: max characters per string (O(m×n) pure-PHP UTF-8 implementation)
 define("LEVENSHTEIN_MAX_CHARS", 1000);

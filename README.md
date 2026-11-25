@@ -21,6 +21,7 @@ A comprehensive collection of useful developer tools built with PHP and modern w
 - ID generator
 - Spin the wheel
 - Dice roller
+- Coin flip
 
 ### Cryptography
 - OpenSSL (AES encryption/decryption)

@@ -39,6 +39,7 @@ function getHandlerRegistry(): array {
         'serialization' => 'handle_serialization',
         'spinwheel' => 'handle_spinwheel',
         'dice_roll' => 'handle_dice_roll',
+        'coin_flip' => 'handle_coin_flip',
         'calc' => 'handle_calculator',
         'currency' => 'handle_currency',
         'qrcode' => 'handle_qrcode',
@@ -1730,10 +1731,55 @@ function handle_dice_roll(array $req): string {
     $list = implode(', ', $rolls);
     $summary = "{$count}d{$sides}: {$list}" . ($count > 1 ? ' = ' . array_sum($rolls) : '');
 
+    return dice_tray_html($rolls, $sides, "Rolled {$list}", $summary);
+}
+
+/**
+ * Markup for a roll that renderDiceRoll() in js/rand.js animates.
+ *
+ * @param int[] $rolls Results, 1..$sides
+ * @param array<int,string> $labels Optional face text by value (e.g. coin H/T); numbers otherwise
+ */
+function dice_tray_html(array $rolls, int $sides, string $ariaLabel, string $summary, array $labels = [], string $trayClass = ''): string {
+    $attrs = "data-dice-rolls='" . json_encode($rolls) . "' data-dice-sides='{$sides}'";
+    if ($labels) {
+        $attrs .= " data-dice-labels='" . htmlspecialchars(json_encode($labels), ENT_QUOTES) . "'";
+    }
+    $class = trim("dice-tray {$trayClass}");
     return "<div class='dice-roll'>"
-        . "<div class='dice-tray' role='img' aria-label='Rolled {$list}' data-dice-rolls='" . json_encode($rolls) . "' data-dice-sides='{$sides}'></div>"
+        . "<div class='{$class}' role='img' aria-label='" . htmlspecialchars($ariaLabel, ENT_QUOTES) . "' {$attrs}></div>"
         . "<div class='dice-summary'>" . output_copyable($summary) . "</div>"
         . "</div>";
+}
+
+/**
+ * Flip coins on the server; drawn with the dice roller's d2 coin (H/T faces).
+ *
+ * @param array $req Request array containing: 'coin_count'
+ * @return string HTML for renderDiceRoll() with a copyable summary, or an error message
+ */
+function handle_coin_flip(array $req): string {
+    $countValidation = req_int_validated($req, 'coin_count', 1, COIN_MAX_COUNT);
+    if (!$countValidation['valid']) {
+        return formatOutput('Number of coins: ' . $countValidation['error'], type: 'danger');
+    }
+    $count = $countValidation['value'];
+
+    $names = [1 => 'Heads', 2 => 'Tails'];
+    $flips = [];
+    for ($i = 0; $i < $count; $i++) {
+        $flips[] = random_int(1, 2);
+    }
+
+    $list = implode(', ', array_map(fn($f) => $names[$f], $flips));
+    $summary = $list;
+    if ($count > 1) {
+        $heads = count(array_keys($flips, 1, true));
+        $tails = $count - $heads;
+        $summary = "{$count} coins: {$list} ({$heads} " . ($heads === 1 ? 'head' : 'heads') . ", {$tails} " . ($tails === 1 ? 'tail' : 'tails') . ")";
+    }
+
+    return dice_tray_html($flips, 2, "Flipped {$list}", $summary, [1 => 'H', 2 => 'T'], 'dice-tray-coin');
 }
 
 function handle_calculator(array $req): string {

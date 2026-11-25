@@ -877,11 +877,17 @@ th.tablehead,
 /* ---------- Dice Roller ---------- */
 .dice-tray {
   --dice-size: 72px;
+  --dice-hue: 129 58%;
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   gap: calc(var(--dice-size) * 0.4);
   padding: 80px 8px 24px;
+}
+
+/* Coin Flip: gold coins (modules/coin_flip.php). */
+.dice-tray-coin {
+  --dice-hue: 43 75%;
 }
 
 .dice-tray-sm {
@@ -918,14 +924,14 @@ th.tablehead,
   left: 0;
   top: 0;
   transform-origin: 0 0;
-  background: hsl(129 58% calc(var(--dice-face-l) - 14%));
+  background: hsl(var(--dice-hue) calc(var(--dice-face-l) - 14%));
   backface-visibility: hidden;
 }
 
 .dice-poly-face-inner {
   position: absolute;
   inset: 0;
-  background: hsl(129 58% var(--dice-face-l));
+  background: hsl(var(--dice-hue) var(--dice-face-l));
 }
 
 .dice-poly-face-rounded {
@@ -933,7 +939,7 @@ th.tablehead,
   align-items: center;
   justify-content: center;
   border-radius: 14%;
-  background: hsl(129 58% var(--dice-face-l));
+  background: hsl(var(--dice-hue) var(--dice-face-l));
   box-shadow: inset 0 0 calc(var(--dice-size) * 0.14) rgba(0, 0, 0, 0.3);
 }
 
@@ -1002,6 +1008,6 @@ th.tablehead,
 /* Dice with too many sides to draw (d61+) roll as a ball, like a real d100. */
 .dice-ball {
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, hsl(129 58% 62%), hsl(129 58% 42%) 45%, hsl(129 58% 22%));
+  background: radial-gradient(circle at 35% 30%, hsl(var(--dice-hue) 62%), hsl(var(--dice-hue) 42%) 45%, hsl(var(--dice-hue) 22%));
   box-shadow: inset 0 0 calc(var(--dice-size) * 0.08) rgba(0, 0, 0, 0.35);
 }

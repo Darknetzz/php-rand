@@ -47,6 +47,11 @@ $navbarItems = [
                 "formalName" => "Dice Roller",
                 "icon"       => icon('dices')
             ],
+            "coin_flip" => [
+                "name"       => "coin_flip",
+                "formalName" => "Coin Flip",
+                "icon"       => icon('coins')
+            ],
         ],
     ],
     "cryptography" => [
