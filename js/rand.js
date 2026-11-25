@@ -4653,7 +4653,12 @@ function addRandomDataButtons($root = null) {
 
     $scope.find(selectors.join(',')).each(function() {
         const $input = $(this);
-        const $inputGroup = $input.closest('.input-group');
+        // Wheel rows are .input-group flex rows: keep their button inline next to the item text
+        const isWheelItemInput = $input.closest('.wheelitem').length > 0;
+        if (isWheelItemInput && (!$input.hasClass('wheelitem-input') || $input.siblings('.random-data-btn').length > 0)) {
+            return;
+        }
+        const $inputGroup = isWheelItemInput ? $() : $input.closest('.input-group');
         const wrapTargetIsGroup = $inputGroup.length > 0;
 
         // Skip if already has a random button
@@ -4679,14 +4684,6 @@ function addRandomDataButtons($root = null) {
 
         // Skip inputs that are part of special controls
         if ($input.closest('.form-selectgroup').length > 0) {
-            return;
-        }
-
-        // Check if this is a wheel item input (handle without wrapping)
-        const isWheelItemInput = $input.hasClass('wheelitem-input') || $input.closest('.wheelitem').length > 0;
-        
-        // Skip if already has a random button (for wheel items)
-        if (isWheelItemInput && ($input.next(".random-data-btn").length > 0 || $input.siblings(".random-data-btn").length > 0)) {
             return;
         }
 
