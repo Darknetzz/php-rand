@@ -38,6 +38,12 @@ function getHandlerRegistry(): array {
         'diff' => 'handle_diff',
         'serialization' => 'handle_serialization',
         'spinwheel' => 'handle_spinwheel',
+        'dice_roll' => 'handle_dice_roll',
+        'coin_flip' => 'handle_coin_flip',
+        'list_shuffle' => 'handle_list_shuffle',
+        'passphrase' => 'handle_passphrase',
+        'eightball' => 'handle_eightball',
+        'card_draw' => 'handle_card_draw',
         'calc' => 'handle_calculator',
         'currency' => 'handle_currency',
         'qrcode' => 'handle_qrcode',
@@ -46,6 +52,9 @@ function getHandlerRegistry(): array {
         'crontab' => 'handle_crontab',
         'brainfuck' => 'handle_brainfuck',
         'genid' => 'handle_genid',
+        'id_decode' => 'handle_id_decode',
+        'lorem' => 'handle_lorem',
+        'fake_data' => 'handle_fake_data',
         'jwt' => 'handle_jwt',
         'shellcheck' => 'handle_shellcheck',
         'syntax_validate' => 'handle_syntax_validate',
@@ -201,6 +210,38 @@ function req_int_validated(array $request, string $key, ?int $min = null, ?int $
 }
 
 /**
+ * Read the seed_field_html() fields: null seed (secure random_int()) when the switch is off
+ * or the seed is empty. An invalid seed is replaced by a generated one, with a warning
+ * (resolve_rng_seed()).
+ *
+ * @return array{valid: bool, seed: ?string, warning: ?string, error?: string}
+ */
+function req_seed(array $request, string $prefix): array {
+    if (!req_bool($request, $prefix . 'useseed') || trim((string) req_get($request, $prefix . 'seed', '')) === '') {
+        return ['valid' => true, 'seed' => null, 'warning' => null];
+    }
+    $validation = req_string($request, $prefix . 'seed', 1, 100);
+    if (!$validation['valid']) {
+        return ['valid' => false, 'seed' => null, 'warning' => null, 'error' => 'Seed: ' . $validation['error']];
+    }
+    return ['valid' => true] + resolve_rng_seed($validation['value']);
+}
+
+/**
+ * Notes shown under seeded output: invalid-seed warning, "not secure" notice and the seed used.
+ * Empty when no seed was used.
+ */
+function rng_seed_notes(?string $seed, ?string $warning): string {
+    if ($seed === null) {
+        return '';
+    }
+    $out = $warning ? formatOutput($warning, 6, "warning") : '';
+    $out .= rng_source_notice('seeded mt_rand() (reproducible)');
+    $out .= "<div class='rng-seed-used'><small><strong>Seed used:</strong> " . htmlspecialchars($seed) . "</small></div>";
+    return $out;
+}
+
+/**
  * Wrap content in a copyable output container
  *
  * @param string $content The content to display and copy
@@ -222,7 +263,7 @@ function output_copyable(string $content, string $label = "", ?array $useAsInput
  * Processes requests to generate random strings with specified character sets
  * and options. Returns formatted output with generated strings and statistics.
  *
- * @param array $req Request array containing: 'digits', 'strings', 'a', 'l', 'u', 'n', 's', 'e', 'c', 'cchars'
+ * @param array $req Request array containing: 'digits', 'strings', 'a', 'l', 'u', 'n', 's', 'e', 'x', 'X', 'c', 'cchars'
  * @return string Formatted HTML output with generated strings or error message
  */
 function handle_stringgen(array $req): string {
@@ -241,7 +282,7 @@ function handle_stringgen(array $req): string {
     $strings = $stringsValidation['value'];
     
     $charsets = '';
-    foreach (['a', 'l', 'u', 'n', 's', 'e', 'c'] as $opt) {
+    foreach (['a', 'l', 'u', 'n', 's', 'e', 'x', 'X', 'c'] as $opt) {
         if (req_bool($req, $opt)) {
             $charsets .= $opt;
         }
@@ -253,16 +294,40 @@ function handle_stringgen(array $req): string {
     
     $cchars = req_get($req, 'cchars', '');
     $cryptoSafe = req_bool($req, 'cryptoSafe');
-    $poolSize = count(stringgen_charset_chars($charsets, $cchars));
+    $avoidAmbiguous = req_bool($req, 'avoidAmbiguous');
+
+    // Optional min/max count per character type; empty field = no limit
+    $limits = ['min' => [], 'max' => []];
+    foreach ($limits as $kind => $_) {
+        foreach (STRINGGEN_CHAR_TYPES as $type => $label) {
+            $raw = trim((string) req_get($req, "{$kind}_$type", ''));
+            if ($raw === '') {
+                continue;
+            }
+            if (!ctype_digit($raw)) {
+                return formatOutput(ucfirst($kind) . " $label must be a whole number of 0 or more.", type: "danger");
+            }
+            $limits[$kind][$type] = (int) $raw;
+        }
+    }
+    ['min' => $min, 'max' => $max] = $limits;
+
+    $pool = stringgen_charset_chars($charsets, $cchars, $avoidAmbiguous);
+    $limitError = stringgen_validate_limits($pool, $length, $max, $min);
+    if ($limitError !== null) {
+        return formatOutput($limitError, type: "danger");
+    }
+    $poolSize = count($pool);
+    $opts = ['avoidAmbiguous' => $avoidAmbiguous, 'min' => $min, 'max' => $max];
 
     $results = [];
     $infoTables = [];
 
     for ($i = 0; $i < $strings; $i++) {
         if ($cryptoSafe) {
-            $string = genStrCrypto($charsets, $length, $cchars);
+            $string = genStrCrypto($charsets, $length, $cchars, $opts);
         } else {
-            $string = genStr($charsets, $length, $cchars);
+            $string = genStr($charsets, $length, $cchars, $opts);
         }
         $results[] = $string;
         
@@ -273,15 +338,15 @@ function handle_stringgen(array $req): string {
         $table .= "<tr><td>SHA256</td><td><pre>" . hash('sha256', $string) . "</pre></td></tr>";
         $table .= "<tr><td>SHA512</td><td><pre>" . hash('sha512', $string) . "</pre></td></tr>";
         $combinations = number_format($poolSize ** $length);
-        $table .= "<tr><td>Possible combinations</td><td><pre>$combinations (" . $poolSize . "^$length)</pre></td></tr>";
+        $limitNote = (empty($max) && empty(array_filter($min))) ? '' : "<br><small>Upper bound: min/max limits reduce this</small>";
+        $table .= "<tr><td>Possible combinations</td><td><pre>$combinations (" . $poolSize . "^$length)</pre>$limitNote</td></tr>";
+        $table .= "<tr><td>Entropy</td><td>" . entropy_badge_html($length * log($poolSize, 2)) . "$limitNote</td></tr>";
         $table .= "</table>";
         $infoTables[] = $table;
     }
 
     $output = "<hr>";
-    if ($cryptoSafe) {
-        $output .= "<div class='alert alert-success mb-3'>" . icon('shield-check') . " <strong>Cryptographically Secure Random</strong> - Generated using random_bytes()</div>";
-    }
+    $output .= rng_source_notice($cryptoSafe ? null : 'array_rand()');
     foreach ($results as $string) {
         $output .= output_copyable($string);
     }
@@ -418,17 +483,11 @@ function handle_numgen(array $req): string {
     }
 
     // Resolve seed: validate custom seed if provided; invalid → use generated seed + warning
-    $seed = null;
-    $seedWarning = null;
-    if (req_bool($req, 'numgenuseseed')) {
-        $seedValidation = req_string($req, 'numgenseed', 1, 100);
-        if (!$seedValidation['valid']) {
-            return formatOutput($seedValidation['error'], type: "danger");
-        }
-        $resolved = resolve_numgen_seed($seedValidation['value']);
-        $seed = $resolved['seed'];
-        $seedWarning = $resolved['warning'];
+    $seedRes = req_seed($req, 'numgen');
+    if (!$seedRes['valid']) {
+        return formatOutput($seedRes['error'], type: "danger");
     }
+    $seed = $seedRes['seed'];
 
     // Validate quantity (1–500)
     $qty = isset($req['numgenqty']) ? (int) $req['numgenqty'] : 1;
@@ -443,10 +502,9 @@ function handle_numgen(array $req): string {
         $separator = ', ';
     }
 
-    // Apply seed once so the same seed gives a reproducible sequence for multiple numbers
-    if ($seed !== null) {
-        mt_srand((int) $seed);
-    }
+    // Secure (random_int) by default; a seed switches to seeded mt_rand once so the
+    // same seed gives a reproducible sequence for multiple numbers.
+    rng_seed($seed !== null ? (int) $seed : null);
 
     $results = [];
     for ($i = 0; $i < $qty; $i++) {
@@ -469,12 +527,8 @@ function handle_numgen(array $req): string {
     $joined = joinNumGenResults($results, $separator);
     $output = output_copyable($joined);
 
-    if ($seedWarning) {
-        $output .= formatOutput($seedWarning, 6, "warning");
-    }
-    if ($seed) {
-        $output .= "<div style='margin-top: 15px; opacity: 0.7;'><small><strong>Seed used:</strong> " . htmlspecialchars($seed) . "</small></div>";
-    }
+    $output .= $seed !== null ? rng_seed_notes($seed, $seedRes['warning']) : rng_source_notice(null);
+    rng_seed(null);
 
     return $output;
 }
@@ -1201,30 +1255,17 @@ function relative_time_formats_table(array $formats): string {
         'unix' => 'Unix (seconds)',
         'unix_ms' => 'Unix (milliseconds)',
     ];
-    $html = '<div class="table-responsive mt-3"><table class="table table-dark table-striped table-hover align-middle mb-0" style="border: 1px solid #334155;">';
-    $html .= '<caption class="text-start fw-bold" style="caption-side: top; color: var(--bs-body-color);">Absolute formats</caption>';
-    $html .= '<thead><tr><th>Format</th><th>Value</th></tr></thead><tbody>';
+    $rows = [];
     foreach ($labels as $key => $label) {
-        if (!isset($formats[$key])) {
-            continue;
+        if (isset($formats[$key])) {
+            $rows[$label] = $formats[$key];
         }
-        $html .= '<tr><td>' . htmlspecialchars($label, ENT_QUOTES, 'UTF-8') . '</td><td style="max-width: 360px;">'
-            . copyableOutput($formats[$key], '') . '</td></tr>';
     }
-    $html .= '</tbody></table></div>';
-    return $html;
+    return copyable_table_html('Absolute formats', $rows);
 }
 
 function relative_time_parts_table(array $parts): string {
-    $html = '<div class="table-responsive mt-3"><table class="table table-dark table-striped table-hover align-middle mb-0" style="border: 1px solid #334155;">';
-    $html .= '<caption class="text-start fw-bold" style="caption-side: top; color: var(--bs-body-color);">Breakdown</caption>';
-    $html .= '<thead><tr><th>Unit</th><th>Value</th></tr></thead><tbody>';
-    foreach ($parts as $name => $val) {
-        $html .= '<tr><td>' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8') . '</td><td>'
-            . copyableOutput((string) $val, '') . '</td></tr>';
-    }
-    $html .= '</tbody></table></div>';
-    return $html;
+    return copyable_table_html('Breakdown', array_map('strval', $parts));
 }
 
 function relative_time_meta_line(DateTimeImmutable $reference, DateTimeImmutable $target, int $signedSeconds): string {
@@ -1264,6 +1305,62 @@ function stringtools_remove_custom_characters(string $string, string $characters
 }
 
 /**
+ * Split text into words for programming-case conversions.
+ *
+ * Splits on anything that is not a letter or digit (spaces, `-`, `_`, `.`, punctuation)
+ * and on camelCase boundaries (`myVarName` → my, Var, Name; `XMLHttp` → XML, Http).
+ * Works on UTF-8 text.
+ *
+ * @return array<int, string>
+ */
+function stringtools_split_words(string $string): array {
+    $words = [];
+    foreach (preg_split('/[^\p{L}\p{M}\p{N}]+/u', $string, -1, PREG_SPLIT_NO_EMPTY) ?: [] as $chunk) {
+        $parts = preg_split('/(?<=[\p{Ll}\p{N}])(?=\p{Lu})|(?<=\p{Lu})(?=\p{Lu}\p{Ll})/u', $chunk, -1, PREG_SPLIT_NO_EMPTY);
+        array_push($words, ...($parts ?: [$chunk]));
+    }
+    return $words;
+}
+
+/**
+ * Upper-case the first character of a UTF-8 word and lower-case the rest.
+ */
+function stringtools_capitalize_word(string $word): string {
+    return mb_strtoupper(mb_substr($word, 0, 1, 'UTF-8'), 'UTF-8') . mb_strtolower(mb_substr($word, 1, null, 'UTF-8'), 'UTF-8');
+}
+
+/**
+ * Convert text to a programming case, one line at a time so lists of names keep their lines.
+ *
+ * @param string $style camel, pascal, snake, constant, kebab or dot
+ */
+function stringtools_convert_case(string $string, string $style): string {
+    $lines = preg_split('/(\r\n|\r|\n)/', $string, -1, PREG_SPLIT_DELIM_CAPTURE) ?: [$string];
+    foreach ($lines as $i => $line) {
+        if ($i % 2 === 1) {
+            continue; // line ending
+        }
+        if ($style === 'kebab') {
+            $line = utf8_to_ascii($line); // URL-friendly: transliterate (blåbær → blabaer)
+        }
+        $words = stringtools_split_words($line);
+        if ($style === 'kebab') {
+            $words = array_values(array_filter(array_map(fn($w) => preg_replace('/[^A-Za-z0-9]/', '', $w), $words), 'strlen'));
+        }
+        $lower = array_map(fn($w) => mb_strtolower($w, 'UTF-8'), $words);
+        $lines[$i] = match ($style) {
+            'camel' => $words ? $lower[0] . implode('', array_map('stringtools_capitalize_word', array_slice($words, 1))) : '',
+            'pascal' => implode('', array_map('stringtools_capitalize_word', $words)),
+            'snake' => implode('_', $lower),
+            'constant' => mb_strtoupper(implode('_', $lower), 'UTF-8'),
+            'kebab' => implode('-', $lower),
+            'dot' => implode('.', $lower),
+        };
+    }
+    return implode('', $lines);
+}
+
+/**
  * Handle string transformation requests
  *
  * Applies various text transformations such as case conversion, whitespace handling,
@@ -1281,11 +1378,16 @@ function handle_stringtools(array $req): string {
         http_response_code(422);
         return formatOutput("Input must be at most 1,000,000 characters.", type: "danger");
     }
+    if (!mb_check_encoding($string, 'UTF-8')) {
+        http_response_code(422);
+        return formatOutput("Input must be valid UTF-8 text.", type: "danger");
+    }
 
     // Validate tool selection
     $allowedTools = [
         'trim', 'removewhitespace', 'reverse', 'repeat', 'shuffle', 'uppercase', 'lowercase',
-        'titlecase', 'camelcase', 'slugify', 'kebabcase', 'randomcase', 'invertedcase',
+        'titlecase', 'camelcase', 'pascalcase', 'snakecase', 'constantcase', 'dotcase',
+        'slugify', 'kebabcase', 'randomcase', 'invertedcase',
         'l33t5p34k', 'crlf2lf', 'lf2crlf', 'formatlineendings', 'removehtmltags',
         'removepunctuation', 'removenewlines', 'removetabs', 'removespaces', 'removeslashes',
         'removebackslashes', 'removenonascii', 'removenonprintable', 'removewhitespaceext',
@@ -1311,24 +1413,28 @@ function handle_stringtools(array $req): string {
     $string = match($tool) {
         'trim' => trim($string),
         'removewhitespace' => preg_replace('/\s+/', '', $string),
-        'reverse' => strrev($string),
+        'reverse' => utf8_reverse($string),
         'repeat' => str_repeat($string, 2),
-        'shuffle' => str_shuffle($string),
+        'shuffle' => utf8_shuffle($string),
         'uppercase' => mb_strtoupper($string, 'UTF-8'),
         'lowercase' => mb_strtolower($string, 'UTF-8'),
         'titlecase' => mb_convert_case($string, MB_CASE_TITLE, 'UTF-8'),
-        'camelcase' => lcfirst(str_replace(' ', '', mb_convert_case($string, MB_CASE_TITLE, 'UTF-8'))),
-        'slugify' => strtolower(preg_replace('/[^a-zA-Z0-9_]/', '', str_replace([" ", "-"], "_", $string))),
-        'kebabcase' => strtolower(preg_replace('/[^a-zA-Z0-9_-]/', '', str_replace([" ", "_"], "-", $string))),
-        'randomcase' => implode('', array_map(fn($c) => (mt_rand(0, 100) >= 50) ? mb_strtoupper($c, 'UTF-8') : mb_strtolower($c, 'UTF-8'), preg_split('//u', $string, -1, PREG_SPLIT_NO_EMPTY))),
-        'invertedcase' => strtr($string, 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ', 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'),
+        'camelcase' => stringtools_convert_case($string, 'camel'),
+        'pascalcase' => stringtools_convert_case($string, 'pascal'),
+        'snakecase' => stringtools_convert_case($string, 'snake'),
+        'constantcase' => stringtools_convert_case($string, 'constant'),
+        'dotcase' => stringtools_convert_case($string, 'dot'),
+        'slugify' => strtolower(preg_replace('/[^a-zA-Z0-9_]/', '', str_replace([" ", "-"], "_", utf8_to_ascii($string)))),
+        'kebabcase' => stringtools_convert_case($string, 'kebab'),
+        'randomcase' => implode('', array_map(fn($c) => (mt_rand(0, 100) >= 50) ? mb_strtoupper($c, 'UTF-8') : mb_strtolower($c, 'UTF-8'), utf8_chars($string))),
+        'invertedcase' => utf8_invert_case($string),
         'l33t5p34k' => str_replace(['a','e','o','t','l','s','b','A','E','O','T','L','S','B'], ['4','3','0','7','1','5','6','4','3','0','7','1','5','6'], $string),
         'crlf2lf' => stringtools_normalize_line_endings_to_lf($string),
         'lf2crlf' => stringtools_convert_line_endings_to_crlf($string),
         'formatlineendings' => stringtools_normalize_line_endings_to_lf($string),
         'removecustomcharacters' => stringtools_remove_custom_characters($string, (string) req_get($req, 'custom_characters', '')),
         'removehtmltags' => strip_tags($string),
-        'removepunctuation' => preg_replace('/[^\w\s]/', '', $string),
+        'removepunctuation' => preg_replace('/[^\p{L}\p{M}\p{N}_\s]/u', '', $string),
         'removenewlines' => str_replace(["\r\n", "\r", "\n"], '', $string),
         'removetabs' => str_replace("\t", '', $string),
         'removespaces' => str_replace(" ", '', $string),
@@ -1338,9 +1444,9 @@ function handle_stringtools(array $req): string {
         'removenonprintable' => preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', $string),
         'removewhitespaceext' => preg_replace('/\s+/', '', $string),
         'removenumbers' => preg_replace('/\d/', '', $string),
-        'removeletters' => preg_replace('/[a-zA-Z]/', '', $string),
-        'removesymbols' => preg_replace('/[^a-zA-Z0-9\s]/', '', $string),
-        'removeextendedsymbols' => preg_replace('/[^a-zA-Z0-9\s\-_.]/', '', $string),
+        'removeletters' => preg_replace('/[\p{L}\p{M}]/u', '', $string),
+        'removesymbols' => preg_replace('/[^\p{L}\p{M}\p{N}\s]/u', '', $string),
+        'removeextendedsymbols' => preg_replace('/[^\p{L}\p{M}\p{N}\s\-_.]/u', '', $string),
         default => $string
     };
 
@@ -1402,16 +1508,17 @@ function handle_levenshtein(array $req): string {
     $ins = max(0, req_int($req, 'insertion_cost', 1));
     $rep = max(0, req_int($req, 'replacement_cost', 1));
     $del = max(0, req_int($req, 'deletion_cost', 1));
-    if (strlen($s1) > 255 || strlen($s2) > 255) {
+    if (!mb_check_encoding($s1, 'UTF-8') || !mb_check_encoding($s2, 'UTF-8')) {
+        return formatOutput('Input must be valid UTF-8 text.', type: 'danger');
+    }
+    $max = LEVENSHTEIN_MAX_CHARS;
+    if (mb_strlen($s1, 'UTF-8') > $max || mb_strlen($s2, 'UTF-8') > $max) {
         return formatOutput(
-            'Each string must be at most 255 characters for Levenshtein distance (PHP limit). Shorten the input or compare smaller chunks.',
+            'Each string must be at most ' . number_format($max) . ' characters for Levenshtein distance. Shorten the input or compare smaller chunks.',
             type: 'warning'
         );
     }
-    $dist = levenshtein($s1, $s2, $ins, $rep, $del);
-    if ($dist < 0) {
-        return formatOutput('Could not compute distance (invalid arguments or empty strings).', type: 'danger');
-    }
+    $dist = utf8_levenshtein($s1, $s2, $ins, $rep, $del);
     $body = '<p class="lead mb-2"><strong>Distance:</strong> ' . (int) $dist . '</p>';
     $body .= '<p class="text-muted small mb-0">Costs used — insertion: ' . $ins . ', replacement: ' . $rep . ', deletion: ' . $del . '</p>';
     return formatOutput($body);
@@ -1670,12 +1777,585 @@ function handle_spinwheel(array $req): string {
             }
         }
     } else {
-        $pick = $labels[array_rand($labels)];
+        $pick = rng_pick($labels);
     }
     return formatOutput(
         '<div class="alert alert-success mb-0">Winner: <strong>'
         . htmlspecialchars($pick, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</strong></div>'
     );
+}
+
+/**
+ * Roll dice on the server; renderDiceRoll() in js/rand.js animates the result.
+ *
+ * @param array $req Request array containing: 'dice_count', 'dice_sides', optional 'dice_useseed' + 'dice_seed'
+ * @return string HTML with the rolls in data attributes and a copyable summary, or an error message
+ */
+function handle_dice_roll(array $req): string {
+    $notation = trim((string) req_get($req, 'dice_notation', ''));
+    if ($notation !== '') {
+        return handle_dice_notation_roll($notation, $req);
+    }
+    $countValidation = req_int_validated($req, 'dice_count', 1, DICE_MAX_COUNT);
+    if (!$countValidation['valid']) {
+        return formatOutput('Number of dice: ' . $countValidation['error'], type: 'danger');
+    }
+    $sidesValidation = req_int_validated($req, 'dice_sides', DICE_MIN_SIDES, DICE_MAX_SIDES);
+    if (!$sidesValidation['valid']) {
+        return formatOutput('Sides per die: ' . $sidesValidation['error'], type: 'danger');
+    }
+    $seedRes = req_seed($req, 'dice_');
+    if (!$seedRes['valid']) {
+        return formatOutput($seedRes['error'], type: 'danger');
+    }
+    $count = $countValidation['value'];
+    $sides = $sidesValidation['value'];
+
+    rng_seed($seedRes['seed'] !== null ? (int) $seedRes['seed'] : null);
+    $rolls = [];
+    for ($i = 0; $i < $count; $i++) {
+        $rolls[] = rng_int(1, $sides);
+    }
+    rng_seed(null);
+
+    $list = implode(', ', $rolls);
+    $summary = "{$count}d{$sides}: {$list}" . ($count > 1 ? ' = ' . array_sum($rolls) : '');
+
+    return dice_tray_html($rolls, $sides, "Rolled {$list}", $summary, historyTool: 'dice_roll')
+        . rng_seed_notes($seedRes['seed'], $seedRes['warning']);
+}
+
+/**
+ * Parse tabletop dice notation: terms like `3d6`, `d%` (d100), `4d6kh3` / `4d6dl1`
+ * (keep highest / drop lowest; also kl, dh, and k = kh, d = dl) and constants,
+ * joined with + or - (`1d20+2d6+3`). Spaces and case are ignored.
+ *
+ * @return array{valid: bool, error?: string, terms?: list<array{sign: int, count?: int, sides?: int, keep?: string, keepN?: int, value?: int, label: string}>}
+ */
+function parse_dice_notation(string $notation): array {
+    $expr = strtolower((string) preg_replace('/\s+/', '', $notation));
+    if ($expr === '') {
+        return ['valid' => false, 'error' => 'Enter a dice expression like 2d6+3.'];
+    }
+    if (strlen($expr) > DICE_NOTATION_MAX_LENGTH) {
+        return ['valid' => false, 'error' => 'Dice expression is too long (max ' . DICE_NOTATION_MAX_LENGTH . ' characters).'];
+    }
+    $termRe = '/\G([+-]?)(?:(\d*)d(\d+|%)(?:(kh|kl|dh|dl|k|d)(\d+))?|(\d+))/';
+    $terms = [];
+    $pos = 0;
+    $totalDice = 0;
+    $groups = 0;
+    while ($pos < strlen($expr)) {
+        if (!preg_match($termRe, $expr, $m, 0, $pos) || ($pos > 0 && $m[1] === '')) {
+            return ['valid' => false, 'error' => 'Could not read the dice expression at "' . substr($expr, $pos) . '". Use terms like 2d6, 4d6kh3, d% or 5, joined with + or -.'];
+        }
+        $pos += strlen($m[0]);
+        $sign = ($m[1] ?? '') === '-' ? -1 : 1;
+        if (isset($m[6]) && $m[6] !== '') {
+            $value = (int) $m[6];
+            if (strlen($m[6]) > 7 || $value > DICE_NOTATION_MAX_CONSTANT) {
+                return ['valid' => false, 'error' => 'Constants can be at most ' . DICE_NOTATION_MAX_CONSTANT . '.'];
+            }
+            $terms[] = ['sign' => $sign, 'value' => $value, 'label' => (string) $value];
+            continue;
+        }
+        $count = $m[2] === '' ? 1 : (int) $m[2];
+        $sides = $m[3] === '%' ? 100 : (int) $m[3];
+        if ($count < 1 || strlen($m[2]) > 4) {
+            return ['valid' => false, 'error' => "Each group needs 1–" . DICE_MAX_COUNT . " dice (got {$m[2]})."];
+        }
+        if ($sides < DICE_MIN_SIDES || $sides > DICE_MAX_SIDES || strlen($m[3]) > 5) {
+            return ['valid' => false, 'error' => 'Dice need ' . DICE_MIN_SIDES . '–' . DICE_MAX_SIDES . " sides (got d{$m[3]})."];
+        }
+        $term = ['sign' => $sign, 'count' => $count, 'sides' => $sides, 'label' => "{$count}d" . ($m[3] === '%' ? '%' : $sides)];
+        if (($m[4] ?? '') !== '') {
+            $keep = ['k' => 'kh', 'd' => 'dl'][$m[4]] ?? $m[4];
+            $n = (int) $m[5];
+            $isKeep = $keep[0] === 'k';
+            if (strlen($m[5]) > 4 || ($isKeep && ($n < 1 || $n > $count)) || (!$isKeep && ($n < 1 || $n >= $count))) {
+                return ['valid' => false, 'error' => $isKeep
+                    ? "Can only keep 1–{$count} of {$term['label']}."
+                    : "Can only drop 1–" . ($count - 1) . " of {$term['label']}."];
+            }
+            $term['keep'] = $keep;
+            $term['keepN'] = $n;
+            $term['label'] .= $keep . $n;
+        }
+        $totalDice += $count;
+        $groups++;
+        $terms[] = $term;
+    }
+    if ($groups === 0) {
+        return ['valid' => false, 'error' => 'The expression needs at least one dice group, like 1d20.'];
+    }
+    if ($groups > DICE_NOTATION_MAX_GROUPS) {
+        return ['valid' => false, 'error' => 'At most ' . DICE_NOTATION_MAX_GROUPS . ' dice groups per roll.'];
+    }
+    if ($totalDice > DICE_MAX_COUNT) {
+        return ['valid' => false, 'error' => 'At most ' . DICE_MAX_COUNT . " dice per roll (this expression has {$totalDice})."];
+    }
+    return ['valid' => true, 'terms' => $terms];
+}
+
+/**
+ * Which rolls of one keep/drop group are dropped.
+ *
+ * @param int[] $rolls
+ * @return array<int,bool> Dropped flags by roll index
+ */
+function dice_dropped_flags(array $rolls, string $keep, int $n): array {
+    $order = array_keys($rolls);
+    // Lowest first; ties keep their roll order so the result is stable.
+    usort($order, fn($a, $b) => [$rolls[$a], $a] <=> [$rolls[$b], $b]);
+    $count = count($rolls);
+    $drop = match ($keep) {
+        'kh' => array_slice($order, 0, $count - $n),
+        'kl' => array_slice($order, $n),
+        'dh' => array_slice($order, $count - $n),
+        'dl' => array_slice($order, 0, $n),
+        default => [],
+    };
+    $flags = array_fill(0, $count, false);
+    foreach ($drop as $i) {
+        $flags[$i] = true;
+    }
+    return $flags;
+}
+
+/**
+ * Roll a dice-notation expression (parse_dice_notation()); summary like
+ * `4d6kh3+3: [6, 5, 3, (1)] + 3 = 17`, dropped dice in parentheses.
+ */
+function handle_dice_notation_roll(string $notation, array $req): string {
+    $parsed = parse_dice_notation($notation);
+    if (!$parsed['valid']) {
+        return formatOutput($parsed['error'], type: 'danger');
+    }
+    $seedRes = req_seed($req, 'dice_');
+    if (!$seedRes['valid']) {
+        return formatOutput($seedRes['error'], type: 'danger');
+    }
+
+    rng_seed($seedRes['seed'] !== null ? (int) $seedRes['seed'] : null);
+    $rolls = [];
+    $dieSides = [];
+    $dropped = [];
+    $parts = [];
+    $total = 0;
+    $expr = '';
+    foreach ($parsed['terms'] as $i => $term) {
+        $expr .= ($term['sign'] < 0 ? '-' : ($i > 0 ? '+' : '')) . $term['label'];
+        $op = $i === 0 ? ($term['sign'] < 0 ? '-' : '') : ($term['sign'] < 0 ? ' - ' : ' + ');
+        if (isset($term['value'])) {
+            $total += $term['sign'] * $term['value'];
+            $parts[] = $op . $term['value'];
+            continue;
+        }
+        $group = [];
+        for ($j = 0; $j < $term['count']; $j++) {
+            $group[] = rng_int(1, $term['sides']);
+        }
+        $flags = isset($term['keep'])
+            ? dice_dropped_flags($group, $term['keep'], $term['keepN'])
+            : array_fill(0, count($group), false);
+        $shown = [];
+        foreach ($group as $j => $r) {
+            $rolls[] = $r;
+            $dieSides[] = $term['sides'];
+            $dropped[] = $flags[$j];
+            $shown[] = $flags[$j] ? "({$r})" : (string) $r;
+            if (!$flags[$j]) {
+                $total += $term['sign'] * $r;
+            }
+        }
+        $parts[] = $op . '[' . implode(', ', $shown) . ']';
+    }
+    rng_seed(null);
+
+    $summary = "{$expr}: " . implode('', $parts) . " = {$total}";
+    $kept = [];
+    foreach ($rolls as $i => $r) {
+        $kept[] = $dropped[$i] ? "{$r} (dropped)" : (string) $r;
+    }
+
+    return dice_tray_html($rolls, max($dieSides), "Rolled {$expr}: " . implode(', ', $kept) . ", total {$total}", $summary,
+            historyTool: 'dice_roll', dieSides: $dieSides, dropped: $dropped)
+        . rng_seed_notes($seedRes['seed'], $seedRes['warning']);
+}
+
+/**
+ * Attributes that make rand.js add a result to a result_history_html() list
+ * (recordResultHistory()). Empty when $tool is empty.
+ *
+ * @param array<string,int> $tally Counts added to the history's running tally
+ */
+function result_history_attrs(string $tool, string $text, array $tally = []): string {
+    if ($tool === '') {
+        return '';
+    }
+    $attrs = " data-history-tool='" . htmlspecialchars($tool, ENT_QUOTES) . "'"
+        . " data-history-text='" . htmlspecialchars($text, ENT_QUOTES) . "'";
+    if ($tally) {
+        $attrs .= " data-history-tally='" . htmlspecialchars(json_encode($tally), ENT_QUOTES) . "'";
+    }
+    return $attrs;
+}
+
+/**
+ * Markup for a roll that renderDiceRoll() in js/rand.js animates.
+ *
+ * @param int[] $rolls Results, 1..$sides
+ * @param array<int,string> $labels Optional face text by value (e.g. coin H/T); numbers otherwise
+ * @param string $historyTool result_history_html() key that records $summary once the roll lands
+ * @param array<string,int> $tally Counts added to that history's running tally (e.g. Heads/Tails)
+ * @param int[] $dieSides Sides of each die when they differ (dice notation); $sides otherwise
+ * @param bool[] $dropped Dice dropped by keep/drop notation, drawn dimmed
+ */
+function dice_tray_html(array $rolls, int $sides, string $ariaLabel, string $summary, array $labels = [], string $trayClass = '', string $historyTool = '', array $tally = [], array $dieSides = [], array $dropped = []): string {
+    $attrs = "data-dice-rolls='" . json_encode($rolls) . "' data-dice-sides='{$sides}'";
+    if ($dieSides) {
+        $attrs .= " data-dice-sides-list='" . json_encode(array_values($dieSides)) . "'";
+    }
+    if (in_array(true, $dropped, true)) {
+        $attrs .= " data-dice-dropped='" . json_encode(array_values($dropped)) . "'";
+    }
+    if ($labels) {
+        $attrs .= " data-dice-labels='" . htmlspecialchars(json_encode($labels), ENT_QUOTES) . "'";
+    }
+    $class = trim("dice-tray {$trayClass}");
+    return "<div class='dice-roll'" . result_history_attrs($historyTool, $summary, $tally) . ">"
+        . "<div class='{$class}' role='img' aria-label='" . htmlspecialchars($ariaLabel, ENT_QUOTES) . "' {$attrs}></div>"
+        . "<div class='dice-summary'>" . output_copyable($summary) . "</div>"
+        . "</div>";
+}
+
+/**
+ * Flip coins on the server; drawn with the dice roller's d2 coin (H/T faces).
+ *
+ * @param array $req Request array containing: 'coin_count', optional 'coin_useseed' + 'coin_seed'
+ * @return string HTML for renderDiceRoll() with a copyable summary, or an error message
+ */
+function handle_coin_flip(array $req): string {
+    $countValidation = req_int_validated($req, 'coin_count', 1, COIN_MAX_COUNT);
+    if (!$countValidation['valid']) {
+        return formatOutput('Number of coins: ' . $countValidation['error'], type: 'danger');
+    }
+    $seedRes = req_seed($req, 'coin_');
+    if (!$seedRes['valid']) {
+        return formatOutput($seedRes['error'], type: 'danger');
+    }
+    $count = $countValidation['value'];
+
+    $names = [1 => 'Heads', 2 => 'Tails'];
+    rng_seed($seedRes['seed'] !== null ? (int) $seedRes['seed'] : null);
+    $flips = [];
+    for ($i = 0; $i < $count; $i++) {
+        $flips[] = rng_int(1, 2);
+    }
+    rng_seed(null);
+
+    $list = implode(', ', array_map(fn($f) => $names[$f], $flips));
+    $summary = $list;
+    $heads = count(array_keys($flips, 1, true));
+    $tails = $count - $heads;
+    if ($count > 1) {
+        $summary = "{$count} coins: {$list} ({$heads} " . ($heads === 1 ? 'head' : 'heads') . ", {$tails} " . ($tails === 1 ? 'tail' : 'tails') . ")";
+    }
+
+    return dice_tray_html($flips, 2, "Flipped {$list}", $summary, [1 => 'H', 2 => 'T'], 'dice-tray-coin', 'coin_flip', ['Heads' => $heads, 'Tails' => $tails])
+        . rng_seed_notes($seedRes['seed'], $seedRes['warning']);
+}
+
+/**
+ * Passphrase generator: words from the EFF large wordlist picked with rng_pick() (random_int()).
+ *
+ * @param array $req Request array containing: 'pp_words', 'pp_count', 'pp_separator' (hyphen|space|dot|underscore|none),
+ *                   'pp_case' (none|first|random), optional 'pp_digit', 'pp_symbol'
+ * @return string Copyable passphrase(s) with an entropy badge, or an error message
+ */
+function handle_passphrase(array $req): string {
+    $wordsV = req_int_validated($req, 'pp_words', PASSPHRASE_MIN_WORDS, PASSPHRASE_MAX_WORDS);
+    if (!$wordsV['valid']) {
+        return formatOutput('Number of words: ' . $wordsV['error'], type: 'danger');
+    }
+    $countV = req_int_validated($req, 'pp_count', 1, PASSPHRASE_MAX_COUNT);
+    if (!$countV['valid']) {
+        return formatOutput('Number of passphrases: ' . $countV['error'], type: 'danger');
+    }
+    $separators = ['hyphen' => '-', 'space' => ' ', 'dot' => '.', 'underscore' => '_', 'none' => ''];
+    $sepKey = (string) req_get($req, 'pp_separator', 'hyphen');
+    $case = (string) req_get($req, 'pp_case', 'none');
+    if (!isset($separators[$sepKey]) || !in_array($case, ['none', 'first', 'random'], true)) {
+        return formatOutput('Invalid separator or capitalisation.', type: 'danger');
+    }
+    $wordlist = passphrase_wordlist();
+    if (count($wordlist) < 2) {
+        return formatOutput('The word list (includes/data/eff_large_wordlist.txt) is missing.', type: 'danger');
+    }
+    $words = $wordsV['value'];
+    $addDigit = req_bool($req, 'pp_digit');
+    $addSymbol = req_bool($req, 'pp_symbol');
+    $symbols = utf8_chars(PASSPHRASE_SYMBOLS);
+
+    rng_seed(null); // always secure
+    $results = [];
+    for ($n = 0; $n < $countV['value']; $n++) {
+        $picked = [];
+        for ($i = 0; $i < $words; $i++) {
+            $word = rng_pick($wordlist);
+            if ($case === 'first' || ($case === 'random' && rng_int(0, 1) === 1)) {
+                $word = ucfirst($word);
+            }
+            $picked[] = $word;
+        }
+        $phrase = implode($separators[$sepKey], $picked);
+        if ($addDigit) {
+            $phrase .= (string) rng_int(0, 9);
+        }
+        if ($addSymbol) {
+            $phrase .= rng_pick($symbols);
+        }
+        $results[] = $phrase;
+    }
+
+    // Each word adds log2(list size); random capitalisation 1 bit per word; extras their own pool.
+    $bits = $words * log(count($wordlist), 2)
+        + ($case === 'random' ? $words : 0)
+        + ($addDigit ? log(10, 2) : 0)
+        + ($addSymbol ? log(count($symbols), 2) : 0);
+
+    $count = count($results);
+    $out = "<div class='passphrase-meta'>" . entropy_badge_html($bits)
+        . " <small class='text-muted'>{$words} words from a " . number_format(count($wordlist)) . "-word list"
+        . ($addDigit ? ' + digit' : '') . ($addSymbol ? ' + symbol' : '') . "</small></div>";
+    $out .= output_copyable(implode("\n", $results), $count > 1 ? "{$count} passphrases" : '');
+    $out .= rng_source_notice(null);
+    return $out;
+}
+
+/**
+ * Magic 8-ball answers (original wording): 10 positive, 5 neutral, 5 negative.
+ *
+ * @return array<string, list<string>> Answers by tone
+ */
+function eightball_answers(): array {
+    return [
+        'positive' => [
+            'Absolutely.', 'Everything lines up: yes.', 'Yes, go for it.', 'No question about it.',
+            'The odds are in your favour.', 'Count on it.', 'Looks good from here.',
+            'Yes, and sooner than you think.', 'It\'s a safe bet.', 'The stars agree.',
+        ],
+        'neutral' => [
+            'Hard to say right now.', 'Ask again after a coffee.', 'The picture is still blurry.',
+            'Could go either way.', 'Not enough information yet.',
+        ],
+        'negative' => [
+            'Not likely.', 'I wouldn\'t bet on it.', 'The answer is no.', 'Doubtful at best.', 'Better not.',
+        ],
+    ];
+}
+
+/**
+ * Magic 8-ball / yes-no answer, picked server-side with rng_pick(); the ball reveal is CSS (style.css).
+ *
+ * @param array $req Request array containing: 'eightball_mode' (eightball|yesno), optional 'eightball_question',
+ *                   optional 'eightball_useseed' + 'eightball_seed'
+ * @return string The ball with the answer, a copyable summary and history attributes, or an error message
+ */
+function handle_eightball(array $req): string {
+    $mode = req_get($req, 'eightball_mode', 'eightball') === 'yesno' ? 'yesno' : 'eightball';
+    $question = trim((string) req_get($req, 'eightball_question', ''));
+    if (!mb_check_encoding($question, 'UTF-8') || mb_strlen($question, 'UTF-8') > EIGHTBALL_MAX_QUESTION) {
+        return formatOutput('The question must be valid text of at most ' . EIGHTBALL_MAX_QUESTION . ' characters.', type: 'danger');
+    }
+    $seedRes = req_seed($req, 'eightball_');
+    if (!$seedRes['valid']) {
+        return formatOutput($seedRes['error'], type: 'danger');
+    }
+
+    rng_seed($seedRes['seed'] !== null ? (int) $seedRes['seed'] : null);
+    if ($mode === 'yesno') {
+        [$answer, $tone] = rng_int(0, 1) === 1 ? ['Yes', 'positive'] : ['No', 'negative'];
+    } else {
+        $all = [];
+        foreach (eightball_answers() as $t => $list) {
+            foreach ($list as $a) {
+                $all[] = [$a, $t];
+            }
+        }
+        [$answer, $tone] = rng_pick($all);
+    }
+    rng_seed(null);
+
+    $summary = $question !== '' ? "Q: {$question}\nA: {$answer}" : $answer;
+    $h = fn(string $v) => htmlspecialchars($v, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    return "<div class='eightball-result'" . result_history_attrs('eightball', $question !== '' ? "{$question} → {$answer}" : $answer) . ">"
+        . ($question !== '' ? "<div class='eightball-question'>“" . $h($question) . "”</div>" : '')
+        . "<div class='eightball eightball-{$tone}' role='img' aria-label='" . $h("Answer: {$answer}") . "'>"
+        . "<div class='eightball-window'><span class='eightball-answer'>" . $h($answer) . "</span></div></div>"
+        . "<div class='eightball-summary'>" . output_copyable($summary) . "</div>"
+        . "</div>"
+        . rng_seed_notes($seedRes['seed'], $seedRes['warning']);
+}
+
+/**
+ * A 52-card deck (A–K in ♠♥♦♣), optionally with a red and a black joker.
+ *
+ * @return list<array{rank: string, suit: string, name: string, red: bool}>
+ */
+function card_deck(bool $jokers = false): array {
+    $suits = ['♠' => ['spades', false], '♥' => ['hearts', true], '♦' => ['diamonds', true], '♣' => ['clubs', false]];
+    $ranks = ['A' => 'Ace', '2' => 'Two', '3' => 'Three', '4' => 'Four', '5' => 'Five', '6' => 'Six', '7' => 'Seven',
+        '8' => 'Eight', '9' => 'Nine', '10' => 'Ten', 'J' => 'Jack', 'Q' => 'Queen', 'K' => 'King'];
+    $deck = [];
+    foreach ($suits as $suit => [$suitName, $red]) {
+        foreach ($ranks as $rank => $rankName) {
+            $deck[] = ['rank' => $rank, 'suit' => $suit, 'name' => "{$rankName} of {$suitName}", 'red' => $red];
+        }
+    }
+    if ($jokers) {
+        $deck[] = ['rank' => 'Joker', 'suit' => '★', 'name' => 'Red joker', 'red' => true];
+        $deck[] = ['rank' => 'Joker', 'suit' => '★', 'name' => 'Black joker', 'red' => false];
+    }
+    return $deck;
+}
+
+/**
+ * Draw cards without replacement from a shuffled deck (rng_shuffle(): random_int(), or seeded mt_rand()).
+ *
+ * @param array $req Request array containing: 'card_count', optional 'card_jokers', optional 'card_useseed' + 'card_seed'
+ * @return string Dealt cards (CSS deal animation), a copyable summary and history attributes, or an error message
+ */
+function handle_card_draw(array $req): string {
+    $deck = card_deck(req_bool($req, 'card_jokers'));
+    $countV = req_int_validated($req, 'card_count', 1, count($deck));
+    if (!$countV['valid']) {
+        return formatOutput('Number of cards: ' . $countV['error'], type: 'danger');
+    }
+    $seedRes = req_seed($req, 'card_');
+    if (!$seedRes['valid']) {
+        return formatOutput($seedRes['error'], type: 'danger');
+    }
+
+    rng_seed($seedRes['seed'] !== null ? (int) $seedRes['seed'] : null);
+    $hand = array_slice(rng_shuffle($deck), 0, $countV['value']);
+    rng_seed(null);
+
+    $short = fn(array $c) => $c['rank'] === 'Joker' ? $c['name'] : $c['rank'] . $c['suit'];
+    $summary = implode(', ', array_map($short, $hand));
+    $cards = '';
+    foreach ($hand as $i => $c) {
+        $color = $c['red'] ? 'playing-card-red' : 'playing-card-black';
+        $joker = $c['rank'] === 'Joker' ? ' playing-card-joker' : '';
+        $corner = "<span class='playing-card-corner'>{$c['rank']}<br>{$c['suit']}</span>";
+        $cards .= "<div class='playing-card {$color}{$joker}' style='--i: {$i}' role='img' aria-label='" . htmlspecialchars($c['name'], ENT_QUOTES) . "'>"
+            . $corner . "<span class='playing-card-pip'>{$c['suit']}</span>"
+            . "<span class='playing-card-corner playing-card-corner-end'>{$c['rank']}<br>{$c['suit']}</span></div>";
+    }
+    $n = count($hand);
+    return "<div class='card-draw'" . result_history_attrs('card_draw', $summary) . ">"
+        . "<div class='card-draw-table'>{$cards}</div>"
+        . "<div class='card-draw-summary'>" . output_copyable($summary, $n > 1 ? "{$n} cards" : '') . "</div>"
+        . "</div>"
+        . rng_seed_notes($seedRes['seed'], $seedRes['warning']);
+}
+
+/**
+ * Deal items round-robin into $groups groups, so group sizes differ by at most one.
+ *
+ * @return array<int, array<int, string>>
+ */
+function list_shuffle_deal(array $items, int $groups): array {
+    $out = array_fill(0, $groups, []);
+    foreach (array_values($items) as $i => $item) {
+        $out[$i % $groups][] = $item;
+    }
+    return $out;
+}
+
+/**
+ * List Shuffler: shuffle a list, pick N items, or split it into groups (server-side, rng_shuffle()).
+ *
+ * @param array $req Request array containing: 'list_items' (one per line), 'list_mode' (shuffle|pick|groups),
+ *                   'list_pick', 'list_group_by' (count|size), 'list_group_n', optional 'list_dedupe',
+ *                   optional 'list_useseed' + 'list_seed'
+ * @return string Copyable result(s) with the RNG notice, or an error message
+ */
+function handle_list_shuffle(array $req): string {
+    $raw = (string) req_get($req, 'list_items', '');
+    if (strlen($raw) > LIST_SHUFFLE_MAX_BYTES) {
+        return formatOutput('The list must be at most ' . number_format(LIST_SHUFFLE_MAX_BYTES) . ' bytes.', type: 'danger');
+    }
+    if (!mb_check_encoding($raw, 'UTF-8')) {
+        return formatOutput('The list must be valid UTF-8 text.', type: 'danger');
+    }
+    $items = array_values(array_filter(array_map('trim', preg_split('/\r\n|\r|\n/', $raw)), fn($l) => $l !== ''));
+    $removed = 0;
+    if (req_bool($req, 'list_dedupe')) {
+        $unique = array_values(array_unique($items));
+        $removed = count($items) - count($unique);
+        $items = $unique;
+    }
+    $total = count($items);
+    if ($total === 0) {
+        return formatOutput('Enter at least one item, one per line.', type: 'danger');
+    }
+    if ($total > LIST_SHUFFLE_MAX_ITEMS) {
+        return formatOutput('The list can have at most ' . number_format(LIST_SHUFFLE_MAX_ITEMS) . " items ({$total} given).", type: 'danger');
+    }
+
+    $mode = (string) req_get($req, 'list_mode', 'shuffle');
+    if (!in_array($mode, ['shuffle', 'pick', 'groups'], true)) {
+        return formatOutput('Invalid mode.', type: 'danger');
+    }
+    $n = 0;
+    $groupBy = req_get($req, 'list_group_by', 'count') === 'size' ? 'size' : 'count';
+    if ($mode === 'pick') {
+        $v = req_int_validated($req, 'list_pick', 1, $total);
+        if (!$v['valid']) {
+            return formatOutput('Number to pick: ' . $v['error'], type: 'danger');
+        }
+        $n = $v['value'];
+    } elseif ($mode === 'groups') {
+        $v = req_int_validated($req, 'list_group_n', 1, $total);
+        if (!$v['valid']) {
+            return formatOutput(($groupBy === 'size' ? 'Items per group: ' : 'Number of groups: ') . $v['error'], type: 'danger');
+        }
+        $n = $v['value'];
+    }
+
+    $seedRes = req_seed($req, 'list_');
+    if (!$seedRes['valid']) {
+        return formatOutput($seedRes['error'], type: 'danger');
+    }
+    rng_seed($seedRes['seed'] !== null ? (int) $seedRes['seed'] : null);
+    $shuffled = rng_shuffle($items);
+    rng_seed(null);
+
+    $itemWord = fn(int $c) => $c === 1 ? 'item' : 'items';
+    if ($mode === 'shuffle') {
+        $out = output_copyable(implode("\n", $shuffled), "Shuffled {$total} {$itemWord($total)}");
+    } elseif ($mode === 'pick') {
+        $out = output_copyable(implode("\n", array_slice($shuffled, 0, $n)), "Picked {$n} of {$total}");
+    } else {
+        $groupCount = $groupBy === 'size' ? (int) ceil($total / $n) : $n;
+        $groups = list_shuffle_deal($shuffled, $groupCount);
+        $out = "<div class='row g-3'>";
+        $all = [];
+        foreach ($groups as $i => $group) {
+            $label = 'Group ' . ($i + 1) . ' (' . count($group) . ')';
+            $out .= "<div class='col-md-6 col-xl-4'>" . output_copyable(implode("\n", $group), $label) . "</div>";
+            $all[] = $label . ":\n" . implode("\n", $group);
+        }
+        $out .= "</div>";
+        $out .= output_copyable(implode("\n\n", $all), "All {$groupCount} groups");
+    }
+
+    if ($removed > 0) {
+        $out .= formatOutput("Removed {$removed} duplicate " . ($removed === 1 ? 'line' : 'lines') . '.', 6, 'info');
+    }
+    $out .= $seedRes['seed'] !== null ? rng_seed_notes($seedRes['seed'], $seedRes['warning']) : rng_source_notice(null);
+    return $out;
 }
 
 function handle_calculator(array $req): string {
@@ -3400,6 +4080,374 @@ function handle_genid(array $req): string {
     $output .= "<div style='margin-top: 8px; font-size: 0.85rem; opacity: 0.75;'>Generated <strong>{$qty}</strong> ID" . ($qty > 1 ? "s" : "") . ".</div>";
 
     return $output;
+}
+
+/**
+ * Guess an ID's type: 'uuid', 'ulid', 'snowflake' or null.
+ */
+function id_detect_type(string $id): ?string {
+    if (preg_match('/^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}$/i', $id)) {
+        return 'uuid';
+    }
+    if (preg_match('/^[0-7][0-9A-HJKMNP-TV-Z]{25}$/i', $id)) {
+        return 'ulid';
+    }
+    if (preg_match('/^\d{1,20}$/', $id)) {
+        return 'snowflake';
+    }
+    return null;
+}
+
+/**
+ * Time rows for a decoded ID: UTC, the chosen timezone, ISO 8601, Unix ms and relative.
+ *
+ * @param int $unixMs Milliseconds since the Unix epoch
+ * @param string $precision Extra sub-millisecond digits to show (UUID v1/v6 100 ns ticks)
+ * @return array<string,string>
+ */
+function id_decode_time_rows(int $unixMs, DateTimeZone $tz, string $precision = ''): array {
+    $seconds = intdiv($unixMs, 1000);
+    $msPart = $unixMs % 1000;
+    if ($msPart < 0) {
+        $seconds--;
+        $msPart += 1000;
+    }
+    $utc = (new DateTimeImmutable('@' . $seconds))->setTimezone(new DateTimeZone('UTC'));
+    $local = $utc->setTimezone($tz);
+    $frac = sprintf('.%03d', $msPart) . $precision;
+    return [
+        'UTC' => $utc->format('Y-m-d H:i:s') . $frac . ' UTC',
+        $tz->getName() => $local->format('Y-m-d H:i:s') . $frac . ' ' . $local->format('T (P)'),
+        'ISO 8601' => $local->format('Y-m-d\TH:i:s') . sprintf('.%03d', $msPart) . $local->format('P'),
+        'Unix (milliseconds)' => (string) $unixMs,
+        'Relative' => relative_time_humanize($utc, new DateTimeImmutable('now')),
+    ];
+}
+
+/**
+ * Decode a ULID: 48-bit millisecond timestamp + 80 random bits.
+ *
+ * @return array{ms: int, fields: array<string,string>}
+ */
+function id_decode_ulid(string $id): array {
+    $alphabet = '0123456789ABCDEFGHJKMNPQRSTVWXYZ';
+    $id = strtoupper($id);
+    $bits = '';
+    for ($i = 0; $i < 26; $i++) {
+        $bits .= str_pad(decbin(strpos($alphabet, $id[$i])), 5, '0', STR_PAD_LEFT);
+    }
+    $bits = substr($bits, 2); // 130 bits encode 128
+    $ms = bindec(substr($bits, 0, 48));
+    $randomHex = '';
+    foreach (str_split(substr($bits, 48), 4) as $nibble) {
+        $randomHex .= dechex(bindec($nibble));
+    }
+    return ['ms' => (int) $ms, 'fields' => [
+        'Type' => 'ULID',
+        'Timestamp part' => substr($id, 0, 10),
+        'Randomness part' => substr($id, 10),
+        'Randomness (hex)' => $randomHex,
+    ]];
+}
+
+/**
+ * Decode a UUID's version/variant and, for v1/v6/v7, its timestamp.
+ *
+ * @return array{ms: ?int, precision: string, fields: array<string,string>}
+ */
+function id_decode_uuid(string $id): array {
+    $hex = strtolower(str_replace('-', '', $id));
+    $canonical = substr($hex, 0, 8) . '-' . substr($hex, 8, 4) . '-' . substr($hex, 12, 4) . '-' . substr($hex, 16, 4) . '-' . substr($hex, 20);
+    $fields = ['Type' => 'UUID', 'Canonical form' => $canonical];
+    if ($hex === str_repeat('0', 32) || $hex === str_repeat('f', 32)) {
+        $fields['Version'] = $hex[0] === '0' ? 'Nil UUID (all zeros)' : 'Max UUID (all ones)';
+        return ['ms' => null, 'precision' => '', 'fields' => $fields];
+    }
+    $version = hexdec($hex[12]);
+    $variantNibble = hexdec($hex[16]);
+    $variant = match (true) {
+        $variantNibble < 8 => 'NCS (reserved, backward compatibility)',
+        $variantNibble < 12 => 'RFC 9562 / RFC 4122',
+        $variantNibble < 14 => 'Microsoft (reserved)',
+        default => 'Reserved for future definition',
+    };
+    $versionNames = [
+        1 => 'Version 1 (Gregorian time + node)',
+        2 => 'Version 2 (DCE Security)',
+        3 => 'Version 3 (MD5 name-based)',
+        4 => 'Version 4 (random)',
+        5 => 'Version 5 (SHA-1 name-based)',
+        6 => 'Version 6 (reordered Gregorian time)',
+        7 => 'Version 7 (Unix time + random)',
+        8 => 'Version 8 (custom)',
+    ];
+    $fields['Version'] = $versionNames[$version] ?? "Version {$version} (unknown)";
+    $fields['Variant'] = $variant;
+    $ms = null;
+    $precision = '';
+    if ($variantNibble >= 8 && $variantNibble < 12 && in_array($version, [1, 6], true)) {
+        $ticks = $version === 1
+            ? (hexdec(substr($hex, 13, 3)) << 48) | (hexdec(substr($hex, 8, 4)) << 32) | hexdec(substr($hex, 0, 8))
+            : (hexdec(substr($hex, 0, 8)) << 28) | (hexdec(substr($hex, 8, 4)) << 12) | hexdec(substr($hex, 13, 3));
+        // 100 ns ticks since 1582-10-15 → Unix ms; the last 4 digits are sub-millisecond.
+        $sinceUnix = $ticks - 122192928000000000;
+        $ms = intdiv($sinceUnix, 10000) - ($sinceUnix < 0 && $sinceUnix % 10000 !== 0 ? 1 : 0);
+        $precision = sprintf('%04d', $sinceUnix - $ms * 10000);
+        $node = substr($hex, 20);
+        $fields['Timestamp (100 ns ticks since 1582-10-15)'] = (string) $ticks;
+        $fields['Clock sequence'] = (string) (hexdec(substr($hex, 16, 4)) & 0x3fff);
+        $fields['Node'] = implode(':', str_split($node, 2))
+            . ((hexdec($node[1]) & 1) ? ' (multicast bit set: random node, not a MAC)' : ' (MAC address)');
+    } elseif ($variantNibble >= 8 && $variantNibble < 12 && $version === 7) {
+        $ms = (int) hexdec(substr($hex, 0, 12));
+        $fields['Timestamp (hex)'] = substr($hex, 0, 12);
+        $fields['Random (rand_a + rand_b)'] = substr($hex, 13, 3) . substr($hex, 17);
+    } else {
+        $fields['Timestamp'] = 'None (this UUID version has no embedded time)';
+    }
+    return ['ms' => $ms, 'precision' => $precision, 'fields' => $fields];
+}
+
+/**
+ * Decode a Snowflake ID: 41-bit ms timestamp since $epochMs, 10-bit machine, 12-bit sequence.
+ *
+ * @return array{ms: int, fields: array<string,string>}
+ */
+function id_decode_snowflake(int $id, int $epochMs, string $epochLabel): array {
+    $machine = ($id >> 12) & 0x3ff;
+    return ['ms' => ($id >> 22) + $epochMs, 'fields' => [
+        'Type' => 'Snowflake',
+        'Epoch' => "{$epochLabel} ({$epochMs} ms)",
+        'Timestamp (ms since epoch)' => (string) ($id >> 22),
+        'Machine ID (10 bits)' => (string) $machine,
+        'Worker / datacenter ID (upper 5 bits)' => (string) ($machine >> 5),
+        'Process / worker ID (lower 5 bits)' => (string) ($machine & 0x1f),
+        'Sequence (12 bits)' => (string) ($id & 0xfff),
+    ]];
+}
+
+/**
+ * Decode an ID's embedded timestamp and fields (ULID, UUID, Snowflake).
+ *
+ * @param array $req 'id_decode_value', 'id_decode_type' (auto|ulid|uuid|snowflake),
+ *                   'id_decode_epoch' (SNOWFLAKE_EPOCHS key or custom), 'id_decode_custom_epoch', 'id_decode_timezone'
+ */
+function handle_id_decode(array $req): string {
+    $raw = trim((string) req_get($req, 'id_decode_value', ''));
+    $id = (string) preg_replace('/^(urn:uuid:|\{)|\}$/i', '', $raw);
+    if ($id === '') {
+        return formatOutput('Paste an ID to decode.', type: 'danger');
+    }
+    if (strlen($id) > 64) {
+        return formatOutput('That is too long to be a ULID, UUID or Snowflake.', type: 'danger');
+    }
+    $tzResult = relative_time_timezone((string) req_get($req, 'id_decode_timezone', ''));
+    if (!$tzResult['ok']) {
+        return formatOutput($tzResult['error'], type: 'danger');
+    }
+
+    $type = (string) req_get($req, 'id_decode_type', 'auto');
+    $detected = id_detect_type($id);
+    if ($type === 'auto') {
+        if ($detected === null) {
+            return formatOutput('Could not recognise this ID. Expected a UUID (32 hex digits), a ULID (26 Crockford Base32 characters) or a Snowflake (a number).', type: 'danger');
+        }
+        $type = $detected;
+    } elseif (!in_array($type, ['ulid', 'uuid', 'snowflake'], true)) {
+        return formatOutput('Invalid ID type selected.', type: 'danger');
+    } elseif ($detected !== $type) {
+        return formatOutput('This is not a valid ' . strtoupper($type) . '.', type: 'danger');
+    }
+
+    $precision = '';
+    if ($type === 'ulid') {
+        $decoded = id_decode_ulid($id);
+    } elseif ($type === 'uuid') {
+        $decoded = id_decode_uuid($id);
+        $precision = $decoded['precision'];
+    } else {
+        if (strlen(ltrim($id, '0')) > 19 || (strlen(ltrim($id, '0')) === 19 && strcmp(ltrim($id, '0'), (string) PHP_INT_MAX) > 0)) {
+            return formatOutput('Snowflake IDs are 63-bit numbers (at most ' . PHP_INT_MAX . ').', type: 'danger');
+        }
+        $epochKey = (string) req_get($req, 'id_decode_epoch', 'twitter');
+        if ($epochKey === 'custom') {
+            $customRaw = trim((string) req_get($req, 'id_decode_custom_epoch', ''));
+            if (!preg_match('/^-?\d{1,15}$/', $customRaw)) {
+                return formatOutput('Custom epoch must be a Unix timestamp in milliseconds.', type: 'danger');
+            }
+            [$epochLabel, $epochMs] = ['Custom', (int) $customRaw];
+        } elseif (isset(SNOWFLAKE_EPOCHS[$epochKey])) {
+            [$epochLabel, $epochMs] = SNOWFLAKE_EPOCHS[$epochKey];
+        } else {
+            return formatOutput('Invalid Snowflake epoch selected.', type: 'danger');
+        }
+        $decoded = id_decode_snowflake((int) $id, $epochMs, $epochLabel);
+    }
+
+    $output = copyable_table_html('Fields', $decoded['fields']);
+    if ($decoded['ms'] !== null) {
+        $output .= copyable_table_html('Embedded time', id_decode_time_rows($decoded['ms'], $tzResult['tz'], $precision));
+    }
+    return $output;
+}
+
+/**
+ * One lorem ipsum sentence of $min–$max words, capitalised, with an occasional comma.
+ *
+ * @param list<string> $lead Words to start with (the classic "Lorem ipsum dolor sit amet")
+ */
+function lorem_sentence(int $min = 6, int $max = 14, array $lead = []): string {
+    $words = lorem_words();
+    $count = max(count($lead) + 2, rng_int($min, $max));
+    $out = $lead;
+    while (count($out) < $count) {
+        $out[] = rng_pick($words);
+    }
+    if ($count >= 8) {
+        $comma = rng_int(max(count($lead), 2), $count - 3);
+        $out[$comma] .= ',';
+    }
+    return ucfirst(implode(' ', $out)) . '.';
+}
+
+/**
+ * Lorem ipsum text: N paragraphs, sentences or words.
+ *
+ * @param array $req 'lorem_unit' (paragraphs|sentences|words), 'lorem_count', 'lorem_classic', optional seed
+ */
+function handle_lorem(array $req): string {
+    $unit = (string) req_get($req, 'lorem_unit', 'paragraphs');
+    if (!isset(LOREM_MAX[$unit])) {
+        return formatOutput('Invalid unit selected.', type: 'danger');
+    }
+    $countValidation = req_int_validated($req, 'lorem_count', 1, LOREM_MAX[$unit]);
+    if (!$countValidation['valid']) {
+        return formatOutput('Number of ' . $unit . ': ' . $countValidation['error'], type: 'danger');
+    }
+    $seedRes = req_seed($req, 'lorem_');
+    if (!$seedRes['valid']) {
+        return formatOutput($seedRes['error'], type: 'danger');
+    }
+    $count = $countValidation['value'];
+    $lead = req_bool($req, 'lorem_classic') ? ['lorem', 'ipsum', 'dolor', 'sit', 'amet'] : [];
+
+    rng_seed($seedRes['seed'] !== null ? (int) $seedRes['seed'] : null);
+    if ($unit === 'words') {
+        $words = $lead ? array_slice($lead, 0, $count) : [];
+        while (count($words) < $count) {
+            $words[] = rng_pick(lorem_words());
+        }
+        $text = ucfirst(implode(' ', $words)) . '.';
+    } elseif ($unit === 'sentences') {
+        $sentences = [];
+        for ($i = 0; $i < $count; $i++) {
+            $sentences[] = lorem_sentence(lead: $i === 0 ? $lead : []);
+        }
+        $text = implode(' ', $sentences);
+    } else {
+        $paragraphs = [];
+        for ($p = 0; $p < $count; $p++) {
+            $sentences = [];
+            $n = rng_int(4, 7);
+            for ($i = 0; $i < $n; $i++) {
+                $sentences[] = lorem_sentence(lead: ($p === 0 && $i === 0) ? $lead : []);
+            }
+            $paragraphs[] = implode(' ', $sentences);
+        }
+        $text = implode("\n\n", $paragraphs);
+    }
+    rng_seed(null);
+
+    $words = str_word_count($text);
+    return output_copyable($text, "{$count} " . ($count === 1 ? rtrim($unit, 's') : $unit) . " ({$words} words, " . mb_strlen($text) . ' characters)')
+        . rng_seed_notes($seedRes['seed'], $seedRes['warning']);
+}
+
+/**
+ * One row of fake data. Emails and URLs use reserved example/.test domains, IPs the
+ * documentation ranges (RFC 5737, RFC 3849), phone numbers the fictional 555-01xx block
+ * and MACs are locally administered.
+ *
+ * @param list<string> $fields Keys of fake_data_fields()
+ * @return array<string,string>
+ */
+function fake_data_row(array $fields): array {
+    static $data = null;
+    $data ??= require __DIR__ . '/data/fake_data.php';
+    $first = rng_pick($data['first_names']);
+    $last = rng_pick($data['last_names']);
+    $ascii = fn(string $s) => strtolower(utf8_to_ascii($s));
+    $row = [];
+    foreach ($fields as $field) {
+        $row[$field] = match ($field) {
+            'name' => "{$first} {$last}",
+            'email' => $ascii($first) . '.' . $ascii($last) . (rng_int(0, 1) ? rng_int(1, 99) : '') . '@' . rng_pick($data['domains']),
+            'username' => $ascii($first) . rng_pick(['', '_', '.']) . $ascii(substr($last, 0, rng_int(1, strlen($last)))) . rng_int(1, 999),
+            'phone' => sprintf('+1 (%d) 555-01%02d', rng_int(201, 989), rng_int(0, 99)),
+            'address' => rng_int(1, 9999) . ' ' . rng_pick($data['streets']) . ' ' . rng_pick($data['street_types'])
+                . ', ' . rng_pick($data['cities']) . ' ' . sprintf('%05d', rng_int(10000, 99999)),
+            'ipv4' => rng_pick($data['ipv4_prefixes']) . '.' . rng_int(1, 254),
+            'ipv6' => '2001:db8:' . implode(':', array_map(fn() => dechex(rng_int(0, 0xffff)), range(1, 6))),
+            'mac' => implode(':', array_map(fn($i) => sprintf('%02x', $i === 0 ? (rng_int(0, 255) & 0xfc) | 0x02 : rng_int(0, 255)), range(0, 5))),
+            'url' => 'https://' . rng_pick(['www.example.com', 'example.org', 'app.example.net', 'site.test'])
+                . '/' . rng_pick($data['url_words']) . '/' . rng_pick(lorem_words()) . '-' . rng_int(1, 999),
+            'date' => date('Y-m-d', rng_int(strtotime('2000-01-01'), time())),
+            default => '',
+        };
+    }
+    return $row;
+}
+
+/**
+ * Fake test data rows as plain lines (tab-separated), CSV or JSON.
+ *
+ * @param array $req 'fake_fields' (list of fake_data_fields() keys), 'fake_rows', 'fake_format' (lines|csv|json), optional seed
+ */
+function handle_fake_data(array $req): string {
+    $requested = req_get($req, 'fake_fields', []);
+    $requested = is_array($requested) ? $requested : [$requested];
+    $fields = array_values(array_intersect(array_keys(fake_data_fields()), $requested));
+    if (!$fields) {
+        return formatOutput('Select at least one field.', type: 'danger');
+    }
+    $rowsValidation = req_int_validated($req, 'fake_rows', 1, FAKE_DATA_MAX_ROWS);
+    if (!$rowsValidation['valid']) {
+        return formatOutput('Rows: ' . $rowsValidation['error'], type: 'danger');
+    }
+    $format = (string) req_get($req, 'fake_format', 'lines');
+    if (!in_array($format, ['lines', 'csv', 'json'], true)) {
+        return formatOutput('Invalid output format selected.', type: 'danger');
+    }
+    $seedRes = req_seed($req, 'fake_');
+    if (!$seedRes['valid']) {
+        return formatOutput($seedRes['error'], type: 'danger');
+    }
+
+    rng_seed($seedRes['seed'] !== null ? (int) $seedRes['seed'] : null);
+    $rows = [];
+    for ($i = 0; $i < $rowsValidation['value']; $i++) {
+        $rows[] = fake_data_row($fields);
+    }
+    rng_seed(null);
+
+    if ($format === 'json') {
+        $text = json_encode($rows, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+    } elseif ($format === 'csv') {
+        $fh = fopen('php://temp', 'r+');
+        fputcsv($fh, $fields, ',', '"', '');
+        foreach ($rows as $row) {
+            fputcsv($fh, array_values($row), ',', '"', '');
+        }
+        rewind($fh);
+        $text = rtrim((string) stream_get_contents($fh), "\n");
+        fclose($fh);
+    } else {
+        $text = implode("\n", array_map(fn($row) => implode("\t", $row), $rows));
+    }
+
+    $count = count($rows);
+    return "<div class='fake-data-output'>" . output_copyable($text, "{$count} row" . ($count === 1 ? '' : 's') . ' (' . strtoupper($format === 'lines' ? 'text' : $format) . ')') . "</div>"
+        . rng_seed_notes($seedRes['seed'], $seedRes['warning']);
 }
 
 /**

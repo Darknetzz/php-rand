@@ -100,7 +100,7 @@
             "name"    => "Kebabcase",
             "icon"    => "minus",
             "value"   => "kebabcase",
-            "tooltip" => "Convert the string to kebab case"
+            "tooltip" => "Convert the string to kebab-case (myVarName → my-var-name)"
           ],
         ],
 
@@ -160,7 +160,31 @@
             "name"    => "Camelcase",
             "icon"    => "copyright",
             "value"   => "camelcase",
-            "tooltip" => "Convert the string to camel case"
+            "tooltip" => "Convert the string to camelCase (my_var_name → myVarName)"
+          ],
+          [
+            "name"    => "PascalCase",
+            "icon"    => "case-upper",
+            "value"   => "pascalcase",
+            "tooltip" => "Convert the string to PascalCase (myVarName → MyVarName)"
+          ],
+          [
+            "name"    => "snake_case",
+            "icon"    => "case-lower",
+            "value"   => "snakecase",
+            "tooltip" => "Convert the string to snake_case (myVarName → my_var_name)"
+          ],
+          [
+            "name"    => "CONSTANT_CASE",
+            "icon"    => "case-upper",
+            "value"   => "constantcase",
+            "tooltip" => "Convert the string to CONSTANT_CASE (myVarName → MY_VAR_NAME)"
+          ],
+          [
+            "name"    => "dot.case",
+            "icon"    => "dot",
+            "value"   => "dotcase",
+            "tooltip" => "Convert the string to dot.case (myVarName → my.var.name)"
           ],
         ],
 

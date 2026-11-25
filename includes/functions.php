@@ -245,6 +245,86 @@ function str_rot($s, $n = 13) {
   return strtr($s, $letters, $rep);
 }
 
+/**
+ * Split a UTF-8 string into characters (not bytes).
+ *
+ * @return array<int, string>
+ */
+function utf8_chars(string $s): array {
+  return $s === '' ? [] : mb_str_split($s, 1, 'UTF-8');
+}
+
+/**
+ * Reverse a UTF-8 string character by character.
+ */
+function utf8_reverse(string $s): string {
+  return implode('', array_reverse(utf8_chars($s)));
+}
+
+/**
+ * Shuffle the characters of a UTF-8 string (rng_shuffle(): Fisher–Yates with random_int()).
+ */
+function utf8_shuffle(string $s): string {
+  return implode('', rng_shuffle(utf8_chars($s)));
+}
+
+/**
+ * Swap upper and lower case for every letter, including non-ASCII (å ↔ Å).
+ */
+function utf8_invert_case(string $s): string {
+  $out = '';
+  foreach (utf8_chars($s) as $c) {
+    $upper = mb_strtoupper($c, 'UTF-8');
+    $out .= ($c === $upper) ? mb_strtolower($c, 'UTF-8') : $upper;
+  }
+  return $out;
+}
+
+/**
+ * Transliterate a UTF-8 string to ASCII (æ → ae, ø → o, é → e) where possible.
+ * Characters with no ASCII equivalent are left for the caller to strip.
+ */
+function utf8_to_ascii(string $s): string {
+  if (class_exists('Transliterator')) {
+    $t = Transliterator::create('Any-Latin; Latin-ASCII');
+    if ($t !== null) {
+      $out = $t->transliterate($s);
+      if ($out !== false) {
+        return $out;
+      }
+    }
+  }
+  $out = @iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $s);
+  return $out === false ? $s : $out;
+}
+
+/**
+ * Levenshtein distance counted in UTF-8 characters (PHP's levenshtein() counts bytes,
+ * so "a" → "å" would cost 2). Same cost parameters as levenshtein().
+ */
+function utf8_levenshtein(string $s1, string $s2, int $ins = 1, int $rep = 1, int $del = 1): int {
+  $a = utf8_chars($s1);
+  $b = utf8_chars($s2);
+  $m = count($a);
+  $n = count($b);
+  $prev = [];
+  for ($j = 0; $j <= $n; $j++) {
+    $prev[$j] = $j * $ins;
+  }
+  for ($i = 1; $i <= $m; $i++) {
+    $cur = [$i * $del];
+    for ($j = 1; $j <= $n; $j++) {
+      $cur[$j] = min(
+        $prev[$j] + $del,
+        $cur[$j - 1] + $ins,
+        $prev[$j - 1] + ($a[$i - 1] === $b[$j - 1] ? 0 : $rep)
+      );
+    }
+    $prev = $cur;
+  }
+  return $prev[$n];
+}
+
 
 /**
  * Generate a random string from specified character sets
@@ -260,38 +340,174 @@ function str_rot($s, $n = 13) {
  *                         'n' = numbers 0-9
  *                         's' = symbols: !#¤%&/() = ?;: -_.,'\"*^<>{}[]@~+´`
  *                         'e' = extended: ƒ†‡™•
+ *                         'x' = hexadecimal lowercase 0-9a-f
+ *                         'X' = hexadecimal uppercase 0-9A-F
  *                         'c' = custom characters (requires $cchars parameter)
  * @param int|null $length The length of the string to generate. Required
  * @param string|null $cchars Custom characters to include when 'c' is in $charsets
+ * @param array $opts Optional: 'avoidAmbiguous' => bool, 'min' / 'max' => [type => int|null]
+ *                    (types: n/l/u/s, see stringgen_char_type())
  * @return string Random string of specified length, or "[empty]" if no valid character sets
- * 
+ *
  * @example
  * genStr('a', 12);             // 12 chars: alphanumeric
  * genStr('lun', 12);           // 12 chars: lowercase, uppercase, numbers
  * genStr('luns', 20);          // 20 chars: lowercase, uppercase, numbers, symbols
  * genStr('lunc', 15, '!@#');   // 15 chars: lowercase, uppercase, numbers, custom
+ * genStr('luns', 16, null, ['min' => ['n' => 2], 'max' => ['s' => 1], 'avoidAmbiguous' => true]);
  */
-function genStr(string $charsets, ?int $length = null, $cchars = null) {
-    $all = stringgen_charset_chars($charsets, $cchars);
-    $str = '';
-    if (empty($all)) {
-      return "[empty]";
+function genStr(string $charsets, ?int $length = null, $cchars = null, array $opts = []) {
+    return stringgen_generate($charsets, (int) $length, $cchars, $opts, false);
+}
+
+/** Characters dropped by "Avoid ambiguous characters" (look-alikes such as 0/O, 1/l/I). */
+const STRINGGEN_AMBIGUOUS_CHARS = '0Oo1lI|';
+
+/** Character types that can be given a min/max count, in display order. */
+const STRINGGEN_CHAR_TYPES = [
+    'n' => 'Numbers',
+    'l' => 'Lowercase',
+    'u' => 'Uppercase',
+    's' => 'Special',
+];
+
+/**
+ * Classify a character for max-count limits.
+ *
+ * @return string 'n' (digit), 'l' (lowercase), 'u' (uppercase) or 's' (anything else)
+ */
+function stringgen_char_type(string $ch): string {
+    if (preg_match('/^\p{Nd}$/u', $ch)) return 'n';
+    if (preg_match('/^\p{Ll}$/u', $ch)) return 'l';
+    if (preg_match('/^\p{Lu}$/u', $ch)) return 'u';
+    return 's';
+}
+
+/**
+ * Validate generation options against a character pool.
+ *
+ * @param array<int, string> $pool Character pool
+ * @param int $length Requested length
+ * @param array<string, int|null> $max Max count per type (null/missing = unlimited)
+ * @param array<string, int|null> $min Min count per type (null/missing/0 = no minimum)
+ * @return string|null Error message, or null when a string of $length can be built
+ */
+function stringgen_validate_limits(array $pool, int $length, array $max, array $min = []): ?string {
+    if (empty($pool)) {
+        return "No characters left to choose from with the selected options.";
     }
-    for ($i = 0; $i < $length; $i++) {
-      $str .= $all[array_rand($all)];
+    $types = array_unique(array_map('stringgen_char_type', $pool));
+    $minTotal = 0;
+    foreach ($min as $type => $count) {
+        if (!$count) {
+            continue;
+        }
+        $label = STRINGGEN_CHAR_TYPES[$type] ?? $type;
+        if (!in_array($type, $types, true)) {
+            return "Min {$label} is {$count}, but the selected sets have no {$label} characters.";
+        }
+        if (isset($max[$type]) && $count > $max[$type]) {
+            return "Min {$label} ({$count}) is higher than Max {$label} ({$max[$type]}).";
+        }
+        $minTotal += $count;
     }
-    return $str;
+    if ($minTotal > $length) {
+        return "The min limits need at least {$minTotal} characters, but the length is {$length}. Lower a limit or lengthen the string.";
+    }
+    $capacity = 0;
+    foreach ($types as $type) {
+        $limit = $max[$type] ?? null;
+        if ($limit === null) {
+            return null; // at least one unlimited type in the pool
+        }
+        $capacity += $limit;
+    }
+    if ($capacity < $length) {
+        return "The max limits allow at most {$capacity} characters with the selected sets, but the length is {$length}. Raise a limit or shorten the string.";
+    }
+    return null;
+}
+
+/**
+ * Generate a random string with optional per-type min and max counts.
+ *
+ * Each type's minimum is drawn first from that type's characters, then the
+ * rest is drawn one at a time from the pool, dropping a type once it reaches
+ * its max. When limits apply, the result is shuffled afterwards so the forced
+ * and capped types are not clustered at the start.
+ *
+ * @param array $opts 'avoidAmbiguous' => bool, 'min' / 'max' => [type => int|null]
+ * @param bool $crypto Use random_int() (CSPRNG) instead of mt_rand()
+ * @return string Generated string, or "[empty]" if the pool is empty or limits can't be met
+ */
+function stringgen_generate(string $charsets, int $length, $cchars, array $opts, bool $crypto): string {
+    $pool = stringgen_charset_chars($charsets, $cchars, !empty($opts['avoidAmbiguous']));
+    $max = array_filter($opts['max'] ?? [], static fn($v) => $v !== null);
+    $min = array_filter($opts['min'] ?? [], static fn($v) => !empty($v));
+    if (stringgen_validate_limits($pool, $length, $max, $min) !== null) {
+        return "[empty]";
+    }
+    $rand = $crypto ? 'random_int' : 'mt_rand';
+
+    if (empty($max) && empty($min)) {
+        $last = count($pool) - 1;
+        $str = '';
+        for ($i = 0; $i < $length; $i++) {
+            $str .= $pool[$rand(0, $last)];
+        }
+        return $str;
+    }
+
+    $byType = [];
+    foreach ($pool as $ch) {
+        $byType[stringgen_char_type($ch)][] = $ch;
+    }
+    $used = array_fill_keys(array_keys($byType), 0);
+    $out = [];
+    foreach ($min as $type => $count) {
+        $chars = $byType[$type];
+        for ($i = 0; $i < $count; $i++) {
+            $out[] = $chars[$rand(0, count($chars) - 1)];
+        }
+        $used[$type] += $count;
+    }
+    $buildAvailable = static function () use ($byType, &$used, $max): array {
+        $avail = [];
+        foreach ($byType as $type => $chars) {
+            if (!isset($max[$type]) || $used[$type] < $max[$type]) {
+                array_push($avail, ...$chars);
+            }
+        }
+        return $avail;
+    };
+    $available = $buildAvailable();
+    for ($i = count($out); $i < $length; $i++) {
+        $ch = $available[$rand(0, count($available) - 1)];
+        $out[] = $ch;
+        $type = stringgen_char_type($ch);
+        $used[$type]++;
+        if (isset($max[$type]) && $used[$type] >= $max[$type]) {
+            $available = $buildAvailable();
+        }
+    }
+    // Fisher–Yates with the same RNG, so forced/capped types land in random positions
+    for ($i = count($out) - 1; $i > 0; $i--) {
+        $j = $rand(0, $i);
+        [$out[$i], $out[$j]] = [$out[$j], $out[$i]];
+    }
+    return implode('', $out);
 }
 
 /**
  * Build the unique character pool for string generation.
  *
- * @param string $charsets Character set flags (a/l/u/n/s/e/c)
+ * @param string $charsets Character set flags (a/l/u/n/s/e/x/X/c)
  * @param string|null $cchars Custom characters when 'c' is in $charsets
- * @return array<int, string> Unique character pool
+ * @param bool $avoidAmbiguous Drop look-alike characters (STRINGGEN_AMBIGUOUS_CHARS)
+ * @return array<int, string> Unique character pool (multibyte-safe)
  */
-function stringgen_charset_chars(string $charsets, $cchars = null): array {
-    $flags = str_split($charsets);
+function stringgen_charset_chars(string $charsets, $cchars = null, bool $avoidAmbiguous = false): array {
+    $flags = utf8_chars($charsets);
     $pool = [];
     if (in_array('a', $flags, true)) {
         $pool = array_merge($pool, range('a', 'z'), range('A', 'Z'), array_map('strval', range(0, 9)));
@@ -306,103 +522,208 @@ function stringgen_charset_chars(string $charsets, $cchars = null): array {
         $pool = array_merge($pool, array_map('strval', range(0, 9)));
     }
     if (in_array('s', $flags, true)) {
-        $pool = array_merge($pool, str_split("!#¤%&\/() = ?;: -_.,'\"*^<>{}[]@~+´`"));
+        $pool = array_merge($pool, utf8_chars("!#¤%&\/() = ?;: -_.,'\"*^<>{}[]@~+´`"));
     }
     if (in_array('e', $flags, true)) {
-        $pool = array_merge($pool, str_split("ƒ†‡™•"));
+        $pool = array_merge($pool, utf8_chars("ƒ†‡™•"));
+    }
+    if (in_array('x', $flags, true)) {
+        $pool = array_merge($pool, utf8_chars('0123456789abcdef'));
+    }
+    if (in_array('X', $flags, true)) {
+        $pool = array_merge($pool, utf8_chars('0123456789ABCDEF'));
     }
     if (in_array('c', $flags, true) && !empty($cchars)) {
-        $pool = array_merge($pool, str_split((string) $cchars));
+        $pool = array_merge($pool, utf8_chars((string) $cchars));
     }
-    return array_values(array_unique(array_map('strval', $pool), SORT_STRING));
+    $pool = array_unique(array_map('strval', $pool), SORT_STRING);
+    if ($avoidAmbiguous) {
+        $pool = array_diff($pool, utf8_chars(STRINGGEN_AMBIGUOUS_CHARS));
+    }
+    return array_values($pool);
 }
 
 /**
- * Generate a random string using cryptographically secure random_bytes()
+ * Generate a random string using cryptographically secure random_int()
  * 
- * Uses random_bytes() for cryptographically secure randomness, suitable for
+ * Uses random_int() for cryptographically secure randomness, suitable for
  * security-critical applications like tokens, passwords, and keys.
  *
- * @param string $charsets Character set flags (a=alphanumeric, l=lowercase, u=uppercase, n=numbers, s=symbols, e=extended, c=custom)
+ * @param string $charsets Character set flags (a=alphanumeric, l=lowercase, u=uppercase, n=numbers, s=symbols, e=extended, x/X=hex lower/upper, c=custom)
  * @param int $length Length of the generated string
  * @param string|null $cchars Custom characters if 'c' is in charsets
+ * @param array $opts Same as genStr(): 'avoidAmbiguous', 'min', 'max'
  * @return string Randomly generated string
  */
-function genStrCrypto(string $charsets, ?int $length = null, $cchars = null) {
-    $all = stringgen_charset_chars($charsets, $cchars);
-    $str = '';
-    if (empty($all)) {
-      return "[empty]";
-    }
-    $count = count($all);
-    for ($i = 0; $i < $length; $i++) {
-      $randomIndex = ord(random_bytes(1)) % $count;
-      $str .= $all[$randomIndex];
-    }
-    return $str;
+function genStrCrypto(string $charsets, ?int $length = null, $cchars = null, array $opts = []) {
+    // random_int() is CSPRNG-backed and unbiased (no modulo bias for pool sizes that don't divide 256)
+    return stringgen_generate($charsets, (int) $length, $cchars, $opts, true);
 }
 
 
 /* ───────────────────────────────────────────────────────────────────── */
 /**
- * Spin a wheel and randomly select items
- * 
- * Simulates spinning a wheel by randomly selecting items from a list.
- * Can return unique selections or allow duplicates. Useful for games,
- * raffles, or random selections.
+ * Shared random number source.
  *
- * @param array|null $wheelItems Array of items to select from. Default: empty
- * @param int $spins Number of times to spin (1-100). Default: 1
- * @param bool $unique If true, ensure each spin selects a unique item. Default: false
- * @return string|array Formatted HTML output containing selected items, or error message
- * 
- * @example
- * spinWheel(['Item1', 'Item2', 'Item3'], 1);     // Single spin
- * spinWheel(['A', 'B', 'C'], 3, true);           // 3 spins, all unique
+ * Secure by default: rng_int()/rng_bytes() use random_int()/random_bytes() (CSPRNG).
+ * After rng_seed($seed) they switch to the seeded Mersenne Twister (mt_rand) so output
+ * is reproducible. Seeded output is NOT cryptographically secure; rng_seed(null)
+ * switches back to secure mode.
  */
-function spinWheel(?array $wheelItems = [], int $spins = 1, bool $unique = false) {
-
-  if (empty($wheelItems)) {
-    return alert("You must enter at least one item.", "danger");
+function rng_seed(?int $seed): void {
+  $GLOBALS['__rng_seeded'] = $seed !== null;
+  if ($seed !== null) {
+    mt_srand($seed);
   }
+}
 
-  if ($spins > 100 || $spins < 1) {
-    return alert("You can't spin less than once or more than 100 times.", "danger");
+/** True when rng_* helpers use the seeded (non-secure) generator. */
+function rng_is_seeded(): bool {
+  return !empty($GLOBALS['__rng_seeded']);
+}
+
+/** Random integer in [$min, $max]: random_int() when secure, mt_rand() when seeded. */
+function rng_int(int $min, int $max): int {
+  return rng_is_seeded() ? mt_rand($min, $max) : random_int($min, $max);
+}
+
+/** Random element of a non-empty array (keys are ignored). */
+function rng_pick(array $list) {
+  $values = array_values($list);
+  return $values[rng_int(0, count($values) - 1)];
+}
+
+/**
+ * Shuffle a list (Fisher–Yates with rng_int(): random_int(), or mt_rand() when seeded).
+ * Unlike shuffle(), this is cryptographically secure by default. Keys are reset.
+ */
+function rng_shuffle(array $list): array {
+  $list = array_values($list);
+  for ($i = count($list) - 1; $i > 0; $i--) {
+    $j = rng_int(0, $i);
+    [$list[$i], $list[$j]] = [$list[$j], $list[$i]];
   }
+  return $list;
+}
 
-  $countItems = count($wheelItems);
-  $moreSpins  = (isset($spins) && $spins > 1 ? true : false);
-  $spins      = ($moreSpins) ? $spins : 1;
-
-  if ($countItems < 2) {
-    return alert("You must enter at least two items.", "danger");
+/** $length random bytes: random_bytes() when secure, mt_rand() bytes when seeded. */
+function rng_bytes(int $length): string {
+  if (!rng_is_seeded()) {
+    return random_bytes($length);
   }
-
-  if (($spins > $countItems) && $unique !== false) {
-    return alert("You can't spin more than the number of items in the wheel if you want unique results.", "danger");
+  $out = '';
+  for ($i = 0; $i < $length; $i++) {
+    $out .= chr(mt_rand(0, 255));
   }
+  return $out;
+}
 
-  $excludes = [];
-  for ($i = 0; $i < $spins; $i++) {
-      $dice = mt_rand(0, $countItems-1);
+/**
+ * Uniform random GMP integer in [$min, $max] (rejection sampling over rng_bytes(), no modulo bias).
+ * Replaces gmp_random_range(), which is neither a CSPRNG nor seeded by mt_srand().
+ */
+function rng_gmp_range(\GMP $min, \GMP $max): \GMP {
+  $span = gmp_sub($max, $min);
+  if (gmp_sign($span) < 0) {
+    throw new \ValueError('rng_gmp_range(): $min must be <= $max');
+  }
+  if (gmp_sign($span) === 0) {
+    return $min;
+  }
+  $bits = strlen(gmp_strval($span, 2));
+  $bytes = intdiv($bits + 7, 8);
+  $topMask = (1 << ($bits - 8 * ($bytes - 1))) - 1;
+  do {
+    $raw = rng_bytes($bytes);
+    $raw[0] = chr(ord($raw[0]) & $topMask);
+    $n = gmp_import($raw);
+  } while (gmp_cmp($n, $span) > 0);
+  return gmp_add($min, $n);
+}
 
-      if ($unique !== false) {
-          while (in_array($dice, $excludes)) {
-              $dice = mt_rand(0, $countItems-1);
-          }
+/**
+ * Notice telling the user which random source produced the output.
+ *
+ * @param string|null $insecureSource Null for random_int() (secure); otherwise a short
+ *                                    description of the non-secure source used.
+ */
+function rng_source_notice(?string $insecureSource = null): string {
+  if ($insecureSource === null) {
+    return "<div class='alert alert-success rng-notice'>" . icon('shield-check')
+      . " <strong>Cryptographically Secure Random</strong> - Generated using random_int()</div>";
+  }
+  return "<div class='alert alert-warning rng-notice'>" . icon('shield-alert')
+    . " <strong>Not cryptographically secure</strong> - Generated using "
+    . htmlspecialchars($insecureSource, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "</div>";
+}
+
+/**
+ * Badge with the entropy in bits and a rough strength label
+ * (< 40 weak, < 60 fair, < 80 strong, otherwise very strong).
+ */
+function entropy_badge_html(float $bits): string {
+  [$label, $color] = match (true) {
+    $bits < 40 => ['Weak', 'danger'],
+    $bits < 60 => ['Fair', 'warning'],
+    $bits < 80 => ['Strong', 'info'],
+    default => ['Very strong', 'success'],
+  };
+  return "<span class='badge text-bg-{$color} entropy-badge' title='Entropy: how many guesses an attacker who knows the method needs (2^bits)'>"
+    . icon('shield') . ' ' . number_format($bits, 1) . " bits &middot; {$label}</span>";
+}
+
+/**
+ * The EFF large wordlist (7,776 words, CC BY 3.0, https://www.eff.org/dice) from
+ * includes/data/eff_large_wordlist.txt ("11111<TAB>abacus" lines). Loaded once per request.
+ *
+ * @return list<string>
+ */
+function passphrase_wordlist(): array {
+  static $words = null;
+  if ($words === null) {
+    $words = [];
+    $lines = @file(__DIR__ . '/data/eff_large_wordlist.txt', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: [];
+    foreach ($lines as $line) {
+      if (preg_match('/^\d{5}\t(\S+)/', $line, $m)) {
+        $words[] = $m[1];
       }
-
-      $item           = (!empty($wheelItems[$dice]) ? $wheelItems[$dice] : "Item #".$dice+1);
-      $items[]        = "<b>".$item."</b>";
-      $excludes[]     = $dice;
+    }
   }
+  return $words;
+}
 
-  if (empty($items)) {
-    return alert("No items");
+/**
+ * Lorem ipsum vocabulary (includes/data/lorem_words.txt), shared with the
+ * random-fill buttons in js/rand.js through window.RAND_LOREM_WORDS (index.php).
+ *
+ * @return list<string>
+ */
+function lorem_words(): array {
+  static $words = null;
+  if ($words === null) {
+    $words = @file(__DIR__ . '/data/lorem_words.txt', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) ?: ['lorem', 'ipsum'];
   }
+  return $words;
+}
 
-  $output = implode("<br>", $items);
-  return formatOutput($output);
+/**
+ * Fields the Placeholder Data tool can generate, label by key.
+ *
+ * @return array<string,string>
+ */
+function fake_data_fields(): array {
+  return [
+      'name' => 'Name',
+      'email' => 'Email',
+      'username' => 'Username',
+      'phone' => 'Phone',
+      'address' => 'Address',
+      'ipv4' => 'IPv4',
+      'ipv6' => 'IPv6',
+      'mac' => 'MAC address',
+      'url' => 'URL',
+      'date' => 'Date',
+  ];
 }
 
 /**
@@ -428,6 +749,45 @@ function submitBtn(string $value = "", string $name = "action", string $text = "
     <button name="'.$name.'" value="'.$value.'" type="submit" class="genBtn btn btn-success btn-'.$size.' my-3">
       '.$icon.' '.$text.'
     </button>';
+}
+
+/**
+ * Shared "Use custom seed" switch and seed input, read back with req_seed().
+ * Fields are named "{$prefix}useseed" and "{$prefix}seed"; rand.js shows the input
+ * while the switch is on ([data-seed-toggle]).
+ *
+ * @param string $prefix Field name prefix, e.g. "numgen" or "dice_"
+ * @param string $what   What the seed makes reproducible, e.g. "numbers" or "rolls"
+ */
+function seed_field_html(string $prefix, string $what = 'results'): string {
+  $p = htmlspecialchars($prefix, ENT_QUOTES, 'UTF-8');
+  $w = htmlspecialchars($what, ENT_QUOTES, 'UTF-8');
+  $W = htmlspecialchars(ucfirst($what), ENT_QUOTES, 'UTF-8');
+  return <<<HTML
+<div class="mb-3" data-seed-field>
+    <div class="form-check form-switch">
+        <input type="checkbox" class="form-check-input" id="{$p}useseed" name="{$p}useseed" value="1" data-seed-toggle>
+        <label class="form-check-label" for="{$p}useseed">Use custom seed (for reproducible {$w})</label>
+        <small class="text-muted d-block">{$W} are cryptographically secure (random_int()) by default. A seed switches to mt_rand(), which is reproducible but not secure.</small>
+    </div>
+    <div class="mt-2" data-seed-input style="display:none;">
+        <label class="form-label" for="{$p}seed">Seed value</label>
+        <input type="text" name="{$p}seed" id="{$p}seed" class="form-control" value="" placeholder="Digits only, 1–17 digits" inputmode="numeric" autocomplete="off" style="font-family: monospace;">
+    </div>
+</div>
+HTML;
+}
+
+/**
+ * Container for a tool's "Recent results" list, kept in localStorage by rand.js
+ * (renderResultHistory()). Results are added from data-history-* attributes on the
+ * tool's response (see dice_tray_html()).
+ *
+ * @param string $tool Storage key, usually the form's action (e.g. "dice_roll")
+ */
+function result_history_html(string $tool): string {
+  $t = htmlspecialchars($tool, ENT_QUOTES, 'UTF-8');
+  return "<div class='rand-history mt-4' data-history='{$t}' hidden></div>";
 }
 
 /**
@@ -679,7 +1039,7 @@ function compare_unsigned_integer_strings(string $left, string $right): int {
 }
 
 function numgen_large_gmp_available(): bool {
-  return function_exists('gmp_init') && function_exists('gmp_cmp') && function_exists('gmp_pow') && function_exists('gmp_random_range') && function_exists('gmp_prob_prime');
+  return function_exists('gmp_init') && function_exists('gmp_cmp') && function_exists('gmp_pow') && function_exists('gmp_prob_prime') && function_exists('gmp_import');
 }
 
 function numgen_large_type_count_for_digits(int $numDigits, string $type) {
@@ -716,7 +1076,7 @@ function random_large_numgen_digit_length(int $minDigits, int $maxDigits, string
     $total = gmp_add($total, $weight);
   }
 
-  $pick = gmp_random_range(gmp_init(0, 10), gmp_sub($total, gmp_init(1, 10)));
+  $pick = rng_gmp_range(gmp_init(0, 10), gmp_sub($total, gmp_init(1, 10)));
   $running = gmp_init(0, 10);
   foreach ($weights as $digits => $weight) {
     $running = gmp_add($running, $weight);
@@ -732,9 +1092,9 @@ function random_numeric_string_with_digits(int $numDigits): string {
   if ($numDigits <= 0) {
     return '0';
   }
-  $result = (string) mt_rand(1, 9);
+  $result = (string) rng_int(1, 9);
   for ($i = 1; $i < $numDigits; $i++) {
-    $result .= (string) mt_rand(0, 9);
+    $result .= (string) rng_int(0, 9);
   }
   return $result;
 }
@@ -746,14 +1106,14 @@ function random_numeric_string_with_parity(int $numDigits, string $type): string
   }
   if ($numDigits === 1) {
     $singleDigitChoices = $type === 'even' ? [2, 4, 6, 8] : [1, 3, 5, 7, 9];
-    return (string) $singleDigitChoices[mt_rand(0, count($singleDigitChoices) - 1)];
+    return (string) $singleDigitChoices[rng_int(0, count($singleDigitChoices) - 1)];
   }
 
-  $result = (string) mt_rand(1, 9);
+  $result = (string) rng_int(1, 9);
   for ($i = 1; $i < $numDigits - 1; $i++) {
-    $result .= (string) mt_rand(0, 9);
+    $result .= (string) rng_int(0, 9);
   }
-  $result .= (string) $choices[mt_rand(0, count($choices) - 1)];
+  $result .= (string) $choices[rng_int(0, count($choices) - 1)];
   return $result;
 }
 
@@ -762,9 +1122,9 @@ function random_palindromic_string_with_digits(int $numDigits): string {
     return '0';
   }
   $half = (int) ceil($numDigits / 2);
-  $left = (string) mt_rand(1, 9);
+  $left = (string) rng_int(1, 9);
   for ($i = 1; $i < $half; $i++) {
-    $left .= (string) mt_rand(0, 9);
+    $left .= (string) rng_int(0, 9);
   }
   $right = strrev($numDigits % 2 === 1 ? substr($left, 0, -1) : $left);
   return $left . $right;
@@ -814,7 +1174,7 @@ function random_large_prime_string(int $minDigits, int $maxDigits) {
     $numDigits = $minDigits === $maxDigits ? $minDigits : random_large_numgen_digit_length($minDigits, $maxDigits, 'any');
     if ($numDigits === 1) {
       $oneDigitPrimes = ['2', '3', '5', '7'];
-      return $oneDigitPrimes[mt_rand(0, 3)];
+      return $oneDigitPrimes[rng_int(0, 3)];
     }
     $candidate = random_numeric_string_with_parity($numDigits, 'odd');
     if (is_prime_gmp_string($candidate)) {
@@ -944,9 +1304,9 @@ function random_palindromic_with_digits(int $numDigits): int {
     return 0;
   }
   $half = (int) ceil($numDigits / 2);
-  $s = (string) mt_rand(1, 9);
+  $s = (string) rng_int(1, 9);
   for ($i = 1; $i < $half; $i++) {
-    $s .= (string) mt_rand(0, 9);
+    $s .= (string) rng_int(0, 9);
   }
   $left = $s;
   $right = strrev($numDigits % 2 === 1 ? substr($s, 0, -1) : $s);
@@ -961,7 +1321,7 @@ function random_palindromic_with_digits(int $numDigits): int {
  *
  * @param int $from Starting value of the range (lower bound)
  * @param int $to Ending value of the range (upper bound)
- * @param string|null $seed Optional seed for mt_srand() for reproducibility.
+ * @param string|null $seed Optional seed passed to rng_seed() (reproducible, not cryptographically secure).
  * @param string $type One of 'any', 'prime', 'odd', 'even', 'square', 'composite', 'palindromic', 'fibonacci'. Default: 'any'
  * @return int|string Random integer within range, or alert string on error
  * 
@@ -985,7 +1345,7 @@ function numGen(int $from, int $to, ?string $seed = null, string $type = 'any') 
       if (!ctype_digit(strval($seed)) || strlen($seed) > 17) {
           echo alert("<b>Warning: Seed was not used because it's not a valid seed.</b><br>", "warning");
       } else {
-          mt_srand($seed);
+          rng_seed((int) $seed);
       }
   }
 
@@ -995,7 +1355,7 @@ function numGen(int $from, int $to, ?string $seed = null, string $type = 'any') 
 
   $candidates = [];
   if ($type === 'any') {
-    $num = mt_rand($from, $to);
+    $num = rng_int($from, $to);
     return $num;
   }
   if ($type === 'prime') {
@@ -1015,9 +1375,9 @@ function numGen(int $from, int $to, ?string $seed = null, string $type = 'any') 
           if ($oddLow > $oddHigh) {
             continue;
           }
-          $n = $oddLow + 2 * mt_rand(0, (int) (($oddHigh - $oddLow) / 2));
+          $n = $oddLow + 2 * rng_int(0, (int) (($oddHigh - $oddLow) / 2));
         } else {
-          $n = mt_rand($from, $to);
+          $n = rng_int($from, $to);
         }
         if (is_prime($n)) {
           return $n;
@@ -1037,7 +1397,7 @@ function numGen(int $from, int $to, ?string $seed = null, string $type = 'any') 
       return alert("No odd numbers in the range $from–$to.", "warning");
     }
     $count = (int) (($end - $start) / 2 + 1);
-    return $start + 2 * mt_rand(0, $count - 1);
+    return $start + 2 * rng_int(0, $count - 1);
   } elseif ($type === 'even') {
     $start = $from % 2 === 0 ? $from : $from + 1;
     $end   = $to % 2 === 0 ? $to : $to - 1;
@@ -1045,14 +1405,14 @@ function numGen(int $from, int $to, ?string $seed = null, string $type = 'any') 
       return alert("No even numbers in the range $from–$to.", "warning");
     }
     $count = (int) (($end - $start) / 2 + 1);
-    return $start + 2 * mt_rand(0, $count - 1);
+    return $start + 2 * rng_int(0, $count - 1);
   } elseif ($type === 'square') {
     $kMin = max(1, (int) ceil(sqrt($from)));
     $kMax = (int) floor(sqrt($to));
     if ($kMin > $kMax) {
       return alert("No perfect square in the range $from–$to.", "warning");
     }
-    $k = mt_rand($kMin, $kMax);
+    $k = rng_int($kMin, $kMax);
     return $k * $k;
   } elseif ($type === 'composite') {
     $rangeSize = $to - $from + 1;
@@ -1063,7 +1423,7 @@ function numGen(int $from, int $to, ?string $seed = null, string $type = 'any') 
         return alert("No composite numbers in the range $from–$to.", "warning");
       }
       for ($attempt = 0; $attempt < $maxAttempts; $attempt++) {
-        $n = mt_rand($from, $to);
+        $n = rng_int($from, $to);
         if ($n > 1 && !is_prime($n)) {
           return $n;
         }
@@ -1088,7 +1448,7 @@ function numGen(int $from, int $to, ?string $seed = null, string $type = 'any') 
       $lenFrom = strlen((string) $from);
       $lenTo = strlen((string) $to);
       for ($attempt = 0; $attempt < $maxAttempts; $attempt++) {
-        $numDig = $lenFrom === $lenTo ? $lenFrom : mt_rand($lenFrom, $lenTo);
+        $numDig = $lenFrom === $lenTo ? $lenFrom : rng_int($lenFrom, $lenTo);
         $n = random_palindromic_with_digits($numDig);
         if ($n >= $from && $n <= $to) {
           return $n;
@@ -1103,7 +1463,7 @@ function numGen(int $from, int $to, ?string $seed = null, string $type = 'any') 
   if (count($candidates) === 0) {
     return alert("No " . htmlspecialchars($type) . " numbers in the range $from–$to.", "warning");
   }
-  return $candidates[array_rand($candidates)];
+  return rng_pick($candidates);
 }
 
 /**
@@ -2025,16 +2385,16 @@ function bits_to_php_int($bits) {
 // echo convert_any(str_repeat('1', 13), 1, 2), PHP_EOL;    // Unary 13 -> 1101
 
 /* ===================================================================== */
-/*                     FUNCTION: resolve_numgen_seed                       */
+/*                     FUNCTION: resolve_rng_seed                           */
 /* ===================================================================== */
 /**
- * Validates custom seed for the number generator; if invalid, returns a generated seed and warning.
+ * Validates a custom seed (Number Generator, Dice Roller, Coin Flip); if invalid, returns a generated seed and warning.
  * Valid seed: non-empty, digits only, 1–17 characters (mt_srand constraint).
  *
- * @param string|null $customSeed Raw seed value from user (e.g. $_POST['numgenseed'])
+ * @param string|null $customSeed Raw seed value from user (e.g. $_POST['numgenseed'], $_POST['dice_seed'])
  * @return array{seed: string|null, warning: string|null} Effective seed to use; warning message if custom was invalid
  */
-function resolve_numgen_seed(?string $customSeed): array {
+function resolve_rng_seed(?string $customSeed): array {
   $trimmed = $customSeed !== null ? trim($customSeed) : '';
   if ($trimmed === '') {
     return ['seed' => null, 'warning' => null];
@@ -2342,3 +2702,41 @@ function logo_discover_font_files(): array {
     return $paths;
 }
 
+/**
+ * Timezone <select> with every identifier and its current UTC offset.
+ *
+ * @param string|null $selected Selected identifier; null = the server's default timezone
+ * @param string $attrs Extra raw attributes (id, data-*), already escaped
+ */
+function timezone_select_html(string $inputName = "timezone", string $extraClass = "timezone-select", ?string $selected = null, string $attrs = ""): string {
+  $selected ??= (date_default_timezone_get() ?: 'UTC');
+  $name = htmlspecialchars($inputName, ENT_QUOTES, 'UTF-8');
+  $class = htmlspecialchars(trim("form-select form-select-lg {$extraClass}"), ENT_QUOTES, 'UTF-8');
+  $html = "<select name='{$name}' class='{$class}' {$attrs} style='font-family: monospace; border: 2px solid #495057; max-height: 400px;'>";
+  foreach (DateTimeZone::listIdentifiers() as $timezone) {
+    $offsetSeconds = (new DateTime("now", new DateTimeZone($timezone)))->getOffset();
+    $offsetHours = $offsetSeconds / 3600;
+    $offset = $offsetSeconds === 0 ? "UTC" : "UTC" . ($offsetHours > 0 ? '+' : '-') . abs($offsetHours);
+    $sel = $timezone === $selected ? ' selected' : '';
+    $html .= '<option value="' . $timezone . '"' . $sel . '>' . $timezone . ' (' . $offset . ')</option>';
+  }
+  return $html . "</select>";
+}
+
+/**
+ * Captioned two-column table (label | copyable value).
+ *
+ * @param array<string,string> $rows Value by label
+ */
+function copyable_table_html(string $caption, array $rows): string {
+  $html = '<div class="table-responsive mt-3"><table class="table table-dark table-striped table-hover align-middle mb-0" style="border: 1px solid #334155;">';
+  if ($caption !== '') {
+    $html .= '<caption class="text-start fw-bold" style="caption-side: top; color: var(--bs-body-color);">' . htmlspecialchars($caption, ENT_QUOTES, 'UTF-8') . '</caption>';
+  }
+  $html .= '<tbody>';
+  foreach ($rows as $label => $value) {
+    $html .= '<tr><td style="width: 30%;">' . htmlspecialchars((string) $label, ENT_QUOTES, 'UTF-8') . '</td><td style="max-width: 360px;">'
+      . copyableOutput((string) $value, '') . '</td></tr>';
+  }
+  return $html . '</tbody></table></div>';
+}

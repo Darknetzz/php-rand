@@ -115,18 +115,8 @@
                     </div>
                 </div>
 
-                <div class="mb-3">
-                    <div class="form-check form-switch">
-                        <input type="checkbox" class="form-check-input" id="number_toolsseedtoggle" name="numgenuseseed" value="1">
-                        <label class="form-check-label" for="number_toolsseedtoggle">Use custom seed (for reproducible results)</label>
-                    </div>
-                </div>
+                <?= seed_field_html("numgen", "numbers") ?>
 
-                <div class="number_toolsseed mb-3" style="display:none;">
-                    <label class="form-label">Seed value</label>
-                    <input type="text" name="numgenseed" class="form-control" value="" placeholder="Enter a seed value (optional)" style="font-family: monospace;">
-                </div>
-                
                 <?= submitBtn("numgen") ?>
                 
                 <div class="responseDiv mt-3" id="numgenresponse" style="border: 1px solid #dee2e6; padding: 20px; min-height: 80px; background-color: rgba(0,0,0,0.1); border-radius: 0.25rem; font-family: monospace; text-align: center; font-size: 2rem; font-weight: bold; display: none;"></div>
@@ -137,15 +127,6 @@
 </div>
 
 <script>
-    // Seed toggle numgen
-    $("#number_toolsseedtoggle").change(function() {
-        if ($(this).is(":checked")) {
-            $(".number_toolsseed").slideDown();
-        } else {
-            $(".number_toolsseed").slideUp();
-        }
-    });
-
     // Toggle numeric range vs digit range
     function numgenToggleRangeMode() {
         var isDigits = $("#numgen_mode_digits").is(":checked");

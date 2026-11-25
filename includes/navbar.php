@@ -22,10 +22,20 @@ $navbarItems = [
                 "formalName" => "String Generator",
                 "icon"       => icon('case-lower')
             ],
+            "gen_passphrase" => [
+                "name"       => "gen_passphrase",
+                "formalName" => "Passphrase Generator",
+                "icon"       => icon('key-round')
+            ],
             "gen_image" => [
                 "name"       => "gen_image",
                 "formalName" => "Image Generator",
                 "icon"       => icon('image')
+            ],
+            "colour_gen" => [
+                "name"       => "colour_gen",
+                "formalName" => "Colour Generator",
+                "icon"       => icon('palette')
             ],
             "qrcode" => [
                 "name"       => "qrcode",
@@ -41,6 +51,36 @@ $navbarItems = [
                 "name"       => "spin_the_wheel",
                 "formalName" => "Spin Wheel",
                 "icon"       => icon('ban')
+            ],
+            "dice_roller" => [
+                "name"       => "dice_roller",
+                "formalName" => "Dice Roller",
+                "icon"       => icon('dices')
+            ],
+            "coin_flip" => [
+                "name"       => "coin_flip",
+                "formalName" => "Coin Flip",
+                "icon"       => icon('coins')
+            ],
+            "card_draw" => [
+                "name"       => "card_draw",
+                "formalName" => "Card Draw",
+                "icon"       => icon('spade')
+            ],
+            "magic_8ball" => [
+                "name"       => "magic_8ball",
+                "formalName" => "Magic 8-Ball",
+                "icon"       => icon('circle-question-mark')
+            ],
+            "placeholder_data" => [
+                "name"       => "placeholder_data",
+                "formalName" => "Placeholder Data",
+                "icon"       => icon('text-quote')
+            ],
+            "list_shuffler" => [
+                "name"       => "list_shuffler",
+                "formalName" => "List Shuffler",
+                "icon"       => icon('shuffle')
             ],
         ],
     ],
@@ -83,6 +123,11 @@ $navbarItems = [
                 "name"       => "csr",
                 "formalName" => "CSR Generator",
                 "icon"       => icon('file-lock')
+            ],
+            "password_strength" => [
+                "name"       => "password_strength",
+                "formalName" => "Password Strength",
+                "icon"       => icon('shield-check')
             ],
             "pem_openssh" => [
                 "name"       => "pem_openssh",
@@ -231,6 +276,11 @@ $navbarItems = [
                 "name"       => "shellcheck",
                 "formalName" => "ShellCheck",
                 "icon"       => icon("terminal"),
+            ],
+            "chmod" => [
+                "name"       => "chmod",
+                "formalName" => "Chmod Calculator",
+                "icon"       => icon("file-lock"),
             ],
             "validators" => [
                 "name"       => "validators",

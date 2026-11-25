@@ -24,7 +24,7 @@
                             <input type="checkbox" class="form-check-input" id="cryptoSafe" name="cryptoSafe" value="1" checked>
                             <label class="form-check-label" for="cryptoSafe">
                                 <strong>🔐 Cryptographically Secure</strong>
-                                <small class="text-muted d-block">Use random_bytes() for security-critical applications</small>
+                                <small class="text-muted d-block">Use random_int() for security-critical applications</small>
                             </label>
                         </div>
                     </div>
@@ -61,6 +61,16 @@
                     "desc" =>"Extended symbols",
                     "checked" => "",
                     "chars" => "ƒ†‡™•",
+                  ],
+                  "x" => [
+                    "desc" =>"Hexadecimal (lowercase)",
+                    "checked" => "",
+                    "chars" => "0-9a-f",
+                  ],
+                  "X" => [
+                    "desc" =>"Hexadecimal (uppercase)",
+                    "checked" => "",
+                    "chars" => "0-9A-F",
                   ],
                   "c" => [
                     "desc" =>"Custom characters",
@@ -104,6 +114,36 @@
                 ';
                 ?>
 
+                <div class="card border-secondary mb-3">
+                    <h5 class="card-header">Character Rules</h5>
+                    <div class="card-body" style="padding: 20px;">
+                        <div class="form-check form-switch mb-3">
+                            <input type="hidden" name="avoidAmbiguous" value="0">
+                            <input type="checkbox" class="form-check-input" id="avoidAmbiguous" name="avoidAmbiguous" value="1">
+                            <label class="form-check-label" for="avoidAmbiguous">
+                                <strong>Avoid ambiguous characters</strong>
+                                <small class="text-muted d-block">Leaves out look-alikes: <code><?= htmlspecialchars(implode(' ', utf8_chars(STRINGGEN_AMBIGUOUS_CHARS))) ?></code></small>
+                            </label>
+                        </div>
+                        <?php foreach (['min' => ['Min per type', 'leave empty or 0 for no minimum', '0'], 'max' => ['Max per type', 'leave empty for no limit', '∞']] as $kind => [$title, $hint, $placeholder]): ?>
+                        <label class="form-label<?= $kind === 'max' ? ' mt-3' : '' ?>"><strong><?= $title ?></strong> <small class="text-muted">(<?= $hint ?>)</small></label>
+                        <div class="row g-2">
+                            <?php foreach (STRINGGEN_CHAR_TYPES as $type => $label): ?>
+                            <div class="col-6 col-md-3">
+                                <div class="input-group">
+                                    <span class="input-group-text"><?= htmlspecialchars($label) ?></span>
+                                    <input type="number" class="form-control" name="<?= $kind ?>_<?= $type ?>" id="stringgen<?= ucfirst($kind) ?>_<?= $type ?>" min="0" placeholder="<?= $placeholder ?>" aria-label="<?= ucfirst($kind) ?> <?= htmlspecialchars($label) ?>">
+                                </div>
+                            </div>
+                            <?php endforeach; ?>
+                        </div>
+                        <?php endforeach; ?>
+                        <div class="form-text mt-2">
+                            <small>Special counts every character that is not a digit or letter (symbols, extended and custom symbols). Example: Min Numbers = 2 guarantees at least two digits; Max Special = 1 gives at most one special character.</small>
+                        </div>
+                    </div>
+                </div>
+
                 <?= submitBtn("stringgen") ?>
                 
                 <div class="responseDiv mt-3" id="stringgenresponse" style="border: 1px solid #dee2e6; padding: 20px; min-height: 100px; background-color: rgba(0,0,0,0.1); border-radius: 0.25rem; font-family: monospace; word-break: break-all;"></div>
@@ -118,7 +158,8 @@
         const $form = $("#stringgen");
         const $alphanumeric = $form.find("#a");
         const $alphanumericRow = $form.find('.stringgen-charset-row[data-charset="a"]');
-        const otherThanNumbers = "#l, #u, #s, #e, #c";
+        const otherThanNumbers = "#l, #u, #s, #e, #x, #X, #c";
+        const nonHexSets = "#a, #n, #l, #u, #s, #e";
 
         function syncAlphanumericOption(immediate) {
             const hideAlphanumeric = $form.find(otherThanNumbers).is(":checked");
@@ -137,6 +178,14 @@
             } else {
                 $("#cchars").slideUp();
             }
+        });
+
+        // Hex is a complete set on its own: picking one case clears the other
+        // built-in sets (custom characters stay) so the output is pure hex.
+        $form.find("#x, #X").on("change", function() {
+            if (!$(this).is(":checked")) return;
+            $form.find(nonHexSets).prop("checked", false);
+            $form.find(this.id === "x" ? "#X" : "#x").prop("checked", false);
         });
 
         $form.find(otherThanNumbers).on("change", function() {

@@ -381,6 +381,28 @@ th.tablehead,
   font-size: var(--rand-output-font-size);
 }
 
+/* Which RNG produced the output (rng_source_notice); stays readable inside large output boxes */
+.rng-notice {
+  font-size: 1rem;
+  font-weight: normal;
+  text-align: left;
+  margin-block: 0.75rem;
+}
+
+/* Passphrase Generator: entropy badge row above the result */
+.passphrase-meta {
+  font-size: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+/* "Seed used" line under seeded output (rng_seed_notes) */
+.rng-seed-used {
+  font-size: 1rem;
+  font-weight: normal;
+  opacity: 0.7;
+  margin-top: 0.75rem;
+}
+
 .tool-loading {
   text-align: center;
   padding: 3rem 0;
@@ -865,3 +887,463 @@ th.tablehead,
   border-color: rgba(13, 110, 253, 0.35);
   box-shadow: 0 0 8px rgba(13, 110, 253, 0.08);
 }
+
+/* ---------- Dice Roller ---------- */
+.dice-tray {
+  --dice-size: 72px;
+  --dice-hue: 129 58%;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: calc(var(--dice-size) * 0.4);
+  padding: 80px 8px 24px;
+}
+
+/* ---------- Magic 8-Ball (handle_eightball) ---------- */
+.eightball-result {
+  text-align: center;
+}
+
+.eightball-question {
+  font-size: 1.1rem;
+  font-style: italic;
+  margin-bottom: 1rem;
+}
+
+.eightball {
+  --eightball-tone: 129 58% 40%;
+  width: 220px;
+  height: 220px;
+  margin: 0 auto 1rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 35% 30%, #555 0%, #1a1a1a 45%, #000 100%);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.45);
+  animation: eightball-shake 0.7s ease-in-out;
+}
+
+.eightball-neutral {
+  --eightball-tone: 43 75% 45%;
+}
+
+.eightball-negative {
+  --eightball-tone: 0 65% 45%;
+}
+
+.eightball-window {
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px;
+  background: radial-gradient(circle, #10203a 0%, #050a14 100%);
+  border: 3px solid #2a2a2a;
+}
+
+.eightball-answer {
+  color: #fff;
+  background: hsl(var(--eightball-tone));
+  clip-path: polygon(50% 100%, 0 0, 100% 0);
+  width: 100%;
+  aspect-ratio: 1 / 0.9;
+  padding: 8px 16px 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.15;
+  animation: eightball-reveal 0.9s ease-out 0.6s backwards;
+}
+
+.eightball-summary {
+  text-align: left;
+}
+
+@keyframes eightball-shake {
+  0%, 100% { transform: translate(0, 0) rotate(0); }
+  20% { transform: translate(-8px, 2px) rotate(-6deg); }
+  40% { transform: translate(8px, -2px) rotate(6deg); }
+  60% { transform: translate(-6px, 1px) rotate(-4deg); }
+  80% { transform: translate(4px, 0) rotate(2deg); }
+}
+
+@keyframes eightball-reveal {
+  from { opacity: 0; transform: scale(0.6) rotate(-20deg); filter: blur(4px); }
+  to { opacity: 1; transform: none; filter: none; }
+}
+
+/* ---------- Card Draw (handle_card_draw) ---------- */
+.card-draw-table {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  padding: 16px 0 24px;
+}
+
+.playing-card {
+  position: relative;
+  width: 72px;
+  height: 104px;
+  border-radius: 8px;
+  background: #fff;
+  border: 1px solid #c8c8c8;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: Georgia, "Times New Roman", serif;
+  animation: card-deal 0.45s ease-out backwards;
+  animation-delay: calc(min(var(--i), 20) * 0.06s);
+}
+
+.playing-card-red {
+  color: #c62828;
+}
+
+.playing-card-black {
+  color: #111;
+}
+
+.playing-card-pip {
+  font-size: 2.4rem;
+  line-height: 1;
+}
+
+.playing-card-corner {
+  position: absolute;
+  top: 4px;
+  left: 6px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
+}
+
+.playing-card-corner-end {
+  top: auto;
+  left: auto;
+  bottom: 4px;
+  right: 6px;
+  transform: rotate(180deg);
+}
+
+.playing-card-joker .playing-card-corner {
+  font-size: 0.55rem;
+  letter-spacing: 0.02em;
+}
+
+@keyframes card-deal {
+  from { opacity: 0; transform: translate(-40px, -60px) rotate(-25deg); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .eightball,
+  .eightball-answer,
+  .playing-card {
+    animation: none;
+  }
+}
+
+/* Recent results (result_history_html() / renderResultHistory()) */
+.rand-history {
+  border-top: 1px solid var(--bs-border-color);
+  padding-top: 1rem;
+}
+
+.rand-history-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.rand-history-title {
+  font-size: 1rem;
+  margin: 0;
+}
+
+.rand-history-tally {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.rand-history-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 18rem;
+  overflow-y: auto;
+  font-family: monospace;
+}
+
+.rand-history-list li {
+  display: flex;
+  gap: 0.75rem;
+  padding: 0.2rem 0;
+  border-bottom: 1px dashed var(--bs-border-color);
+}
+
+.rand-history-list time {
+  flex: none;
+  color: var(--bs-secondary-color);
+}
+
+/* Coin Flip: gold coins (modules/coin_flip.php). */
+.dice-tray-coin {
+  --dice-hue: 43 75%;
+}
+
+.dice-tray-sm {
+  --dice-size: 48px;
+}
+
+.dice-tray-xs {
+  --dice-size: 34px;
+}
+
+.dice-roll-rolling .dice-summary {
+  visibility: hidden;
+}
+
+/* Dice notation keep/drop (4d6kh3): dropped dice fade once they land. */
+.dice-die-dropped {
+  opacity: 0.35;
+  filter: grayscale(0.8);
+  transition: opacity 0.4s, filter 0.4s;
+}
+.dice-roll-rolling .dice-die-dropped {
+  opacity: 1;
+  filter: none;
+}
+
+.dice-die {
+  position: relative;
+  width: var(--dice-size);
+  height: var(--dice-size);
+  perspective: calc(var(--dice-size) * 6);
+}
+
+.dice-solid {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+}
+
+/* One face of a polyhedron die: placed by an inline matrix3d and clipped to its
+   polygon (js/rand.js diceLayout). The darker outer layer shows as the edges. */
+.dice-poly-face {
+  --dice-face-l: 44%;
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+  background: hsl(var(--dice-hue) calc(var(--dice-face-l) - 14%));
+  backface-visibility: hidden;
+}
+
+.dice-poly-face-inner {
+  position: absolute;
+  inset: 0;
+  background: hsl(var(--dice-hue) var(--dice-face-l));
+}
+
+.dice-poly-face-rounded {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14%;
+  background: hsl(var(--dice-hue) var(--dice-face-l));
+  box-shadow: inset 0 0 calc(var(--dice-size) * 0.14) rgba(0, 0, 0, 0.3);
+}
+
+.dice-face-label {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  color: #fff;
+  font-family: monospace;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.dice-poly-face-rounded .dice-face-label,
+.dice-ball .dice-face-label {
+  left: 50%;
+  top: 50%;
+}
+
+.dice-face-label-underline {
+  text-decoration: underline;
+  text-underline-offset: 0.08em;
+}
+
+.dice-face-pips {
+  display: grid;
+  grid-template: repeat(3, 1fr) / repeat(3, 1fr);
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  padding: 12%;
+}
+
+.dice-pip {
+  width: 72%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: #fff;
+}
+
+/* Result shown over the die when its face is too small to read (js/rand.js). */
+.dice-result-badge {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  padding: 0.1em 0.35em;
+  border-radius: 0.4em;
+  background: rgba(0, 0, 0, 0.72);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.35);
+  color: #fff;
+  font-family: monospace;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.6);
+  transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+  pointer-events: none;
+}
+
+.dice-result-badge-shown {
+  opacity: 1;
+  transform: translate(-50%, -50%) scale(1);
+}
+
+/* Dice with too many sides to draw (d61+) roll as a ball, like a real d100. */
+.dice-ball {
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, hsl(var(--dice-hue) 62%), hsl(var(--dice-hue) 42%) 45%, hsl(var(--dice-hue) 22%));
+  box-shadow: inset 0 0 calc(var(--dice-size) * 0.08) rgba(0, 0, 0, 0.35);
+}
+
+/* Chmod Calculator */
+.chmod-grid {
+  max-width: 420px;
+}
+.chmod-grid .form-check-input {
+  width: 1.4em;
+  height: 1.4em;
+}
+
+/* Colour Generator (modules/colour_gen.php) */
+.colour-swatches {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 0.75rem;
+}
+.colour-swatches-single {
+  grid-template-columns: minmax(220px, 420px);
+}
+.colour-swatch {
+  border: 1px solid var(--tblr-border-color, rgba(255, 255, 255, 0.15));
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+.colour-swatch-locked {
+  border-color: var(--tblr-primary, #206bc4);
+  box-shadow: 0 0 0 2px var(--tblr-primary, #206bc4);
+}
+.colour-swatch-colour {
+  position: relative;
+  height: 130px;
+  display: flex;
+  align-items: flex-end;
+  padding: 0.5rem 0.75rem;
+}
+.colour-swatches-single .colour-swatch-colour {
+  height: 200px;
+}
+.colour-swatch-hex {
+  font-family: monospace;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+.colour-lock {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.4rem;
+  --tblr-btn-bg: transparent;
+  --tblr-btn-hover-bg: rgba(127, 127, 127, 0.25);
+  --tblr-btn-active-bg: rgba(127, 127, 127, 0.35);
+  background: var(--tblr-btn-bg);
+  border: 0;
+  box-shadow: none;
+  font-size: 1.1rem;
+}
+.colour-swatch-values {
+  padding: 0.5rem 0.75rem;
+}
+.colour-value {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.25rem;
+}
+.colour-value-label {
+  width: 2.5rem;
+  font-size: 0.75rem;
+  opacity: 0.7;
+}
+.colour-value code {
+  flex: 1;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Placeholder Data: keep large outputs scrollable */
+.fake-data-output .copyable-body {
+  max-height: 480px;
+  white-space: pre;
+  word-break: normal;
+  overflow-x: auto;
+}
+
+/* Password Strength Checker (modules/password_strength.php) */
+.pwstrength-meter {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  height: 10px;
+}
+.pwstrength-meter span {
+  border-radius: 3px;
+  background: rgba(127, 127, 127, 0.25);
+  transition: background 0.2s;
+}
+.pwstrength-meter[data-score="0"] span:nth-child(-n+1) { background: #d63939; }
+.pwstrength-meter[data-score="1"] span:nth-child(-n+2) { background: #f76707; }
+.pwstrength-meter[data-score="2"] span:nth-child(-n+3) { background: #f59f00; }
+.pwstrength-meter[data-score="3"] span:nth-child(-n+4) { background: #74b816; }
+.pwstrength-meter[data-score="4"] span { background: #2fb344; }
+.pwstrength-label {
+  min-width: 9rem;
+  text-align: right;
+}
+.pwstrength-label[data-score="0"] { color: #d63939; }
+.pwstrength-label[data-score="1"] { color: #f76707; }
+.pwstrength-label[data-score="2"] { color: #f59f00; }
+.pwstrength-label[data-score="3"] { color: #74b816; }
+.pwstrength-label[data-score="4"] { color: #2fb344; }

@@ -245,7 +245,7 @@ function ensureHighlightJsAssets(theme) {
 /* ===================================================================== */
 function ensureMarkdownAssets() {
     return $.when(
-        loadScriptOnce("https://cdn.jsdelivr.net/npm/marked/lib/marked.umd.js"),
+        loadScriptOnce("https://cdn.jsdelivr.net/npm/marked@18.3.0/lib/marked.umd.js"),
         ensureHighlightJsAssets("dark")
     );
 }
@@ -562,7 +562,6 @@ function submitToolForm($form, options = {}) {
     var responseType = options.responseType || form.data("responsetype") || "html";
     var action = options.action || form.data("action") || form.find("input[name=action]").val();
     var url = options.url || form.attr("action") || "gen.php";
-    var data = options.data || form.serialize();
     var loadingMessage = options.loadingMessage || "Generating...";
     var onSuccess = options.onSuccess || function(dataOut) { showData(responseObj, dataOut); };
     var onError = options.onError || function(xhr) {
@@ -576,6 +575,8 @@ function submitToolForm($form, options = {}) {
     if (action) {
         setFormVal(form, "action", action);
     }
+    // Serialize after the hidden action/responsetype inputs exist.
+    var data = options.data || form.serialize();
 
     if (responseObj.length === 0) {
         $("#error").html("<br><div class='alert alert-danger'>No response object found.</div>").show();
@@ -1386,6 +1387,30 @@ function setFormVal(form, name = "action", value = "") {
     $(form).append(hiddenInput);
 }
 
+/* ===================================================================== */
+/*                       FUNCTION: getFormSubmitter                       */
+/* ===================================================================== */
+/**
+ * Resolve the submit button that triggered a form submit.
+ * jQuery's serialize() never includes buttons, and on Enter (implicit
+ * submission) focus stays in the text field, so `.genBtn:focus` is empty.
+ * Order: SubmitEvent.submitter (set by the browser for clicks and Enter),
+ * then a focused submit button inside this form, then the form's first
+ * submit button (the browser's default button for implicit submission).
+ */
+function getFormSubmitter(form, e) {
+    var $form = $(form);
+    var submitter = e && e.originalEvent && e.originalEvent.submitter;
+    if (submitter && $form.has(submitter).length) {
+        return $(submitter);
+    }
+    var $focused = $form.find("button[type=submit]:focus, input[type=submit]:focus").first();
+    if ($focused.length) {
+        return $focused;
+    }
+    return $form.find("button[type=submit], input[type=submit]").first();
+}
+
 const ACTIVE_MODULE_STORAGE_KEY = "rand.activeModule";
 
 function normalizeModuleHash(value) {
@@ -1923,13 +1948,12 @@ function initLogoGeneratorUi($scope) {
         }
     };
 
-    const rndHex = () => "#" + Math.floor(Math.random() * 16777215).toString(16).padStart(6, "0");
     const randomizePalette = () => {
-        setVal("logo_bg_color", rndHex());
-        setVal("logo_accent_color", rndHex());
+        setVal("logo_bg_color", randomHexColour());
+        setVal("logo_accent_color", randomHexColour());
         setVal("logo_text_color", "#ffffff");
-        setVal("logo_text_accent_color", rndHex());
-        setVal("logo_border_color", rndHex());
+        setVal("logo_text_accent_color", randomHexColour());
+        setVal("logo_border_color", randomHexColour());
         if ($hint.length) {
             $hint.text("Colors shuffled — preview updating.");
         }
@@ -1947,7 +1971,7 @@ function initLogoGeneratorUi($scope) {
         const id = this.getAttribute("data-target");
         const el = id ? document.getElementById(id) : null;
         if (el && el.type === "color") {
-            el.value = rndHex();
+            el.value = randomHexColour();
             scheduleLogoPreviewSoon();
             scheduleLogoPersist();
         }
@@ -2114,6 +2138,431 @@ function initRelativeTimeUi($root) {
         $form.on("change", "#relativeMode, input[name='relative_input_style']", syncRelativeTimeUi);
     }
     syncRelativeTimeUi();
+}
+
+/* ===================================================================== */
+/*                      Colour helpers (shared)                          */
+/* ===================================================================== */
+// Used by the Colour Generator (initColourGenUi) and the logo generator.
+
+/** Uniform integer in [min, max] from crypto.getRandomValues (rejection sampling). */
+function secureRandomInt(min, max) {
+    const range = max - min + 1;
+    if (!(window.crypto && window.crypto.getRandomValues) || range <= 0) {
+        return min + Math.floor(Math.random() * range);
+    }
+    const limit = Math.floor(0x100000000 / range) * range;
+    const buf = new Uint32Array(1);
+    do {
+        window.crypto.getRandomValues(buf);
+    } while (buf[0] >= limit);
+    return min + (buf[0] % range);
+}
+
+function randomHexColour() {
+    return "#" + secureRandomInt(0, 0xffffff).toString(16).padStart(6, "0");
+}
+
+function hexToRgb(hex) {
+    const n = parseInt(String(hex).replace(/^#/, ""), 16);
+    return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+}
+
+/** HSL with h in [0, 360), s and l in [0, 100]. */
+function rgbToHsl(rgb) {
+    const r = rgb.r / 255, g = rgb.g / 255, b = rgb.b / 255;
+    const max = Math.max(r, g, b), min = Math.min(r, g, b);
+    const l = (max + min) / 2;
+    let h = 0, s = 0;
+    if (max !== min) {
+        const d = max - min;
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        h = max === r ? (g - b) / d + (g < b ? 6 : 0) : (max === g ? (b - r) / d + 2 : (r - g) / d + 4);
+        h *= 60;
+    }
+    return { h: Math.round(h) % 360, s: Math.round(s * 100), l: Math.round(l * 100) };
+}
+
+function hslToHex(h, s, l) {
+    h = ((h % 360) + 360) % 360;
+    s = Math.max(0, Math.min(100, s)) / 100;
+    l = Math.max(0, Math.min(100, l)) / 100;
+    const k = (n) => (n + h / 30) % 12;
+    const a = s * Math.min(l, 1 - l);
+    const f = (n) => Math.round(255 * (l - a * Math.max(-1, Math.min(k(n) - 3, 9 - k(n), 1))));
+    return "#" + [f(0), f(8), f(4)].map((v) => v.toString(16).padStart(2, "0")).join("");
+}
+
+/** "#000000" or "#ffffff", whichever has the higher WCAG contrast on hex. */
+function contrastTextColour(hex) {
+    const rgb = hexToRgb(hex);
+    const lin = (c) => {
+        c /= 255;
+        return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    };
+    const lum = 0.2126 * lin(rgb.r) + 0.7152 * lin(rgb.g) + 0.0722 * lin(rgb.b);
+    // Contrast with black (lum + 0.05) / 0.05 vs white 1.05 / (lum + 0.05)
+    return (lum + 0.05) * (lum + 0.05) > 0.0525 ? "#000000" : "#ffffff";
+}
+
+/* ===================================================================== */
+/*                      FUNCTION: initColourGenUi                        */
+/* ===================================================================== */
+// Colour Generator (modules/colour_gen.php): one colour or a 5-colour scheme,
+// with per-swatch locks kept across re-rolls.
+const COLOUR_PALETTE_SIZE = 5;
+
+/** Colour for palette slot i of a scheme around base hue h. */
+function colourSchemeHex(scheme, h, i) {
+    const r = secureRandomInt;
+    switch (scheme) {
+        case "analogous":
+            return hslToHex(h + (i - 2) * 20 + r(-5, 5), r(45, 80), r(38, 68));
+        case "complementary":
+            return hslToHex(h + (i % 2 ? 180 : 0) + r(-8, 8), r(45, 85), [30, 45, 55, 65, 78][i]);
+        case "triadic":
+            return hslToHex(h + (i % 3) * 120 + r(-6, 6), r(45, 85), r(38, 65));
+        case "monochrome":
+            return hslToHex(h, r(35, 70), [18, 34, 50, 66, 82][i]);
+        default:
+            return randomHexColour();
+    }
+}
+
+function initColourGenUi($root) {
+    const $scope = ($root && $root.length) ? $root : $(document);
+    const $form = $scope.find("#colour_gen_form").first();
+    if (!$form.length || $form.data("colour-ui-bound")) {
+        return;
+    }
+    $form.data("colour-ui-bound", true);
+    const $swatches = $form.find("#colour_swatches");
+    let swatches = []; // [{hex, locked}]
+
+    function mode() {
+        return $form.find("input[name='colour_mode']:checked").val() || "palette";
+    }
+
+    function generate() {
+        const isPalette = mode() === "palette";
+        const size = isPalette ? COLOUR_PALETTE_SIZE : 1;
+        const scheme = isPalette ? ($form.find("#colour_scheme").val() || "random") : "random";
+        swatches = swatches.slice(0, size);
+        // Base hue: the first locked colour, so new colours fit around it.
+        const locked = swatches.find((s) => s.locked);
+        const baseHue = locked ? rgbToHsl(hexToRgb(locked.hex)).h : secureRandomInt(0, 359);
+        for (let i = 0; i < size; i++) {
+            if (!swatches[i] || !swatches[i].locked) {
+                swatches[i] = { hex: colourSchemeHex(scheme, baseHue, i), locked: false };
+            }
+        }
+        render();
+    }
+
+    function render() {
+        const stamp = Date.now().toString(36);
+        $swatches.toggleClass("colour-swatches-single", swatches.length === 1);
+        $swatches.html(swatches.map(function(s, i) {
+            const hex = s.hex.toUpperCase();
+            const rgb = hexToRgb(s.hex);
+            const hsl = rgbToHsl(rgb);
+            const text = contrastTextColour(s.hex);
+            const values = [
+                ["HEX", hex],
+                ["RGB", "rgb(" + rgb.r + ", " + rgb.g + ", " + rgb.b + ")"],
+                ["HSL", "hsl(" + hsl.h + ", " + hsl.s + "%, " + hsl.l + "%)"]
+            ];
+            return "<div class='colour-swatch" + (s.locked ? " colour-swatch-locked" : "") + "'>"
+                + "<div class='colour-swatch-colour' style='background:" + s.hex + ";color:" + text + "'>"
+                + "<span class='colour-swatch-hex'>" + hex + "</span>"
+                + "<button type='button' class='btn btn-sm colour-lock' data-index='" + i + "' aria-pressed='" + s.locked + "'"
+                + " title='" + (s.locked ? "Unlock" : "Lock (keep on re-roll)") + "' style='color:" + text + "'>"
+                + "<i class='icon-" + (s.locked ? "lock" : "lock-open") + "' aria-hidden='true'></i></button>"
+                + "</div>"
+                + "<div class='colour-swatch-values'>"
+                + values.map(function(v, j) {
+                    const id = "colour_" + stamp + "_" + i + "_" + j;
+                    return "<div class='colour-value'><span class='colour-value-label'>" + v[0] + "</span>"
+                        + "<code id='" + id + "'>" + v[1] + "</code>"
+                        + "<button type='button' class='btn btn-sm " + btnClass("light") + "' title='Copy " + v[0] + "'"
+                        + " onclick=\"copyToClipboard('" + id + "', this)\"><i class='icon-copy' aria-hidden='true'></i></button></div>";
+                }).join("")
+                + "</div></div>";
+        }).join(""));
+    }
+
+    $form.on("click", "#colour_generate", generate);
+    $form.on("change", "input[name='colour_mode']", function() {
+        $form.find(".colour-scheme-field").toggleClass("d-none", mode() !== "palette");
+        generate();
+    });
+    $form.on("change", "#colour_scheme", generate);
+    $form.on("click", ".colour-lock", function() {
+        const s = swatches[parseInt(this.dataset.index, 10)];
+        if (s) {
+            s.locked = !s.locked;
+            render();
+        }
+    });
+    generate();
+}
+
+/* ===================================================================== */
+/*                      FUNCTION: initPasswordStrengthUi                 */
+/* ===================================================================== */
+// Password Strength Checker (modules/password_strength.php). Runs zxcvbn in the
+// browser; the password is never sent anywhere or stored.
+const ZXCVBN_VERSION = "4.4.2";
+const ZXCVBN_SRC = "https://cdnjs.cloudflare.com/ajax/libs/zxcvbn/" + ZXCVBN_VERSION + "/zxcvbn.js";
+const PWSTRENGTH_LABELS = ["Very weak", "Weak", "Fair", "Strong", "Very strong"];
+const PWSTRENGTH_TIMES = [
+    ["online_throttling_100_per_hour", "Online attack, rate-limited (100 guesses/hour)"],
+    ["online_no_throttling_10_per_second", "Online attack, no rate limit (10 guesses/second)"],
+    ["offline_slow_hashing_1e4_per_second", "Offline, slow hash like bcrypt (10k guesses/second)"],
+    ["offline_fast_hashing_1e10_per_second", "Offline, fast hash like MD5 (10 billion guesses/second)"]
+];
+
+/** Plain-language description of one zxcvbn match. */
+function pwstrengthDescribeMatch(m) {
+    switch (m.pattern) {
+        case "dictionary": {
+            const dict = { passwords: "common password", english_wikipedia: "common word", female_names: "name", male_names: "name", surnames: "surname", us_tv_and_film: "word from TV and film", user_inputs: "your input" }[m.dictionary_name] || "dictionary word";
+            return dict + (m.reversed ? ", reversed" : "") + (m.l33t ? ", with l33t substitutions" : "") + " (rank " + m.rank + ")";
+        }
+        case "spatial":
+            return "keyboard pattern (" + m.graph + ", " + m.turns + " turn" + (m.turns === 1 ? "" : "s") + ")";
+        case "repeat":
+            return "repeat of “" + m.base_token + "”";
+        case "sequence":
+            return (m.sequence_name || "") + " sequence" + (m.ascending ? "" : " (descending)");
+        case "regex":
+            return m.regex_name === "recent_year" ? "recent year" : (m.regex_name || "pattern");
+        case "date":
+            return "date";
+        case "bruteforce":
+            return "random characters";
+        default:
+            return m.pattern;
+    }
+}
+
+function initPasswordStrengthUi($root) {
+    const $scope = ($root && $root.length) ? $root : $(document);
+    const $form = $scope.find("#password_strength_form").first();
+    if (!$form.length || $form.data("pwstrength-ui-bound")) {
+        return;
+    }
+    $form.data("pwstrength-ui-bound", true);
+    const input = $form.find("#pwstrength_input")[0];
+    const toggle = $form.find("#pwstrength_toggle")[0];
+    const $card = $form.closest(".card-body");
+    const status = $card.find("#pwstrength_status")[0];
+    const result = $card.find("#pwstrength_result")[0];
+    let timer = null;
+
+    const cell = function(tag, text, className) {
+        const el = document.createElement(tag);
+        el.textContent = text;
+        if (className) {
+            el.className = className;
+        }
+        return el;
+    };
+
+    function render() {
+        const pw = input.value;
+        if (!pw) {
+            result.classList.add("d-none");
+            status.textContent = "";
+            return;
+        }
+        if (typeof window.zxcvbn !== "function") {
+            return;
+        }
+        // zxcvbn gets slow on very long input; the first 100 characters decide the score anyway.
+        const r = window.zxcvbn(pw.slice(0, 100));
+        result.classList.remove("d-none");
+        status.textContent = pw.length > 100 ? "Only the first 100 characters are checked." : "";
+
+        const meter = $card.find(".pwstrength-meter")[0];
+        meter.dataset.score = r.score;
+        $card.find("#pwstrength_label").text(r.score + "/4 – " + PWSTRENGTH_LABELS[r.score]).attr("data-score", r.score);
+        $card.find("#pwstrength_guesses").text("About 10^" + r.guesses_log10.toFixed(1) + " guesses needed (" + Math.round(r.guesses_log10 * Math.log2(10)) + " bits).");
+
+        const feedback = $card.find("#pwstrength_feedback").empty()[0];
+        if (r.feedback.warning) {
+            feedback.appendChild(cell("div", r.feedback.warning, "alert alert-warning py-2 mb-2"));
+        }
+        if (r.feedback.suggestions && r.feedback.suggestions.length) {
+            const ul = document.createElement("ul");
+            ul.className = "mb-0";
+            r.feedback.suggestions.forEach(function(s) { ul.appendChild(cell("li", s)); });
+            feedback.appendChild(ul);
+        } else if (!r.feedback.warning) {
+            feedback.appendChild(cell("div", "No obvious weaknesses found.", "text-success"));
+        }
+
+        const times = $card.find("#pwstrength_times").empty()[0];
+        PWSTRENGTH_TIMES.forEach(function(t) {
+            const tr = document.createElement("tr");
+            tr.appendChild(cell("td", t[1]));
+            tr.appendChild(cell("td", r.crack_times_display[t[0]], "text-end fw-semibold text-nowrap"));
+            times.appendChild(tr);
+        });
+
+        const patterns = $card.find("#pwstrength_patterns").empty()[0];
+        r.sequence.forEach(function(m) {
+            const tr = document.createElement("tr");
+            tr.appendChild(cell("td", m.token, "font-monospace"));
+            tr.appendChild(cell("td", pwstrengthDescribeMatch(m)));
+            tr.appendChild(cell("td", "10^" + Math.log10(Math.max(1, m.guesses)).toFixed(1), "text-nowrap"));
+            patterns.appendChild(tr);
+        });
+    }
+
+    input.addEventListener("input", function() {
+        clearTimeout(timer);
+        timer = setTimeout(render, 120);
+    });
+    toggle.addEventListener("click", function() {
+        const show = input.type === "password";
+        input.type = show ? "text" : "password";
+        toggle.setAttribute("aria-pressed", String(show));
+        toggle.title = show ? "Hide password" : "Show password";
+        toggle.innerHTML = "<i class='icon-" + (show ? "eye-off" : "eye") + "' aria-hidden='true'></i>";
+        input.focus();
+    });
+
+    status.textContent = "Loading zxcvbn…";
+    loadScriptOnce(ZXCVBN_SRC).then(function() {
+        status.textContent = "";
+        render();
+    }, function() {
+        status.textContent = "Could not load zxcvbn from the CDN, so the password can't be checked. Check your connection and reload.";
+        status.classList.add("text-danger");
+    });
+}
+
+/* ===================================================================== */
+/*                      FUNCTION: initChmodUi                            */
+/* ===================================================================== */
+// Chmod Calculator (modules/chmod.php): checkboxes, octal and symbolic views
+// of one mode (0–07777), kept in sync in the browser.
+const CHMOD_CLASSES = [
+    { who: "u", shift: 6, special: 0o4000, set: "s" },
+    { who: "g", shift: 3, special: 0o2000, set: "s" },
+    { who: "o", shift: 0, special: 0o1000, set: "t" }
+];
+const CHMOD_PERMS = [{ perm: "r", bit: 4 }, { perm: "w", bit: 2 }, { perm: "x", bit: 1 }];
+const CHMOD_SPECIAL_BITS = { suid: 0o4000, sgid: 0o2000, sticky: 0o1000 };
+
+function chmodToSymbolic(mode) {
+    return CHMOD_CLASSES.map(function(c) {
+        const bits = (mode >> c.shift) & 7;
+        const special = (mode & c.special) !== 0;
+        const exec = (bits & 1) !== 0;
+        const x = special ? (exec ? c.set : c.set.toUpperCase()) : (exec ? "x" : "-");
+        return ((bits & 4) ? "r" : "-") + ((bits & 2) ? "w" : "-") + x;
+    }).join("");
+}
+
+/** Mode from "rwxr-xr-x" (or ls-style "-rwxr-xr-x"), or null if invalid. */
+function chmodParseSymbolic(text) {
+    let s = String(text).trim();
+    if (s.length === 10 && "-dlbcps".indexOf(s[0]) !== -1) {
+        s = s.slice(1);
+    }
+    if (!/^[r-][w-][xsS-][r-][w-][xsS-][r-][w-][xtT-]$/.test(s)) {
+        return null;
+    }
+    let mode = 0;
+    CHMOD_CLASSES.forEach(function(c, i) {
+        const part = s.substr(i * 3, 3);
+        let bits = (part[0] === "r" ? 4 : 0) | (part[1] === "w" ? 2 : 0);
+        const x = part[2];
+        if (x === "x" || x === c.set) {
+            bits |= 1;
+        }
+        if (x === c.set || x === c.set.toUpperCase()) {
+            mode |= c.special;
+        }
+        mode |= bits << c.shift;
+    });
+    return mode;
+}
+
+function chmodToOctal(mode) {
+    return mode > 0o777 ? mode.toString(8).padStart(4, "0") : mode.toString(8).padStart(3, "0");
+}
+
+function initChmodUi($root) {
+    const $scope = ($root && $root.length) ? $root : $(document);
+    const $form = $scope.find("#chmod_form").first();
+    if (!$form.length || $form.data("chmod-ui-bound")) {
+        return;
+    }
+    $form.data("chmod-ui-bound", true);
+    const $octal = $form.find("#chmod_octal");
+    const $symbolic = $form.find("#chmod_symbolic");
+    const $command = $form.find(".chmod-command .copyable-body");
+
+    function modeFromCheckboxes() {
+        let mode = 0;
+        $form.find(".chmod-bit").each(function() {
+            if (this.checked) {
+                const c = CHMOD_CLASSES.find((k) => k.who === this.dataset.who);
+                const p = CHMOD_PERMS.find((k) => k.perm === this.dataset.perm);
+                mode |= p.bit << c.shift;
+            }
+        });
+        $form.find(".chmod-special").each(function() {
+            if (this.checked) {
+                mode |= CHMOD_SPECIAL_BITS[this.dataset.special];
+            }
+        });
+        return mode;
+    }
+
+    // Show mode everywhere except the field the user is typing in.
+    function render(mode, source) {
+        $form.find(".chmod-bit").each(function() {
+            const c = CHMOD_CLASSES.find((k) => k.who === this.dataset.who);
+            const p = CHMOD_PERMS.find((k) => k.perm === this.dataset.perm);
+            this.checked = ((mode >> c.shift) & p.bit) !== 0;
+        });
+        $form.find(".chmod-special").each(function() {
+            this.checked = (mode & CHMOD_SPECIAL_BITS[this.dataset.special]) !== 0;
+        });
+        if (source !== "octal") {
+            $octal.val(chmodToOctal(mode)).removeClass("is-invalid");
+        }
+        if (source !== "symbolic") {
+            $symbolic.val(chmodToSymbolic(mode)).removeClass("is-invalid");
+        }
+        $command.text("chmod " + chmodToOctal(mode) + " file");
+    }
+
+    $form.on("change", ".chmod-bit, .chmod-special", function() {
+        render(modeFromCheckboxes(), "checkbox");
+    });
+    $octal.on("input", function() {
+        const v = String(this.value).trim();
+        const ok = /^[0-7]{3,4}$/.test(v);
+        $octal.toggleClass("is-invalid", !ok && v !== "");
+        if (ok) {
+            render(parseInt(v, 8), "octal");
+        }
+    });
+    $symbolic.on("input", function() {
+        const mode = chmodParseSymbolic(this.value);
+        $symbolic.toggleClass("is-invalid", mode === null && String(this.value).trim() !== "");
+        if (mode !== null) {
+            render(mode, "symbolic");
+        }
+    });
+
+    const initial = /^[0-7]{3,4}$/.test($octal.val()) ? parseInt($octal.val(), 8) : 0o644;
+    render(initial, null);
 }
 
 /* ===================================================================== */
@@ -2396,7 +2845,11 @@ function navigate(to) {
         initCrontabLiveAnalyzeUi($(normalizedTo));
         initRelativeTimeUi($(normalizedTo));
         initSubnetMaskUi($(normalizedTo));
+        initChmodUi($(normalizedTo));
+        initColourGenUi($(normalizedTo));
+        initPasswordStrengthUi($(normalizedTo));
         initSyntaxHighlightUi($(normalizedTo));
+        initResultHistoryUi($(normalizedTo));
         refreshClientCryptoGeneratorUi($(normalizedTo));
     };
 
@@ -2497,6 +2950,615 @@ function randomizeDice() {
     var dice = [1, 2, 3, 4, 5, 6];
     var diceIcon = dice[Math.floor(Math.random() * dice.length)];
     $(".dice").html('<i class="icon-dice-' + diceIcon + '"></i>');
+}
+
+/* ===================================================================== */
+/*                       FUNCTION: renderDiceRoll                        */
+/* ===================================================================== */
+// Each die is drawn with as many faces as it has sides: a coin for d2, the
+// Platonic solids for d4/d6/d8/d12/d20, a trapezohedron (d10-style kites)
+// for other even counts, a prism (barrel die) for odd counts, and a ball
+// above DICE_SHAPE_MAX_FACES, where faces would be too small to see.
+// Coordinates follow CSS: x right, y down, z toward the viewer.
+const DICE_SHAPE_MAX_FACES = 60;
+// Below this font size (fraction of --dice-size) the result also gets a badge.
+const DICE_BADGE_MIN_FONT = 0.2;
+// Lit cells of a 3x3 grid for each d6 value.
+const DICE_PIPS = { 1: [4], 2: [0, 8], 3: [0, 4, 8], 4: [0, 2, 6, 8], 5: [0, 2, 4, 6, 8], 6: [0, 2, 3, 5, 6, 8] };
+const DICE_LIGHT = vecNorm([-0.35, -0.6, 1]);
+const diceLayoutCache = {};
+
+function randomBetween(min, max) {
+    return min + Math.random() * (max - min);
+}
+
+function vecAdd(a, b) { return [a[0] + b[0], a[1] + b[1], a[2] + b[2]]; }
+function vecSub(a, b) { return [a[0] - b[0], a[1] - b[1], a[2] - b[2]]; }
+function vecScale(a, k) { return [a[0] * k, a[1] * k, a[2] * k]; }
+function vecDot(a, b) { return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]; }
+function vecCross(a, b) { return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]; }
+function vecLen(a) { return Math.sqrt(vecDot(a, a)); }
+function vecNorm(a) { return vecScale(a, 1 / vecLen(a)); }
+function vecMean(points) {
+    return vecScale(points.reduce(vecAdd, [0, 0, 0]), 1 / points.length);
+}
+
+// 3x3 matrices as row arrays.
+function matMul(a, b) {
+    return a.map(function(row) {
+        return [0, 1, 2].map(function(j) { return row[0] * b[0][j] + row[1] * b[1][j] + row[2] * b[2][j]; });
+    });
+}
+function matApply(m, v) { return [vecDot(m[0], v), vecDot(m[1], v), vecDot(m[2], v)]; }
+function matRotX(deg) {
+    const r = deg * Math.PI / 180, c = Math.cos(r), s = Math.sin(r);
+    return [[1, 0, 0], [0, c, -s], [0, s, c]];
+}
+function matRotY(deg) {
+    const r = deg * Math.PI / 180, c = Math.cos(r), s = Math.sin(r);
+    return [[c, 0, s], [0, 1, 0], [-s, 0, c]];
+}
+
+// Triangle faces of a solid whose edges all have the shortest vertex distance.
+function diceTriangleFaces(verts) {
+    let edge = Infinity;
+    verts.forEach(function(a, i) {
+        verts.forEach(function(b, j) { if (j > i) { edge = Math.min(edge, vecLen(vecSub(a, b))); } });
+    });
+    const adjacent = function(i, j) { return Math.abs(vecLen(vecSub(verts[i], verts[j])) - edge) < edge * 1e-3; };
+    const faces = [];
+    for (let i = 0; i < verts.length; i++) {
+        for (let j = i + 1; j < verts.length; j++) {
+            for (let k = j + 1; k < verts.length; k++) {
+                if (adjacent(i, j) && adjacent(j, k) && adjacent(i, k)) {
+                    faces.push([verts[i], verts[j], verts[k]]);
+                }
+            }
+        }
+    }
+    return faces;
+}
+
+// Dual solid: one face per vertex, from the centres of the faces around it.
+function diceDualFaces(verts, faces) {
+    return verts.map(function(v) {
+        return faces.filter(function(f) { return f.includes(v); }).map(vecMean);
+    });
+}
+
+function diceRing(count, offset, map) {
+    const ring = [];
+    for (let k = 0; k < count; k++) {
+        ring.push(map(2 * Math.PI * (k + offset) / count));
+    }
+    return ring;
+}
+
+// Unit-scale faces for a die: { verts, up?, numbered }. `fit` is the
+// circumradius relative to --dice-size. Returns null for a ball.
+function diceGeometry(sides) {
+    const numbered = function(verts, up) { return { verts, up, numbered: true }; };
+    const phi = (1 + Math.sqrt(5)) / 2;
+    const octa = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
+    const icosa = [];
+    [-1, 1].forEach(function(a) {
+        [-phi, phi].forEach(function(b) { icosa.push([0, a, b], [a, b, 0], [b, 0, a]); });
+    });
+
+    if (sides === 2) {
+        const disc = function(z) { return diceRing(32, 0, function(t) { return [Math.cos(t), Math.sin(t), z]; }); };
+        const front = disc(0.12), back = disc(-0.12);
+        const faces = [numbered(front), numbered(back)];
+        front.forEach(function(v, k) {
+            const next = (k + 1) % front.length;
+            faces.push({ verts: [v, front[next], back[next], back[k]], numbered: false });
+        });
+        return { faces, fit: 0.5 };
+    }
+    if (sides === 4) {
+        return { faces: diceTriangleFaces([[1, 1, 1], [1, -1, -1], [-1, 1, -1], [-1, -1, 1]]).map(function(f) { return numbered(f); }), fit: 0.72 };
+    }
+    if (sides === 6) {
+        const octaFaces = diceTriangleFaces(octa);
+        // Square faces read best with an edge, not a corner, at the top.
+        return { faces: diceDualFaces(octa, octaFaces).map(function(f) { return numbered(f, "edge"); }), fit: 0.72, pips: true, rounded: true };
+    }
+    if (sides === 8) {
+        return { faces: diceTriangleFaces(octa).map(function(f) { return numbered(f); }), fit: 0.66 };
+    }
+    if (sides === 12 || sides === 20) {
+        const icosaFaces = diceTriangleFaces(icosa);
+        const faces = sides === 20 ? icosaFaces : diceDualFaces(icosa, icosaFaces);
+        return { faces: faces.map(function(f) { return numbered(f); }), fit: 0.62 };
+    }
+    if (sides > DICE_SHAPE_MAX_FACES) {
+        return null;
+    }
+    if (sides % 2 === 0) {
+        // Trapezohedron: two zigzag rings between two poles; the ring height
+        // keeps every kite planar.
+        const n = sides / 2;
+        const cosA = Math.cos(Math.PI / n);
+        const c = (1 - cosA) / (1 + cosA);
+        const upper = diceRing(n, 0, function(t) { return [Math.cos(t), -c, Math.sin(t)]; });
+        const lower = diceRing(n, 0.5, function(t) { return [Math.cos(t), c, Math.sin(t)]; });
+        const faces = [];
+        for (let k = 0; k < n; k++) {
+            faces.push(numbered([[0, -1, 0], upper[k], lower[k], upper[(k + 1) % n]]));
+            faces.push(numbered([[0, 1, 0], lower[k], upper[(k + 1) % n], lower[(k + 1) % n]]));
+        }
+        return { faces, fit: 0.56 };
+    }
+    // Prism lying along the x axis; labels run along the axis.
+    const len = 1.1;
+    const ringA = diceRing(sides, 0, function(t) { return [-len, Math.cos(t), Math.sin(t)]; });
+    const ringB = diceRing(sides, 0, function(t) { return [len, Math.cos(t), Math.sin(t)]; });
+    const faces = [{ verts: ringA, numbered: false }, { verts: ringB, numbered: false }];
+    for (let k = 0; k < sides; k++) {
+        const next = (k + 1) % sides;
+        const t = 2 * Math.PI * (k + 0.5) / sides;
+        faces.push(numbered([ringA[k], ringA[next], ringB[next], ringB[k]], [0, -Math.sin(t), Math.cos(t)]));
+    }
+    return { faces, fit: 0.6 };
+}
+
+// Inward edge lines of a convex 2D polygon: { p, n } with dot(q - p, n) >= 0 inside.
+function diceEdgeLines(poly, inside) {
+    return poly.map(function(p, i) {
+        const q = poly[(i + 1) % poly.length];
+        let n = [p[1] - q[1], q[0] - p[0]];
+        const len = Math.hypot(n[0], n[1]);
+        n = [n[0] / len, n[1] / len];
+        if ((inside[0] - p[0]) * n[0] + (inside[1] - p[1]) * n[1] < 0) {
+            n = [-n[0], -n[1]];
+        }
+        return { p, n };
+    });
+}
+
+function diceEdgeDistance(lines, q) {
+    return Math.min.apply(null, lines.map(function(l) { return (q[0] - l.p[0]) * l.n[0] + (q[1] - l.p[1]) * l.n[1]; }));
+}
+
+// Polygon shrunk by `inset` (convex: intersect neighbouring offset edges).
+function diceInsetPolygon(lines, inset) {
+    return lines.map(function(b, i) {
+        const a = lines[(i - 1 + lines.length) % lines.length];
+        const ca = a.p[0] * a.n[0] + a.p[1] * a.n[1] + inset;
+        const cb = b.p[0] * b.n[0] + b.p[1] * b.n[1] + inset;
+        const det = a.n[0] * b.n[1] - a.n[1] * b.n[0];
+        return [(ca * b.n[1] - cb * a.n[1]) / det, (a.n[0] * cb - b.n[0] * ca) / det];
+    });
+}
+
+// Point deepest inside the polygon (grid search, then a finer pass).
+function diceLabelPoint(poly, lines) {
+    const xs = poly.map(function(p) { return p[0]; }), ys = poly.map(function(p) { return p[1]; });
+    let best = [(Math.min.apply(null, xs) + Math.max.apply(null, xs)) / 2, (Math.min.apply(null, ys) + Math.max.apply(null, ys)) / 2];
+    let span = [Math.max.apply(null, xs) - Math.min.apply(null, xs), Math.max.apply(null, ys) - Math.min.apply(null, ys)];
+    let bestDist = diceEdgeDistance(lines, best);
+    for (let pass = 0; pass < 3; pass++) {
+        const center = best;
+        for (let i = -6; i <= 6; i++) {
+            for (let j = -6; j <= 6; j++) {
+                const q = [center[0] + span[0] * i / 12, center[1] + span[1] * j / 12];
+                const d = diceEdgeDistance(lines, q);
+                if (d > bestDist) {
+                    best = q;
+                    bestDist = d;
+                }
+            }
+        }
+        span = [span[0] / 6, span[1] / 6];
+    }
+    return best;
+}
+
+// Largest font size whose label box fits inside the face.
+function diceFitFont(lines, center, digits, margin, max) {
+    let lo = 0, hi = max;
+    for (let i = 0; i < 18; i++) {
+        const fs = (lo + hi) / 2;
+        const hw = 0.32 * digits * fs, hh = 0.42 * fs;
+        const fits = [[-hw, -hh], [hw, -hh], [hw, hh], [-hw, hh]].every(function(c) {
+            return diceEdgeDistance(lines, [center[0] + c[0], center[1] + c[1]]) >= margin;
+        });
+        if (fits) { lo = fs; } else { hi = fs; }
+    }
+    return lo;
+}
+
+function polygonCss(poly) {
+    return "polygon(" + poly.map(function(p) { return p[0].toFixed(2) + "px " + p[1].toFixed(2) + "px"; }).join(", ") + ")";
+}
+
+// Numbers like 6 and 9 read as each other upside down, so real dice underline them.
+function diceNeedsUnderline(value, sides) {
+    const flip = { 0: "0", 1: "1", 6: "9", 8: "8", 9: "6" };
+    const digits = String(value).split("");
+    if (!digits.every(function(d) { return d in flip; })) {
+        return false;
+    }
+    const turned = digits.reverse().map(function(d) { return flip[d]; }).join("");
+    return turned !== String(value) && turned[0] !== "0" && parseInt(turned, 10) <= sides;
+}
+
+// Faces placed in px for a die of `size` px: transform, clip path and label.
+// The same layout is reused by every die in a roll.
+function diceLayout(sides, size) {
+    const key = sides + "@" + size;
+    if (diceLayoutCache[key] !== undefined) {
+        return diceLayoutCache[key];
+    }
+    const geometry = diceGeometry(sides);
+    if (!geometry) {
+        diceLayoutCache[key] = null;
+        return null;
+    }
+    const maxRadius = Math.max.apply(null, geometry.faces.map(function(f) {
+        return Math.max.apply(null, f.verts.map(vecLen));
+    }));
+    const scale = geometry.fit * size / maxRadius;
+    const half = size / 2;
+    const edge = Math.max(1, size * 0.022);
+    const digits = String(sides).length;
+
+    const faces = geometry.faces.map(function(face) {
+        const verts = face.verts.map(function(v) { return vecScale(v, scale); });
+        const center = vecMean(verts);
+        let n = vecNorm(vecCross(vecSub(verts[1], verts[0]), vecSub(verts[2], verts[0])));
+        if (vecDot(n, center) < 0) {
+            n = vecScale(n, -1);
+        }
+        const project = function(u, v) {
+            return function(p) { const d = vecSub(p, center); return [vecDot(d, u), vecDot(d, v)]; };
+        };
+        // Any in-plane basis first, to order the corners and find the label spot.
+        const anyU = vecNorm(vecSub(verts[0], center));
+        const flat = project(anyU, vecCross(n, anyU));
+        const sorted = verts.slice().sort(function(a, b) {
+            const pa = flat(a), pb = flat(b);
+            return Math.atan2(pa[1], pa[0]) - Math.atan2(pb[1], pb[0]);
+        });
+        const flatPoly = sorted.map(flat);
+        const flatLabel = diceLabelPoint(flatPoly, diceEdgeLines(flatPoly, [0, 0]));
+        const label3d = vecAdd(center, vecAdd(vecScale(anyU, flatLabel[0]), vecScale(vecCross(n, anyU), flatLabel[1])));
+
+        // "Up" for the label: given, an edge midpoint, or the farthest corner.
+        let up;
+        if (Array.isArray(face.up)) {
+            up = face.up;
+        } else if (face.up === "edge") {
+            up = vecSub(vecMean([sorted[0], sorted[1]]), center);
+        } else {
+            up = sorted.reduce(function(far, p) {
+                return vecLen(vecSub(p, label3d)) > vecLen(vecSub(far, label3d)) ? p : far;
+            }, sorted[0]);
+            up = vecSub(up, label3d);
+        }
+        up = vecSub(up, vecScale(n, vecDot(up, n)));
+        const v = vecNorm(vecScale(up, -1));
+        const u = vecCross(v, n);
+
+        const local = project(u, v);
+        const poly = sorted.map(local);
+        const minX = Math.min.apply(null, poly.map(function(p) { return p[0]; }));
+        const minY = Math.min.apply(null, poly.map(function(p) { return p[1]; }));
+        const maxX = Math.max.apply(null, poly.map(function(p) { return p[0]; }));
+        const maxY = Math.max.apply(null, poly.map(function(p) { return p[1]; }));
+        const boxPoly = poly.map(function(p) { return [p[0] - minX, p[1] - minY]; });
+        const lp = local(label3d);
+        const labelPoint = [lp[0] - minX, lp[1] - minY];
+        const lines = diceEdgeLines(boxPoly, labelPoint);
+        const origin = vecAdd(vecAdd(center, vecAdd(vecScale(u, minX), vecScale(v, minY))), [half, half, 0]);
+
+        return {
+            normal: n,
+            // Rows u, v, n: turns this face to the front with its label upright.
+            front: [u, v, n],
+            numbered: face.numbered,
+            width: maxX - minX,
+            height: maxY - minY,
+            transform: "matrix3d(" + [u[0], u[1], u[2], 0, v[0], v[1], v[2], 0, n[0], n[1], n[2], 0, origin[0], origin[1], origin[2], 1]
+                .map(function(x) { return +x.toFixed(4); }).join(",") + ")",
+            clip: polygonCss(boxPoly),
+            innerClip: polygonCss(diceInsetPolygon(lines, edge)),
+            label: labelPoint,
+            fontSize: diceFitFont(lines, labelPoint, digits, edge * 1.6, size * 0.5)
+        };
+    });
+
+    // Number the faces 1..N, giving opposite faces values that sum to N + 1
+    // when the solid has them (as on real dice).
+    const numberedFaces = faces.filter(function(f) { return f.numbered; });
+    numberedFaces.forEach(function(face) {
+        face.opposite = numberedFaces.find(function(o) { return vecDot(o.normal, face.normal) < -0.999; });
+    });
+    const paired = numberedFaces.every(function(f) { return f.opposite; });
+    const byValue = {};
+    let next = 1;
+    numberedFaces.forEach(function(face) {
+        if (face.value) {
+            return;
+        }
+        face.value = next++;
+        byValue[face.value] = face;
+        if (paired) {
+            face.opposite.value = sides + 1 - face.value;
+            byValue[face.opposite.value] = face.opposite;
+        }
+    });
+
+    const layout = { faces, byValue, pips: !!geometry.pips, rounded: !!geometry.rounded };
+    diceLayoutCache[key] = layout;
+    return layout;
+}
+
+// `labels` (optional) maps a value to the text shown for it, e.g. coin H/T.
+function buildDiceLabel(value, sides, fontSize, point, labels) {
+    const label = document.createElement("span");
+    label.className = "dice-face-label";
+    label.textContent = labels && labels[value] ? labels[value] : value;
+    label.style.fontSize = fontSize.toFixed(1) + "px";
+    if (point) {
+        label.style.left = point[0].toFixed(2) + "px";
+        label.style.top = point[1].toFixed(2) + "px";
+    }
+    if (!labels && diceNeedsUnderline(value, sides)) {
+        label.classList.add("dice-face-label-underline");
+    }
+    return label;
+}
+
+function buildPipFace(face, value) {
+    const pips = document.createElement("div");
+    pips.className = "dice-face-pips";
+    for (let cell = 0; cell < 9; cell++) {
+        const pip = document.createElement("span");
+        if (DICE_PIPS[value].includes(cell)) {
+            pip.className = "dice-pip";
+        }
+        pips.appendChild(pip);
+    }
+    return pips;
+}
+
+// Lightness of a face once the die is at rest, so the lit side faces the light.
+function diceShade(rest, face) {
+    const light = Math.max(0, vecDot(matApply(rest, face.normal), DICE_LIGHT));
+    return 24 + 24 * light;
+}
+
+function buildDie(result, sides, size, labels) {
+    const die = document.createElement("div");
+    die.className = "dice-die";
+    const solid = document.createElement("div");
+    solid.className = "dice-solid";
+    die.appendChild(solid);
+
+    const layout = diceLayout(sides, size);
+    if (!layout) {
+        solid.classList.add("dice-ball");
+        solid.appendChild(buildDiceLabel(result, sides, size * Math.min(0.42, 1 / String(sides).length)));
+        return { die, solid, rest: "rotate(0deg)", from: function() { return "rotate(" + (360 * (2 + Math.floor(Math.random() * 2)) * (Math.random() < 0.5 ? -1 : 1)) + "deg)"; } };
+    }
+
+    // Faces too small to read the number on get a flat badge with the result
+    // once the die lands; the tiny face numbers stay on the die.
+    let badge = null;
+    if (layout.byValue[result].fontSize < size * DICE_BADGE_MIN_FONT) {
+        badge = document.createElement("span");
+        badge.className = "dice-result-badge";
+        badge.textContent = result;
+        badge.style.fontSize = (size * Math.min(0.32, 0.8 / String(sides).length)).toFixed(1) + "px";
+        die.appendChild(badge);
+    }
+
+    // Rest pose: the rolled face toward the viewer, slightly tilted to show depth.
+    const tiltX = randomBetween(-24, -12), tiltY = randomBetween(-22, 22);
+    const front = layout.byValue[result].front;
+    const rest = matMul(matMul(matRotX(tiltX), matRotY(tiltY)), front);
+    const frontCss = "matrix3d(" + [0, 1, 2].map(function(j) {
+        return [front[0][j], front[1][j], front[2][j], 0].map(function(x) { return +x.toFixed(5); }).join(",");
+    }).join(",") + ",0,0,0,1)";
+
+    layout.faces.forEach(function(face) {
+        const el = document.createElement("div");
+        el.className = "dice-poly-face";
+        el.style.width = face.width.toFixed(2) + "px";
+        el.style.height = face.height.toFixed(2) + "px";
+        el.style.transform = face.transform;
+        const lightness = diceShade(rest, face);
+        el.style.setProperty("--dice-face-l", lightness.toFixed(1) + "%");
+        if (layout.rounded) {
+            el.classList.add("dice-poly-face-rounded");
+            el.appendChild(layout.pips ? buildPipFace(face, face.value) : buildDiceLabel(face.value, sides, face.fontSize));
+        } else {
+            el.style.clipPath = face.clip;
+            const inner = document.createElement("div");
+            inner.className = "dice-poly-face-inner";
+            inner.style.clipPath = face.innerClip;
+            el.appendChild(inner);
+            if (face.numbered && face.fontSize >= 3) {
+                el.appendChild(buildDiceLabel(face.value, sides, face.fontSize, face.label, labels));
+            }
+        }
+        solid.appendChild(el);
+    });
+
+    return {
+        die,
+        solid,
+        badge,
+        rest: "rotateX(" + tiltX + "deg) rotateY(" + tiltY + "deg) " + frontCss,
+        from: function() {
+            const spin = function() {
+                const turns = (Math.random() < 0.5 ? -1 : 1) * (2 + Math.floor(Math.random() * 2));
+                return turns * 360 + randomBetween(0, 360);
+            };
+            return "rotateX(" + (tiltX + spin()) + "deg) rotateY(" + (tiltY + spin()) + "deg) " + frontCss;
+        }
+    };
+}
+
+function animateDie(parts) {
+    const tilt = randomBetween(-7, 7);
+    const restDie = "rotate(" + tilt + "deg)";
+    parts.solid.style.transform = parts.rest;
+    parts.die.style.transform = restDie;
+    const showBadge = function() {
+        if (parts.badge) {
+            parts.badge.classList.add("dice-result-badge-shown");
+        }
+    };
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        showBadge();
+        return Promise.resolve();
+    }
+
+    const timing = { duration: randomBetween(1000, 1500), delay: randomBetween(0, 200), fill: "backwards" };
+    const tumble = parts.solid.animate([
+        { transform: parts.from() },
+        { transform: parts.rest }
+    ], { ...timing, easing: "cubic-bezier(0.2, 0.7, 0.3, 1)" });
+    const hop = function(height, offset, angle) {
+        return { offset, easing: height ? "ease-in" : "ease-out", transform: "translateY(" + height + "px) rotate(" + (tilt + angle) + "deg)" };
+    };
+    const bounce = parts.die.animate([
+        hop(-70, 0, randomBetween(-40, 40)),
+        hop(0, 0.42, 0),
+        hop(-24, 0.6, 0),
+        hop(0, 0.76, 0),
+        hop(-7, 0.88, 0),
+        hop(0, 1, 0)
+    ], timing);
+    return Promise.all([tumble.finished, bounce.finished]).then(showBadge);
+}
+
+function renderDiceRoll($response) {
+    const $roll = $response.find(".dice-roll");
+    const tray = $roll.find(".dice-tray")[0];
+    if (!tray) {
+        return; // Validation error from the server.
+    }
+    const rolls = JSON.parse(tray.dataset.diceRolls);
+    const sides = parseInt(tray.dataset.diceSides, 10);
+    const labels = tray.dataset.diceLabels ? JSON.parse(tray.dataset.diceLabels) : null;
+    // Dice notation: sides per die (mixed groups) and dice dropped by keep/drop.
+    const sidesList = tray.dataset.diceSidesList ? JSON.parse(tray.dataset.diceSidesList) : null;
+    const dropped = tray.dataset.diceDropped ? JSON.parse(tray.dataset.diceDropped) : null;
+    tray.classList.toggle("dice-tray-sm", rolls.length > 12 && rolls.length <= 40);
+    tray.classList.toggle("dice-tray-xs", rolls.length > 40);
+    const size = parseFloat(getComputedStyle(tray).getPropertyValue("--dice-size")) || 72;
+
+    const dice = rolls.map(function(result, i) {
+        const parts = buildDie(result, sidesList ? sidesList[i] : sides, size, labels);
+        if (dropped && dropped[i]) {
+            parts.die.classList.add("dice-die-dropped");
+            parts.die.title = "Dropped";
+        }
+        return parts;
+    });
+    dice.forEach(function(parts) { tray.appendChild(parts.die); });
+
+    $roll.addClass("dice-roll-rolling");
+    return Promise.all(dice.map(animateDie)).finally(function() {
+        $roll.removeClass("dice-roll-rolling");
+    });
+}
+
+
+/* ===================================================================== */
+/*                    FUNCTION: result history (recent results)           */
+/* ===================================================================== */
+// Shared "Recent results" list for random tools (result_history_html() in PHP).
+// Stored per tool in localStorage as {items: [{t, text}], tally: {label: count}},
+// newest first. The tally keeps counting after old items drop off the list.
+const RESULT_HISTORY_LIMIT = 20;
+const RESULT_HISTORY_STORAGE_PREFIX = "rand.history.";
+
+function readResultHistory(tool) {
+    try {
+        const data = JSON.parse(window.localStorage.getItem(RESULT_HISTORY_STORAGE_PREFIX + tool) || "null");
+        if (data && Array.isArray(data.items)) {
+            return { items: data.items, tally: (data.tally && typeof data.tally === "object") ? data.tally : {} };
+        }
+    } catch (e) {}
+    return { items: [], tally: {} };
+}
+
+function writeResultHistory(tool, data) {
+    try {
+        window.localStorage.setItem(RESULT_HISTORY_STORAGE_PREFIX + tool, JSON.stringify(data));
+    } catch (e) {}
+}
+
+function addResultHistory(tool, text, tally) {
+    const data = readResultHistory(tool);
+    data.items.unshift({ t: Date.now(), text: String(text) });
+    data.items = data.items.slice(0, RESULT_HISTORY_LIMIT);
+    Object.entries(tally || {}).forEach(function([label, count]) {
+        data.tally[label] = (parseInt(data.tally[label], 10) || 0) + (parseInt(count, 10) || 0);
+    });
+    writeResultHistory(tool, data);
+    renderResultHistory(tool);
+}
+
+// Add the result in $response (data-history-* from result_history_attrs()) to its history.
+function recordResultHistory($response) {
+    const el = $response.find("[data-history-tool]")[0];
+    if (!el) {
+        return;
+    }
+    let tally = null;
+    try {
+        tally = el.dataset.historyTally ? JSON.parse(el.dataset.historyTally) : null;
+    } catch (e) {}
+    addResultHistory(el.dataset.historyTool, el.dataset.historyText || "", tally);
+}
+
+function renderResultHistory(tool) {
+    const data = readResultHistory(tool);
+    $(".rand-history").filter(function() { return this.dataset.history === tool; }).each(function() {
+        const $box = $(this).empty();
+        if (!data.items.length) {
+            $box.prop("hidden", true);
+            return;
+        }
+        const $header = $("<div>", { class: "rand-history-header" })
+            .append($("<h3>", { class: "rand-history-title", text: "Recent results" }))
+            .append($("<button>", { type: "button", class: "btn btn-sm " + btnClass("secondary"), "data-history-clear": tool })
+                .html('<i class="icon-trash-2" aria-hidden="true"></i> Clear history'));
+        $box.append($header);
+
+        const labels = Object.keys(data.tally);
+        const total = labels.reduce(function(sum, label) { return sum + (parseInt(data.tally[label], 10) || 0); }, 0);
+        if (total > 0) {
+            const $tally = $("<div>", { class: "rand-history-tally" });
+            labels.forEach(function(label) {
+                const count = parseInt(data.tally[label], 10) || 0;
+                const pct = Math.round((count / total) * 1000) / 10;
+                $tally.append($("<span>", { class: "badge text-bg-secondary", text: label + ": " + count + " (" + pct + "%)" }));
+            });
+            $tally.append($("<span>", { class: "text-muted", text: total + " in total" }));
+            $box.append($tally);
+        }
+
+        const $list = $("<ol>", { class: "rand-history-list" });
+        data.items.forEach(function(item) {
+            const when = new Date(item.t);
+            $list.append($("<li>")
+                .append($("<time>", { datetime: when.toISOString(), text: when.toLocaleTimeString() }))
+                .append($("<span>", { text: item.text })));
+        });
+        $box.append($list).prop("hidden", false);
+    });
+}
+
+function initResultHistoryUi($scope) {
+    $scope.find(".rand-history").each(function() {
+        renderResultHistory(this.dataset.history);
+    });
 }
 
 
@@ -2608,8 +3670,8 @@ $(document).ready(function() {
 
         var form = $(this);
 
-        // Set clicken `.genBtn` as form value
-        var clickedGenBtn = $('.genBtn:focus');
+        // Button that submitted the form (also resolved on Enter / implicit submit)
+        var clickedGenBtn = getFormSubmitter(form, e);
 
         // Set response type
         if (form.data("responsetype")) {
@@ -2645,12 +3707,7 @@ $(document).ready(function() {
         //   responseType = "html";
         // }
 
-        var btnName = $("button[clicked=true]").prop("name");
-        var btnValue = $("button[clicked=true]").val();
         var serializeForm = form.serialize();
-        if (btnName && btnValue !== undefined) {
-            serializeForm += "&" + btnName + "=" + btnValue;
-        }
         console.log("[submitForm] Sending form: " + serializeForm);
         const handledBrowserInspector = await maybeHandleBrowserInspector(form, form.find(".responseDiv"));
         if (handledBrowserInspector) {
@@ -2679,6 +3736,27 @@ $(document).ready(function() {
                         $root.html(buildClientCryptoDiagnosticsHtml());
                     }
                 }, 0);
+            };
+        }
+        if (["dice_roll", "coin_flip"].includes(form.data("action") || "")) {
+            submitOpts.loadingMessage = form.data("action") === "coin_flip" ? "Flipping..." : "Rolling...";
+            submitOpts.onSuccess = function(dataOut) {
+                showData(responseDiv, dataOut);
+                const rolled = renderDiceRoll(responseDiv);
+                if (rolled) {
+                    // Add to "Recent results" once the dice land, so the list doesn't give the result away.
+                    rolled.then(function() { recordResultHistory(responseDiv); });
+                }
+            };
+        }
+
+        if (["eightball", "card_draw"].includes(form.data("action") || "")) {
+            submitOpts.onSuccess = function(dataOut) {
+                showData(responseDiv, dataOut);
+                // CSS reveal/deal animation: add to "Recent results" once it has finished.
+                const animations = responseDiv[0].getAnimations ? responseDiv[0].getAnimations({ subtree: true }) : [];
+                Promise.allSettled(animations.map(function(a) { return a.finished; }))
+                    .then(function() { recordResultHistory(responseDiv); });
             };
         }
 
@@ -2778,6 +3856,25 @@ $(document).ready(function() {
         } else {
             $("#error").hide();
             console.log("Showing " + elementToShow);
+        }
+    });
+
+    // "Clear history" in a result_history_html() list
+    $(document).on("click", "[data-history-clear]", function() {
+        const tool = this.dataset.historyClear;
+        try {
+            window.localStorage.removeItem(RESULT_HISTORY_STORAGE_PREFIX + tool);
+        } catch (e) {}
+        renderResultHistory(tool);
+    });
+
+    // Seed switch (seed_field_html()): show the seed input only while it is on
+    $(document).on("change", "[data-seed-toggle]", function() {
+        const $input = $(this).closest("[data-seed-field]").find("[data-seed-input]");
+        if ($(this).is(":checked")) {
+            $input.slideDown();
+        } else {
+            $input.slideUp();
         }
     });
 
@@ -3452,9 +4549,10 @@ function generateRandomData(type, placeholder = '', $input = null) {
     const randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
 
     const randomText = (sentences = 3, wordMin = 8, wordMax = 15) => {
-        const words = ['lorem', 'ipsum', 'dolor', 'sit', 'amet', 'consectetur', 'adipiscing', 'elit', 
-                      'sed', 'do', 'eiusmod', 'tempor', 'incididunt', 'ut', 'labore', 'et', 'dolore',
-                      'magna', 'aliqua', 'enim', 'ad', 'minim', 'veniam', 'quis', 'nostrud', 'exercitation'];
+        // Shared with the Placeholder Data tool: includes/data/lorem_words.txt via index.php
+        const words = (Array.isArray(window.RAND_LOREM_WORDS) && window.RAND_LOREM_WORDS.length)
+            ? window.RAND_LOREM_WORDS
+            : ['lorem', 'ipsum', 'dolor', 'sit', 'amet'];
         let result = [];
         for (let i = 0; i < sentences; i++) {
             let sentence = [];
@@ -3993,7 +5091,12 @@ function addRandomDataButtons($root = null) {
 
     $scope.find(selectors.join(',')).each(function() {
         const $input = $(this);
-        const $inputGroup = $input.closest('.input-group');
+        // Wheel rows are .input-group flex rows: keep their button inline next to the item text
+        const isWheelItemInput = $input.closest('.wheelitem').length > 0;
+        if (isWheelItemInput && (!$input.hasClass('wheelitem-input') || $input.siblings('.random-data-btn').length > 0)) {
+            return;
+        }
+        const $inputGroup = isWheelItemInput ? $() : $input.closest('.input-group');
         const wrapTargetIsGroup = $inputGroup.length > 0;
 
         // Skip if already has a random button
@@ -4019,14 +5122,6 @@ function addRandomDataButtons($root = null) {
 
         // Skip inputs that are part of special controls
         if ($input.closest('.form-selectgroup').length > 0) {
-            return;
-        }
-
-        // Check if this is a wheel item input (handle without wrapping)
-        const isWheelItemInput = $input.hasClass('wheelitem-input') || $input.closest('.wheelitem').length > 0;
-        
-        // Skip if already has a random button (for wheel items)
-        if (isWheelItemInput && ($input.next(".random-data-btn").length > 0 || $input.siblings(".random-data-btn").length > 0)) {
             return;
         }
 

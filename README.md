@@ -16,10 +16,18 @@ A comprehensive collection of useful developer tools built with PHP and modern w
 ### Generators
 - Number generator
 - String generator
+- Passphrase generator (diceware-style, EFF wordlist)
 - Image generator (built into this repository)
+- Colour generator (random colours and palettes with locks)
 - QR Code generator
-- ID generator
+- ID generator and timestamp decoder (ULID, UUID v1/v6/v7, Snowflake)
 - Spin the wheel
+- Dice roller (with dice notation: 2d6+3, 4d6kh3, d%)
+- Coin flip
+- Card draw
+- Magic 8-ball / yes-no answer
+- Placeholder data (lorem ipsum, fake names/emails/IPs as text, CSV or JSON)
+- List shuffler (shuffle, pick winners, split into teams)
 
 ### Cryptography
 - OpenSSL (AES encryption/decryption)
@@ -31,6 +39,7 @@ A comprehensive collection of useful developer tools built with PHP and modern w
 - CSR generator
 - PEM/OpenSSH converter
 - Crypto diagnostics
+- Password strength checker (zxcvbn, runs in the browser)
 
 ### Encoding & Decoding
 - Base converters
@@ -66,6 +75,7 @@ A comprehensive collection of useful developer tools built with PHP and modern w
 - Browser client inspector (capabilities, optional permissions/WebRTC/public IP probes)
 - Crontab helper
 - ShellCheck (shell script linting)
+- Chmod calculator (checkboxes ↔ octal ↔ symbolic)
 
 ## Installation
 
@@ -239,6 +249,12 @@ What it does:
 ```
 
 Credentials: `DOCKERHUB_USERNAME` / `DOCKERHUB_TOKEN` and optional `GITHUB_TOKEN` in `.env.local` (see `.env.example`). `SKIP_DOCKERHUB=1` or `SKIP_GHCR=1` to publish to one registry only. When a registry is enabled, login/push failure aborts the script so Hub and GHCR stay in sync.
+
+### Rolling `dev-latest` release
+
+Every push of `dev` to `gitlab01` runs the `dev-latest` GitLab CI job (`scripts/publish-dev-latest.sh`). It recreates the **Dev Latest** pre-release on GitHub and updates the GitLab release of the same name, with the `dev-latest` tag moved to the new commit on both remotes. The notes link the commit and the `:dev` Docker image and include the `[Unreleased]` changelog section. `dev` must reach GitHub (`origin`) too: the job waits up to 10 minutes for it, and skips if GitHub `dev` is already newer.
+
+Setup on the GitLab project: the GitHub token (`GH_TOKEN`, or `GITHUB_TOKEN`) needs `contents:write` (classic PAT: `repo`), and **Settings → CI/CD → Job token permissions → Allow Git push requests** must be on so the job can move the GitLab tag. Locally: `./scripts/publish-dev-latest.sh --dry-run` prints the notes; without `--dry-run` it publishes using your `gh` login and the `gitlab` remote (GitLab release notes are only updated in CI).
 
 Older clones that installed the retired local pre-push Docker hook can clear it with `./scripts/install-git-hooks.sh`.
 

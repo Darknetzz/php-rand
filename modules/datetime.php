@@ -17,26 +17,6 @@ $unitSelector = function($inputName = "time") {
     return $options;
 };
 
-$timeZoneSelector = function($inputName = "timezone", $extraClass = "timezone-select") {
-    $timezones = DateTimeZone::listIdentifiers();
-    $serverTz = date_default_timezone_get() ?: 'UTC';
-    $options = "<select name='$inputName' class='form-select form-select-lg $extraClass' style='font-family: monospace; border: 2px solid #495057; max-height: 400px;'>";
-    foreach ($timezones as $timezone) {
-        $offset_seconds  = (new DateTime("now", new DateTimeZone($timezone)))->getOffset();
-        if ($offset_seconds === 0) {
-            $offset_format = "UTC";
-        } else {
-            $offset_hours = $offset_seconds / 3600;
-            $sign = $offset_hours > 0 ? '+' : '-';
-            $offset_format = "UTC" . $sign . abs($offset_hours);
-        }
-        $selected = $timezone === $serverTz ? ' selected' : '';
-        $options .= '<option value="'.$timezone.'"'.$selected.'>'.$timezone.' ('.$offset_format.')</option>';
-    }
-    $options .= "</select>";
-    return $options;
-};
-
 $defaultReferenceLocal = (new DateTimeImmutable('now'))->format('Y-m-d\TH:i');
 ?>
 
@@ -96,7 +76,7 @@ $defaultReferenceLocal = (new DateTimeImmutable('now'))->format('Y-m-d\TH:i');
                         </div>
                         <div class="col-12 col-lg-6">
                             <label class="form-label mb-2"><strong>Timezone</strong></label>
-                            <?= $timeZoneSelector("relative_timezone", "") ?>
+                            <?= timezone_select_html("relative_timezone", "") ?>
                         </div>
                     </div>
 
@@ -203,7 +183,7 @@ $defaultReferenceLocal = (new DateTimeImmutable('now'))->format('Y-m-d\TH:i');
                 <div class="row g-4">
                     <div class="col-12 col-lg-8">
                         <label class="form-label mb-3"><strong style="font-size: 1.1rem;">Select Timezone</strong></label>
-                        <?= $timeZoneSelector("timezone") ?>
+                        <?= timezone_select_html("timezone") ?>
                     </div>
                     <div class="col-12 col-lg-4 d-flex flex-column">
                         <label class="form-label mb-3"><strong style="font-size: 1.1rem;">Current Time</strong></label>

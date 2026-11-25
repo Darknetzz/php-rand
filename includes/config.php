@@ -16,6 +16,39 @@ define("DEMO_URL", "https://rand.demo.roste.org/");
 // Applied via btnClass() in PHP and JS. Radio/checkbox toggle groups (btn-check) always stay outline.
 define("BTN_OUTLINE", false);
 
+# Dice roller limits (form and handle_dice_roll)
+define("DICE_MAX_COUNT", 100);
+define("DICE_MIN_SIDES", 2);
+define("DICE_MAX_SIDES", 1000);
+# Dice notation (2d6+3, 4d6kh3): max expression length, dice groups and |constant|
+define("DICE_NOTATION_MAX_LENGTH", 100);
+define("DICE_NOTATION_MAX_GROUPS", 20);
+define("DICE_NOTATION_MAX_CONSTANT", 1000000);
+# ID decoder Snowflake epochs (ms since the Unix epoch) for handle_id_decode
+define("SNOWFLAKE_EPOCHS", [
+    "twitter" => ["Twitter / X", 1288834974657],
+    "discord" => ["Discord", 1420070400000],
+    "unix"    => ["Unix (0)", 0],
+]);
+# Placeholder Data limits (handle_lorem, handle_fake_data)
+define("LOREM_MAX", ["paragraphs" => 50, "sentences" => 500, "words" => 5000]);
+define("FAKE_DATA_MAX_ROWS", 1000);
+# Coin flip limit (form and handle_coin_flip)
+define("COIN_MAX_COUNT", 100);
+# List shuffler limits (form and handle_list_shuffle)
+define("LIST_SHUFFLE_MAX_ITEMS", 10000);
+define("LIST_SHUFFLE_MAX_BYTES", 1000000);
+# Magic 8-ball question length (form and handle_eightball)
+define("EIGHTBALL_MAX_QUESTION", 200);
+# Passphrase generator (form and handle_passphrase); word list in includes/data/
+define("PASSPHRASE_MIN_WORDS", 3);
+define("PASSPHRASE_MAX_WORDS", 20);
+define("PASSPHRASE_MAX_COUNT", 100);
+define("PASSPHRASE_SYMBOLS", "!@#$%^&*?=+");
+
+# Levenshtein: max characters per string (O(m×n) pure-PHP UTF-8 implementation)
+define("LEVENSHTEIN_MAX_CHARS", 1000);
+
 # Encoding
 ini_set('default_charset', 'UTF-8');
 mb_internal_encoding('UTF-8');
