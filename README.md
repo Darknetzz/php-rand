@@ -241,6 +241,12 @@ What it does:
 
 Credentials: `DOCKERHUB_USERNAME` / `DOCKERHUB_TOKEN` and optional `GITHUB_TOKEN` in `.env.local` (see `.env.example`). `SKIP_DOCKERHUB=1` or `SKIP_GHCR=1` to publish to one registry only. When a registry is enabled, login/push failure aborts the script so Hub and GHCR stay in sync.
 
+### Rolling `dev-latest` release
+
+Every push of `dev` to `gitlab01` runs the `dev-latest` GitLab CI job (`scripts/publish-dev-latest.sh`). It recreates the **Dev Latest** pre-release on GitHub and updates the GitLab release of the same name, with the `dev-latest` tag moved to the new commit on both remotes. The notes link the commit and the `:dev` Docker image and include the `[Unreleased]` changelog section. `dev` must reach GitHub (`origin`) too: the job waits up to 10 minutes for it, and skips if GitHub `dev` is already newer.
+
+Setup on the GitLab project: the GitHub token (`GH_TOKEN`, or `GITHUB_TOKEN`) needs `contents:write` (classic PAT: `repo`), and **Settings → CI/CD → Job token permissions → Allow Git push requests** must be on so the job can move the GitLab tag. Locally: `./scripts/publish-dev-latest.sh --dry-run` prints the notes; without `--dry-run` it publishes using your `gh` login and the `gitlab` remote (GitLab release notes are only updated in CI).
+
 Older clones that installed the retired local pre-push Docker hook can clear it with `./scripts/install-git-hooks.sh`.
 
 **Why GitHub might still show an older “Latest” release:** the badge uses **GitHub Releases**, not tags only. Create the release with `gh` via `release.sh` / `--publish-only` or from the Releases UI.

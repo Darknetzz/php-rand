@@ -95,6 +95,10 @@ This repository has an opinionated scripted release flow in `scripts/`.
   - `./docker-pushimage.sh --dry-run` — print plan only.
   - Env: `SKIP_DOCKERHUB=1`, `SKIP_GHCR=1`; credentials in `.env.local` / `.env`.
   - **Auto publish:** `.gitlab-ci.yml` on push of branch `dev` (`:dev`/`:develop`) and on version tags (`:latest` + `:vX.Y.Z`). Hub + GHCR get the same build; job fails if either enabled registry fails. GitHub Actions Docker workflows stay unused. Local hook removed; `./scripts/install-git-hooks.sh` only clears an old `core.hooksPath`.
+- `scripts/publish-dev-latest.sh`
+  - Rolling **Dev Latest** pre-release: run by the `dev-latest` GitLab CI job on every push of `dev`. Recreates the GitHub pre-release, updates the GitLab release and moves the `dev-latest` tag on both remotes to the commit. Notes include the `:dev` Docker image and the `[Unreleased]` changelog section.
+  - `--dry-run` prints the notes. `dev` must be pushed to both `origin` and `gitlab`, since the job waits for GitHub `dev` to reach the commit. Needs a GitHub token with `contents:write` and GitLab job-token Git push enabled.
+  - Never create a `dev-latest` tag or release by hand, and don't treat it as a version: `release.sh` and the `v*` jobs ignore it.
 - `scripts/extract_changelog_section.sh`
   - Extracts one release section from `CHANGELOG.md` by title (example: `[v1.2.9]`).
 - `scripts/update-release-descriptions.php`
