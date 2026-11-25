@@ -32,6 +32,11 @@ $navbarItems = [
                 "formalName" => "Image Generator",
                 "icon"       => icon('image')
             ],
+            "colour_gen" => [
+                "name"       => "colour_gen",
+                "formalName" => "Colour Generator",
+                "icon"       => icon('palette')
+            ],
             "qrcode" => [
                 "name"       => "qrcode",
                 "formalName" => "QR Code Generator",

@@ -1245,3 +1245,66 @@ th.tablehead,
   width: 1.4em;
   height: 1.4em;
 }
+
+/* Colour Generator (modules/colour_gen.php) */
+.colour-swatches {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 0.75rem;
+}
+.colour-swatches-single {
+  grid-template-columns: minmax(220px, 420px);
+}
+.colour-swatch {
+  border: 1px solid var(--tblr-border-color, rgba(255, 255, 255, 0.15));
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+.colour-swatch-locked {
+  border-color: var(--tblr-primary, #206bc4);
+  box-shadow: 0 0 0 2px var(--tblr-primary, #206bc4);
+}
+.colour-swatch-colour {
+  position: relative;
+  height: 130px;
+  display: flex;
+  align-items: flex-end;
+  padding: 0.5rem 0.75rem;
+}
+.colour-swatches-single .colour-swatch-colour {
+  height: 200px;
+}
+.colour-swatch-hex {
+  font-family: monospace;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+.colour-lock {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.4rem;
+  background: transparent;
+  border: 0;
+  font-size: 1.1rem;
+}
+.colour-swatch-values {
+  padding: 0.5rem 0.75rem;
+}
+.colour-value {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.25rem;
+}
+.colour-value-label {
+  width: 2.5rem;
+  font-size: 0.75rem;
+  opacity: 0.7;
+}
+.colour-value code {
+  flex: 1;
+  font-size: 0.8rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

@@ -1948,13 +1948,12 @@ function initLogoGeneratorUi($scope) {
         }
     };
 
-    const rndHex = () => "#" + Math.floor(Math.random() * 16777215).toString(16).padStart(6, "0");
     const randomizePalette = () => {
-        setVal("logo_bg_color", rndHex());
-        setVal("logo_accent_color", rndHex());
+        setVal("logo_bg_color", randomHexColour());
+        setVal("logo_accent_color", randomHexColour());
         setVal("logo_text_color", "#ffffff");
-        setVal("logo_text_accent_color", rndHex());
-        setVal("logo_border_color", rndHex());
+        setVal("logo_text_accent_color", randomHexColour());
+        setVal("logo_border_color", randomHexColour());
         if ($hint.length) {
             $hint.text("Colors shuffled — preview updating.");
         }
@@ -1972,7 +1971,7 @@ function initLogoGeneratorUi($scope) {
         const id = this.getAttribute("data-target");
         const el = id ? document.getElementById(id) : null;
         if (el && el.type === "color") {
-            el.value = rndHex();
+            el.value = randomHexColour();
             scheduleLogoPreviewSoon();
             scheduleLogoPersist();
         }
@@ -2139,6 +2138,173 @@ function initRelativeTimeUi($root) {
         $form.on("change", "#relativeMode, input[name='relative_input_style']", syncRelativeTimeUi);
     }
     syncRelativeTimeUi();
+}
+
+/* ===================================================================== */
+/*                      Colour helpers (shared)                          */
+/* ===================================================================== */
+// Used by the Colour Generator (initColourGenUi) and the logo generator.
+
+/** Uniform integer in [min, max] from crypto.getRandomValues (rejection sampling). */
+function secureRandomInt(min, max) {
+    const range = max - min + 1;
+    if (!(window.crypto && window.crypto.getRandomValues) || range <= 0) {
+        return min + Math.floor(Math.random() * range);
+    }
+    const limit = Math.floor(0x100000000 / range) * range;
+    const buf = new Uint32Array(1);
+    do {
+        window.crypto.getRandomValues(buf);
+    } while (buf[0] >= limit);
+    return min + (buf[0] % range);
+}
+
+function randomHexColour() {
+    return "#" + secureRandomInt(0, 0xffffff).toString(16).padStart(6, "0");
+}
+
+function hexToRgb(hex) {
+    const n = parseInt(String(hex).replace(/^#/, ""), 16);
+    return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+}
+
+/** HSL with h in [0, 360), s and l in [0, 100]. */
+function rgbToHsl(rgb) {
+    const r = rgb.r / 255, g = rgb.g / 255, b = rgb.b / 255;
+    const max = Math.max(r, g, b), min = Math.min(r, g, b);
+    const l = (max + min) / 2;
+    let h = 0, s = 0;
+    if (max !== min) {
+        const d = max - min;
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        h = max === r ? (g - b) / d + (g < b ? 6 : 0) : (max === g ? (b - r) / d + 2 : (r - g) / d + 4);
+        h *= 60;
+    }
+    return { h: Math.round(h) % 360, s: Math.round(s * 100), l: Math.round(l * 100) };
+}
+
+function hslToHex(h, s, l) {
+    h = ((h % 360) + 360) % 360;
+    s = Math.max(0, Math.min(100, s)) / 100;
+    l = Math.max(0, Math.min(100, l)) / 100;
+    const k = (n) => (n + h / 30) % 12;
+    const a = s * Math.min(l, 1 - l);
+    const f = (n) => Math.round(255 * (l - a * Math.max(-1, Math.min(k(n) - 3, 9 - k(n), 1))));
+    return "#" + [f(0), f(8), f(4)].map((v) => v.toString(16).padStart(2, "0")).join("");
+}
+
+/** "#000000" or "#ffffff", whichever has the higher WCAG contrast on hex. */
+function contrastTextColour(hex) {
+    const rgb = hexToRgb(hex);
+    const lin = (c) => {
+        c /= 255;
+        return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+    };
+    const lum = 0.2126 * lin(rgb.r) + 0.7152 * lin(rgb.g) + 0.0722 * lin(rgb.b);
+    // Contrast with black (lum + 0.05) / 0.05 vs white 1.05 / (lum + 0.05)
+    return (lum + 0.05) * (lum + 0.05) > 0.0525 ? "#000000" : "#ffffff";
+}
+
+/* ===================================================================== */
+/*                      FUNCTION: initColourGenUi                        */
+/* ===================================================================== */
+// Colour Generator (modules/colour_gen.php): one colour or a 5-colour scheme,
+// with per-swatch locks kept across re-rolls.
+const COLOUR_PALETTE_SIZE = 5;
+
+/** Colour for palette slot i of a scheme around base hue h. */
+function colourSchemeHex(scheme, h, i) {
+    const r = secureRandomInt;
+    switch (scheme) {
+        case "analogous":
+            return hslToHex(h + (i - 2) * 20 + r(-5, 5), r(45, 80), r(38, 68));
+        case "complementary":
+            return hslToHex(h + (i % 2 ? 180 : 0) + r(-8, 8), r(45, 85), [30, 45, 55, 65, 78][i]);
+        case "triadic":
+            return hslToHex(h + (i % 3) * 120 + r(-6, 6), r(45, 85), r(38, 65));
+        case "monochrome":
+            return hslToHex(h, r(35, 70), [18, 34, 50, 66, 82][i]);
+        default:
+            return randomHexColour();
+    }
+}
+
+function initColourGenUi($root) {
+    const $scope = ($root && $root.length) ? $root : $(document);
+    const $form = $scope.find("#colour_gen_form").first();
+    if (!$form.length || $form.data("colour-ui-bound")) {
+        return;
+    }
+    $form.data("colour-ui-bound", true);
+    const $swatches = $form.find("#colour_swatches");
+    let swatches = []; // [{hex, locked}]
+
+    function mode() {
+        return $form.find("input[name='colour_mode']:checked").val() || "palette";
+    }
+
+    function generate() {
+        const isPalette = mode() === "palette";
+        const size = isPalette ? COLOUR_PALETTE_SIZE : 1;
+        const scheme = isPalette ? ($form.find("#colour_scheme").val() || "random") : "random";
+        swatches = swatches.slice(0, size);
+        // Base hue: the first locked colour, so new colours fit around it.
+        const locked = swatches.find((s) => s.locked);
+        const baseHue = locked ? rgbToHsl(hexToRgb(locked.hex)).h : secureRandomInt(0, 359);
+        for (let i = 0; i < size; i++) {
+            if (!swatches[i] || !swatches[i].locked) {
+                swatches[i] = { hex: colourSchemeHex(scheme, baseHue, i), locked: false };
+            }
+        }
+        render();
+    }
+
+    function render() {
+        const stamp = Date.now().toString(36);
+        $swatches.toggleClass("colour-swatches-single", swatches.length === 1);
+        $swatches.html(swatches.map(function(s, i) {
+            const hex = s.hex.toUpperCase();
+            const rgb = hexToRgb(s.hex);
+            const hsl = rgbToHsl(rgb);
+            const text = contrastTextColour(s.hex);
+            const values = [
+                ["HEX", hex],
+                ["RGB", "rgb(" + rgb.r + ", " + rgb.g + ", " + rgb.b + ")"],
+                ["HSL", "hsl(" + hsl.h + ", " + hsl.s + "%, " + hsl.l + "%)"]
+            ];
+            return "<div class='colour-swatch" + (s.locked ? " colour-swatch-locked" : "") + "'>"
+                + "<div class='colour-swatch-colour' style='background:" + s.hex + ";color:" + text + "'>"
+                + "<span class='colour-swatch-hex'>" + hex + "</span>"
+                + "<button type='button' class='btn btn-sm colour-lock' data-index='" + i + "' aria-pressed='" + s.locked + "'"
+                + " title='" + (s.locked ? "Unlock" : "Lock (keep on re-roll)") + "' style='color:" + text + "'>"
+                + "<i class='icon-" + (s.locked ? "lock" : "lock-open") + "' aria-hidden='true'></i></button>"
+                + "</div>"
+                + "<div class='colour-swatch-values'>"
+                + values.map(function(v, j) {
+                    const id = "colour_" + stamp + "_" + i + "_" + j;
+                    return "<div class='colour-value'><span class='colour-value-label'>" + v[0] + "</span>"
+                        + "<code id='" + id + "'>" + v[1] + "</code>"
+                        + "<button type='button' class='btn btn-sm " + btnClass("light") + "' title='Copy " + v[0] + "'"
+                        + " onclick=\"copyToClipboard('" + id + "', this)\"><i class='icon-copy' aria-hidden='true'></i></button></div>";
+                }).join("")
+                + "</div></div>";
+        }).join(""));
+    }
+
+    $form.on("click", "#colour_generate", generate);
+    $form.on("change", "input[name='colour_mode']", function() {
+        $form.find(".colour-scheme-field").toggleClass("d-none", mode() !== "palette");
+        generate();
+    });
+    $form.on("change", "#colour_scheme", generate);
+    $form.on("click", ".colour-lock", function() {
+        const s = swatches[parseInt(this.dataset.index, 10)];
+        if (s) {
+            s.locked = !s.locked;
+            render();
+        }
+    });
+    generate();
 }
 
 /* ===================================================================== */
@@ -2544,6 +2710,7 @@ function navigate(to) {
         initRelativeTimeUi($(normalizedTo));
         initSubnetMaskUi($(normalizedTo));
         initChmodUi($(normalizedTo));
+        initColourGenUi($(normalizedTo));
         initSyntaxHighlightUi($(normalizedTo));
         initResultHistoryUi($(normalizedTo));
         refreshClientCryptoGeneratorUi($(normalizedTo));

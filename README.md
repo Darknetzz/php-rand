@@ -18,6 +18,7 @@ A comprehensive collection of useful developer tools built with PHP and modern w
 - String generator
 - Passphrase generator (diceware-style, EFF wordlist)
 - Image generator (built into this repository)
+- Colour generator (random colours and palettes with locks)
 - QR Code generator
 - ID generator
 - Spin the wheel
