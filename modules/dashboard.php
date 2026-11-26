@@ -1,270 +1,155 @@
-<div id="dashboard" class="content">
+<?php
+// Accent colour per navbar category; tiles, headings and icon boxes derive from it (--dash-accent).
+$dashCategoryColors = [
+    "generators"   => "#20c997",
+    "cryptography" => "#4299e1",
+    "encoding"     => "#ae3ec9",
+    "convert"      => "#f76707",
+    "math"         => "#17a2b8",
+    "misc"         => "#d63384",
+];
 
-    <!-- Hero Section -->
-    <div class="card border-0 mb-4" style="background: linear-gradient(135deg, rgba(32, 201, 151, 0.15) 0%, rgba(13, 110, 253, 0.15) 100%);">
-        <div class="card-body text-center py-5">
-            <h1 class="display-3 mb-3" style="font-weight: 700;">
-                <?= icon("dice-".mt_rand(1,6), 3) ?> RAND<span class="text-muted small">OM</span>
-            </h1>
-            <p class="lead text-muted mb-4" style="font-size: 1.3rem;">
-                Your Swiss Army Knife for Random Generation, Encoding, Cryptography & Data Transformation
-            </p>
-            <div class="d-flex gap-3 justify-content-center flex-wrap">
-                <a href="#gen_string" class="link btn btn-primary btn-lg">
-                    <?= icon("braces") ?> Start Generating
-                </a>
-                <a href="#hash" class="link btn <?= btnClass('primary') ?> btn-lg">
-                    <?= icon("shield-lock") ?> Explore Crypto
-                </a>
-                <a href="<?= htmlspecialchars(DEMO_URL, ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener noreferrer" class="btn <?= btnClass('primary') ?> btn-lg">
-                    <?= icon("external-link") ?> Live Demo
-                </a>
-                <a href="https://github.com/Darknetzz/phprand" target="_blank" rel="noopener noreferrer" class="btn <?= btnClass('secondary') ?> btn-lg">
-                    <?= icon("git-fork") ?> View on GitHub
-                </a>
-            </div>
-        </div>
-    </div>
+$dashCategories = array_filter($navbarItems, fn($m, $key) => $key !== "dashboard" && !empty($m["subitems"]), ARRAY_FILTER_USE_BOTH);
+$dashToolCount  = array_sum(array_map(fn($m) => count($m["subitems"]), $dashCategories));
 
-    <!-- New Feature Alert -->
-    <?php
-    $latestVersion = getLatestChangelogVersion();
-    if ($latestVersion && !empty($latestVersion['features'])) {
-        $firstFeature = $latestVersion['features'][0];
-        $featureTitle = isset($firstFeature['title']) ? trim($firstFeature['title']) : '';
-        
-        // Build description - if multiple features, list them
-        if (count($latestVersion['features']) > 1) {
-            $featureTitles = array_filter(array_column($latestVersion['features'], 'title'));
-            if (count($featureTitles) <= 3) {
-                $featureDesc = implode(', ', $featureTitles);
-            } else {
-                $featureDesc = implode(', ', array_slice($featureTitles, 0, 2)) . ', and more!';
-            }
-        } else {
-            // Single feature - use its description or title
-            $featureDesc = !empty($firstFeature['description']) 
-                ? trim($firstFeature['description']) 
-                : $featureTitle;
-        }
-        
-        // Only show if we have a valid title
-        if (!empty($featureTitle)) {
-    ?>
-    <div class="alert alert-info d-flex align-items-center mb-4" style="border-left: 4px solid #0dcaf0;">
-        <div class="flex-shrink-0">
-            <?= icon("sparkles", 2, "#0dcaf0") ?>
-        </div>
-        <div class="ms-3">
-            <h4 class="alert-heading mb-2">✨ New in <?= htmlspecialchars($latestVersion['version']) ?>: <?= htmlspecialchars($featureTitle) ?>!</h4>
-            <p class="mb-0">
-                <?= htmlspecialchars($featureDesc) ?>
-            </p>
-        </div>
-    </div>
-    <?php 
-        }
-    } 
-    ?>
+$dashFacts = [
+    ["icon" => "dice-3", "title" => "Pseudo-randomness",
+     "text" => "Computers are deterministic, so software usually generates pseudo-random values from a seed. Same seed, same sequence. Security-critical randomness comes from physical entropy sources."],
+    ["icon" => "shield-check", "title" => "Hash functions",
+     "text" => "A good hash function produces a completely different output when a single character of the input changes, which is what makes hashes useful for checking data integrity."],
+    ["icon" => "dices", "title" => "Opposite faces",
+     "text" => "On a standard d6 the opposite faces always add up to 7. Most polyhedral dice follow the same rule: opposite faces sum to the number of sides plus one."],
+    ["icon" => "key-round", "title" => "Passphrase entropy",
+     "text" => "Each word picked from the 7,776-word EFF list adds about 12.9 bits of entropy, so six random words beat most complex-looking 10-character passwords."],
+];
+$dashFact = $dashFacts[array_rand($dashFacts)];
 
-    <!-- Stats Row -->
-    <div class="row g-3 mb-4">
-        <?php
-        $totalTools = 0;
-        foreach ($navbarItems as $module) {
-            if (!empty($module["subitems"])) {
-                $totalTools += count($module["subitems"]);
-            } else {
-                $totalTools++;
-            }
-        }
-        
-        $stats = [
-            ["icon" => "wrench", "count" => $totalTools, "label" => "Tools Available", "color" => "primary"],
-            ["icon" => "shield-lock", "count" => count($navbarItems["cryptography"]["subitems"]), "label" => "Crypto Tools", "color" => "success"],
-            ["icon" => "braces", "count" => count($navbarItems["generators"]["subitems"]), "label" => "Generators", "color" => "info"],
-            ["icon" => "file-digit", "count" => count($navbarItems["encoding"]["subitems"]), "label" => "Encoders", "color" => "warning"],
+$dashWhyChips = [
+    ["icon" => "lock",     "label" => "Private",     "hint" => "No input data is stored on the server"],
+    ["icon" => "zap",      "label" => "Instant",     "hint" => "Real-time processing"],
+    ["icon" => "infinity", "label" => "No limits",   "hint" => "Use as much as you need"],
+    ["icon" => "git-fork", "label" => "Open source", "hint" => "Free and transparent"],
+];
+
+$latestVersion = getLatestChangelogVersion();
+$dashWhatsNew  = null;
+if ($latestVersion && !empty($latestVersion['features'])) {
+    $titles = array_values(array_filter(array_map('trim', array_column($latestVersion['features'], 'title'))));
+    if ($titles) {
+        $dashWhatsNew = [
+            "version" => $latestVersion['version'],
+            "text"    => count($titles) > 3
+                ? implode(', ', array_slice($titles, 0, 3)) . ' and ' . (count($titles) - 3) . ' more'
+                : implode(', ', $titles),
         ];
-        
-        foreach ($stats as $stat) {
-            echo '
-            <div class="col-6 col-md-3">
-                <div class="card text-center border-0" style="background: rgba(var(--tblr-'.$stat["color"].'-rgb), 0.1);">
-                    <div class="card-body">
-                        <div class="text-'.$stat["color"].'" style="font-size: 2rem; margin-bottom: 0.5rem;">
-                            '.icon($stat["icon"], 2).'
-                        </div>
-                        <h2 class="mb-1" style="font-weight: 700; font-size: 2rem;">'.$stat["count"].'</h2>
-                        <div class="text-muted small">'.$stat["label"].'</div>
-                    </div>
-                </div>
-            </div>';
-        }
-        ?>
-    </div>
+    }
+}
 
-    <!-- Feature Highlights -->
-    <div class="row g-4 mb-4">
-        <div class="col-md-6">
-            <div class="card h-100 border-primary" style="border-width: 2px;">
-                <div class="card-header bg-primary text-white">
-                    <h3 class="card-title mb-0"><?= icon("shuffle") ?> Smart Random Data</h3>
-                </div>
-                <div class="card-body">
-                    <p class="text-muted">Generate contextual test data instantly with our new random data buttons:</p>
-                    <ul class="list-unstyled">
-                        <li class="mb-2"><?= icon("mail", 1, "#20c997") ?> <strong>Emails:</strong> <code>user123@example.com</code></li>
-                        <li class="mb-2"><?= icon("link-2", 1, "#0dcaf0") ?> <strong>URLs:</strong> <code>https://demo.io/abc123</code></li>
-                        <li class="mb-2"><?= icon("network", 1, "#6f42c1") ?> <strong>IPs:</strong> <code>192.168.1.100</code></li>
-                        <li class="mb-2"><?= icon("file-code", 1, "#fd7e14") ?> <strong>JSON:</strong> Valid structured data</li>
-                        <li class="mb-2"><?= icon("code", 1, "#d63384") ?> <strong>Code:</strong> JavaScript snippets</li>
-                    </ul>
-                </div>
+$e = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
+?>
+<div id="dashboard" class="content dash">
+
+    <!-- Header -->
+    <header class="dash-hero">
+        <div class="dash-hero-brand">
+            <span class="dash-hero-logo"><?= icon("dice-" . mt_rand(1, 6), 2, null, 0) ?></span>
+            <div>
+                <h1 class="dash-hero-title">RAND<span class="text-muted">OM</span></h1>
+                <p class="dash-hero-tagline">Random generation, encoding, cryptography and data tools in one place.</p>
             </div>
         </div>
-        <div class="col-md-6">
-            <div class="card h-100 border-success" style="border-width: 2px;">
-                <div class="card-header bg-success text-white">
-                    <h3 class="card-title mb-0"><?= icon("zap") ?> Key Features</h3>
-                </div>
-                <div class="card-body">
-                    <div class="row g-3">
-                        <div class="col-6">
-                            <div class="text-center p-3" style="background: rgba(32, 201, 151, 0.1); border-radius: 0.5rem;">
-                                <div class="mb-2"><?= icon("lock", 2, "#20c997") ?></div>
-                                <strong>Privacy</strong>
-                                <div class="small text-muted">No input data is stored on the server</div>
-                                <button type="button" class="btn btn-link btn-sm p-0 mt-1" data-bs-toggle="modal" data-bs-target="#privacyModal">
-                                    Details
-                                </button>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="text-center p-3" style="background: rgba(13, 110, 253, 0.1); border-radius: 0.5rem;">
-                                <div class="mb-2"><?= icon("zap", 2, "#0d6efd") ?></div>
-                                <strong>Instant</strong>
-                                <div class="small text-muted">Real-time processing</div>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="text-center p-3" style="background: rgba(253, 126, 20, 0.1); border-radius: 0.5rem;">
-                                <div class="mb-2"><?= icon("cpu", 2, "#fd7e14") ?></div>
-                                <strong>No Limits</strong>
-                                <div class="small text-muted">Use as much as you need</div>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="text-center p-3" style="background: rgba(111, 66, 193, 0.1); border-radius: 0.5rem;">
-                                <div class="mb-2"><?= icon("git-fork", 2, "#6f42c1") ?></div>
-                                <strong>Open Source</strong>
-                                <div class="small text-muted">Free & transparent</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <div class="dash-hero-actions">
+            <a href="<?= $e(DEMO_URL) ?>" target="_blank" rel="noopener noreferrer" class="btn btn-sm <?= btnClass('secondary') ?>">
+                <?= icon("external-link") ?> Live demo
+            </a>
+            <a href="https://github.com/Darknetzz/phprand" target="_blank" rel="noopener noreferrer" class="btn btn-sm <?= btnClass('secondary') ?>">
+                <?= icon("git-fork") ?> GitHub
+            </a>
         </div>
+    </header>
+
+    <!-- Search -->
+    <div class="dash-search">
+        <?= icon("search", 1.25, null, 0) ?>
+        <input type="search" id="dashSearch" class="form-control form-control-lg" autocomplete="off" spellcheck="false"
+               placeholder="Search <?= (int) $dashToolCount ?> tools…" aria-label="Search tools">
+        <kbd class="dash-search-kbd" aria-hidden="true">/</kbd>
     </div>
 
-    <!-- Available Tools -->
-    <div class="card mb-4">
-        <div class="card-header">
-            <h2 class="card-title mb-0"><?= icon("layout-grid") ?> Available Tools</h2>
-        </div>
-        <div class="card-body">
-            <div class="row g-3">
-            <?php
-            foreach ($navbarItems as $moduleName => $module) {
-                $name       = $module["name"] ?? $moduleName;
-                $formalName = $module["formalName"] ?? ucfirst($name);
-                $icon       = $module["icon"] ?? icon('settings');
+    <?php if ($dashWhatsNew): ?>
+    <!-- What's new -->
+    <button type="button" class="dash-whatsnew" data-bs-toggle="modal" data-bs-target="#aboutModal" data-open-changelog>
+        <span class="dash-whatsnew-badge"><?= icon("sparkles", 1, null, 0) ?> New in <?= $e($dashWhatsNew["version"]) ?></span>
+        <span class="dash-whatsnew-text"><?= $e($dashWhatsNew["text"]) ?></span>
+        <span class="dash-whatsnew-more">Changelog <?= icon("arrow-right", 1, null, 0) ?></span>
+    </button>
+    <?php endif; ?>
 
-                if ($name === "dashboard") {
-                    continue;
-                }
+    <!-- Recently used (filled by renderRecentTools() in js/rand.js) -->
+    <section class="dash-section dash-recent d-none" id="dashRecentSection">
+        <h2 class="dash-section-title"><?= icon("history", 1, null, 0) ?> Recently used</h2>
+        <div class="dash-grid" id="dashRecent"></div>
+    </section>
 
-                $colors = [
-                    "generators" => "#20c997",
-                    "cryptography" => "#0d6efd",
-                    "encoding" => "#6f42c1",
-                    "convert" => "#fd7e14",
-                    "math" => "#0aa2c0",
-                    "misc" => "#d63384"
-                ];
-                $color = $colors[$name] ?? "#6c757d";
-
-                echo '
-                <div class="col-md-6 col-lg-4">
-                    <div class="card h-100" style="border-left: 4px solid '.$color.';">
-                        <div class="card-body">
-                            <h4 class="card-title mb-3" style="color: '.$color.';">'.$icon.' '.$formalName.'</h4>';
-
-                if (!empty($module["subitems"])) {
-                    echo '<ul class="list-unstyled mb-0">';
-                    foreach ($module["subitems"] as $subitemName => $subitem) {
-                        $subName       = $subitem["name"] ?? $subitemName;
-                        $subFormalName = $subitem["formalName"] ?? ucfirst($subName);
-                        $subIcon       = $subitem["icon"] ?? icon('settings');
-                        echo '<li class="mb-2">
-                            <a class="link text-decoration-none" href="#'.$subName.'" style="color: inherit;">
-                                '.$subIcon.' '.$subFormalName.'
-                            </a>
-                        </li>';
-                    }
-                    echo '</ul>';
-                }
-                echo '
-                        </div>
-                    </div>
-                </div>';
-            }
+    <!-- Tools -->
+    <div id="dashTools">
+    <?php foreach ($dashCategories as $catKey => $cat):
+        $catName  = $cat["formalName"] ?? ucfirst($catKey);
+        $catColor = $dashCategoryColors[$catKey] ?? "#6c757d";
+    ?>
+        <section class="dash-section dash-category" style="--dash-accent: <?= $e($catColor) ?>;">
+            <h2 class="dash-section-title">
+                <?= $cat["icon"] ?? icon('settings') ?> <?= $e($catName) ?>
+                <span class="dash-section-count"><?= count($cat["subitems"]) ?></span>
+            </h2>
+            <div class="dash-grid">
+            <?php foreach ($cat["subitems"] as $toolKey => $tool):
+                $toolName   = $tool["name"] ?? $toolKey;
+                $toolFormal = $tool["formalName"] ?? ucfirst($toolName);
+                $search     = strtolower("$toolFormal $toolName $catName");
             ?>
+                <a class="link dash-tool" href="#<?= $e($toolName) ?>" data-tool="<?= $e($toolName) ?>" data-search="<?= $e($search) ?>" style="--dash-accent: <?= $e($catColor) ?>;">
+                    <span class="dash-tool-icon"><?= $tool["icon"] ?? icon('settings') ?></span>
+                    <span class="dash-tool-name"><?= $e($toolFormal) ?></span>
+                </a>
+            <?php endforeach; ?>
+            </div>
+        </section>
+    <?php endforeach; ?>
+        <p class="dash-empty d-none" id="dashEmpty"><?= icon("search-x") ?> No tools match your search.</p>
+    </div>
+
+    <!-- Footer -->
+    <div class="row g-3 mt-1">
+        <div class="col-lg-6">
+            <div class="dash-panel h-100">
+                <h3 class="dash-panel-title"><?= icon("zap", 1, null, 0) ?> Why rand</h3>
+                <div class="dash-chips">
+                <?php foreach ($dashWhyChips as $chip): ?>
+                    <span class="dash-chip" title="<?= $e($chip["hint"]) ?>"><?= icon($chip["icon"], 1, null, 0) ?> <?= $e($chip["label"]) ?></span>
+                <?php endforeach; ?>
+                </div>
+                <p class="dash-panel-text">
+                    No input data is stored on the server.
+                    <button type="button" class="btn btn-link btn-sm p-0 align-baseline" data-bs-toggle="modal" data-bs-target="#privacyModal">How data flows</button>
+                </p>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="dash-panel h-100">
+                <h3 class="dash-panel-title"><?= icon("lightbulb", 1, null, 0) ?> Did you know?</h3>
+                <p class="dash-panel-text mb-0">
+                    <strong><?= icon($dashFact["icon"], 1, null, 0) ?> <?= $e($dashFact["title"]) ?>.</strong>
+                    <?= $e($dashFact["text"]) ?>
+                </p>
             </div>
         </div>
     </div>
 
-    <!-- Fun Facts -->
-    <div class="card border-0" style="background: linear-gradient(135deg, rgba(111, 66, 193, 0.1) 0%, rgba(214, 51, 132, 0.1) 100%);">
-        <div class="card-body">
-            <h3 class="mb-3"><?= icon("lightbulb", 1.5, "#6f42c1") ?> Did You Know?</h3>
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <div class="p-3" style="background: rgba(255,255,255,0.05); border-radius: 0.5rem;">
-                        <h5 class="text-primary mb-2"><?= icon("dice-3") ?> Pseudo-Randomness</h5>
-                        <p class="text-muted mb-0">
-                            Computers are deterministic, so software usually generates pseudo-random values
-                            from seed values. Use the same seed and you get the same sequence. For
-                            security-critical randomness, systems rely on physical entropy sources.
-                        </p>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="p-3" style="background: rgba(255,255,255,0.05); border-radius: 0.5rem;">
-                        <h5 class="text-success mb-2"><?= icon("shield-check") ?> Hash Functions</h5>
-                        <p class="text-muted mb-0">
-                            A good hash function produces vastly different outputs for even tiny input changes. 
-                            Changing just one character should completely alter the hash, making them perfect 
-                            for verifying data integrity!
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Disclaimer -->
-    <div class="alert alert-warning mt-4 d-flex align-items-start" style="border-left: 4px solid #ffc107;">
-        <div class="flex-shrink-0 me-3">
-            <?= icon("triangle-alert", 2, "#ffc107") ?>
-        </div>
-        <div>
-            <h4 class="alert-heading mb-2">Disclaimer</h4>
-            <p class="mb-0">
-                This is a personal project created for fun and learning. While functional, it may contain bugs 
-                and is not intended as a professional tool. Use at your own discretion, and feel free to contribute 
-                on <a href="https://github.com/Darknetzz/phprand" target="_blank" class="alert-link">GitHub</a>!
-            </p>
-        </div>
-    </div>
+    <p class="dash-disclaimer">
+        <?= icon("triangle-alert", 1, null, 0) ?>
+        A personal project made for fun and learning. It may contain bugs and isn't meant as a professional tool.
+        Contributions welcome on <a href="https://github.com/Darknetzz/phprand" target="_blank" rel="noopener noreferrer">GitHub</a>.
+    </p>
 
 </div>

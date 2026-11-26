@@ -1438,6 +1438,118 @@ function persistActiveModule(hashValue) {
     }
 }
 
+/* ===================================================================== */
+/*                 Dashboard: recently used tools + search               */
+/* ===================================================================== */
+const RECENT_TOOLS_STORAGE_KEY = "rand.recentTools";
+const RECENT_TOOLS_MAX = 6;
+
+function getRecentTools() {
+    try {
+        const list = JSON.parse(window.localStorage.getItem(RECENT_TOOLS_STORAGE_KEY) || "[]");
+        return Array.isArray(list) ? list.filter(function(t) { return typeof t === "string"; }) : [];
+    } catch (error) {
+        return [];
+    }
+}
+
+function recordRecentTool(moduleName) {
+    if (!moduleName || moduleName === "dashboard") {
+        return;
+    }
+    const list = getRecentTools().filter(function(t) { return t !== moduleName; });
+    list.unshift(moduleName);
+    try {
+        window.localStorage.setItem(RECENT_TOOLS_STORAGE_KEY, JSON.stringify(list.slice(0, RECENT_TOOLS_MAX)));
+    } catch (error) {
+        // localStorage can be unavailable in privacy-restricted contexts.
+    }
+}
+
+// Clones the matching tiles from the dashboard grid, so name/icon/colour live in one place.
+function renderRecentTools() {
+    const $recent = $("#dashRecent");
+    if (!$recent.length) {
+        return;
+    }
+    $recent.empty();
+    getRecentTools().forEach(function(tool) {
+        const $tile = $("#dashTools .dash-tool").filter(function() { return this.dataset.tool === tool; }).first();
+        if ($tile.length) {
+            $recent.append($tile.clone().removeClass("d-none"));
+        }
+    });
+    $("#dashRecentSection").toggleClass("d-none", $recent.children().length === 0);
+}
+
+function filterDashboardTools(query) {
+    const words = (query || "").toLowerCase().split(/\s+/).filter(Boolean);
+    let anyVisible = false;
+    $("#dashTools .dash-category").each(function() {
+        let sectionVisible = false;
+        $(this).find(".dash-tool").each(function() {
+            const haystack = this.dataset.search || "";
+            const match = words.every(function(w) { return haystack.indexOf(w) !== -1; });
+            this.classList.toggle("d-none", !match);
+            sectionVisible = sectionVisible || match;
+        });
+        this.classList.toggle("d-none", !sectionVisible);
+        anyVisible = anyVisible || sectionVisible;
+    });
+    $("#dashEmpty").toggleClass("d-none", anyVisible);
+    // Hide "Recently used" while searching so results are the only tiles shown.
+    $("#dashRecentSection").toggleClass("d-none", words.length > 0 || $("#dashRecent").children().length === 0);
+}
+
+function initDashboard() {
+    renderRecentTools();
+
+    $(document).on("input", "#dashSearch", function() {
+        filterDashboardTools(this.value);
+    });
+    $(document).on("keydown", "#dashSearch", function(e) {
+        if (e.key === "Enter") {
+            const $first = $("#dashTools .dash-tool:not(.d-none)").first();
+            if ($first.length) {
+                e.preventDefault();
+                navigate($first.attr("href"));
+            }
+        } else if (e.key === "Escape" && this.value) {
+            this.value = "";
+            filterDashboardTools("");
+        }
+    });
+    // "/" focuses the search when the dashboard is showing and the user isn't typing elsewhere.
+    $(document).on("keydown", function(e) {
+        if (e.key !== "/" || e.ctrlKey || e.metaKey || e.altKey) {
+            return;
+        }
+        const el = document.activeElement;
+        if (el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName))) {
+            return;
+        }
+        const search = document.getElementById("dashSearch");
+        if (search && $(search).is(":visible")) {
+            e.preventDefault();
+            search.focus();
+        }
+    });
+    // Cloned "Recently used" tiles are added after the .link click handler is bound.
+    $(document).on("click", "#dashRecent .link", function(e) {
+        e.preventDefault();
+        navigate($(this).attr("href"));
+    });
+    // "New in vX" strip opens the About modal on the Changelog tab.
+    $(document).on("click", "[data-open-changelog]", function() {
+        $("#aboutModal").one("shown.bs.modal", function() {
+            const tabBtn = document.getElementById("changelogTabBtn");
+            if (tabBtn) {
+                tabBtn.click();
+            }
+        });
+    });
+}
+
 function getPreferredInitialModule() {
     // Preserve subtab from URL hash (e.g. #networking/dns)
     const rawHash = (window.location.hash || "").replace(/^#/, "").trim();
@@ -2808,6 +2920,10 @@ function navigate(to) {
     const normalizedTo = "#" + moduleName;
 
     persistActiveModule(normalizedTo);
+    recordRecentTool(moduleName);
+    if (moduleName === "dashboard") {
+        renderRecentTools();
+    }
     if (window.location.hash !== normalizedTo && !subtab) {
         history.replaceState(null, "", normalizedTo);
     } else if (subtab) {
@@ -3834,6 +3950,8 @@ $(document).ready(function() {
     /* ===================================================================== */
     /*                      Navigation (and hash check)                      */
     /* ===================================================================== */
+    initDashboard();
+
     var initialModule = getPreferredInitialModule();
     var initialModuleName = initialModule.replace('#', '');
     navigate(initialModule);

@@ -8,7 +8,18 @@ All notable changes to this project are documented in this file.
 
 ### Major Features
 
-_Add entries here during development; rotate into a dated release section when tagging._
+- **Dashboard redesign** – The dashboard is now a tool launcher (`modules/dashboard.php`). A compact header replaces the big hero, and every tool is a clickable tile grouped by category, each category with its own accent colour and tool count. A **search box** filters the tiles as you type (press `/` to focus it, Enter opens the first match, Esc clears). A **Recently used** row shows the last six tools you opened, stored in `localStorage` (`rand.recentTools`). The "New in vX" alert is now a slim strip that opens the Changelog tab of the About modal. The stat tiles, the outdated "Smart Random Data" card and the large disclaimer alert are gone; "Why rand" and a random "Did you know?" fact sit in two small panels at the bottom.
+
+<details>
+<summary>📋 Detailed Changes (click to expand)</summary>
+
+#### Dashboard
+
+- `modules/dashboard.php`: rewritten without inline styles apart from the per-category `--dash-accent` colour. Tiles are `a.link.dash-tool` with `data-tool` / `data-search`, built from `$navbarItems`. Facts are picked at random from `$dashFacts`.
+- `style.css`: new `.dash-*` block (hero, search, what's-new strip, tile grid, panels) with light-theme and `prefers-reduced-motion` handling. Tile colours come from `color-mix()` on `--dash-accent`.
+- `js/rand.js`: `initDashboard()`, `filterDashboardTools()`, `recordRecentTool()` (called from `navigate()`) and `renderRecentTools()`, which clones tiles from the grid so tool names and icons are defined once.
+
+</details>
 
 ---
 
