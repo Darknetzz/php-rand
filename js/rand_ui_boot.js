@@ -50,19 +50,6 @@
         }
     }
 
-    function applyNavbarTheme(theme) {
-        var nav = document.querySelector("nav.navbar");
-        if (!nav) {
-            return;
-        }
-        nav.classList.remove("navbar-dark", "bg-dark", "navbar-light", "bg-white", "border-bottom");
-        if (theme === "light") {
-            nav.classList.add("navbar-light", "bg-white", "border-bottom");
-        } else {
-            nav.classList.add("navbar-dark", "bg-dark");
-        }
-    }
-
     function apply(p) {
         p = p || readPrefs();
         var doc = document.documentElement;
@@ -73,7 +60,6 @@
             document.body.classList.remove("theme-dark", "theme-light");
             document.body.classList.add(p.theme === "light" ? "theme-light" : "theme-dark");
         }
-        applyNavbarTheme(p.theme);
     }
 
     function save(p) {
@@ -97,7 +83,4 @@
     };
 
     apply(readPrefs());
-    document.addEventListener("DOMContentLoaded", function () {
-        applyNavbarTheme(readPrefs().theme);
-    });
 })();

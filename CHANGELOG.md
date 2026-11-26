@@ -8,16 +8,25 @@ All notable changes to this project are documented in this file.
 
 ### Major Features
 
-- **Dashboard redesign** – The dashboard is now a tool launcher (`modules/dashboard.php`). A compact header replaces the big hero, and every tool is a clickable tile grouped by category, each category with its own accent colour and tool count. A **search box** filters the tiles as you type (press `/` to focus it, Enter opens the first match, Esc clears). A **Recently used** row shows the last six tools you opened, stored in `localStorage` (`rand.recentTools`). The "New in vX" alert is now a slim strip that opens the Changelog tab of the About modal. The stat tiles, the outdated "Smart Random Data" card and the large disclaimer alert are gone; "Why rand" and a random "Did you know?" fact sit in two small panels at the bottom.
+- **Sidebar navigation** – The top navbar and its category dropdowns are replaced by a left sidebar that lists every tool at once, grouped by category and sorted A–Z (`includes/navbar.php`). Each category has its own accent colour and tool count, and can be collapsed; collapsed groups are remembered in `localStorage` (`rand.navCollapsed`). A **filter box** at the top narrows the list as you type: press `/` anywhere to focus it, Enter opens the first match, Esc clears it. The current tool is highlighted and its group opens automatically. Settings, GitHub and About sit at the bottom. On screens narrower than 992px the sidebar folds into a top bar with a menu button and closes again after you pick a tool.
+- **Dashboard redesign** – With the tools in the sidebar, the dashboard is now a short landing page (`modules/dashboard.php`): a compact header, a slim "New in vX" strip that opens the Changelog tab of the About modal, a **Recently used** row with the last six tools you opened (`rand.recentTools` in `localStorage`), and small "Why rand" and random "Did you know?" panels. The stat tiles, the outdated "Smart Random Data" card, the category link lists and the large disclaimer alert are gone.
 
 <details>
 <summary>📋 Detailed Changes (click to expand)</summary>
 
+#### Navigation
+
+- `includes/navbar.php`: renders `<aside class="rand-sidebar">` instead of the Tabler top navbar. Categories in `$navbarItems` get a `color` key, and subitems are sorted with `strnatcasecmp` right after the array is defined, so everything iterating `$navbarItems` sees the same order. Links keep their `link` class, `id="nav…"` and `data-show`, and gain `data-name` / `data-search`.
+- `index.php`: page content sits in `<main class="rand-main">`, offset by the sidebar width; a stray closing `</div>` is removed.
+- `style.css`: new `.rand-sidebar` / `.rand-nav-*` block with light-theme colours and a mobile layout. The old absolutely positioned `.container` rule (which kept the scrollbar from pushing the top navbar) is replaced by normal page flow, and the fixed footer now starts after the sidebar.
+- `js/rand.js`: `initSidebarNav()`, `setSidebarActive()` (called from `navigate()` instead of the dropdown highlighting), `filterSidebarTools()` and `focusSidebarSearch()`.
+- `js/rand_ui_boot.js`: `applyNavbarTheme()` is removed; the sidebar takes its colours from `data-bs-theme`.
+
 #### Dashboard
 
-- `modules/dashboard.php`: rewritten without inline styles apart from the per-category `--dash-accent` colour. Tiles are `a.link.dash-tool` with `data-tool` / `data-search`, built from `$navbarItems`. Facts are picked at random from `$dashFacts`.
-- `style.css`: new `.dash-*` block (hero, search, what's-new strip, tile grid, panels) with light-theme and `prefers-reduced-motion` handling. Tile colours come from `color-mix()` on `--dash-accent`.
-- `js/rand.js`: `initDashboard()`, `filterDashboardTools()`, `recordRecentTool()` (called from `navigate()`) and `renderRecentTools()`, which clones tiles from the grid so tool names and icons are defined once.
+- `modules/dashboard.php`: rewritten without inline styles. Facts are picked at random from `$dashFacts`.
+- `style.css`: `.dash-*` block (hero, what's-new strip, tiles, panels) with light-theme and `prefers-reduced-motion` handling. Tile colours come from `color-mix()` on `--dash-accent`.
+- `js/rand.js`: `recordRecentTool()` (called from `navigate()`) and `renderRecentTools()`, which builds the Recently used tiles from the sidebar links so tool names, icons and colours are defined only in `includes/navbar.php`.
 
 </details>
 

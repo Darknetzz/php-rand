@@ -11,6 +11,7 @@ $navbarItems = [
         "name"       => "generators",
         "formalName" => "Generators",
         "icon"       => icon('braces'),
+        "color"      => "#20c997",
         "subitems" => [
             "gen_number" => [
                 "name"       => "gen_number",
@@ -88,6 +89,7 @@ $navbarItems = [
         "name"       => "cryptography",
         "formalName" => "Cryptography",
         "icon"       => icon('shield-lock'),
+        "color"      => "#4299e1",
         "subitems" => [
             "openssl" => [
                 "name"       => "openssl",
@@ -145,6 +147,7 @@ $navbarItems = [
         "name"       => "encoding",
         "formalName" => "Encoding",
         "icon"       => icon('file-digit'),
+        "color"      => "#ae3ec9",
         "subitems" => [
             "base" => [
                 "name"       => "base",
@@ -172,6 +175,7 @@ $navbarItems = [
         "name"      => "convert",
         "formalName" => "Text & Data",
         "icon"      => icon('arrow-left-right'),
+        "color"      => "#f76707",
         "subitems" => [
             "string_tools" => [
                 "name"       => "string_tools",
@@ -214,6 +218,7 @@ $navbarItems = [
         "name"       => "math",
         "formalName" => "Math",
         "icon"       => icon('infinity'),
+        "color"      => "#17a2b8",
         "subitems" => [
             "calculator" => [
                 "name"       => "calculator",
@@ -241,6 +246,7 @@ $navbarItems = [
         "name"       => "misc",
         "formalName" => "Miscellaneous",
         "icon"       => icon('briefcase'),
+        "color"      => "#d63384",
         "subitems" => [
             "networking" => [
                 "name"       => "networking",
@@ -291,102 +297,106 @@ $navbarItems = [
     ],
 ];
 
+// Sidebar lists tools A–Z within each category (the dashboard and anything else iterating $navbarItems too).
+foreach ($navbarItems as &$navCategory) {
+    if (!empty($navCategory["subitems"])) {
+        uasort($navCategory["subitems"], fn($a, $b) => strnatcasecmp($a["formalName"] ?? $a["name"], $b["formalName"] ?? $b["name"]));
+    }
+}
+unset($navCategory);
+
+$navEsc = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
+
 $navHTML = '
-<nav class="navbar ps-3 navbar-expand-md d-print-none navbar-dark bg-dark sticky-top">
-  <a class="navbar-brand text-lime mx-3" href="index.php">' . icon("dice-".mt_rand(1,6)). " " . SITE_TITLE . '</a>
-  <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-    <span class="navbar-toggler-icon"></span>
-  </button>
-  <div class="collapse navbar-collapse" id="navbarNav">
-    <div class="d-flex justify-content-between w-100">
-    <div class="nav-left">
-      <ul class="navbar-nav">';
+<aside class="rand-sidebar d-print-none" id="randSidebar">
+  <div class="rand-sidebar-head">
+    <a class="rand-sidebar-brand link" href="#dashboard">' . icon("dice-" . mt_rand(1, 6), 1.4, null, 0) . '<span>' . $navEsc(SITE_TITLE) . '</span></a>
+    <button class="rand-sidebar-toggler d-lg-none" type="button" data-bs-toggle="collapse" data-bs-target="#randSidebarBody" aria-controls="randSidebarBody" aria-expanded="false" aria-label="Toggle navigation">' . icon("menu", 1.25, null, 0) . '</button>
+  </div>
+  <div class="collapse rand-sidebar-body" id="randSidebarBody">
+    <div class="rand-sidebar-search">
+      ' . icon("search", 1, null, 0) . '
+      <input type="search" id="navSearch" class="form-control form-control-sm" autocomplete="off" spellcheck="false" placeholder="Filter tools…" aria-label="Filter tools">
+      <kbd aria-hidden="true">/</kbd>
+    </div>
+    <nav class="rand-sidebar-nav" id="randSidebarNav" aria-label="Tools">';
 
 foreach ($navbarItems as $moduleName => $module) {
-
-    $moduleFile = APP_ROOT . DIRSEP . "modules" . DIRSEP . $moduleName . ".php";
-
     $name       = $module["name"] ?? $moduleName;
     $formalname = $module["formalName"] ?? ucfirst($name);
     $icon       = $module["icon"] ?? icon('settings');
 
-    # Module has subitems
-    if (!empty($module["subitems"])) {
+    # Top-level module without subitems (Dashboard)
+    if (empty($module["subitems"])) {
         $navHTML .= '
-        <li class="nav-item dropdown">
-            <a class="nav-link dropdown-toggle" href="#" id="nav' . $name . '" role="button" data-bs-toggle="dropdown" aria-expanded="false">' . $icon . $formalname . '</a>
-            <ul class="dropdown-menu" aria-labelledby="nav' . $name . '">';
-        foreach ($module["subitems"] as $subitemName => $subitem) {
-            $subName       = $subitem["name"] ?? $subitemName;
-            $subFormalName = $subitem["formalName"] ?? ucfirst($subName);
-            $subIcon       = $subitem["icon"] ?? icon('settings');
-            $navHTML .= '
-                <li>
-                    <a class="dropdown-item link" href="#' . $subName . '" id="nav' . $subName . '" data-show="' . $subName . '">' . $subIcon . $subFormalName . '</a>
-                </li>
-            ';
-        }
-            $navHTML .= '
-            </ul>
-        </li>
-        ';
+      <a class="link rand-nav-link rand-nav-top" href="#' . $navEsc($name) . '" id="nav' . $navEsc($name) . '" data-show="' . $navEsc($name) . '">' . $icon . '<span>' . $navEsc($formalname) . '</span></a>';
         continue;
     }
-    $navHTML  .= '
-      <li class="nav-item">
-        <a class="link nav-link" href="#' . $name . '" id="nav' . $name . '" data-show="' . $name . '">' . $icon . $formalname . '</a>
-      </li>
-    ';
+
+    $accent = $module["color"] ?? "#6c757d";
+    $navHTML .= '
+      <div class="rand-nav-group" data-group="' . $navEsc($name) . '" data-accent="' . $navEsc($accent) . '" style="--nav-accent: ' . $navEsc($accent) . ';">
+        <button type="button" class="rand-nav-group-toggle" data-nav-group-toggle aria-expanded="true" aria-controls="navGroup-' . $navEsc($name) . '">
+          ' . $icon . '<span class="rand-nav-group-name">' . $navEsc($formalname) . '</span>
+          <span class="rand-nav-group-count">' . count($module["subitems"]) . '</span>
+          ' . icon("chevron-down", 1, null, 0) . '
+        </button>
+        <ul class="rand-nav-group-items" id="navGroup-' . $navEsc($name) . '">';
+    foreach ($module["subitems"] as $subitemName => $subitem) {
+        $subName       = $subitem["name"] ?? $subitemName;
+        $subFormalName = $subitem["formalName"] ?? ucfirst($subName);
+        $subIcon       = $subitem["icon"] ?? icon('settings');
+        $search        = strtolower("$subFormalName $subName $formalname");
+        $navHTML .= '
+          <li><a class="link rand-nav-link" href="#' . $navEsc($subName) . '" id="nav' . $navEsc($subName) . '" data-show="' . $navEsc($subName) . '" data-name="' . $navEsc($subFormalName) . '" data-search="' . $navEsc($search) . '">' . $subIcon . '<span>' . $navEsc($subFormalName) . '</span></a></li>';
+    }
+    $navHTML .= '
+        </ul>
+      </div>';
 }
+
 $navHTML .= '
-      </ul>
-    </div>
-    <div class="nav-right">
-      <ul class="navbar-nav mx-2">
-        <li class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle" href="#" id="navRandSettings" role="button" data-bs-toggle="dropdown" aria-expanded="false" data-bs-auto-close="outside">'.icon('sliders').' Settings</a>
-          <div class="dropdown-menu dropdown-menu-end p-3 shadow-sm" aria-labelledby="navRandSettings" style="min-width: 280px;">
-            <div class="mb-3">
-              <label class="form-label mb-1 small opacity-75" for="randPrefTheme">Theme</label>
-              <select class="form-select form-select-sm" id="randPrefTheme">
-                <option value="dark">Dark</option>
-                <option value="light">Light</option>
-              </select>
-            </div>
-            <div class="mb-0">
-              <label class="form-label mb-1 small opacity-75" for="randPrefUiScale">Interface size</label>
-              <select class="form-select form-select-sm" id="randPrefUiScale">
-                <option value="0.8">Compact (80%)</option>
-                <option value="0.85">Dense (85%)</option>
-                <option value="0.92">Cozy (92%)</option>
-                <option value="1">Standard (100%)</option>
-                <option value="1.08">Large (108%)</option>
-                <option value="1.16">Extra large (116%)</option>
-              </select>
-            </div>
-            <div class="mt-3 mb-0">
-              <label class="form-label mb-1 small opacity-75" for="randPrefSpaceScale">Item spacing</label>
-              <select class="form-select form-select-sm" id="randPrefSpaceScale">
-                <option value="0.85">Tight (85%)</option>
-                <option value="0.95">Dense (95%)</option>
-                <option value="1">Standard (100%)</option>
-                <option value="1.1">Comfortable (110%)</option>
-                <option value="1.2">Relaxed (120%)</option>
-              </select>
-            </div>
+      <p class="rand-nav-empty d-none" id="navEmpty">No tools match.</p>
+    </nav>
+    <div class="rand-sidebar-foot">
+      <div class="dropup">
+        <button type="button" class="rand-nav-link w-100" id="navRandSettings" data-bs-toggle="dropdown" aria-expanded="false" data-bs-auto-close="outside">' . icon('sliders') . '<span>Settings</span></button>
+        <div class="dropdown-menu p-3 shadow-sm rand-settings-menu" aria-labelledby="navRandSettings">
+          <div class="mb-3">
+            <label class="form-label mb-1 small opacity-75" for="randPrefTheme">Theme</label>
+            <select class="form-select form-select-sm" id="randPrefTheme">
+              <option value="dark">Dark</option>
+              <option value="light">Light</option>
+            </select>
           </div>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" target="_blank" rel="noopener noreferrer" href="https://github.com/Darknetzz/phprand">'.icon('git-fork').' GitHub</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#aboutModal" id="navAbout">'.icon('info').' About</a>
-        </li>
-      </ul>
+          <div class="mb-0">
+            <label class="form-label mb-1 small opacity-75" for="randPrefUiScale">Interface size</label>
+            <select class="form-select form-select-sm" id="randPrefUiScale">
+              <option value="0.8">Compact (80%)</option>
+              <option value="0.85">Dense (85%)</option>
+              <option value="0.92">Cozy (92%)</option>
+              <option value="1">Standard (100%)</option>
+              <option value="1.08">Large (108%)</option>
+              <option value="1.16">Extra large (116%)</option>
+            </select>
+          </div>
+          <div class="mt-3 mb-0">
+            <label class="form-label mb-1 small opacity-75" for="randPrefSpaceScale">Item spacing</label>
+            <select class="form-select form-select-sm" id="randPrefSpaceScale">
+              <option value="0.85">Tight (85%)</option>
+              <option value="0.95">Dense (95%)</option>
+              <option value="1">Standard (100%)</option>
+              <option value="1.1">Comfortable (110%)</option>
+              <option value="1.2">Relaxed (120%)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <a class="rand-nav-link" target="_blank" rel="noopener noreferrer" href="https://github.com/Darknetzz/phprand">' . icon('git-fork') . '<span>GitHub</span></a>
+      <a class="rand-nav-link" href="javascript:void(0);" data-bs-toggle="modal" data-bs-target="#aboutModal" id="navAbout">' . icon('info') . '<span>About</span></a>
     </div>
   </div>
-</div>
-</nav>
+</aside>
 ';
 
 echo $navHTML;

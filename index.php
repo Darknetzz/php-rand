@@ -33,7 +33,7 @@
         require_once("includes/navbar.php");
     ?>
     <script>window.RAND_BTN_OUTLINE = <?= BTN_OUTLINE ? 'true' : 'false' ?>; window.RAND_LOREM_WORDS = <?= json_encode(lorem_words()) ?>;</script>
-    <br>
+    <main class="rand-main">
     <div class="container pt-5">
 
 
@@ -46,8 +46,8 @@ include_once("modules/dashboard.php");
 
         <!-------------------------------------------------------------------------------->
 
-    </div>
     </div> <!-- CONTAINER END -->
+    </main>
 
     <div class="modal fade" tabindex="-1" id="aboutModal" aria-labelledby="aboutModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-xl modal-dialog-scrollable" role="document">

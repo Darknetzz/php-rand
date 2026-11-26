@@ -1,16 +1,5 @@
 <?php
-// Accent colour per navbar category; tiles, headings and icon boxes derive from it (--dash-accent).
-$dashCategoryColors = [
-    "generators"   => "#20c997",
-    "cryptography" => "#4299e1",
-    "encoding"     => "#ae3ec9",
-    "convert"      => "#f76707",
-    "math"         => "#17a2b8",
-    "misc"         => "#d63384",
-];
-
-$dashCategories = array_filter($navbarItems, fn($m, $key) => $key !== "dashboard" && !empty($m["subitems"]), ARRAY_FILTER_USE_BOTH);
-$dashToolCount  = array_sum(array_map(fn($m) => count($m["subitems"]), $dashCategories));
+$dashToolCount = array_sum(array_map(fn($m) => count($m["subitems"] ?? []), $navbarItems));
 
 $dashFacts = [
     ["icon" => "dice-3", "title" => "Pseudo-randomness",
@@ -68,14 +57,6 @@ $e = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
         </div>
     </header>
 
-    <!-- Search -->
-    <div class="dash-search">
-        <?= icon("search", 1.25, null, 0) ?>
-        <input type="search" id="dashSearch" class="form-control form-control-lg" autocomplete="off" spellcheck="false"
-               placeholder="Search <?= (int) $dashToolCount ?> tools…" aria-label="Search tools">
-        <kbd class="dash-search-kbd" aria-hidden="true">/</kbd>
-    </div>
-
     <?php if ($dashWhatsNew): ?>
     <!-- What's new -->
     <button type="button" class="dash-whatsnew" data-bs-toggle="modal" data-bs-target="#aboutModal" data-open-changelog>
@@ -85,39 +66,15 @@ $e = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
     </button>
     <?php endif; ?>
 
-    <!-- Recently used (filled by renderRecentTools() in js/rand.js) -->
-    <section class="dash-section dash-recent d-none" id="dashRecentSection">
+    <!-- Recently used (filled by renderRecentTools() in js/rand.js from the sidebar links) -->
+    <section class="dash-section">
         <h2 class="dash-section-title"><?= icon("history", 1, null, 0) ?> Recently used</h2>
         <div class="dash-grid" id="dashRecent"></div>
+        <p class="dash-panel-text d-none mb-0" id="dashRecentEmpty">
+            Tools you open will show up here. Pick one from the sidebar, or
+            <a href="#" data-focus-nav-search>search all <?= (int) $dashToolCount ?> tools</a> (press <kbd>/</kbd>).
+        </p>
     </section>
-
-    <!-- Tools -->
-    <div id="dashTools">
-    <?php foreach ($dashCategories as $catKey => $cat):
-        $catName  = $cat["formalName"] ?? ucfirst($catKey);
-        $catColor = $dashCategoryColors[$catKey] ?? "#6c757d";
-    ?>
-        <section class="dash-section dash-category" style="--dash-accent: <?= $e($catColor) ?>;">
-            <h2 class="dash-section-title">
-                <?= $cat["icon"] ?? icon('settings') ?> <?= $e($catName) ?>
-                <span class="dash-section-count"><?= count($cat["subitems"]) ?></span>
-            </h2>
-            <div class="dash-grid">
-            <?php foreach ($cat["subitems"] as $toolKey => $tool):
-                $toolName   = $tool["name"] ?? $toolKey;
-                $toolFormal = $tool["formalName"] ?? ucfirst($toolName);
-                $search     = strtolower("$toolFormal $toolName $catName");
-            ?>
-                <a class="link dash-tool" href="#<?= $e($toolName) ?>" data-tool="<?= $e($toolName) ?>" data-search="<?= $e($search) ?>" style="--dash-accent: <?= $e($catColor) ?>;">
-                    <span class="dash-tool-icon"><?= $tool["icon"] ?? icon('settings') ?></span>
-                    <span class="dash-tool-name"><?= $e($toolFormal) ?></span>
-                </a>
-            <?php endforeach; ?>
-            </div>
-        </section>
-    <?php endforeach; ?>
-        <p class="dash-empty d-none" id="dashEmpty"><?= icon("search-x") ?> No tools match your search.</p>
-    </div>
 
     <!-- Footer -->
     <div class="row g-3 mt-1">

@@ -1439,87 +1439,157 @@ function persistActiveModule(hashValue) {
 }
 
 /* ===================================================================== */
-/*                 Dashboard: recently used tools + search               */
+/*          Sidebar navigation (includes/navbar.php) + recent tools      */
 /* ===================================================================== */
 const RECENT_TOOLS_STORAGE_KEY = "rand.recentTools";
 const RECENT_TOOLS_MAX = 6;
+const NAV_COLLAPSED_STORAGE_KEY = "rand.navCollapsed";
+const SIDEBAR_MOBILE_MAX_WIDTH = 991.98;
 
-function getRecentTools() {
+function readStoredList(key) {
     try {
-        const list = JSON.parse(window.localStorage.getItem(RECENT_TOOLS_STORAGE_KEY) || "[]");
+        const list = JSON.parse(window.localStorage.getItem(key) || "[]");
         return Array.isArray(list) ? list.filter(function(t) { return typeof t === "string"; }) : [];
     } catch (error) {
         return [];
     }
 }
 
-function recordRecentTool(moduleName) {
-    if (!moduleName || moduleName === "dashboard") {
-        return;
-    }
-    const list = getRecentTools().filter(function(t) { return t !== moduleName; });
-    list.unshift(moduleName);
+function writeStoredList(key, list) {
     try {
-        window.localStorage.setItem(RECENT_TOOLS_STORAGE_KEY, JSON.stringify(list.slice(0, RECENT_TOOLS_MAX)));
+        window.localStorage.setItem(key, JSON.stringify(list));
     } catch (error) {
         // localStorage can be unavailable in privacy-restricted contexts.
     }
 }
 
-// Clones the matching tiles from the dashboard grid, so name/icon/colour live in one place.
+function isSidebarMobile() {
+    return window.matchMedia("(max-width: " + SIDEBAR_MOBILE_MAX_WIDTH + "px)").matches;
+}
+
+function sidebarToolLink(moduleName) {
+    return $("#randSidebarNav .rand-nav-link").filter(function() { return this.dataset.show === moduleName; }).first();
+}
+
+function setSidebarActive(moduleName) {
+    $("#randSidebar .rand-nav-link.active").removeClass("active").removeAttr("aria-current");
+    const $link = sidebarToolLink(moduleName);
+    if (!$link.length) {
+        return;
+    }
+    $link.addClass("active").attr("aria-current", "page");
+    // Open the group for this visit without changing the saved collapsed state.
+    $link.closest(".rand-nav-group").removeClass("is-collapsed")
+        .find("[data-nav-group-toggle]").attr("aria-expanded", "true");
+    $link[0].scrollIntoView({ block: "nearest" });
+    // On small screens the sidebar is a dropdown; close it once a tool is picked.
+    if (isSidebarMobile()) {
+        $("#randSidebarBody").removeClass("show");
+        $(".rand-sidebar-toggler").attr("aria-expanded", "false");
+    }
+}
+
+function setNavGroupCollapsed($group, collapsed) {
+    $group.toggleClass("is-collapsed", collapsed)
+        .find("[data-nav-group-toggle]").attr("aria-expanded", collapsed ? "false" : "true");
+}
+
+function filterSidebarTools(query) {
+    const words = (query || "").toLowerCase().split(/\s+/).filter(Boolean);
+    let anyVisible = false;
+    $("#randSidebarNav .rand-nav-group").each(function() {
+        let groupVisible = false;
+        $(this).find(".rand-nav-link").each(function() {
+            const haystack = this.dataset.search || "";
+            const match = words.every(function(w) { return haystack.indexOf(w) !== -1; });
+            this.parentElement.classList.toggle("d-none", !match);
+            groupVisible = groupVisible || match;
+        });
+        this.classList.toggle("d-none", !groupVisible);
+        anyVisible = anyVisible || groupVisible;
+    });
+    $("#randSidebarNav").toggleClass("is-filtering", words.length > 0);
+    $("#randSidebarNav .rand-nav-top").toggleClass("d-none", words.length > 0);
+    $("#navEmpty").toggleClass("d-none", anyVisible);
+}
+
+function recordRecentTool(moduleName) {
+    if (!moduleName || moduleName === "dashboard") {
+        return;
+    }
+    const list = readStoredList(RECENT_TOOLS_STORAGE_KEY).filter(function(t) { return t !== moduleName; });
+    list.unshift(moduleName);
+    writeStoredList(RECENT_TOOLS_STORAGE_KEY, list.slice(0, RECENT_TOOLS_MAX));
+}
+
+// Builds dashboard tiles from the sidebar links, so tool names, icons and colours live in navbar.php only.
 function renderRecentTools() {
     const $recent = $("#dashRecent");
     if (!$recent.length) {
         return;
     }
     $recent.empty();
-    getRecentTools().forEach(function(tool) {
-        const $tile = $("#dashTools .dash-tool").filter(function() { return this.dataset.tool === tool; }).first();
-        if ($tile.length) {
-            $recent.append($tile.clone().removeClass("d-none"));
+    readStoredList(RECENT_TOOLS_STORAGE_KEY).forEach(function(tool) {
+        const $link = sidebarToolLink(tool);
+        if (!$link.length) {
+            return;
         }
+        const accent = $link.closest(".rand-nav-group").data("accent") || "";
+        const $tile = $("<a>", { class: "link dash-tool", href: "#" + tool })
+            .css("--dash-accent", accent)
+            .append($("<span>", { class: "dash-tool-icon" }).append($link.find("i").first().clone()))
+            .append($("<span>", { class: "dash-tool-name", text: $link.data("name") || tool }));
+        $recent.append($tile);
     });
-    $("#dashRecentSection").toggleClass("d-none", $recent.children().length === 0);
+    $("#dashRecentEmpty").toggleClass("d-none", $recent.children().length > 0);
 }
 
-function filterDashboardTools(query) {
-    const words = (query || "").toLowerCase().split(/\s+/).filter(Boolean);
-    let anyVisible = false;
-    $("#dashTools .dash-category").each(function() {
-        let sectionVisible = false;
-        $(this).find(".dash-tool").each(function() {
-            const haystack = this.dataset.search || "";
-            const match = words.every(function(w) { return haystack.indexOf(w) !== -1; });
-            this.classList.toggle("d-none", !match);
-            sectionVisible = sectionVisible || match;
-        });
-        this.classList.toggle("d-none", !sectionVisible);
-        anyVisible = anyVisible || sectionVisible;
-    });
-    $("#dashEmpty").toggleClass("d-none", anyVisible);
-    // Hide "Recently used" while searching so results are the only tiles shown.
-    $("#dashRecentSection").toggleClass("d-none", words.length > 0 || $("#dashRecent").children().length === 0);
+function focusSidebarSearch() {
+    const search = document.getElementById("navSearch");
+    if (!search) {
+        return;
+    }
+    if (isSidebarMobile()) {
+        $("#randSidebarBody").addClass("show");
+        $(".rand-sidebar-toggler").attr("aria-expanded", "true");
+    }
+    search.focus();
+    search.select();
 }
 
-function initDashboard() {
-    renderRecentTools();
-
-    $(document).on("input", "#dashSearch", function() {
-        filterDashboardTools(this.value);
+function initSidebarNav() {
+    const collapsed = readStoredList(NAV_COLLAPSED_STORAGE_KEY);
+    $("#randSidebarNav .rand-nav-group").each(function() {
+        setNavGroupCollapsed($(this), collapsed.indexOf(this.dataset.group) !== -1);
     });
-    $(document).on("keydown", "#dashSearch", function(e) {
+
+    $(document).on("click", "[data-nav-group-toggle]", function() {
+        const $group = $(this).closest(".rand-nav-group");
+        setNavGroupCollapsed($group, !$group.hasClass("is-collapsed"));
+        const groups = $("#randSidebarNav .rand-nav-group.is-collapsed").map(function() { return this.dataset.group; }).get();
+        writeStoredList(NAV_COLLAPSED_STORAGE_KEY, groups);
+    });
+
+    $(document).on("input", "#navSearch", function() {
+        filterSidebarTools(this.value);
+    });
+    $(document).on("keydown", "#navSearch", function(e) {
         if (e.key === "Enter") {
-            const $first = $("#dashTools .dash-tool:not(.d-none)").first();
+            const $first = $("#randSidebarNav .rand-nav-group:not(.d-none) li:not(.d-none) .rand-nav-link").first();
             if ($first.length) {
                 e.preventDefault();
                 navigate($first.attr("href"));
+                this.value = "";
+                filterSidebarTools("");
+                this.blur();
             }
-        } else if (e.key === "Escape" && this.value) {
+        } else if (e.key === "Escape") {
             this.value = "";
-            filterDashboardTools("");
+            filterSidebarTools("");
+            this.blur();
         }
     });
-    // "/" focuses the search when the dashboard is showing and the user isn't typing elsewhere.
+    // "/" jumps to the tool filter unless the user is typing somewhere.
     $(document).on("keydown", function(e) {
         if (e.key !== "/" || e.ctrlKey || e.metaKey || e.altKey) {
             return;
@@ -1528,16 +1598,17 @@ function initDashboard() {
         if (el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName))) {
             return;
         }
-        const search = document.getElementById("dashSearch");
-        if (search && $(search).is(":visible")) {
-            e.preventDefault();
-            search.focus();
-        }
-    });
-    // Cloned "Recently used" tiles are added after the .link click handler is bound.
-    $(document).on("click", "#dashRecent .link", function(e) {
         e.preventDefault();
-        navigate($(this).attr("href"));
+        focusSidebarSearch();
+    });
+    // Dashboard tiles are built after the .link click handler is bound.
+    $(document).on("click", "#dashRecent .link, [data-focus-nav-search]", function(e) {
+        e.preventDefault();
+        if (this.hasAttribute("data-focus-nav-search")) {
+            focusSidebarSearch();
+        } else {
+            navigate($(this).attr("href"));
+        }
     });
     // "New in vX" strip opens the About modal on the Changelog tab.
     $(document).on("click", "[data-open-changelog]", function() {
@@ -1548,6 +1619,8 @@ function initDashboard() {
             }
         });
     });
+
+    renderRecentTools();
 }
 
 function getPreferredInitialModule() {
@@ -2930,25 +3003,7 @@ function navigate(to) {
         history.replaceState(null, "", "#" + moduleName + "/" + subtab);
     }
 
-    // Reset all navbar link states
-    const $navbarLinks = $(".navbar .nav-link, .navbar .dropdown-item.link");
-    $navbarLinks.removeClass("active link-success");
-
-    // Set direct (top-level) nav link active
-    const $navLink = $(`.link.nav-link[data-show='${moduleName}']`);
-    if ($navLink.length) {
-        $navLink.addClass("link-success active");
-    }
-
-    // Set dropdown item active and highlight its parent dropdown toggle
-    const $dropdownItem = $(`.dropdown-item.link[data-show='${moduleName}']`);
-    if ($dropdownItem.length) {
-        $dropdownItem.addClass("active");
-        $dropdownItem
-            .closest(".nav-item.dropdown")
-            .find("> .nav-link.dropdown-toggle")
-            .addClass("active link-success");
-    }
+    setSidebarActive(moduleName);
 
     const showTarget = function() {
         $(".content").hide();
@@ -3950,7 +4005,7 @@ $(document).ready(function() {
     /* ===================================================================== */
     /*                      Navigation (and hash check)                      */
     /* ===================================================================== */
-    initDashboard();
+    initSidebarNav();
 
     var initialModule = getPreferredInitialModule();
     var initialModuleName = initialModule.replace('#', '');
