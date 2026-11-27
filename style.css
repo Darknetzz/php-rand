@@ -434,6 +434,7 @@ th.tablehead,
 .copyable-content.flex-column,
 .copyable-content.d-flex.flex-column {
   flex-direction: column;
+  align-items: stretch;
   gap: 0;
 }
 

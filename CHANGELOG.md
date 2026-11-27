@@ -9,6 +9,7 @@ All notable changes to this project are documented in this file.
 ### Major Features
 
 - **Sidebar navigation** – The top navbar and its category dropdowns are replaced by a left sidebar that lists every tool at once, grouped by category and sorted A–Z (`includes/navbar.php`). Each category has its own accent colour and tool count, and can be collapsed; collapsed groups are remembered in `localStorage` (`rand.navCollapsed`). A **filter box** at the top narrows the list as you type: press `/` anywhere to focus it, Enter opens the first match, Esc clears it. The current tool is highlighted and its group opens automatically. Settings, GitHub and About sit at the bottom. On screens narrower than 992px the sidebar folds into a top bar with a menu button and closes again after you pick a tool.
+- **Output box fix** – The Serialization output box no longer collapses to a narrow strip with a scrollbar in the middle; column-layout copyable outputs now fill their box (`style.css`, `modules/serialization.php`, `modules/markdown.php`).
 - **Dashboard redesign** – With the tools in the sidebar, the dashboard is now a short landing page (`modules/dashboard.php`): a compact header, a slim "New in vX" strip that opens the Changelog tab of the About modal, a **Recently used** row with the last six tools you opened (`rand.recentTools` in `localStorage`), and small "Why rand" and random "Did you know?" panels. The stat tiles, the outdated "Smart Random Data" card, the category link lists and the large disclaimer alert are gone.
 
 <details>
@@ -21,6 +22,12 @@ All notable changes to this project are documented in this file.
 - `style.css`: new `.rand-sidebar` / `.rand-nav-*` block with light-theme colours and a mobile layout. The old absolutely positioned `.container` rule (which kept the scrollbar from pushing the top navbar) is replaced by normal page flow, and the fixed footer now starts after the sidebar.
 - `js/rand.js`: `initSidebarNav()`, `setSidebarActive()` (called from `navigate()` instead of the dropdown highlighting), `filterSidebarTools()` and `focusSidebarSearch()`.
 - `js/rand_ui_boot.js`: `applyNavbarTheme()` is removed; the sidebar takes its colours from `data-bs-theme`.
+
+#### Output boxes
+
+- `style.css`: copyable output boxes in column layout (`.copyable-content.flex-column`) now stretch their body to the full width. They inherited `align-items: flex-start` from the row layout, so the Serialization output shrank to the width of its text and showed a scrollbar in the middle of the box.
+- `modules/serialization.php`: the empty-state placeholder is centred with flexbox instead of a 120px top padding, and the Input and Output headings line up.
+- `modules/markdown.php`: the Copy HTML button gets padding on all sides, so it no longer touches the top edge of the HTML output box.
 
 #### Dashboard
 

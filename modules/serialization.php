@@ -12,7 +12,7 @@
             <form class="form" action="gen.php" method="POST" id="serializationForm" data-action="serialization" data-responsetype="text">
                 <div class="row g-4 mb-4">
                     <div class="col-12 col-lg-6">
-                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3" style="min-height: 31px;">
                             <label for="serializationInput" class="form-label mb-0"><strong style="font-size: 1.1rem;">Input</strong></label>
                             <button type="button" class="btn btn-sm <?= btnClass('secondary') ?> serialization-random-sample" title="Insert a random sample matching the selected output type"><?= icon('shuffle', 0.9) ?> Random sample</button>
                         </div>
@@ -35,11 +35,13 @@
                         </div>
                     </div>
                     <div class="col-12 col-lg-6 d-flex flex-column">
-                        <label class="form-label mb-3"><strong style="font-size: 1.1rem;">Output</strong></label>
+                        <div class="d-flex align-items-center mb-3" style="min-height: 31px;">
+                            <span class="form-label mb-0"><strong style="font-size: 1.1rem;">Output</strong></span>
+                        </div>
                         <div class="copyable-content flex-grow-1 d-flex flex-column" style="min-height: 320px; padding: 0; background: linear-gradient(135deg, rgba(0, 184, 255, 0.12) 0%, rgba(32, 201, 151, 0.1) 100%); border: 2px solid #495057; border-radius: 0.5rem; box-shadow: 0 6px 16px rgba(0,0,0,0.25);">
-                        <div class="responseDiv copyable-body flex-grow-1" id="serializationresponse" style="padding: 20px; min-height: 200px; max-height: 500px; overflow-y: auto; background: transparent; border: none; border-radius: 0; box-shadow: none; font-family: monospace; white-space: pre-wrap; word-break: break-word; user-select: all;">
-                            <div style="opacity: 0.5; text-align: center; padding-top: 120px;">
-                                <div style="font-size: 3rem; margin-bottom: 10px;">🧾</div>
+                        <div class="responseDiv copyable-body flex-grow-1" id="serializationresponse" style="padding: 20px; min-height: 260px; max-height: 500px; overflow-y: auto; background: transparent; border: none; border-radius: 0; box-shadow: none; font-family: monospace; white-space: pre-wrap; word-break: break-word; user-select: all;">
+                            <div style="opacity: 0.5; text-align: center; height: 100%; min-height: 220px; display: flex; flex-direction: column; align-items: center; justify-content: center; user-select: none;">
+                                <div style="font-size: 3rem; margin-bottom: 10px; white-space: normal;">🧾</div>
                                 <div>Converted output will appear here...</div>
                             </div>
                         </div>
